@@ -8,7 +8,7 @@ import {
 } from '@swappilot/shared';
 
 function getApiBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
   return raw.endsWith('/') ? raw.slice(0, -1) : raw;
 }
 
