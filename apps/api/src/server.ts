@@ -81,16 +81,25 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
     },
     async (request) => {
-      const { receiptId, rankedQuotes, bestExecutableQuoteProviderId, bestRawOutputProviderId, receipt } =
-        buildDeterministicMockQuote(request.body);
+      const {
+        receiptId,
+        rankedQuotes,
+        bestRawQuotes,
+        bestExecutableQuoteProviderId,
+        bestRawOutputProviderId,
+        beqRecommendedProviderId,
+        receipt,
+      } = buildDeterministicMockQuote(request.body);
 
       await receiptStore.put(receipt);
 
       return {
         receiptId,
         rankedQuotes,
+        bestRawQuotes,
         bestExecutableQuoteProviderId,
         bestRawOutputProviderId,
+        beqRecommendedProviderId,
       };
     },
   );

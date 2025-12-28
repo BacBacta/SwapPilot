@@ -16,6 +16,7 @@
     "@swappilot/adapters": "workspace:*",
     "@swappilot/config": "workspace:*",
     "@swappilot/deeplinks": "workspace:*",
+    "@swappilot/scoring": "workspace:*",
     "@swappilot/shared": "workspace:*",
     "@fastify/swagger": "^9.5.1",
     "@fastify/swagger-ui": "^5.2.3",

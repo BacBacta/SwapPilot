@@ -59,6 +59,9 @@ importers:
       '@swappilot/deeplinks':
         specifier: workspace:*
         version: link:../../packages/deeplinks
+      '@swappilot/scoring':
+        specifier: workspace:*
+        version: link:../../packages/scoring
       '@swappilot/shared':
         specifier: workspace:*
         version: link:../../packages/shared

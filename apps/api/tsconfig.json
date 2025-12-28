@@ -16,6 +16,7 @@
     { "path": "../../packages/shared" },
     { "path": "../../packages/config" },
     { "path": "../../packages/adapters" },
-    { "path": "../../packages/deeplinks" }
+    { "path": "../../packages/deeplinks" },
+    { "path": "../../packages/scoring" }
   ]
 }

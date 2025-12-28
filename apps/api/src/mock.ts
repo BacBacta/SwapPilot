@@ -1,125 +1,114 @@
-import { createHash } from 'node:crypto';
-
 import {
   QuoteRequestSchema,
   type QuoteRequest,
   type RankedQuote,
   type DecisionReceipt,
+  deterministicHash,
+  sha256Hex,
 } from '@swappilot/shared';
 
 import { getEnabledProviders } from '@swappilot/adapters';
 import { deepLinkBuilder } from '@swappilot/deeplinks';
 
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`;
-}
-
-export function quoteRequestHash(input: QuoteRequest): string {
-  const parsed = QuoteRequestSchema.parse(input);
-  const canonical = stableStringify(parsed);
-  return createHash('sha256').update(canonical).digest('hex');
-}
+import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuotes } from '@swappilot/scoring';
 
 export function buildDeterministicMockQuote(request: QuoteRequest): {
   receiptId: string;
   rankedQuotes: RankedQuote[];
+  bestRawQuotes: RankedQuote[];
   bestExecutableQuoteProviderId: string | null;
   bestRawOutputProviderId: string | null;
+  beqRecommendedProviderId: string | null;
   receipt: DecisionReceipt;
 } {
-  const hash = quoteRequestHash(request);
+  const parsed = QuoteRequestSchema.parse(request);
+  const hash = deterministicHash(parsed);
   const receiptId = `rcpt_${hash.slice(0, 24)}`;
 
-  const enabledProviders = getEnabledProviders({ providers: request.providers });
+  const enabledProviders = getEnabledProviders({ providers: parsed.providers });
+  const providerMeta = new Map(enabledProviders.map((p) => [p.providerId, p] as const));
 
-  const rankedQuotes: RankedQuote[] = enabledProviders.map((provider) => {
-    const providerHash = createHash('sha256').update(`${hash}:${provider.providerId}`).digest('hex');
+  const assumptions = defaultAssumptions();
+
+  const quotes: RankedQuote[] = enabledProviders.map((provider) => {
+    const providerHash = sha256Hex(`${hash}:${provider.providerId}`);
     const base = BigInt('0x' + providerHash.slice(0, 12));
 
     const isDeepLinkOnly = provider.capabilities.quote === false;
     const buyAmount = isDeepLinkOnly ? '0' : (base % 10_000n + 1_000n).toString();
 
-    const deepLink = deepLinkBuilder(provider.providerId, request);
+    const deepLink = deepLinkBuilder(provider.providerId, parsed);
+
+    const raw = {
+      sellAmount: parsed.sellAmount,
+      buyAmount,
+      estimatedGas: isDeepLinkOnly ? null : 210000,
+      feeBps: isDeepLinkOnly ? null : 30,
+      route: [parsed.sellToken, parsed.buyToken],
+    };
+
+    const normalized = normalizeQuote({ raw, assumptions });
+
+    const signals = defaultPlaceholderSignals({
+      mode: parsed.mode ?? 'NORMAL',
+      quoteIsAvailable: provider.capabilities.quote,
+      isDeepLinkOnly,
+      reason: isDeepLinkOnly ? 'deep_link_only_quote_not_available' : 'stub_quote_integration_not_implemented',
+    });
 
     return {
       providerId: provider.providerId,
       sourceType: provider.category === 'dex' ? 'dex' : 'aggregator',
       capabilities: provider.capabilities,
-      raw: {
-        sellAmount: request.sellAmount,
-        buyAmount,
-        estimatedGas: isDeepLinkOnly ? null : 210000,
-        feeBps: isDeepLinkOnly ? null : 30,
-        route: [request.sellToken, request.buyToken],
-      },
-      normalized: {
-        buyAmount,
-        effectivePrice: '0',
-        estimatedGasUsd: null,
-        feesUsd: null,
-      },
-      signals: {
-        sellability: {
-          status: 'UNCERTAIN',
-          confidence: isDeepLinkOnly ? 0.9 : 0.2,
-          reasons: isDeepLinkOnly
-            ? ['deep_link_only_quote_not_available']
-            : ['stub_quote_integration_not_implemented'],
-        },
-        revertRisk: { level: 'MEDIUM', reasons: ['stub_only'] },
-        mevExposure: { level: 'MEDIUM', reasons: ['stub_only'] },
-        churn: { level: 'LOW', reasons: ['registry_based'] },
-        preflight: { ok: true, reasons: [] },
-      },
+      raw,
+      normalized,
+      signals,
       score: {
-        beqScore: Number(base % 1000n),
+        beqScore: 0,
         rawOutputRank: 0,
       },
       deepLink: deepLink.url,
     };
   });
 
-  const byRawOutput = [...rankedQuotes].sort((a, b) => {
-    const aAmt = BigInt(a.raw.buyAmount);
-    const bAmt = BigInt(b.raw.buyAmount);
-    if (aAmt === bAmt) return a.providerId.localeCompare(b.providerId);
-    return aAmt > bAmt ? -1 : 1;
+  const ranked = rankQuotes({
+    mode: parsed.mode ?? 'NORMAL',
+    providerMeta,
+    quotes,
+    assumptions,
   });
 
-  for (const [index, quote] of byRawOutput.entries()) {
-    quote.score.rawOutputRank = index;
-  }
+  const bestRawOutputProviderId =
+    BigInt(ranked.bestRawQuotes[0]?.raw.buyAmount ?? '0') > 0n ? ranked.bestRawQuotes[0]!.providerId : null;
 
-  const bestRawOutputProviderId = BigInt(byRawOutput[0]?.raw.buyAmount ?? '0') > 0n ? byRawOutput[0]!.providerId : null;
-
-  const executable = rankedQuotes.find((q) => q.capabilities.buildTx);
+  const executable = ranked.rankedQuotes.find((q) => q.capabilities.buildTx);
   const bestExecutableQuoteProviderId = executable ? executable.providerId : null;
-
-  // Return quotes ranked by raw output for now.
-  const rankedByOutput = byRawOutput;
 
   const receipt: DecisionReceipt = {
     id: receiptId,
     createdAt: new Date(0).toISOString(),
-    request,
+    request: parsed,
     bestExecutableQuoteProviderId,
     bestRawOutputProviderId,
-    rankedQuotes: rankedByOutput,
+    beqRecommendedProviderId: ranked.beqRecommendedProviderId,
+    rankedQuotes: ranked.rankedQuotes,
+    bestRawQuotes: ranked.bestRawQuotes,
+    normalization: {
+      assumptions,
+    },
+    whyWinner: ranked.whyWinner,
     ranking: {
-      mode: request.mode ?? 'NORMAL',
+      mode: parsed.mode ?? 'NORMAL',
       rationale: [
         'registry_providers_enumerated',
+        'ranked_by_beq',
         bestExecutableQuoteProviderId ? 'beq_executable_present' : 'beq_no_executable_quotes',
         bestRawOutputProviderId ? 'best_raw_output_selected' : 'no_quotes_available',
       ],
     },
     warnings: [
       'stub_only_no_live_integrations',
-      ...rankedByOutput
+      ...ranked.bestRawQuotes
         .filter((q) => q.capabilities.quote === false)
         .map((q) => `deep_link_only:${q.providerId}`),
     ],
@@ -127,9 +116,11 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
 
   return {
     receiptId,
-    rankedQuotes: rankedByOutput,
+    rankedQuotes: ranked.rankedQuotes,
+    bestRawQuotes: ranked.bestRawQuotes,
     bestExecutableQuoteProviderId,
     bestRawOutputProviderId,
+    beqRecommendedProviderId: ranked.beqRecommendedProviderId,
     receipt,
   };
 }
