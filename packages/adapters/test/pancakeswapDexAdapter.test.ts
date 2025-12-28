@@ -70,6 +70,51 @@ describe('PancakeSwapDexAdapter (v2)', () => {
     vi.unstubAllGlobals();
   });
 
+  it('disables quoting on timeout (AbortController)', async () => {
+    vi.useFakeTimers();
+
+    const router = '0x1111111111111111111111111111111111111111';
+    const sellToken = '0x2222222222222222222222222222222222222222';
+    const buyToken = '0x3333333333333333333333333333333333333333';
+
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      return await new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        if (!signal) {
+          reject(new Error('missing_abort_signal'));
+          return;
+        }
+        signal.addEventListener('abort', () => reject(new Error('AbortError')));
+      });
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const adapter = new PancakeSwapDexAdapter({
+      chainId: 56,
+      rpcUrl: 'https://rpc.example.invalid',
+      v2RouterAddress: router,
+      quoteTimeoutMs: 5,
+    });
+
+    const quotePromise = adapter.getQuote({
+      chainId: 56,
+      sellToken,
+      buyToken,
+      sellAmount: '1000',
+      slippageBps: 50,
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+    const quote = await quotePromise;
+
+    expect(quote.capabilities.quote).toBe(false);
+    expect(quote.warnings.some((w) => w.startsWith('pancakeswap_quote_failed:'))).toBe(true);
+
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
   it('maps native placeholder to WBNB in path', async () => {
     const router = '0x1111111111111111111111111111111111111111';
     const native = '0x0000000000000000000000000000000000000000';
