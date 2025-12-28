@@ -20,12 +20,15 @@ When enabled, the adapter calls `eth_call` on the Router function `getAmountsOut
 Config (env):
 - `BSC_RPC_URLS`: comma-separated allowlist of RPC endpoints (SwapPilot uses the first URL for PancakeSwap quoting)
 - `PANCAKESWAP_V2_ROUTER`: Router contract address (required to enable v2 quoting)
+- `PANCAKESWAP_WBNB`: wrapped native token address used when a request uses a native placeholder (default: BSC mainnet WBNB)
 - `PANCAKESWAP_QUOTE_TIMEOUT_MS`: RPC timeout for quoting (default: 2000ms)
 
 Notes / limitations (current implementation):
 - Chain: only `chainId=56` (BNB Chain).
 - Path: direct path only (`[sellToken, buyToken]`), no multi-hop.
-- Tokens: requires ERC-20 addresses for `sellToken` and `buyToken` (native BNB wrapping is not handled yet).
+- Tokens: supports ERC-20 addresses, and maps common native placeholders to `PANCAKESWAP_WBNB`:
+  - `0x0000000000000000000000000000000000000000`
+  - `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE`
 - If config is missing/invalid or RPC reverts/errors, SwapPilot falls back to deep-link only for PancakeSwap.
 
 ### v3 quoting (Quoter)
