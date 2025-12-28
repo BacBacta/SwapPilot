@@ -1,11 +1,9 @@
-# Deploy SwapPilot to Fly.io (API) and Vercel (Web)
+# Deploy SwapPilot API to Fly.io
+# Web deployment is handled by Vercel's native Git integration.
 # Requires secrets:
-#   - FLY_API_TOKEN: from `fly tokens create deploy`
-#   - VERCEL_TOKEN: from Vercel dashboard
-#   - VERCEL_ORG_ID: from .vercel/project.json
-#   - VERCEL_PROJECT_ID: from .vercel/project.json
+#   - FLY_API_TOKEN: from `fly tokens create deploy --app swappilot-api`
 
-name: Deploy
+name: Deploy API
 
 on:
   push:
@@ -45,25 +43,3 @@ jobs:
       - run: ~/.fly/bin/flyctl deploy --config apps/api/fly.toml --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
-  deploy-web:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @swappilot/shared build
-      - name: Deploy to Vercel
-        run: |
-          npm i -g vercel
-          vercel link --yes --project=web --token=${{ secrets.VERCEL_TOKEN }}
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
