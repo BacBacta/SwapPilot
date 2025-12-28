@@ -59,6 +59,10 @@ export type ProviderQuoteNormalized = z.infer<typeof ProviderQuoteNormalizedSche
 
 export const PreflightResultSchema = z.object({
   ok: z.boolean(),
+  // Estimated probability of revert based on quorum of RPC simulations.
+  pRevert: z.number().min(0).max(1),
+  // Confidence in the estimate based on consistency across RPCs.
+  confidence: z.number().min(0).max(1),
   reasons: z.array(z.string()),
 });
 
