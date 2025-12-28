@@ -1,0 +1,21 @@
+{
+  "name": "@swappilot/adapters",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts --tsconfig tsconfig.build.json --out-dir dist --clean",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@swappilot/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
