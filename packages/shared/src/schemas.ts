@@ -98,11 +98,22 @@ export const RankedQuoteSchema = z.object({
 
 export type RankedQuote = z.infer<typeof RankedQuoteSchema>;
 
+export const NormalizationAssumptionsSchema = z.object({
+  priceModel: z.literal('ratio_sell_buy'),
+  effectivePriceScale: z.number().int().positive(),
+  gasUsdPerTx: z.string().nullable(),
+  feeModel: z.literal('feeBps_on_buyAmount'),
+});
+
+export type NormalizationAssumptions = z.infer<typeof NormalizationAssumptionsSchema>;
+
 export const QuoteResponseSchema = z.object({
   receiptId: z.string().min(1),
   bestExecutableQuoteProviderId: z.string().nullable(),
   bestRawOutputProviderId: z.string().nullable(),
+  beqRecommendedProviderId: z.string().nullable(),
   rankedQuotes: z.array(RankedQuoteSchema),
+  bestRawQuotes: z.array(RankedQuoteSchema),
 });
 
 export type QuoteResponse = z.infer<typeof QuoteResponseSchema>;
@@ -113,7 +124,13 @@ export const DecisionReceiptSchema = z.object({
   request: QuoteRequestSchema,
   bestExecutableQuoteProviderId: z.string().nullable(),
   bestRawOutputProviderId: z.string().nullable(),
+  beqRecommendedProviderId: z.string().nullable(),
   rankedQuotes: z.array(RankedQuoteSchema),
+  bestRawQuotes: z.array(RankedQuoteSchema),
+  normalization: z.object({
+    assumptions: NormalizationAssumptionsSchema,
+  }),
+  whyWinner: z.array(z.string()),
   ranking: z.object({
     mode: QuoteModeSchema.default('NORMAL'),
     rationale: z.array(z.string()),
