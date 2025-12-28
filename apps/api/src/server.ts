@@ -23,6 +23,8 @@ import { loadConfig, type AppConfig } from '@swappilot/config';
 import { createPreflightClient, type PreflightClient } from '@swappilot/preflight';
 import { createRiskEngine, type RiskEngine } from '@swappilot/risk';
 
+import { PancakeSwapDexAdapter, type Adapter } from '@swappilot/adapters';
+
 import { buildDeterministicMockQuote } from './mock';
 import { FileReceiptStore } from './store/fileReceiptStore';
 import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
@@ -33,6 +35,7 @@ export type CreateServerOptions = {
   receiptStore?: ReceiptStore;
   preflightClient?: PreflightClient;
   riskEngine?: RiskEngine;
+  pancakeSwapAdapter?: Adapter;
 };
 
 export function createServer(options: CreateServerOptions = {}): FastifyInstance {
@@ -86,6 +89,15 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
   const riskEngine = options.riskEngine ?? createRiskEngine(config.risk);
 
+  const pancakeSwapAdapter =
+    options.pancakeSwapAdapter ??
+    new PancakeSwapDexAdapter({
+      chainId: 56,
+      rpcUrl: config.rpc.bscUrls[0] ?? null,
+      v2RouterAddress: config.pancakeswap.v2Router,
+      quoteTimeoutMs: config.pancakeswap.quoteTimeoutMs,
+    });
+
   api.post(
     '/v1/quotes',
     {
@@ -105,7 +117,11 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         bestRawOutputProviderId,
         beqRecommendedProviderId,
         receipt,
-      } = await buildDeterministicMockQuote(request.body, { preflightClient, riskEngine });
+      } = await buildDeterministicMockQuote(request.body, {
+        preflightClient,
+        riskEngine,
+        pancakeSwapAdapter,
+      });
 
       await receiptStore.put(receipt);
 

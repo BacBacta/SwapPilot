@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { createServer } from '../src/server';
 
+function pad32(hexNo0x: string): string {
+  return hexNo0x.padStart(64, '0');
+}
+
+function encodeUint256Array(values: bigint[]): `0x${string}` {
+  // ABI encoding for a single return value uint256[]:
+  // head: offset (0x20)
+  // tail: length + values...
+  const offset = pad32('20');
+  const length = pad32(values.length.toString(16));
+  const elems = values.map((v) => pad32(v.toString(16))).join('');
+  return (`0x${offset}${length}${elems}`) as const;
+}
+
 type QuoteSummary = {
   providerId: string;
   signals?: {
@@ -114,6 +128,67 @@ describe('Option 1 API', () => {
     // 1inch gets a mock txRequest => preflight fails => excluded in SAFE.
     const ids = (json.rankedQuotes as QuoteSummary[]).map((q) => q.providerId);
     expect(ids).not.toContain('1inch');
+  });
+
+  it('includes PancakeSwap as a real quote source when configured', async () => {
+    const router = '0x1111111111111111111111111111111111111111';
+    const sellToken = '0x2222222222222222222222222222222222222222';
+    const buyToken = '0x3333333333333333333333333333333333333333';
+
+    const fetchMock = async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as { method: string };
+      if (body.method !== 'eth_call') throw new Error('unexpected_rpc_method');
+      return {
+        async json() {
+          return {
+            jsonrpc: '2.0',
+            id: 1,
+            result: encodeUint256Array([1000n, 7777n]),
+          };
+        },
+      } as unknown as Response;
+    };
+
+    // PancakeSwap adapter uses fetch for RPC.
+    // Preflight is injected/mocked to avoid any other fetch usage.
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const app = createServer({
+      logger: false,
+      config: {
+        nodeEnv: 'test',
+        host: '0.0.0.0',
+        port: 3001,
+        receiptStore: { type: 'memory', path: '' },
+        rpc: { bscUrls: ['https://rpc.example.invalid'], quorum: 2, timeoutMs: 2500, enableTrace: false },
+        risk: { knownTokens: [], memeTokens: [] },
+        pancakeswap: { v2Router: router, v3Quoter: null, quoteTimeoutMs: 2000 },
+      },
+      preflightClient: {
+        async verify() {
+          return { ok: true, pRevert: 0, confidence: 1, reasons: ['mock_ok'] };
+        },
+      },
+    });
+
+    const body = {
+      chainId: 56,
+      sellToken,
+      buyToken,
+      sellAmount: '1000',
+      slippageBps: 100,
+      mode: 'NORMAL',
+    };
+
+    const res = await app.inject({ method: 'POST', url: '/v1/quotes', payload: body });
+    expect(res.statusCode).toBe(200);
+
+    const json = res.json() as { rankedQuotes: Array<{ providerId: string; capabilities: { quote: boolean }; raw: { buyAmount: string; route?: string[] } }> };
+    const ps = json.rankedQuotes.find((q) => q.providerId === 'pancakeswap');
+    expect(ps).toBeTruthy();
+    expect(ps!.capabilities.quote).toBe(true);
+    expect(ps!.raw.buyAmount).toBe('7777');
+    expect(ps!.raw.route).toEqual([sellToken, buyToken]);
   });
 
   it('GET /docs is available', async () => {

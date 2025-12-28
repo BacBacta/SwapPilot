@@ -9,6 +9,7 @@ import {
 } from '@swappilot/shared';
 
 import { getEnabledProviders } from '@swappilot/adapters';
+import type { Adapter } from '@swappilot/adapters';
 import { deepLinkBuilder } from '@swappilot/deeplinks';
 
 import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuotes } from '@swappilot/scoring';
@@ -23,6 +24,7 @@ export function buildDeterministicMockQuote(
   deps: {
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
+    pancakeSwapAdapter?: Adapter;
   },
 ): Promise<{
   receiptId: string;
@@ -41,6 +43,7 @@ async function buildDeterministicMockQuoteImpl(
   deps: {
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
+    pancakeSwapAdapter?: Adapter;
   },
 ): Promise<{
   receiptId: string;
@@ -55,7 +58,10 @@ async function buildDeterministicMockQuoteImpl(
   const hash = deterministicHash(parsed);
   const receiptId = `rcpt_${hash.slice(0, 24)}`;
 
-  const enabledProviders = getEnabledProviders({ providers: parsed.providers });
+  const pancakeMeta = deps.pancakeSwapAdapter?.getProviderMeta();
+  const enabledProviders = getEnabledProviders({ providers: parsed.providers }).map((p) =>
+    p.providerId === 'pancakeswap' && pancakeMeta ? pancakeMeta : p,
+  );
   const providerMeta = new Map(enabledProviders.map((p) => [p.providerId, p] as const));
 
   const assumptions = defaultAssumptions();
@@ -64,55 +70,85 @@ async function buildDeterministicMockQuoteImpl(
     const providerHash = sha256Hex(`${hash}:${provider.providerId}`);
     const base = BigInt('0x' + providerHash.slice(0, 12));
 
-    const isDeepLinkOnly = provider.capabilities.quote === false;
-    const buyAmount = isDeepLinkOnly ? '0' : (base % 10_000n + 1_000n).toString();
-
     const deepLink = deepLinkBuilder(provider.providerId, parsed);
 
-    const raw = {
-      sellAmount: parsed.sellAmount,
-      buyAmount,
-      estimatedGas: isDeepLinkOnly ? null : 210000,
-      feeBps: isDeepLinkOnly ? null : 30,
-      route: [parsed.sellToken, parsed.buyToken],
-    };
-
-    const normalized = normalizeQuote({ raw, assumptions });
-
-    const baseSignals = defaultPlaceholderSignals({
-      mode: parsed.mode ?? 'NORMAL',
-      quoteIsAvailable: provider.capabilities.quote,
-      isDeepLinkOnly,
-      reason: isDeepLinkOnly ? 'deep_link_only_quote_not_available' : 'stub_quote_integration_not_implemented',
-    });
-
-    // Mock txRequest path: provide a minimal txRequest for at least one provider.
-    // This is used to exercise the preflight + risk pipeline without executing anything.
-    const txRequest: TxRequest | null = provider.providerId === '1inch'
-      ? {
-          from: parsed.account ?? ZERO_ADDRESS,
-          to: parsed.buyToken,
-          data: '0x',
-          value: '0x0',
-        }
-      : null;
-
-    const preflightFallback: PreflightResult = { ok: true, pRevert: 0.5, confidence: 0, reasons: ['no_txRequest_available'] };
+    const adapterQuotePromise =
+      provider.providerId === 'pancakeswap' && deps.pancakeSwapAdapter
+        ? deps.pancakeSwapAdapter.getQuote(parsed)
+        : null;
 
     return {
       provider,
-      isDeepLinkOnly,
+      base,
       deepLink,
-      raw,
-      normalized,
-      baseSignals,
-      txRequest,
-      preflightFallback,
+      adapterQuotePromise,
+      providerHash,
     };
   });
 
-  const resolvedQuotes: RankedQuote[] = await Promise.all(
+  const resolvedInputs = await Promise.all(
     parts.map(async (item) => {
+      const adapterQuote = item.adapterQuotePromise ? await item.adapterQuotePromise : null;
+
+      const capabilities = adapterQuote?.capabilities ?? item.provider.capabilities;
+      const isDeepLinkOnly = capabilities.quote === false;
+      const buyAmount = isDeepLinkOnly ? '0' : (item.base % 10_000n + 1_000n).toString();
+
+      const raw = adapterQuote?.raw ?? {
+        sellAmount: parsed.sellAmount,
+        buyAmount,
+        estimatedGas: isDeepLinkOnly ? null : 210000,
+        feeBps: isDeepLinkOnly ? null : 30,
+        route: [parsed.sellToken, parsed.buyToken],
+      };
+
+      const normalized = adapterQuote?.normalized ?? normalizeQuote({ raw, assumptions });
+
+      const baseSignals = defaultPlaceholderSignals({
+        mode: parsed.mode ?? 'NORMAL',
+        quoteIsAvailable: capabilities.quote,
+        isDeepLinkOnly,
+        reason: isDeepLinkOnly
+          ? 'deep_link_only_quote_not_available'
+          : adapterQuote && adapterQuote.isStub === false
+            ? 'pancakeswap_v2_onchain_quote'
+            : 'stub_quote_integration_not_implemented',
+      });
+
+      // Mock txRequest path: provide a minimal txRequest for at least one provider.
+      // This is used to exercise the preflight + risk pipeline without executing anything.
+      const txRequest: TxRequest | null = item.provider.providerId === '1inch'
+        ? {
+            from: parsed.account ?? ZERO_ADDRESS,
+            to: parsed.buyToken,
+            data: '0x',
+            value: '0x0',
+          }
+        : null;
+
+      const preflightFallback: PreflightResult = {
+        ok: true,
+        pRevert: 0.5,
+        confidence: 0,
+        reasons: ['no_txRequest_available'],
+      };
+
+      return {
+        provider: item.provider,
+        capabilities,
+        isDeepLinkOnly,
+        deepLink: item.deepLink,
+        raw,
+        normalized,
+        baseSignals,
+        txRequest,
+        preflightFallback,
+      };
+    }),
+  );
+
+  const resolvedQuotes: RankedQuote[] = await Promise.all(
+    resolvedInputs.map(async (item) => {
       const preflightResult = item.txRequest
         ? await deps.preflightClient.verify(item.txRequest)
         : item.preflightFallback;
@@ -122,7 +158,7 @@ async function buildDeterministicMockQuoteImpl(
         quote: {
           providerId: item.provider.providerId,
           sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
-          capabilities: item.provider.capabilities,
+          capabilities: item.capabilities,
           raw: item.raw,
           normalized: item.normalized,
           signals: item.baseSignals,
@@ -135,7 +171,7 @@ async function buildDeterministicMockQuoteImpl(
       return {
         providerId: item.provider.providerId,
         sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
-        capabilities: item.provider.capabilities,
+        capabilities: item.capabilities,
         raw: item.raw,
         normalized: item.normalized,
         signals: riskSignals,
