@@ -3,11 +3,12 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
-import type { QuoteMode, QuoteResponse } from '@swappilot/shared';
+import type { QuoteMode, QuoteResponse, RankedQuote } from '@swappilot/shared';
 
 import { Button } from '../../components/ui/button';
+import { cn } from '../../lib/utils';
 import { postQuotes, type ApiError } from '../../lib/api';
-import { formatBigIntString } from '../../lib/format';
+import { computeMinOut, formatBigIntString } from '../../lib/format';
 
 type ProviderOption = { id: string; label: string };
 
@@ -56,6 +57,30 @@ function ModePill({ mode, active, onClick }: { mode: QuoteMode; active: boolean;
   );
 }
 
+function CapabilityBadge({ label, enabled }: { label: string; enabled: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+        enabled
+          ? 'border-border bg-secondary text-secondary-foreground'
+          : 'border-border bg-background text-muted-foreground',
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+function RiskChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xs font-medium">{value}</div>
+    </div>
+  );
+}
+
 function DrawerShell(params: {
   open: boolean;
   title: string;
@@ -80,6 +105,103 @@ function DrawerShell(params: {
   );
 }
 
+function ProviderCard(params: {
+  quote: RankedQuote;
+  slippageBps: number;
+  isBeqWinner: boolean;
+  isRawWinner: boolean;
+}) {
+  const q = params.quote;
+  const minOut = computeMinOut({ buyAmount: q.raw.buyAmount, slippageBps: params.slippageBps });
+  const deepLinkOnly = q.capabilities.quote === false;
+  const outIsZero = q.raw.buyAmount === '0';
+
+  const confidence = q.signals.preflight?.confidence ?? q.signals.sellability.confidence;
+  const pRevert = q.signals.preflight?.pRevert;
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-semibold">{q.providerId}</div>
+            {params.isBeqWinner ? (
+              <span className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">BEQ</span>
+            ) : null}
+            {params.isRawWinner ? (
+              <span className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+                Best Raw
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">Source: {q.sourceType}</div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <CapabilityBadge label="quote" enabled={q.capabilities.quote} />
+          <CapabilityBadge label="buildTx" enabled={q.capabilities.buildTx} />
+          <CapabilityBadge label="deepLink" enabled={q.capabilities.deepLink} />
+        </div>
+      </div>
+
+      {deepLinkOnly ? (
+        <div className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+          Deep-link only: aucun quote direct disponible. Le classement reflète une estimation / stub.
+        </div>
+      ) : null}
+
+      {outIsZero ? (
+        <div className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+          Quote indisponible (sortie à 0). Tu peux quand même tenter le deep-link.
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="rounded-md border border-border bg-background px-3 py-2">
+          <div className="text-xs text-muted-foreground">Sortie (out)</div>
+          <div className="mt-1 font-mono text-sm">{formatBigIntString(q.raw.buyAmount)}</div>
+          <div className="mt-2 text-xs text-muted-foreground">Min out (slippage)</div>
+          <div className="mt-1 font-mono text-sm">{formatBigIntString(minOut)}</div>
+        </div>
+        <div className="rounded-md border border-border bg-background px-3 py-2">
+          <div className="text-xs text-muted-foreground">Gas estimate</div>
+          <div className="mt-1 text-sm">{q.raw.estimatedGas ?? '—'}</div>
+          <div className="mt-2 text-xs text-muted-foreground">Gas (USD)</div>
+          <div className="mt-1 text-sm">{q.normalized.estimatedGasUsd ?? '—'}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+        <RiskChip label="Sellability" value={`${q.signals.sellability.status} (conf ${confidence.toFixed(2)})`} />
+        <RiskChip
+          label="Revert risk"
+          value={`${q.signals.revertRisk.level}${pRevert != null ? ` (pRevert ${pRevert.toFixed(2)})` : ''}`}
+        />
+        <RiskChip label="MEV" value={q.signals.mevExposure.level} />
+        <RiskChip label="Churn" value={q.signals.churn.level} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            if (!q.deepLink) return;
+            window.open(q.deepLink, '_blank', 'noopener,noreferrer');
+          }}
+          disabled={!q.deepLink}
+        >
+          Open in Provider
+        </Button>
+      </div>
+
+      <div className="mt-3 text-xs text-muted-foreground">
+        Aucun résultat n’est garanti. Affiche la confiance/risque, pas une certitude.
+      </div>
+    </div>
+  );
+}
+
 export function SwapClient() {
   const [sellToken, setSellToken] = useState('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
   const [buyToken, setBuyToken] = useState('0x0000000000000000000000000000000000000002');
@@ -95,12 +217,19 @@ export function SwapClient() {
     () => new Set(PROVIDERS.map((p) => p.id)),
   );
 
+  const [activeTab, setActiveTab] = useState<'beq' | 'raw'>('beq');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<QuoteResponse | null>(null);
 
   const enabledProviderIds = useMemo(() => Array.from(enabledProviders.values()), [enabledProviders]);
   const allEnabled = enabledProviderIds.length === PROVIDERS.length;
+
+  const quotesToShow = useMemo(() => {
+    if (!response) return [];
+    return activeTab === 'beq' ? response.rankedQuotes : response.bestRawQuotes;
+  }, [response, activeTab]);
 
   async function onRequestQuotes() {
     setLoading(true);
@@ -279,31 +408,65 @@ export function SwapClient() {
       </section>
 
       <section className="mt-6">
-        <div className="text-sm font-semibold">Results</div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          Commit 1: intégration API + layout. Les vues BEQ/Raw et actions deep-link arrivent ensuite.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold">Results</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Affiche le classement BEQ ou le meilleur output brut. Pas de garantie: utilise les signaux et la confiance.
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeTab === 'beq' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('beq')}
+            >
+              BEQ ranking
+            </Button>
+            <Button
+              variant={activeTab === 'raw' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('raw')}
+            >
+              Best Raw Output
+            </Button>
+          </div>
         </div>
 
         {response ? (
-          <div className="mt-4 space-y-3">
-            <div className="rounded-lg border border-border bg-background p-4">
-              <div className="text-sm font-semibold">Receipt</div>
-              <div className="mt-1 font-mono text-xs text-muted-foreground">{response.receiptId}</div>
+          <div className="mt-4 rounded-lg border border-border bg-background p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">Receipt</div>
+                <div className="mt-1 font-mono text-xs text-muted-foreground">{response.receiptId}</div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!response) return;
+                    void navigator.clipboard.writeText(response.receiptId);
+                  }}
+                >
+                  Copier ID
+                </Button>
+              </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-background p-4">
-              <div className="text-sm font-semibold">Quotes ({response.rankedQuotes.length})</div>
-              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                {response.rankedQuotes.map((q) => (
-                  <div key={q.providerId} className="rounded-md border border-border bg-background px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-medium">{q.providerId}</div>
-                      <div className="text-xs text-muted-foreground">{q.sourceType}</div>
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">buyAmount</div>
-                    <div className="mt-1 font-mono text-sm">{formatBigIntString(q.raw.buyAmount)}</div>
-                  </div>
-                ))}
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <div className="rounded-md border border-border bg-background px-3 py-2">
+                <div className="text-xs text-muted-foreground">BEQ recommended</div>
+                <div className="mt-1 text-sm">{response.beqRecommendedProviderId ?? '—'}</div>
+              </div>
+              <div className="rounded-md border border-border bg-background px-3 py-2">
+                <div className="text-xs text-muted-foreground">Best executable</div>
+                <div className="mt-1 text-sm">{response.bestExecutableQuoteProviderId ?? '—'}</div>
+              </div>
+              <div className="rounded-md border border-border bg-background px-3 py-2">
+                <div className="text-xs text-muted-foreground">Best raw</div>
+                <div className="mt-1 text-sm">{response.bestRawOutputProviderId ?? '—'}</div>
               </div>
             </div>
           </div>
@@ -312,6 +475,18 @@ export function SwapClient() {
             Aucun résultat pour le moment. Lance une requête.
           </div>
         )}
+
+        <div className="mt-4 grid grid-cols-1 gap-4">
+          {quotesToShow.map((q) => (
+            <ProviderCard
+              key={`${activeTab}:${q.providerId}`}
+              quote={q}
+              slippageBps={slippageBps}
+              isBeqWinner={q.providerId === response?.beqRecommendedProviderId}
+              isRawWinner={q.providerId === response?.bestRawOutputProviderId}
+            />
+          ))}
+        </div>
       </section>
 
       <DrawerShell open={settingsOpen} title="Settings" onClose={() => setSettingsOpen(false)}>
