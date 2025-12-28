@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@swappilot/shared": "workspace:*"
+    "@swappilot/shared": "workspace:*",
+    "viem": "^2.23.6"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

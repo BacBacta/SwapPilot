@@ -30,6 +30,12 @@ export const EnvSchema = z.object({
   // Risk heuristics
   RISK_KNOWN_TOKENS: z.string().default(''),
   RISK_MEME_TOKENS: z.string().default(''),
+
+  // PancakeSwap (DEX) quoting
+  // Leave empty to keep PancakeSwap deep-link only.
+  PANCAKESWAP_V2_ROUTER: z.string().default(''),
+  PANCAKESWAP_V3_QUOTER: z.string().default(''),
+  PANCAKESWAP_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(2_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -51,6 +57,11 @@ export type AppConfig = {
   risk: {
     knownTokens: string[];
     memeTokens: string[];
+  };
+  pancakeswap: {
+    v2Router: string | null;
+    v3Quoter: string | null;
+    quoteTimeoutMs: number;
   };
 };
 
@@ -84,6 +95,11 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     risk: {
       knownTokens: splitCsv(env.RISK_KNOWN_TOKENS),
       memeTokens: splitCsv(env.RISK_MEME_TOKENS),
+    },
+    pancakeswap: {
+      v2Router: env.PANCAKESWAP_V2_ROUTER.trim().length > 0 ? env.PANCAKESWAP_V2_ROUTER.trim() : null,
+      v3Quoter: env.PANCAKESWAP_V3_QUOTER.trim().length > 0 ? env.PANCAKESWAP_V3_QUOTER.trim() : null,
+      quoteTimeoutMs: env.PANCAKESWAP_QUOTE_TIMEOUT_MS,
     },
   };
 }
