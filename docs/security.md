@@ -49,5 +49,22 @@ Controls:
 - Apply strict timeouts.
 - Limit concurrency.
 
+## RPC simulation safety (preflight)
+SwapPilot may perform **read-only** JSON-RPC calls to estimate revert risk for a candidate transaction request (`txRequest`).
+
+Defaults:
+- Only `eth_estimateGas` and `eth_call` are used.
+- No tracing calls are used by default.
+
+Guards:
+- Any tracing (e.g. `debug_traceCall`) MUST be disabled by default and only enabled behind an explicit env flag.
+- Always return probabilities (`pRevert`) and a `confidence` score; never claim guarantees.
+
+Configuration (env):
+- `BSC_RPC_URLS` (comma-separated)
+- `RPC_QUORUM` (e.g. 2 or 3)
+- `RPC_TIMEOUT_MS`
+- `RPC_ENABLE_TRACE` (must be false by default)
+
 ## Storage
 - Receipts must not store sensitive data; store sanitized request and summaries.

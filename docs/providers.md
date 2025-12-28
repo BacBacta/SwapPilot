@@ -20,6 +20,14 @@ The runtime registry lives in `packages/adapters/src/registry.ts`.
 - `buildTx`: SwapPilot can build an executable transaction (Option 2; expected `false` for Option 1 today)
 - `deepLink`: SwapPilot can redirect the user to the provider UI
 
+### txRequest + preflight (new)
+Independently of `buildTx`, SwapPilot can run **preflight verification** when a provider integration can produce a transaction request (`txRequest`).
+
+Current state:
+- Option 1 remains non-executing.
+- A **mock txRequest path** is enabled for at least one provider (currently `1inch`) to populate receipts with preflight + risk signals.
+- Real `buildTx` integrations remain a future step (Option 2).
+
 ### Registry table (Top 6 + PancakeSwap)
 
 | Provider | providerId | Category | quote | buildTx | deepLink | Integration confidence | Approach |
