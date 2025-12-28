@@ -61,6 +61,7 @@ jobs:
       - name: Deploy to Vercel
         run: |
           npm i -g vercel
+          vercel link --yes --project=web --token=${{ secrets.VERCEL_TOKEN }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: apps/web
         env:
