@@ -7,6 +7,7 @@ FROM node:20-bookworm-slim
 
 WORKDIR /app
 ENV NODE_ENV=production
+ENV CI=true
 
 RUN corepack enable
 
