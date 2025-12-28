@@ -7,6 +7,11 @@ node_modules
 out
 dist
 
+# generated test artifacts (should not be committed)
+**/test/**/*.js
+**/test/**/*.d.ts
+**/test/**/*.map
+
 # env
 .env
 .env.*
