@@ -6,6 +6,11 @@
     "moduleResolution": "Bundler",
     "allowJs": false,
     "incremental": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
     "types": [
       "node"
     ],
