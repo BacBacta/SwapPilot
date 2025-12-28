@@ -3,12 +3,22 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
-import type { QuoteMode, QuoteResponse, RankedQuote } from '@swappilot/shared';
+import type {
+  DecisionReceipt,
+  QuoteMode,
+  QuoteResponse,
+  RankedQuote,
+} from '@swappilot/shared';
 
 import { Button } from '../../components/ui/button';
 import { cn } from '../../lib/utils';
-import { postQuotes, type ApiError } from '../../lib/api';
-import { computeMinOut, formatBigIntString } from '../../lib/format';
+import { getReceipt, postQuotes, type ApiError } from '../../lib/api';
+import {
+  computeMinOut,
+  downloadJson,
+  formatBigIntString,
+  shortAddress,
+} from '../../lib/format';
 
 type ProviderOption = { id: string; label: string };
 
@@ -223,6 +233,11 @@ export function SwapClient() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<QuoteResponse | null>(null);
 
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
+
   const enabledProviderIds = useMemo(() => Array.from(enabledProviders.values()), [enabledProviders]);
   const allEnabled = enabledProviderIds.length === PROVIDERS.length;
 
@@ -249,11 +264,34 @@ export function SwapClient() {
 
       const res = await postQuotes({ request: req, timeoutMs: 12_000 });
       setResponse(res);
+      setReceipt(null);
+      setReceiptError(null);
     } catch (e) {
       setResponse(null);
+      setReceipt(null);
+      setReceiptError(null);
       setError(errorToMessage(e as ApiError));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function openReceiptDrawer() {
+    const id = response?.receiptId;
+    if (!id) return;
+
+    setReceiptOpen(true);
+    setReceiptLoading(true);
+    setReceiptError(null);
+
+    try {
+      const r = await getReceipt({ id, timeoutMs: 12_000 });
+      setReceipt(r);
+    } catch (e) {
+      setReceipt(null);
+      setReceiptError(errorToMessage(e as ApiError));
+    } finally {
+      setReceiptLoading(false);
     }
   }
 
@@ -443,6 +481,9 @@ export function SwapClient() {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={openReceiptDrawer}>
+                  Ouvrir receipt
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -520,6 +561,81 @@ export function SwapClient() {
             L’UI affiche une confiance et des signaux de risque. Elle ne doit jamais promettre un résultat.
           </div>
         </div>
+      </DrawerShell>
+
+      <DrawerShell open={receiptOpen} title="Receipt" onClose={() => setReceiptOpen(false)}>
+        {!response ? (
+          <div className="text-sm text-muted-foreground">Aucun receipt disponible.</div>
+        ) : (
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-mono text-xs text-muted-foreground">{response.receiptId}</div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!receipt) return;
+                    downloadJson(`${response.receiptId}.json`, receipt);
+                  }}
+                  disabled={!receipt}
+                >
+                  Export JSON
+                </Button>
+              </div>
+            </div>
+
+            {receiptLoading ? (
+              <div className="mt-4 text-sm text-muted-foreground">Chargement…</div>
+            ) : receiptError ? (
+              <div className="mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm">
+                <div className="font-medium">Erreur</div>
+                <div className="mt-1 text-muted-foreground">{receiptError}</div>
+              </div>
+            ) : receipt ? (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="text-sm font-semibold">Decision</div>
+                  <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div>
+                      <div className="text-xs text-muted-foreground">BEQ recommended</div>
+                      <div className="text-sm">{receipt.beqRecommendedProviderId ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Best raw</div>
+                      <div className="text-sm">{receipt.bestRawOutputProviderId ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Mode</div>
+                      <div className="text-sm">{receipt.ranking.mode}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Warnings</div>
+                      <div className="text-sm">{receipt.warnings.length ? receipt.warnings.join(', ') : '—'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="text-sm font-semibold">Request</div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {shortAddress(receipt.request.sellToken)} → {shortAddress(receipt.request.buyToken)} | amount{' '}
+                    <span className="font-mono">{formatBigIntString(receipt.request.sellAmount)}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="text-sm font-semibold">Raw JSON</div>
+                  <pre className="mt-2 max-h-[50vh] overflow-auto rounded-md border border-border bg-background p-3 text-xs">
+                    {JSON.stringify(receipt, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 text-sm text-muted-foreground">Aucune donnée.</div>
+            )}
+          </div>
+        )}
       </DrawerShell>
     </main>
   );
