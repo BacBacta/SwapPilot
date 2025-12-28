@@ -35,6 +35,9 @@ export const EnvSchema = z.object({
   // Leave empty to keep PancakeSwap deep-link only.
   PANCAKESWAP_V2_ROUTER: z.string().default(''),
   PANCAKESWAP_V3_QUOTER: z.string().default(''),
+  // Wrapped native token used for BNB (BSC mainnet WBNB by default).
+  // Override if you run against a different chain/RPC.
+  PANCAKESWAP_WBNB: z.string().default('0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'),
   PANCAKESWAP_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(2_000),
 });
 
@@ -61,6 +64,7 @@ export type AppConfig = {
   pancakeswap: {
     v2Router: string | null;
     v3Quoter: string | null;
+    wbnb: string;
     quoteTimeoutMs: number;
   };
 };
@@ -99,6 +103,7 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     pancakeswap: {
       v2Router: env.PANCAKESWAP_V2_ROUTER.trim().length > 0 ? env.PANCAKESWAP_V2_ROUTER.trim() : null,
       v3Quoter: env.PANCAKESWAP_V3_QUOTER.trim().length > 0 ? env.PANCAKESWAP_V3_QUOTER.trim() : null,
+      wbnb: env.PANCAKESWAP_WBNB.trim(),
       quoteTimeoutMs: env.PANCAKESWAP_QUOTE_TIMEOUT_MS,
     },
   };
