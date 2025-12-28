@@ -13,12 +13,12 @@ These documents are **required** by `instructions.md` and must exist **before an
 8. `docs/adr/0002-scoring.md`
 
 ## Acknowledgment checklist (must be completed before implementation)
-- [ ] Option 1 is non-custodial and non-executing (deep-link only)
-- [ ] BEQ and Best Raw Output are always separate views
-- [ ] Sellability is never guaranteed; only OK/UNCERTAIN/FAIL with confidence
-- [ ] All providers are behind strict adapters with timeouts + domain allowlist
-- [ ] Zod validates all external inputs/outputs
-- [ ] Logs are structured and redact sensitive data
+- [x] Option 1 is non-custodial and non-executing (deep-link only)
+- [x] BEQ and Best Raw Output are always separate views
+- [x] Sellability is never guaranteed; only OK/UNCERTAIN/FAIL with confidence
+- [x] All providers are behind strict adapters with timeouts + domain allowlist
+- [x] Zod validates all external inputs/outputs
+- [x] Logs are structured and redact sensitive data
 
 ## Required docs (must exist)
 - `docs/README.md`
