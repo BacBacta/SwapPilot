@@ -162,7 +162,7 @@ describe('Option 1 API', () => {
         receiptStore: { type: 'memory', path: '' },
         rpc: { bscUrls: ['https://rpc.example.invalid'], quorum: 2, timeoutMs: 2500, enableTrace: false },
         risk: { knownTokens: [], memeTokens: [] },
-        pancakeswap: { v2Router: router, v3Quoter: null, quoteTimeoutMs: 2000 },
+        pancakeswap: { v2Router: router, v3Quoter: null, wbnb: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', quoteTimeoutMs: 2000 },
       },
       preflightClient: {
         async verify() {

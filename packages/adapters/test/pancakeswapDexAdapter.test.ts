@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { encodeFunctionResult } from 'viem';
+import { decodeFunctionData, encodeFunctionResult } from 'viem';
 
 import { PancakeSwapDexAdapter } from '../src/pancakeswapDexAdapter';
 
@@ -66,6 +66,63 @@ describe('PancakeSwapDexAdapter (v2)', () => {
     expect(quote.isStub).toBe(false);
     expect(quote.raw.buyAmount).toBe('1234');
     expect(quote.raw.route).toEqual([sellToken, buyToken]);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('maps native placeholder to WBNB in path', async () => {
+    const router = '0x1111111111111111111111111111111111111111';
+    const native = '0x0000000000000000000000000000000000000000';
+    const wbnb = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+    const buyToken = '0x3333333333333333333333333333333333333333';
+
+    const mockedResult = encodeFunctionResult({
+      abi: PANCAKESWAP_V2_ROUTER_ABI,
+      functionName: 'getAmountsOut',
+      result: [1000n, 5555n],
+    });
+
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        method: string;
+        params: Array<{ to: string; data: `0x${string}` }>;
+      };
+
+      expect(body.method).toBe('eth_call');
+      const call = body.params[0];
+      const decoded = decodeFunctionData({ abi: PANCAKESWAP_V2_ROUTER_ABI, data: call.data });
+      expect(decoded.functionName).toBe('getAmountsOut');
+      const args = decoded.args as readonly [bigint, readonly string[]];
+      expect(args[1][0]!.toLowerCase()).toBe(wbnb.toLowerCase());
+      expect(args[1][1]!.toLowerCase()).toBe(buyToken.toLowerCase());
+
+      return {
+        async json() {
+          return { jsonrpc: '2.0', id: 1, result: mockedResult };
+        },
+      } as unknown as Response;
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const adapter = new PancakeSwapDexAdapter({
+      chainId: 56,
+      rpcUrl: 'https://rpc.example.invalid',
+      v2RouterAddress: router,
+      wbnb,
+      quoteTimeoutMs: 2000,
+    });
+
+    const quote = await adapter.getQuote({
+      chainId: 56,
+      sellToken: native,
+      buyToken,
+      sellAmount: '1000',
+      slippageBps: 50,
+    });
+
+    expect(quote.capabilities.quote).toBe(true);
+    expect(quote.raw.buyAmount).toBe('5555');
 
     vi.unstubAllGlobals();
   });

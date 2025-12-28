@@ -54,11 +54,25 @@ export type PancakeSwapDexAdapterConfig = {
   chainId: number;
   rpcUrl: string | null;
   v2RouterAddress: string | null;
+  wbnb: string;
   quoteTimeoutMs: number;
 };
 
 export class PancakeSwapDexAdapter implements Adapter {
   constructor(private readonly config: PancakeSwapDexAdapterConfig) {}
+
+  private readonly nativePlaceholders = new Set<string>([
+    '0x0000000000000000000000000000000000000000',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase(),
+  ]);
+
+  private normalizeToken(token: string): string {
+    const t = token.toLowerCase();
+    if (this.nativePlaceholders.has(t)) return this.config.wbnb;
+    return token;
+  }
 
   private async ethCall(params: { to: string; data: `0x${string}` }): Promise<`0x${string}`> {
     const controller = new AbortController();
@@ -176,7 +190,10 @@ export class PancakeSwapDexAdapter implements Adapter {
       };
     }
 
-    if (!isAddress(request.sellToken) || !isAddress(request.buyToken)) {
+    const sellToken = this.normalizeToken(request.sellToken);
+    const buyToken = this.normalizeToken(request.buyToken);
+
+    if (!isAddress(sellToken) || !isAddress(buyToken)) {
       return {
         ...base,
         capabilities: { ...base.capabilities, quote: false },
@@ -193,7 +210,24 @@ export class PancakeSwapDexAdapter implements Adapter {
     }
 
     const amountIn = BigInt(request.sellAmount);
-    const path = [request.sellToken, request.buyToken] as const;
+    const path = [sellToken, buyToken] as const;
+
+    // If we mapped a native placeholder, ensure WBNB itself is sane.
+    if ((sellToken === this.config.wbnb || buyToken === this.config.wbnb) && !isAddress(this.config.wbnb)) {
+      return {
+        ...base,
+        capabilities: { ...base.capabilities, quote: false },
+        warnings: ['pancakeswap_quote_disabled_invalid_wbnb_address'],
+        raw: {
+          sellAmount: request.sellAmount,
+          buyAmount: '0',
+          estimatedGas: null,
+          feeBps: null,
+          route: [request.sellToken, request.buyToken],
+        },
+        normalized: normalizeQuoteFromRaw({ sellAmount: request.sellAmount, buyAmount: '0' }),
+      };
+    }
 
     try {
       const data = encodeFunctionData({
@@ -218,7 +252,7 @@ export class PancakeSwapDexAdapter implements Adapter {
         buyAmount: out.toString(),
         estimatedGas: null,
         feeBps: null,
-        route: [request.sellToken, request.buyToken],
+        route: [sellToken, buyToken],
       };
 
       return {
