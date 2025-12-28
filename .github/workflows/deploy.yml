@@ -61,9 +61,7 @@ jobs:
       - name: Deploy to Vercel
         run: |
           npm i -g vercel
-          vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
-          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --prebuilt
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: apps/web
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
