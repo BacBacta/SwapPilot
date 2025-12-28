@@ -17,6 +17,15 @@
 - MEV exposure level
 - churn level
 
+## Normalization assumptions (current)
+For Option 1 (stub quotes), normalization is intentionally simple and deterministic:
+- `priceModel = ratio_sell_buy` (placeholder)
+- `effectivePrice = buyAmount / sellAmount` formatted with a fixed scale
+- `gasUsdPerTx = null` (no pricing yet)
+- `feeModel = feeBps_on_buyAmount`
+
+Assumptions used for a decision are stored in the receipt.
+
 ## Modes
 SwapPilot supports a user-selected mode that changes weights:
 
@@ -25,6 +34,8 @@ SwapPilot supports a user-selected mode that changes weights:
 - Strongly penalize HIGH revert risk.
 - Prefer known-stable providers.
 
+Implementation rule (current): `FAIL` sellability is excluded from BEQ ranking in SAFE.
+
 ### NORMAL
 - Balanced tradeoff between output and risk.
 
@@ -32,28 +43,27 @@ SwapPilot supports a user-selected mode that changes weights:
 - Favor output more aggressively.
 - Still do not hide risk; show warnings prominently.
 
-## BEQ formula (concept)
-Let:
-- `O` = normalized output score (higher is better)
-- `G` = normalized gas+fees penalty
-- `R` = risk penalty derived from revertRisk/mevExposure/churn
-- `S` = sellability multiplier derived from status and confidence
-
-Then:
+## BEQ formula (implemented)
+For every provider quote, we compute:
 
 $$
-BEQ = S \cdot (O - G) - R
+BEQScore = NetOut \cdot Reliability \cdot SellFactor \cdot RiskPenalty
 $$
 
-### Sellability multiplier (example rule)
-- `OK`: $S = 0.9 + 0.1 \cdot confidence$
-- `UNCERTAIN`: $S = 0.4 + 0.4 \cdot confidence$
-- `FAIL`: $S = 0$
+Where:
+- $NetOut$ is derived from raw output and fees.
+- $Reliability \in [0,1]$ comes from provider integration confidence.
+- $SellFactor \in [0,1]$ comes from sellability (`OK` / `UNCERTAIN` / `FAIL`) and mode.
+- $RiskPenalty \in [0,1]$ comes from the worst of revertRisk / mevExposure / churn and mode.
 
-Exact weights are subject to ADR `0002-scoring`.
+Receipts must include an explainable `whyWinner` list that describes which rules were applied.
 
 ## Output requirements
 - API must expose both selections:
   - `bestExecutableQuoteProviderId`
   - `bestRawOutputProviderId`
 - Receipt must explain why BEQ selected provider X.
+
+In addition, the API exposes:
+- `beqRecommendedProviderId`
+- `bestRawQuotes` (separate ordering from `rankedQuotes`)
