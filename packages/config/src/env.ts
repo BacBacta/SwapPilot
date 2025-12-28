@@ -12,6 +12,25 @@ export const EnvSchema = z.object({
   RECEIPT_STORE: z.enum(['memory', 'file']).default('file'),
   RECEIPT_STORE_PATH: z.string().default('./.data/receipts'),
 
+  // Redis / caching
+  REDIS_URL: z.string().default(''),
+  QUOTE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(10),
+
+  // API gateway rate limiting
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10_000).default(120),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(100).max(60 * 60 * 1000).default(60_000),
+
+  // Observability
+  METRICS_ENABLED: z
+    .preprocess((v) => {
+      if (typeof v === 'string') {
+        const s = v.trim().toLowerCase();
+        return s === '1' || s === 'true' || s === 'yes' || s === 'on';
+      }
+      return v;
+    }, z.boolean())
+    .default(true),
+
   // RPC / Preflight
   // Comma-separated list of BSC (BNB Chain) JSON-RPC endpoints.
   BSC_RPC_URLS: z.string().default(''),
@@ -51,6 +70,17 @@ export type AppConfig = {
     type: Env['RECEIPT_STORE'];
     path: string;
   };
+  redis: {
+    url: string | null;
+    quoteCacheTtlSeconds: number;
+  };
+  rateLimit: {
+    max: number;
+    windowMs: number;
+  };
+  metrics: {
+    enabled: boolean;
+  };
   rpc: {
     bscUrls: string[];
     quorum: number;
@@ -89,6 +119,17 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     receiptStore: {
       type: env.RECEIPT_STORE,
       path: env.RECEIPT_STORE_PATH,
+    },
+    redis: {
+      url: env.REDIS_URL.trim().length > 0 ? env.REDIS_URL.trim() : null,
+      quoteCacheTtlSeconds: env.QUOTE_CACHE_TTL_SECONDS,
+    },
+    rateLimit: {
+      max: env.RATE_LIMIT_MAX,
+      windowMs: env.RATE_LIMIT_WINDOW_MS,
+    },
+    metrics: {
+      enabled: env.METRICS_ENABLED,
     },
     rpc: {
       bscUrls: splitCsv(env.BSC_RPC_URLS),
