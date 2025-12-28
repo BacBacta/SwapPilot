@@ -39,6 +39,8 @@ These are useful supplements and may evolve over time:
 - `docs/observability.md`
 - `docs/repo-standards.md`
 - `docs/runbook.md`
+- `docs/ops.md`
+- `docs/release-checklist.md`
 
 ## Scope
 - Option 1 only: SwapPilot is **non-custodial** and **non-executing** (deep-link only).
