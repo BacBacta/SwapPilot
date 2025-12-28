@@ -17,6 +17,23 @@ import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuot
 import type { PreflightClient, TxRequest } from '@swappilot/preflight';
 import type { RiskEngine } from '@swappilot/risk';
 
+import type { Metrics } from './obs/metrics';
+import type { QuoteCache } from './cache/quoteCache';
+
+type Logger = {
+  info(obj: unknown, msg?: string): void;
+  warn(obj: unknown, msg?: string): void;
+  error(obj: unknown, msg?: string): void;
+  debug(obj: unknown, msg?: string): void;
+};
+
+const noopLogger: Logger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+};
+
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export function buildDeterministicMockQuote(
@@ -25,6 +42,10 @@ export function buildDeterministicMockQuote(
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
     pancakeSwapAdapter?: Adapter;
+    quoteCache?: QuoteCache;
+    quoteCacheTtlSeconds?: number;
+    logger?: Logger;
+    metrics?: Metrics;
   },
 ): Promise<{
   receiptId: string;
@@ -44,6 +65,10 @@ async function buildDeterministicMockQuoteImpl(
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
     pancakeSwapAdapter?: Adapter;
+    quoteCache?: QuoteCache;
+    quoteCacheTtlSeconds?: number;
+    logger?: Logger;
+    metrics?: Metrics;
   },
 ): Promise<{
   receiptId: string;
@@ -57,6 +82,11 @@ async function buildDeterministicMockQuoteImpl(
   const parsed = QuoteRequestSchema.parse(request);
   const hash = deterministicHash(parsed);
   const receiptId = `rcpt_${hash.slice(0, 24)}`;
+
+  const log = deps.logger ?? noopLogger;
+  const metrics = deps.metrics;
+  const quoteCache = deps.quoteCache;
+  const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
   const pancakeMeta = deps.pancakeSwapAdapter?.getProviderMeta();
   const enabledProviders = getEnabledProviders({ providers: parsed.providers }).map((p) =>
@@ -72,9 +102,116 @@ async function buildDeterministicMockQuoteImpl(
 
     const deepLink = deepLinkBuilder(provider.providerId, parsed);
 
+    const cacheKeyBase = deterministicHash({
+      chainId: parsed.chainId,
+      sellToken: parsed.sellToken,
+      buyToken: parsed.buyToken,
+      sellAmount: parsed.sellAmount,
+      slippageBps: parsed.slippageBps,
+      mode: parsed.mode ?? 'NORMAL',
+    });
+    const cacheKey = `swappilot:quote:${provider.providerId}:${cacheKeyBase}`;
+
     const adapterQuotePromise =
       provider.providerId === 'pancakeswap' && deps.pancakeSwapAdapter
-        ? deps.pancakeSwapAdapter.getQuote(parsed)
+        ? (async () => {
+            const providerId = provider.providerId;
+            const start = process.hrtime.bigint();
+
+            try {
+              if (quoteCache) {
+                const cached = await quoteCache.get(cacheKey);
+                if (cached) {
+                  metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'cache_hit' }).inc();
+                  const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+                  metrics?.providerQuoteDurationMs.labels({ providerId, status: 'cache_hit' }).observe(durationMs);
+                  log.info({ providerId, cache: 'hit', durationMs }, 'provider.quote');
+                  return {
+                    providerId,
+                    sourceType: 'dex',
+                    capabilities: cached.capabilities,
+                    raw: cached.raw,
+                    normalized: cached.normalized,
+                    signals: defaultPlaceholderSignals({
+                      mode: parsed.mode ?? 'NORMAL',
+                      quoteIsAvailable: cached.capabilities.quote,
+                      isDeepLinkOnly: cached.capabilities.quote === false,
+                      reason: 'cache_hit',
+                    }),
+                    deepLink: null,
+                    warnings: [...cached.warnings, 'cache_hit'],
+                    isStub: cached.isStub,
+                  };
+                }
+              }
+
+              metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'cache_miss' }).inc();
+
+              // Small retry budget for transient provider/RPC outages.
+              const maxAttempts = 2;
+              let lastErr: unknown = null;
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                  log.info({ providerId, attempt }, 'provider.quote.start');
+                  const quote = await deps.pancakeSwapAdapter!.getQuote(parsed);
+
+                  const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+                  const status = quote.isStub || quote.capabilities.quote === false ? 'stub' : 'success';
+                  metrics?.providerQuoteRequestsTotal.labels({ providerId, status }).inc();
+                  metrics?.providerQuoteDurationMs.labels({ providerId, status }).observe(durationMs);
+                  log.info(
+                    {
+                      providerId,
+                      attempt,
+                      status,
+                      durationMs,
+                      buyAmount: quote.raw.buyAmount,
+                      quoteEnabled: quote.capabilities.quote,
+                    },
+                    'provider.quote.end',
+                  );
+
+                  if (quoteCache && status === 'success') {
+                    await quoteCache.set(
+                      cacheKey,
+                      {
+                        providerId,
+                        cachedAt: new Date().toISOString(),
+                        raw: quote.raw,
+                        normalized: quote.normalized,
+                        capabilities: quote.capabilities,
+                        isStub: quote.isStub,
+                        warnings: quote.warnings,
+                      },
+                      quoteCacheTtlSeconds,
+                    );
+                  }
+
+                  return quote;
+                } catch (err) {
+                  lastErr = err;
+                  log.warn(
+                    { providerId, attempt, error: err instanceof Error ? err.message : String(err) },
+                    'provider.quote.error',
+                  );
+                  if (attempt < maxAttempts) {
+                    await new Promise((r) => setTimeout(r, 50 * attempt));
+                  }
+                }
+              }
+
+              throw lastErr;
+            } catch (err) {
+              const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+              metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'failure' }).inc();
+              metrics?.providerQuoteDurationMs.labels({ providerId, status: 'failure' }).observe(durationMs);
+              log.error(
+                { providerId, durationMs, error: err instanceof Error ? err.message : String(err) },
+                'provider.quote.failed',
+              );
+              return null;
+            }
+          })()
         : null;
 
     return {
@@ -152,6 +289,8 @@ async function buildDeterministicMockQuoteImpl(
       const preflightResult = item.txRequest
         ? await deps.preflightClient.verify(item.txRequest)
         : item.preflightFallback;
+
+      metrics?.preflightVerificationsTotal.labels({ status: preflightResult.ok ? 'ok' : 'fail' }).inc();
 
       const riskSignals = deps.riskEngine.assess({
         request: parsed,
