@@ -58,12 +58,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @swappilot/shared build
-      - run: pnpm --filter @swappilot/web build
-        env:
-          NEXT_PUBLIC_API_URL: https://swappilot-api.fly.dev
       - name: Deploy to Vercel
         run: |
           npm i -g vercel
+          vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --prebuilt
         working-directory: apps/web
         env:
