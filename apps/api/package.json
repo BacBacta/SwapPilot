@@ -16,6 +16,8 @@
     "@swappilot/adapters": "workspace:*",
     "@swappilot/config": "workspace:*",
     "@swappilot/deeplinks": "workspace:*",
+    "@swappilot/preflight": "workspace:*",
+    "@swappilot/risk": "workspace:*",
     "@swappilot/scoring": "workspace:*",
     "@swappilot/shared": "workspace:*",
     "@fastify/swagger": "^9.5.1",

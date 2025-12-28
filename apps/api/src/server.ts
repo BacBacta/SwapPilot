@@ -20,6 +20,9 @@ import {
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
 
+import { createPreflightClient, type PreflightClient } from '@swappilot/preflight';
+import { createRiskEngine, type RiskEngine } from '@swappilot/risk';
+
 import { buildDeterministicMockQuote } from './mock';
 import { FileReceiptStore } from './store/fileReceiptStore';
 import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
@@ -28,6 +31,8 @@ export type CreateServerOptions = {
   logger?: boolean;
   config?: AppConfig;
   receiptStore?: ReceiptStore;
+  preflightClient?: PreflightClient;
+  riskEngine?: RiskEngine;
 };
 
 export function createServer(options: CreateServerOptions = {}): FastifyInstance {
@@ -70,6 +75,17 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
   const api = app.withTypeProvider<ZodTypeProvider>();
 
+  const preflightClient =
+    options.preflightClient ??
+    createPreflightClient({
+      urls: config.rpc.bscUrls,
+      quorum: config.rpc.quorum,
+      timeoutMs: config.rpc.timeoutMs,
+      enableTrace: config.rpc.enableTrace,
+    });
+
+  const riskEngine = options.riskEngine ?? createRiskEngine(config.risk);
+
   api.post(
     '/v1/quotes',
     {
@@ -89,7 +105,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         bestRawOutputProviderId,
         beqRecommendedProviderId,
         receipt,
-      } = buildDeterministicMockQuote(request.body);
+      } = await buildDeterministicMockQuote(request.body, { preflightClient, riskEngine });
 
       await receiptStore.put(receipt);
 

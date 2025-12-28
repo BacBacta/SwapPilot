@@ -3,6 +3,7 @@ import {
   type QuoteRequest,
   type RankedQuote,
   type DecisionReceipt,
+  type PreflightResult,
   deterministicHash,
   sha256Hex,
 } from '@swappilot/shared';
@@ -12,7 +13,18 @@ import { deepLinkBuilder } from '@swappilot/deeplinks';
 
 import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuotes } from '@swappilot/scoring';
 
-export function buildDeterministicMockQuote(request: QuoteRequest): {
+import type { PreflightClient, TxRequest } from '@swappilot/preflight';
+import type { RiskEngine } from '@swappilot/risk';
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+export function buildDeterministicMockQuote(
+  request: QuoteRequest,
+  deps: {
+    preflightClient: PreflightClient;
+    riskEngine: RiskEngine;
+  },
+): Promise<{
   receiptId: string;
   rankedQuotes: RankedQuote[];
   bestRawQuotes: RankedQuote[];
@@ -20,7 +32,25 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
   bestRawOutputProviderId: string | null;
   beqRecommendedProviderId: string | null;
   receipt: DecisionReceipt;
-} {
+}> {
+  return buildDeterministicMockQuoteImpl(request, deps);
+}
+
+async function buildDeterministicMockQuoteImpl(
+  request: QuoteRequest,
+  deps: {
+    preflightClient: PreflightClient;
+    riskEngine: RiskEngine;
+  },
+): Promise<{
+  receiptId: string;
+  rankedQuotes: RankedQuote[];
+  bestRawQuotes: RankedQuote[];
+  bestExecutableQuoteProviderId: string | null;
+  bestRawOutputProviderId: string | null;
+  beqRecommendedProviderId: string | null;
+  receipt: DecisionReceipt;
+}> {
   const parsed = QuoteRequestSchema.parse(request);
   const hash = deterministicHash(parsed);
   const receiptId = `rcpt_${hash.slice(0, 24)}`;
@@ -30,7 +60,7 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
 
   const assumptions = defaultAssumptions();
 
-  const quotes: RankedQuote[] = enabledProviders.map((provider) => {
+  const parts = enabledProviders.map((provider) => {
     const providerHash = sha256Hex(`${hash}:${provider.providerId}`);
     const base = BigInt('0x' + providerHash.slice(0, 12));
 
@@ -49,32 +79,76 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
 
     const normalized = normalizeQuote({ raw, assumptions });
 
-    const signals = defaultPlaceholderSignals({
+    const baseSignals = defaultPlaceholderSignals({
       mode: parsed.mode ?? 'NORMAL',
       quoteIsAvailable: provider.capabilities.quote,
       isDeepLinkOnly,
       reason: isDeepLinkOnly ? 'deep_link_only_quote_not_available' : 'stub_quote_integration_not_implemented',
     });
 
+    // Mock txRequest path: provide a minimal txRequest for at least one provider.
+    // This is used to exercise the preflight + risk pipeline without executing anything.
+    const txRequest: TxRequest | null = provider.providerId === '1inch'
+      ? {
+          from: parsed.account ?? ZERO_ADDRESS,
+          to: parsed.buyToken,
+          data: '0x',
+          value: '0x0',
+        }
+      : null;
+
+    const preflightFallback: PreflightResult = { ok: true, pRevert: 0.5, confidence: 0, reasons: ['no_txRequest_available'] };
+
     return {
-      providerId: provider.providerId,
-      sourceType: provider.category === 'dex' ? 'dex' : 'aggregator',
-      capabilities: provider.capabilities,
+      provider,
+      isDeepLinkOnly,
+      deepLink,
       raw,
       normalized,
-      signals,
-      score: {
-        beqScore: 0,
-        rawOutputRank: 0,
-      },
-      deepLink: deepLink.url,
+      baseSignals,
+      txRequest,
+      preflightFallback,
     };
   });
+
+  const resolvedQuotes: RankedQuote[] = await Promise.all(
+    parts.map(async (item) => {
+      const preflightResult = item.txRequest
+        ? await deps.preflightClient.verify(item.txRequest)
+        : item.preflightFallback;
+
+      const riskSignals = deps.riskEngine.assess({
+        request: parsed,
+        quote: {
+          providerId: item.provider.providerId,
+          sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
+          capabilities: item.provider.capabilities,
+          raw: item.raw,
+          normalized: item.normalized,
+          signals: item.baseSignals,
+          score: { beqScore: 0, rawOutputRank: 0 },
+          deepLink: item.deepLink.url,
+        },
+        preflight: preflightResult,
+      });
+
+      return {
+        providerId: item.provider.providerId,
+        sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
+        capabilities: item.provider.capabilities,
+        raw: item.raw,
+        normalized: item.normalized,
+        signals: riskSignals,
+        score: { beqScore: 0, rawOutputRank: 0 },
+        deepLink: item.deepLink.url,
+      };
+    }),
+  );
 
   const ranked = rankQuotes({
     mode: parsed.mode ?? 'NORMAL',
     providerMeta,
-    quotes,
+    quotes: resolvedQuotes,
     assumptions,
   });
 

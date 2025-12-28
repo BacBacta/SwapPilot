@@ -10,7 +10,7 @@ function signals(status: 'OK' | 'UNCERTAIN' | 'FAIL'): RiskSignals {
     revertRisk: { level: 'LOW', reasons: [] },
     mevExposure: { level: 'LOW', reasons: [] },
     churn: { level: 'LOW', reasons: [] },
-    preflight: { ok: true, reasons: [] },
+    preflight: { ok: true, pRevert: 0, confidence: 1, reasons: [] },
   };
 }
 
@@ -26,6 +26,26 @@ function score(mode: QuoteMode, sellability: 'OK' | 'UNCERTAIN' | 'FAIL') {
 }
 
 describe('computeBeqScore', () => {
+  it('SAFE disqualifies preflight failure', () => {
+    const out = computeBeqScore({
+      providerId: 'p',
+      buyAmount: 10_000n,
+      feeBps: 0,
+      integrationConfidence: 1,
+      mode: 'SAFE',
+      signals: {
+        sellability: { status: 'OK', confidence: 0.9, reasons: ['test'] },
+        revertRisk: { level: 'LOW', reasons: [] },
+        mevExposure: { level: 'LOW', reasons: [] },
+        churn: { level: 'LOW', reasons: [] },
+        preflight: { ok: false, pRevert: 1, confidence: 1, reasons: ['revert'] },
+      },
+    });
+
+    expect(out.disqualified).toBe(true);
+    expect(out.why).toContain('mode_safe_excludes_preflight_fail');
+  });
+
   it('SAFE disqualifies FAIL sellability', () => {
     const out = score('SAFE', 'FAIL');
     expect(out.disqualified).toBe(true);

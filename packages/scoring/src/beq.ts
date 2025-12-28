@@ -53,6 +53,29 @@ function netOutFromBuyAmount(buyAmount: bigint, feeBps: number | null): bigint {
 export function computeBeqScore(input: ScoreInput): ScoreOutput {
   const why: WhyRule[] = ['beq_formula'];
 
+  const preflight = input.signals.preflight;
+  if (preflight) {
+    if (preflight.ok) {
+      why.push('preflight_ok');
+    } else {
+      why.push('preflight_failed');
+      if (input.mode === 'SAFE') {
+        return {
+          providerId: input.providerId,
+          beqScore: 0,
+          components: {
+            netOut: 0n,
+            reliability: 0,
+            sellFactor: 0,
+            riskPenalty: 0,
+          },
+          disqualified: true,
+          why: [...why, 'mode_safe_excludes_preflight_fail'],
+        };
+      }
+    }
+  }
+
   const { factor: sellFactor, disqualified, why: whySell } = sellFactorFromSignals(input.mode, input.signals);
   why.push(...whySell);
 
@@ -64,6 +87,9 @@ export function computeBeqScore(input: ScoreInput): ScoreOutput {
 
   const netOut = netOutFromBuyAmount(input.buyAmount, input.feeBps);
 
+  // Apply preflight revert probability as a multiplicative penalty when available.
+  const preflightPenalty = preflight ? 1 - clamp01(preflight.pRevert) : 1;
+
   // Score is a scaled float; keep deterministic ordering by using bigint netOut then multipliers.
   // Use Number(netOut) can overflow; instead scale down by taking first 15 digits.
   const netOutStr = netOut.toString();
@@ -72,7 +98,7 @@ export function computeBeqScore(input: ScoreInput): ScoreOutput {
 
   const beqScore = disqualified
     ? 0
-    : Math.max(0, Math.round(netOutScaled * reliability * sellFactor * riskPenalty));
+    : Math.max(0, Math.round(netOutScaled * reliability * sellFactor * riskPenalty * preflightPenalty));
 
   return {
     providerId: input.providerId,
@@ -105,6 +131,6 @@ export function defaultPlaceholderSignals(params: {
     revertRisk: { level: 'MEDIUM', reasons: ['stub_only'] },
     mevExposure: { level: 'MEDIUM', reasons: ['stub_only'] },
     churn: { level: 'LOW', reasons: ['registry_based'] },
-    preflight: { ok: true, reasons: [] },
+    preflight: { ok: true, pRevert: 0.5, confidence: 0, reasons: ['preflight_not_run_stub'] },
   };
 }

@@ -32,7 +32,7 @@ function makeQuote(params: {
       revertRisk: { level: 'LOW', reasons: [] },
       mevExposure: { level: 'LOW', reasons: [] },
       churn: { level: 'LOW', reasons: [] },
-      preflight: { ok: true, reasons: [] },
+      preflight: { ok: true, pRevert: 0, confidence: 1, reasons: [] },
     },
     score: { beqScore: 0, rawOutputRank: 0 },
     deepLink: 'https://example.com',

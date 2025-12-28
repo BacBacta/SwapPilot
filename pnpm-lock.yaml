@@ -59,6 +59,12 @@ importers:
       '@swappilot/deeplinks':
         specifier: workspace:*
         version: link:../../packages/deeplinks
+      '@swappilot/preflight':
+        specifier: workspace:*
+        version: link:../../packages/preflight
+      '@swappilot/risk':
+        specifier: workspace:*
+        version: link:../../packages/risk
       '@swappilot/scoring':
         specifier: workspace:*
         version: link:../../packages/scoring
@@ -182,6 +188,44 @@ importers:
         version: 3.2.4(@types/node@24.10.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/deeplinks:
+    dependencies:
+      '@swappilot/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.10.4
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/preflight:
+    dependencies:
+      '@swappilot/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.10.4
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/risk:
     dependencies:
       '@swappilot/shared':
         specifier: workspace:*

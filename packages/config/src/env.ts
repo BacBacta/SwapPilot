@@ -11,6 +11,25 @@ export const EnvSchema = z.object({
 
   RECEIPT_STORE: z.enum(['memory', 'file']).default('file'),
   RECEIPT_STORE_PATH: z.string().default('./.data/receipts'),
+
+  // RPC / Preflight
+  // Comma-separated list of BSC (BNB Chain) JSON-RPC endpoints.
+  BSC_RPC_URLS: z.string().default(''),
+  RPC_QUORUM: z.coerce.number().int().min(1).max(5).default(2),
+  RPC_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(2_500),
+  RPC_ENABLE_TRACE: z
+    .preprocess((v) => {
+      if (typeof v === 'string') {
+        const s = v.trim().toLowerCase();
+        return s === '1' || s === 'true' || s === 'yes' || s === 'on';
+      }
+      return v;
+    }, z.boolean())
+    .default(false),
+
+  // Risk heuristics
+  RISK_KNOWN_TOKENS: z.string().default(''),
+  RISK_MEME_TOKENS: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -23,7 +42,24 @@ export type AppConfig = {
     type: Env['RECEIPT_STORE'];
     path: string;
   };
+  rpc: {
+    bscUrls: string[];
+    quorum: number;
+    timeoutMs: number;
+    enableTrace: boolean;
+  };
+  risk: {
+    knownTokens: string[];
+    memeTokens: string[];
+  };
 };
+
+function splitCsv(input: string): string[] {
+  return input
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
 
 export function loadEnv(input: NodeJS.ProcessEnv = process.env): Env {
   return EnvSchema.parse(input);
@@ -38,6 +74,16 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     receiptStore: {
       type: env.RECEIPT_STORE,
       path: env.RECEIPT_STORE_PATH,
+    },
+    rpc: {
+      bscUrls: splitCsv(env.BSC_RPC_URLS),
+      quorum: env.RPC_QUORUM,
+      timeoutMs: env.RPC_TIMEOUT_MS,
+      enableTrace: env.RPC_ENABLE_TRACE,
+    },
+    risk: {
+      knownTokens: splitCsv(env.RISK_KNOWN_TOKENS),
+      memeTokens: splitCsv(env.RISK_MEME_TOKENS),
     },
   };
 }

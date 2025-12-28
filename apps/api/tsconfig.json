@@ -17,6 +17,8 @@
     { "path": "../../packages/config" },
     { "path": "../../packages/adapters" },
     { "path": "../../packages/deeplinks" },
-    { "path": "../../packages/scoring" }
+    { "path": "../../packages/scoring" },
+    { "path": "../../packages/preflight" },
+    { "path": "../../packages/risk" }
   ]
 }

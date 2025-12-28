@@ -10,9 +10,12 @@ export type ScoringComponents = {
 export type WhyRule =
   | 'beq_formula'
   | 'mode_safe_excludes_fail_sellability'
+  | 'mode_safe_excludes_preflight_fail'
   | 'sellability_ok'
   | 'sellability_uncertain'
   | 'sellability_fail'
+  | 'preflight_ok'
+  | 'preflight_failed'
   | 'risk_low'
   | 'risk_medium'
   | 'risk_high'
