@@ -27,9 +27,17 @@ describe('Option 1 API', () => {
     expect(json1.receiptId).toBe(json2.receiptId);
     expect(json1.rankedQuotes).toHaveLength(7);
     expect(json2.rankedQuotes).toHaveLength(7);
+    expect(json1.bestRawQuotes).toHaveLength(7);
+    expect(json2.bestRawQuotes).toHaveLength(7);
+    expect(typeof json1.beqRecommendedProviderId === 'string' || json1.beqRecommendedProviderId === null).toBe(true);
 
     const ids = json1.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
     expect(ids).toEqual(
+      ['1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'okx-dex', 'pancakeswap'].sort(),
+    );
+
+    const rawIds = json1.bestRawQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    expect(rawIds).toEqual(
       ['1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'okx-dex', 'pancakeswap'].sort(),
     );
 
@@ -39,7 +47,13 @@ describe('Option 1 API', () => {
     });
 
     expect(receiptRes.statusCode).toBe(200);
-    expect(receiptRes.json().id).toBe(json1.receiptId);
+    const receipt = receiptRes.json();
+    expect(receipt.id).toBe(json1.receiptId);
+    expect(receipt.rankedQuotes).toHaveLength(7);
+    expect(receipt.bestRawQuotes).toHaveLength(7);
+    expect(typeof receipt.beqRecommendedProviderId === 'string' || receipt.beqRecommendedProviderId === null).toBe(true);
+    expect(Array.isArray(receipt.whyWinner)).toBe(true);
+    expect(receipt.normalization?.assumptions?.priceModel).toBe('ratio_sell_buy');
   });
 
   it('GET /docs is available', async () => {
