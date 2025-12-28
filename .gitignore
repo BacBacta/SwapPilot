@@ -7,6 +7,12 @@ node_modules
 out
 dist
 
+# typescript incremental/build info
+**/*.tsbuildinfo
+
+# local data (receipts)
+**/.data/**
+
 # generated test artifacts (should not be committed)
 **/test/**/*.js
 **/test/**/*.d.ts

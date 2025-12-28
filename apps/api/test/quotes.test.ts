@@ -25,6 +25,13 @@ describe('Option 1 API', () => {
     const json2 = res2.json();
 
     expect(json1.receiptId).toBe(json2.receiptId);
+    expect(json1.rankedQuotes).toHaveLength(7);
+    expect(json2.rankedQuotes).toHaveLength(7);
+
+    const ids = json1.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    expect(ids).toEqual(
+      ['1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'okx-dex', 'pancakeswap'].sort(),
+    );
 
     const receiptRes = await app.inject({
       method: 'GET',

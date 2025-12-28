@@ -13,7 +13,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@swappilot/adapters": "workspace:*",
     "@swappilot/config": "workspace:*",
+    "@swappilot/deeplinks": "workspace:*",
     "@swappilot/shared": "workspace:*",
     "@fastify/swagger": "^9.5.1",
     "@fastify/swagger-ui": "^5.2.3",

@@ -7,6 +7,9 @@ import {
   type DecisionReceipt,
 } from '@swappilot/shared';
 
+import { getEnabledProviders } from '@swappilot/adapters';
+import { deepLinkBuilder } from '@swappilot/deeplinks';
+
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
@@ -24,26 +27,33 @@ export function quoteRequestHash(input: QuoteRequest): string {
 export function buildDeterministicMockQuote(request: QuoteRequest): {
   receiptId: string;
   rankedQuotes: RankedQuote[];
-  bestExecutableQuoteProviderId: string;
-  bestRawOutputProviderId: string;
+  bestExecutableQuoteProviderId: string | null;
+  bestRawOutputProviderId: string | null;
   receipt: DecisionReceipt;
 } {
   const hash = quoteRequestHash(request);
   const receiptId = `rcpt_${hash.slice(0, 24)}`;
 
-  const base = BigInt('0x' + hash.slice(0, 12));
-  const buyAmount = (base % 10_000n + 1_000n).toString();
+  const enabledProviders = getEnabledProviders({ providers: request.providers });
 
-  const rankedQuotes: RankedQuote[] = [
-    {
-      providerId: 'mock',
-      sourceType: 'aggregator',
-      capabilities: { quote: true, buildTx: false, deepLink: true },
+  const rankedQuotes: RankedQuote[] = enabledProviders.map((provider) => {
+    const providerHash = createHash('sha256').update(`${hash}:${provider.providerId}`).digest('hex');
+    const base = BigInt('0x' + providerHash.slice(0, 12));
+
+    const isDeepLinkOnly = provider.capabilities.quote === false;
+    const buyAmount = isDeepLinkOnly ? '0' : (base % 10_000n + 1_000n).toString();
+
+    const deepLink = deepLinkBuilder(provider.providerId, request);
+
+    return {
+      providerId: provider.providerId,
+      sourceType: provider.category === 'dex' ? 'dex' : 'aggregator',
+      capabilities: provider.capabilities,
       raw: {
         sellAmount: request.sellAmount,
         buyAmount,
-        estimatedGas: 210000,
-        feeBps: 30,
+        estimatedGas: isDeepLinkOnly ? null : 210000,
+        feeBps: isDeepLinkOnly ? null : 30,
         route: [request.sellToken, request.buyToken],
       },
       normalized: {
@@ -55,25 +65,42 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
       signals: {
         sellability: {
           status: 'UNCERTAIN',
-          confidence: 0.5,
-          reasons: ['mock_only'],
+          confidence: isDeepLinkOnly ? 0.9 : 0.2,
+          reasons: isDeepLinkOnly
+            ? ['deep_link_only_quote_not_available']
+            : ['stub_quote_integration_not_implemented'],
         },
-        revertRisk: { level: 'MEDIUM', reasons: ['mock_only'] },
-        mevExposure: { level: 'MEDIUM', reasons: ['mock_only'] },
-        churn: { level: 'LOW', reasons: ['deterministic_mock'] },
+        revertRisk: { level: 'MEDIUM', reasons: ['stub_only'] },
+        mevExposure: { level: 'MEDIUM', reasons: ['stub_only'] },
+        churn: { level: 'LOW', reasons: ['registry_based'] },
         preflight: { ok: true, reasons: [] },
       },
       score: {
         beqScore: Number(base % 1000n),
         rawOutputRank: 0,
       },
-      deepLink: `https://example.com/swap?sell=${request.sellToken}&buy=${request.buyToken}&amount=${request.sellAmount}`,
-    },
-  ];
+      deepLink: deepLink.url,
+    };
+  });
 
-  const first = rankedQuotes[0]!;
-  const bestExecutableQuoteProviderId = first.providerId;
-  const bestRawOutputProviderId = first.providerId;
+  const byRawOutput = [...rankedQuotes].sort((a, b) => {
+    const aAmt = BigInt(a.raw.buyAmount);
+    const bAmt = BigInt(b.raw.buyAmount);
+    if (aAmt === bAmt) return a.providerId.localeCompare(b.providerId);
+    return aAmt > bAmt ? -1 : 1;
+  });
+
+  for (const [index, quote] of byRawOutput.entries()) {
+    quote.score.rawOutputRank = index;
+  }
+
+  const bestRawOutputProviderId = BigInt(byRawOutput[0]?.raw.buyAmount ?? '0') > 0n ? byRawOutput[0]!.providerId : null;
+
+  const executable = rankedQuotes.find((q) => q.capabilities.buildTx);
+  const bestExecutableQuoteProviderId = executable ? executable.providerId : null;
+
+  // Return quotes ranked by raw output for now.
+  const rankedByOutput = byRawOutput;
 
   const receipt: DecisionReceipt = {
     id: receiptId,
@@ -81,17 +108,26 @@ export function buildDeterministicMockQuote(request: QuoteRequest): {
     request,
     bestExecutableQuoteProviderId,
     bestRawOutputProviderId,
-    rankedQuotes,
+    rankedQuotes: rankedByOutput,
     ranking: {
       mode: request.mode ?? 'NORMAL',
-      rationale: ['mock_quote_selected'],
+      rationale: [
+        'registry_providers_enumerated',
+        bestExecutableQuoteProviderId ? 'beq_executable_present' : 'beq_no_executable_quotes',
+        bestRawOutputProviderId ? 'best_raw_output_selected' : 'no_quotes_available',
+      ],
     },
-    warnings: ['mock_only_no_provider_integrations'],
+    warnings: [
+      'stub_only_no_live_integrations',
+      ...rankedByOutput
+        .filter((q) => q.capabilities.quote === false)
+        .map((q) => `deep_link_only:${q.providerId}`),
+    ],
   };
 
   return {
     receiptId,
-    rankedQuotes,
+    rankedQuotes: rankedByOutput,
     bestExecutableQuoteProviderId,
     bestRawOutputProviderId,
     receipt,
