@@ -1,0 +1,19 @@
+node_modules
+.pnpm-store
+.turbo
+
+# build outputs
+.next
+out
+dist
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+
+# OS
+.DS_Store
