@@ -8,8 +8,31 @@
 
 ## Current status
 - Registry entry exists as providerId `pancakeswap` (category: DEX).
-- Capabilities today: `quote=false`, `buildTx=false`, `deepLink=true`.
+- Capabilities by default: `quote=false`, `buildTx=false`, `deepLink=true`.
 - Deep-link builder is implemented in `packages/deeplinks`.
+
+## Enabling on-chain quotes (BNB Chain)
+SwapPilot can turn PancakeSwap into a real quote source (not deep-link only) when you configure known contract addresses.
+
+### v2 quoting (Router.getAmountsOut)
+When enabled, the adapter calls `eth_call` on the Router function `getAmountsOut(amountIn, path)` (no transactions) and returns the last element of the `amounts[]` array as `buyAmount`.
+
+Config (env):
+- `BSC_RPC_URLS`: comma-separated allowlist of RPC endpoints (SwapPilot uses the first URL for PancakeSwap quoting)
+- `PANCAKESWAP_V2_ROUTER`: Router contract address (required to enable v2 quoting)
+- `PANCAKESWAP_QUOTE_TIMEOUT_MS`: RPC timeout for quoting (default: 2000ms)
+
+Notes / limitations (current implementation):
+- Chain: only `chainId=56` (BNB Chain).
+- Path: direct path only (`[sellToken, buyToken]`), no multi-hop.
+- Tokens: requires ERC-20 addresses for `sellToken` and `buyToken` (native BNB wrapping is not handled yet).
+- If config is missing/invalid or RPC reverts/errors, SwapPilot falls back to deep-link only for PancakeSwap.
+
+### v3 quoting (Quoter)
+v3 quoting is not implemented yet.
+
+Config placeholder (env):
+- `PANCAKESWAP_V3_QUOTER`: Quoter contract address (currently unused)
 
 ## Deep-link
 Goal: send the user to PancakeSwap swap page with tokens + amount prefilled.
