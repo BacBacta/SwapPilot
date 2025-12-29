@@ -36,7 +36,7 @@ const noopLogger: Logger = {
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-export function buildDeterministicMockQuote(
+export function buildQuotes(
   request: QuoteRequest,
   deps: {
     preflightClient: PreflightClient;
@@ -56,10 +56,10 @@ export function buildDeterministicMockQuote(
   beqRecommendedProviderId: string | null;
   receipt: DecisionReceipt;
 }> {
-  return buildDeterministicMockQuoteImpl(request, deps);
+  return buildQuotesImpl(request, deps);
 }
 
-async function buildDeterministicMockQuoteImpl(
+async function buildQuotesImpl(
   request: QuoteRequest,
   deps: {
     preflightClient: PreflightClient;
@@ -365,7 +365,6 @@ async function buildDeterministicMockQuoteImpl(
       ],
     },
     warnings: [
-      'stub_only_no_live_integrations',
       ...ranked.bestRawQuotes
         .filter((q) => q.capabilities.quote === false)
         .map((q) => `deep_link_only:${q.providerId}`),

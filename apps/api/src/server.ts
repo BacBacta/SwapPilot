@@ -33,7 +33,7 @@ import {
   type Adapter,
 } from '@swappilot/adapters';
 
-import { buildDeterministicMockQuote } from './mock';
+import { buildQuotes } from './quoteBuilder';
 import { FileReceiptStore } from './store/fileReceiptStore';
 import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
 
@@ -256,7 +256,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         bestRawOutputProviderId,
         beqRecommendedProviderId,
         receipt,
-      } = await buildDeterministicMockQuote(request.body, {
+      } = await buildQuotes(request.body, {
         preflightClient,
         riskEngine,
         adapters,
