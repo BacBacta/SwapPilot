@@ -8,6 +8,7 @@ import { Button, Pill } from "@/components/ui/primitives";
 import { TokenImage, TOKEN_ICONS } from "@/components/ui/token-image";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/use-token-prices";
+import { useFavorites, FavoriteButton } from "@/lib/use-favorites";
 
 /* ========================================
    TOKEN DATA
@@ -41,9 +42,10 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
   const [mounted, setMounted] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Hooks for balances and prices
+  // Hooks for balances, prices, and favorites
   const { getBalanceFormatted, isConnected } = useTokenBalances();
   const { getPrice, formatUsd } = useTokenPrices();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   // Enrich tokens with balances and USD values
   const enrichedTokens = useMemo(() => {
@@ -63,11 +65,21 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
   }, [getBalanceFormatted, getPrice, isConnected]);
 
   // Filter tokens
-  const filteredTokens = enrichedTokens.filter(
-    (t) =>
-      t.symbol.toLowerCase().includes(search.toLowerCase()) ||
-      t.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTokens = useMemo(() => {
+    const filtered = enrichedTokens.filter(
+      (t) =>
+        t.symbol.toLowerCase().includes(search.toLowerCase()) ||
+        t.name.toLowerCase().includes(search.toLowerCase())
+    );
+    // Sort: favorites first, then by symbol
+    return filtered.sort((a, b) => {
+      const aFav = isFavorite(a.symbol);
+      const bFav = isFavorite(b.symbol);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0;
+    });
+  }, [enrichedTokens, search, isFavorite]);
 
   // Mount check for portal
   useEffect(() => {
@@ -157,6 +169,37 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
           </div>
         </div>
 
+        {/* Favorites */}
+        {favorites.length > 0 && (
+          <div className="border-b border-sp-lightBorder px-5 py-3">
+            <div className="flex items-center gap-2 text-micro font-medium text-sp-accent">
+              <StarIcon className="h-3.5 w-3.5" />
+              Favorites
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {favorites.map((symbol) => {
+                const token = TOKENS.find((t) => t.symbol === symbol);
+                if (!token) return null;
+                return (
+                  <button
+                    key={symbol}
+                    onClick={() => onSelect(symbol)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border px-3 py-2 transition",
+                      selectedToken === symbol
+                        ? "border-sp-accent bg-sp-accent/10"
+                        : "border-sp-accent/30 bg-sp-accent/5 hover:border-sp-accent hover:bg-sp-accent/10"
+                    )}
+                  >
+                    <TokenImage symbol={symbol} size="sm" />
+                    <span className="text-caption font-semibold text-sp-lightText">{symbol}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Token list */}
         <div className="max-h-80 overflow-y-auto p-2">
           {filteredTokens.length === 0 ? (
@@ -165,9 +208,8 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
             </div>
           ) : (
             filteredTokens.map((token) => (
-              <button
+              <div
                 key={token.symbol}
-                onClick={() => onSelect(token.symbol)}
                 className={cn(
                   "flex w-full items-center justify-between rounded-xl px-3 py-3 transition",
                   selectedToken === token.symbol
@@ -175,23 +217,37 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                     : "hover:bg-sp-lightSurface2"
                 )}
               >
-                <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onSelect(token.symbol)}
+                  className="flex flex-1 items-center gap-3"
+                >
                   <TokenImage symbol={token.symbol} size="xl" />
                   <div className="text-left">
                     <div className="flex items-center gap-2">
                       <span className="text-body font-semibold text-sp-lightText">{token.symbol}</span>
+                      {isFavorite(token.symbol) && (
+                        <Pill tone="accent" size="sm">⭐</Pill>
+                      )}
                       {selectedToken === token.symbol && (
                         <Pill tone="accent" size="sm">Selected</Pill>
                       )}
                     </div>
                     <div className="text-caption text-sp-lightMuted">{token.name}</div>
                   </div>
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-body font-semibold text-sp-lightText">{token.balance}</div>
+                    <div className="text-caption text-sp-lightMuted">{token.usd}</div>
+                  </div>
+                  <FavoriteButton
+                    symbol={token.symbol}
+                    isFavorite={isFavorite(token.symbol)}
+                    onToggle={toggleFavorite}
+                    size="sm"
+                  />
                 </div>
-                <div className="text-right">
-                  <div className="text-body font-semibold text-sp-lightText">{token.balance}</div>
-                  <div className="text-caption text-sp-lightMuted">{token.usd}</div>
-                </div>
-              </button>
+              </div>
             ))
           )}
         </div>
@@ -215,6 +271,14 @@ function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
     </svg>
   );
 }
