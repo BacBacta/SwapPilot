@@ -30,3 +30,7 @@ dist
 .DS_Store
 .vercel
 .env*.local
+
+# Temporary files
+swappilot-figma-ui.zip
+temp-ui-kit/
