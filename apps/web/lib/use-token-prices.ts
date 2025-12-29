@@ -53,29 +53,18 @@ let cachedPrices: TokenPrices = {};
 let lastFetchTime = 0;
 
 /* ========================================
-   FETCH PRICES FROM COINGECKO
+   FETCH PRICES VIA API ROUTE (avoids CORS)
    ======================================== */
 async function fetchPricesFromCoinGecko(symbols: string[]): Promise<TokenPrices> {
-  const ids = symbols
-    .map((s) => COINGECKO_IDS[s.toUpperCase()])
-    .filter(Boolean)
-    .join(",");
-
-  if (!ids) {
-    return {};
-  }
-
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-
-  const response = await fetch(url, {
+  // Use our API route to proxy CoinGecko requests (avoids CORS and rate limits)
+  const response = await fetch('/api/prices', {
     headers: {
       Accept: "application/json",
     },
-    next: { revalidate: 60 },
   });
 
   if (!response.ok) {
-    throw new Error(`CoinGecko API error: ${response.status}`);
+    throw new Error(`Prices API error: ${response.status}`);
   }
 
   const data = await response.json();
