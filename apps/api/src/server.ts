@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 
 import { z } from 'zod';
 
+import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import {
@@ -109,6 +110,20 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
       'request.end',
     );
+  });
+
+  // CORS - allow frontend to call API
+  app.register(cors, {
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      /\.vercel\.app$/,
+      /\.fly\.dev$/,
+      /swappilot\./,
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    credentials: true,
   });
 
   app.register(swagger, {
