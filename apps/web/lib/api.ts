@@ -9,12 +9,17 @@ import {
 } from '@swappilot/shared';
 import { bestExecutable } from './mock';
 
-// Check if we should use mock data (no API URL configured or explicitly enabled)
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true' || 
-  (!process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_BASE_URL);
+// Production API URL
+const PRODUCTION_API_URL = 'https://swappilot-api.fly.dev';
+
+// Check if we should use mock data (explicitly enabled only)
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 function getApiBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+  // Use environment variable if set, otherwise use production URL in prod, localhost in dev
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? 
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? 
+    (process.env.NODE_ENV === 'production' ? PRODUCTION_API_URL : 'http://localhost:3001');
   return raw.endsWith('/') ? raw.slice(0, -1) : raw;
 }
 
