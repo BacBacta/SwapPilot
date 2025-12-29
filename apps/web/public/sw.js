@@ -1,8 +1,9 @@
-/// <reference lib="webworker" />
+/* eslint-disable no-restricted-globals */
+"use strict";
 
-const CACHE_NAME = "swappilot-v1";
-const STATIC_CACHE = "swappilot-static-v1";
-const DYNAMIC_CACHE = "swappilot-dynamic-v1";
+const CACHE_NAME = "swappilot-v2";
+const STATIC_CACHE = "swappilot-static-v2";
+const DYNAMIC_CACHE = "swappilot-dynamic-v2";
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -122,5 +123,3 @@ self.addEventListener("message", (event) => {
   }
 });
 
-// Type declarations for ServiceWorker
-declare const self: ServiceWorkerGlobalScope;
