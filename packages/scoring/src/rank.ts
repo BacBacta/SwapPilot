@@ -1,4 +1,4 @@
-import type { NormalizationAssumptions, QuoteMode, RankedQuote } from '@swappilot/shared';
+import type { NormalizationAssumptions, QuoteMode, RankedQuote, ScoringOptions } from '@swappilot/shared';
 
 import type { ProviderMeta } from '@swappilot/adapters';
 
@@ -17,6 +17,7 @@ export function rankQuotes(input: {
   providerMeta: Map<string, ProviderMeta>;
   quotes: RankedQuote[];
   assumptions: NormalizationAssumptions;
+  scoringOptions?: ScoringOptions;
 }): RankResult {
   const scored = input.quotes.map((q) => {
     const meta = input.providerMeta.get(q.providerId);
@@ -30,6 +31,7 @@ export function rankQuotes(input: {
       integrationConfidence,
       signals: q.signals,
       mode: input.mode,
+      scoringOptions: input.scoringOptions,
     });
 
     return { quote: q, score };

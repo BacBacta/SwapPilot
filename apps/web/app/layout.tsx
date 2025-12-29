@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { AppShell } from '@/components/layout/app-shell';
 import { Web3Provider } from '@/components/providers/web3-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { SettingsProvider } from '@/components/providers/settings-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import './globals.css';
 
@@ -37,11 +38,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="fr" suppressHydrationWarning>
       <body className="min-h-screen bg-sp-bg text-sp-text">
         <ThemeProvider>
-          <Web3Provider>
-            <ToastProvider>
-              <AppShell>{children}</AppShell>
-            </ToastProvider>
-          </Web3Provider>
+          <SettingsProvider>
+            <Web3Provider>
+              <ToastProvider>
+                <AppShell>{children}</AppShell>
+              </ToastProvider>
+            </Web3Provider>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

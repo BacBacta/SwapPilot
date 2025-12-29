@@ -1,4 +1,4 @@
-import type { QuoteMode, RiskSignals } from '@swappilot/shared';
+import type { QuoteMode, RiskSignals, ScoringOptions } from '@swappilot/shared';
 
 export type ScoringComponents = {
   netOut: bigint;
@@ -14,11 +14,13 @@ export type WhyRule =
   | 'sellability_ok'
   | 'sellability_uncertain'
   | 'sellability_fail'
+  | 'sellability_check_disabled'
   | 'preflight_ok'
   | 'preflight_failed'
   | 'risk_low'
   | 'risk_medium'
   | 'risk_high'
+  | 'mev_scoring_disabled'
   | 'integration_confidence'
   | 'deep_link_only'
   | 'ranked_by_beq'
@@ -31,6 +33,7 @@ export type ScoreInput = {
   integrationConfidence: number; // 0..1
   signals: RiskSignals;
   mode: QuoteMode;
+  scoringOptions?: ScoringOptions | undefined;
 };
 
 export type ScoreOutput = {

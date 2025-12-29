@@ -334,6 +334,7 @@ async function buildQuotesImpl(
     providerMeta,
     quotes: resolvedQuotes,
     assumptions,
+    scoringOptions: parsed.scoringOptions,
   });
 
   const bestRawOutputProviderId =

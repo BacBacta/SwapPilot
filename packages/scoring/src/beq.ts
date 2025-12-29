@@ -1,4 +1,4 @@
-import type { QuoteMode, RiskSignals } from '@swappilot/shared';
+import type { QuoteMode, RiskSignals, ScoringOptions } from '@swappilot/shared';
 
 import type { ScoreInput, ScoreOutput, WhyRule } from './types';
 
@@ -8,8 +8,14 @@ function clamp01(value: number): number {
   return value;
 }
 
-function riskPenaltyFromSignals(mode: QuoteMode, signals: RiskSignals): { penalty: number; why: WhyRule[] } {
-  const levels = [signals.revertRisk.level, signals.mevExposure.level, signals.churn.level];
+function riskPenaltyFromSignals(
+  mode: QuoteMode,
+  signals: RiskSignals,
+  options?: ScoringOptions,
+): { penalty: number; why: WhyRule[] } {
+  // If MEV-aware scoring is disabled, ignore MEV exposure
+  const mevLevel = options?.mevAwareScoring === false ? 'LOW' : signals.mevExposure.level;
+  const levels = [signals.revertRisk.level, mevLevel, signals.churn.level];
   const worst = levels.includes('HIGH') ? 'HIGH' : levels.includes('MEDIUM') ? 'MEDIUM' : 'LOW';
 
   const base = worst === 'LOW' ? 1 : worst === 'MEDIUM' ? 0.8 : 0.5;
@@ -18,10 +24,22 @@ function riskPenaltyFromSignals(mode: QuoteMode, signals: RiskSignals): { penalt
   const penalty = mode === 'SAFE' && worst === 'HIGH' ? 0.3 : base;
 
   const why: WhyRule[] = worst === 'LOW' ? ['risk_low'] : worst === 'MEDIUM' ? ['risk_medium'] : ['risk_high'];
+  if (options?.mevAwareScoring === false) {
+    why.push('mev_scoring_disabled');
+  }
   return { penalty, why };
 }
 
-function sellFactorFromSignals(mode: QuoteMode, signals: RiskSignals): { factor: number; disqualified: boolean; why: WhyRule[] } {
+function sellFactorFromSignals(
+  mode: QuoteMode,
+  signals: RiskSignals,
+  options?: ScoringOptions,
+): { factor: number; disqualified: boolean; why: WhyRule[] } {
+  // If sellability check is disabled, treat all as OK
+  if (options?.sellabilityCheck === false) {
+    return { factor: 1, disqualified: false, why: ['sellability_check_disabled'] };
+  }
+
   const status = signals.sellability.status;
 
   if (status === 'OK') return { factor: 1, disqualified: false, why: ['sellability_ok'] };
@@ -76,10 +94,10 @@ export function computeBeqScore(input: ScoreInput): ScoreOutput {
     }
   }
 
-  const { factor: sellFactor, disqualified, why: whySell } = sellFactorFromSignals(input.mode, input.signals);
+  const { factor: sellFactor, disqualified, why: whySell } = sellFactorFromSignals(input.mode, input.signals, input.scoringOptions);
   why.push(...whySell);
 
-  const { penalty: riskPenalty, why: whyRisk } = riskPenaltyFromSignals(input.mode, input.signals);
+  const { penalty: riskPenalty, why: whyRisk } = riskPenaltyFromSignals(input.mode, input.signals, input.scoringOptions);
   why.push(...whyRisk);
 
   const reliability = clamp01(input.integrationConfidence);

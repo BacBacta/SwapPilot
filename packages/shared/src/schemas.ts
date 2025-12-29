@@ -25,6 +25,14 @@ export type ProviderCapabilities = z.infer<typeof ProviderCapabilitiesSchema>;
 export const QuoteModeSchema = z.enum(['SAFE', 'NORMAL', 'DEGEN']);
 export type QuoteMode = z.infer<typeof QuoteModeSchema>;
 
+export const ScoringOptionsSchema = z.object({
+  sellabilityCheck: z.boolean().optional(),
+  mevAwareScoring: z.boolean().optional(),
+  canonicalPoolsOnly: z.boolean().optional(),
+});
+
+export type ScoringOptions = z.infer<typeof ScoringOptionsSchema>;
+
 export const QuoteRequestSchema = z.object({
   chainId: z.number().int().positive(),
   sellToken: AddressSchema,
@@ -34,6 +42,7 @@ export const QuoteRequestSchema = z.object({
   account: AddressSchema.optional(),
   providers: z.array(z.string().min(1)).optional(),
   mode: QuoteModeSchema.optional(),
+  scoringOptions: ScoringOptionsSchema.optional(),
 });
 
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>;

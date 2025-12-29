@@ -19,6 +19,7 @@ import {
   formatBigIntString,
   shortAddress,
 } from '../../lib/format';
+import { useSettings } from '../../components/providers/settings-provider';
 
 type ProviderOption = { id: string; label: string };
 
@@ -221,12 +222,18 @@ function ProviderCard(params: {
 }
 
 export function SwapClient() {
+  const { settings, updateSettings } = useSettings();
+  
   const [sellToken, setSellToken] = useState('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
   const [buyToken, setBuyToken] = useState('0x0000000000000000000000000000000000000002');
   const [sellAmount, setSellAmount] = useState('1000000000000000000');
 
-  const [mode, setMode] = useState<QuoteMode>('NORMAL');
-  const [slippageBps, setSlippageBps] = useState(100);
+  // Use settings from global context
+  const mode = settings.mode;
+  const slippageBps = settings.slippageBps;
+  const setMode = (m: QuoteMode) => updateSettings({ mode: m });
+  const setSlippageBps = (bps: number) => updateSettings({ slippageBps: bps });
+  
   const [account, setAccount] = useState('');
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -266,6 +273,11 @@ export function SwapClient() {
         sellAmount,
         slippageBps,
         mode,
+        scoringOptions: {
+          sellabilityCheck: settings.sellabilityCheck,
+          mevAwareScoring: settings.mevAwareScoring,
+          canonicalPoolsOnly: settings.canonicalPoolsOnly,
+        },
         ...(account.trim() ? { account: account.trim() } : {}),
         ...(!allEnabled ? { providers: enabledProviderIds } : {}),
       };
