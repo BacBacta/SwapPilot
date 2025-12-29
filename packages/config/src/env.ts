@@ -33,7 +33,7 @@ export const EnvSchema = z.object({
 
   // RPC / Preflight
   // Comma-separated list of BSC (BNB Chain) JSON-RPC endpoints.
-  BSC_RPC_URLS: z.string().default(''),
+  BSC_RPC_URLS: z.string().default('https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io,https://bsc-dataseed1.ninicoin.io'),
   RPC_QUORUM: z.coerce.number().int().min(1).max(5).default(2),
   RPC_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(2_500),
   RPC_ENABLE_TRACE: z
@@ -52,7 +52,7 @@ export const EnvSchema = z.object({
 
   // PancakeSwap (DEX) quoting
   // Leave empty to keep PancakeSwap deep-link only.
-  PANCAKESWAP_V2_ROUTER: z.string().default(''),
+  PANCAKESWAP_V2_ROUTER: z.string().default('0x10ED43C718714eb63d5aA57B78B54704E256024E'),
   PANCAKESWAP_V3_QUOTER: z.string().default(''),
   // Wrapped native token used for BNB (BSC mainnet WBNB by default).
   // Override if you run against a different chain/RPC.

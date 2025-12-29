@@ -41,7 +41,7 @@ export function buildDeterministicMockQuote(
   deps: {
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
-    pancakeSwapAdapter?: Adapter;
+    adapters?: Map<string, Adapter>;
     quoteCache?: QuoteCache;
     quoteCacheTtlSeconds?: number;
     logger?: Logger;
@@ -64,7 +64,7 @@ async function buildDeterministicMockQuoteImpl(
   deps: {
     preflightClient: PreflightClient;
     riskEngine: RiskEngine;
-    pancakeSwapAdapter?: Adapter;
+    adapters?: Map<string, Adapter>;
     quoteCache?: QuoteCache;
     quoteCacheTtlSeconds?: number;
     logger?: Logger;
@@ -88,10 +88,16 @@ async function buildDeterministicMockQuoteImpl(
   const quoteCache = deps.quoteCache;
   const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
-  const pancakeMeta = deps.pancakeSwapAdapter?.getProviderMeta();
-  const enabledProviders = getEnabledProviders({ providers: parsed.providers }).map((p) =>
-    p.providerId === 'pancakeswap' && pancakeMeta ? pancakeMeta : p,
-  );
+  const adapters = deps.adapters ?? new Map<string, Adapter>();
+
+  // Get enabled providers, replacing registry meta with adapter meta when available
+  const enabledProviders = getEnabledProviders({ providers: parsed.providers }).map((p) => {
+    const adapter = adapters.get(p.providerId);
+    if (adapter) {
+      return adapter.getProviderMeta();
+    }
+    return p;
+  });
   const providerMeta = new Map(enabledProviders.map((p) => [p.providerId, p] as const));
 
   const assumptions = defaultAssumptions();
@@ -112,8 +118,10 @@ async function buildDeterministicMockQuoteImpl(
     });
     const cacheKey = `swappilot:quote:${provider.providerId}:${cacheKeyBase}`;
 
-    const adapterQuotePromise =
-      provider.providerId === 'pancakeswap' && deps.pancakeSwapAdapter
+    // Get adapter for this provider if available
+    const providerAdapter = adapters.get(provider.providerId);
+
+    const adapterQuotePromise = providerAdapter
         ? (async () => {
             const providerId = provider.providerId;
             const start = process.hrtime.bigint();
@@ -153,7 +161,7 @@ async function buildDeterministicMockQuoteImpl(
               for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
                   log.info({ providerId, attempt }, 'provider.quote.start');
-                  const quote = await deps.pancakeSwapAdapter!.getQuote(parsed);
+                  const quote = await providerAdapter.getQuote(parsed);
 
                   const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
                   const status = quote.isStub || quote.capabilities.quote === false ? 'stub' : 'success';
@@ -167,6 +175,7 @@ async function buildDeterministicMockQuoteImpl(
                       durationMs,
                       buyAmount: quote.raw.buyAmount,
                       quoteEnabled: quote.capabilities.quote,
+                      warnings: quote.warnings?.length ? quote.warnings : undefined,
                     },
                     'provider.quote.end',
                   );
@@ -248,7 +257,7 @@ async function buildDeterministicMockQuoteImpl(
         reason: isDeepLinkOnly
           ? 'deep_link_only_quote_not_available'
           : adapterQuote && adapterQuote.isStub === false
-            ? 'pancakeswap_v2_onchain_quote'
+            ? `${item.provider.providerId}_live_quote`
             : 'stub_quote_integration_not_implemented',
       });
 

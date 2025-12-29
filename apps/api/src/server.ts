@@ -24,7 +24,14 @@ import { loadConfig, type AppConfig } from '@swappilot/config';
 import { createPreflightClient, type PreflightClient } from '@swappilot/preflight';
 import { createRiskEngine, type RiskEngine } from '@swappilot/risk';
 
-import { PancakeSwapDexAdapter, type Adapter } from '@swappilot/adapters';
+import {
+  PancakeSwapDexAdapter,
+  OneInchAdapter,
+  OkxDexAdapter,
+  KyberSwapAdapter,
+  ParaSwapAdapter,
+  type Adapter,
+} from '@swappilot/adapters';
 
 import { buildDeterministicMockQuote } from './mock';
 import { FileReceiptStore } from './store/fileReceiptStore';
@@ -194,6 +201,42 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       quoteTimeoutMs: config.pancakeswap.quoteTimeoutMs,
     });
 
+  // Create real adapters for all providers
+  const oneInchAdapter = new OneInchAdapter({
+    apiKey: process.env.ONEINCH_API_KEY ?? null,
+    chainId: 56,
+    timeoutMs: 10000,
+  });
+
+  const okxAdapter = new OkxDexAdapter({
+    apiKey: process.env.OKX_API_KEY ?? null,
+    secretKey: process.env.OKX_SECRET_KEY ?? null,
+    passphrase: process.env.OKX_PASSPHRASE ?? null,
+    chainId: 56,
+    timeoutMs: 10000,
+  });
+
+  const kyberSwapAdapter = new KyberSwapAdapter({
+    chainId: 56,
+    clientId: 'swappilot',
+    timeoutMs: 10000,
+  });
+
+  const paraSwapAdapter = new ParaSwapAdapter({
+    chainId: 56,
+    partner: 'swappilot',
+    timeoutMs: 10000,
+  });
+
+  // Create adapters map for the mock quote builder
+  const adapters = new Map<string, Adapter>([
+    ['pancakeswap', pancakeSwapAdapter],
+    ['1inch', oneInchAdapter],
+    ['okx-dex', okxAdapter],
+    ['kyberswap', kyberSwapAdapter],
+    ['paraswap', paraSwapAdapter],
+  ]);
+
   api.post(
     '/v1/quotes',
     {
@@ -216,7 +259,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       } = await buildDeterministicMockQuote(request.body, {
         preflightClient,
         riskEngine,
-        pancakeSwapAdapter,
+        adapters,
         quoteCache,
         quoteCacheTtlSeconds: config.redis.quoteCacheTtlSeconds,
         logger: request.log,

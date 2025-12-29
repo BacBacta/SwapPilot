@@ -3,3 +3,7 @@ export * from './errors';
 export * from './utils';
 export * from './registry';
 export * from './pancakeswapDexAdapter';
+export * from './oneInchAdapter';
+export * from './okxDexAdapter';
+export * from './kyberSwapAdapter';
+export * from './paraSwapAdapter';

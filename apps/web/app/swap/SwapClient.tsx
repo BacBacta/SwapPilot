@@ -130,7 +130,10 @@ function ProviderCard(params: {
   const pRevert = q.signals.preflight?.pRevert;
 
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
+    <div className={cn(
+      "rounded-lg border border-border bg-background p-4",
+      deepLinkOnly && "opacity-70"
+    )}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -141,6 +144,11 @@ function ProviderCard(params: {
             {params.isRawWinner ? (
               <span className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
                 Best Raw
+              </span>
+            ) : null}
+            {deepLinkOnly ? (
+              <span className="rounded-md bg-amber-100 dark:bg-amber-900 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200">
+                Deep-link only
               </span>
             ) : null}
           </div>
@@ -155,8 +163,8 @@ function ProviderCard(params: {
       </div>
 
       {deepLinkOnly ? (
-        <div className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-          Deep-link only: aucun quote direct disponible. Le classement reflète une estimation / stub.
+        <div className="mt-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+          🔗 Ce provider fonctionne uniquement via deep-link. Cliquez pour ouvrir dans l'app du provider.
         </div>
       ) : null}
 
