@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { WalletButton } from "@/components/wallet/wallet-button";
+import { ThemeToggle } from "@/components/providers/theme-provider";
+import { ChainSelector } from "@/components/swap/chain-selector";
+import { InstallBanner, OfflineIndicator, UpdatePrompt } from "@/lib/use-pwa";
 
 /* ========================================
    MOBILE BOTTOM NAVIGATION
@@ -62,14 +65,17 @@ export function DesktopSidebar() {
     <aside className="hidden h-screen w-64 shrink-0 border-r border-sp-border bg-sp-surface/50 md:block">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex items-center gap-3 border-b border-sp-border px-5 py-4">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-sp-accent font-bold text-black shadow-glow">
-            SP
+        <div className="flex items-center justify-between border-b border-sp-border px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sp-accent font-bold text-black shadow-glow">
+              SP
+            </div>
+            <div>
+              <div className="text-body font-semibold text-sp-text">SwapPilot</div>
+              <div className="text-micro text-sp-muted">Multi-Chain</div>
+            </div>
           </div>
-          <div>
-            <div className="text-body font-semibold text-sp-text">SwapPilot</div>
-            <div className="text-micro text-sp-muted">BNB Chain</div>
-          </div>
+          <ThemeToggle />
         </div>
 
         {/* Navigation */}
@@ -102,23 +108,14 @@ export function DesktopSidebar() {
 
         {/* Footer */}
         <div className="border-t border-sp-border p-4 space-y-3">
+          {/* Chain Selector */}
+          <div className="rounded-xl border border-sp-border bg-sp-surface2 p-3">
+            <div className="mb-2 text-micro font-medium text-sp-muted">Network</div>
+            <ChainSelector showLabel={true} />
+          </div>
+
           {/* Wallet Button */}
           <WalletButton className="w-full justify-center" />
-
-          {/* Network Info */}
-          <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-caption text-sp-muted">Network</span>
-              <span className="flex items-center gap-2 text-caption font-medium text-sp-ok">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-sp-ok" />
-                BNB Chain
-              </span>
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-caption text-sp-muted">Gas</span>
-              <span className="text-caption font-medium text-sp-text">5 Gwei</span>
-            </div>
-          </div>
         </div>
       </div>
     </aside>
@@ -139,7 +136,11 @@ export function MobileHeader() {
           <span className="text-body font-semibold text-sp-text">SwapPilot</span>
         </div>
 
-        <WalletButton showBalance={false} showChainStatus={false} />
+        <div className="flex items-center gap-2">
+          <ChainSelector compact showLabel={false} />
+          <ThemeToggle />
+          <WalletButton showBalance={false} showChainStatus={false} />
+        </div>
       </div>
     </header>
   );
@@ -154,7 +155,12 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-sp-bg">
+    <div className="min-h-screen bg-sp-bg theme-dark:bg-sp-bg theme-light:bg-sp-lightBg">
+      {/* PWA Components */}
+      <OfflineIndicator />
+      <UpdatePrompt />
+      <InstallBanner />
+
       {/* Mobile Header */}
       <MobileHeader />
 
