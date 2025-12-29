@@ -1,27 +1,28 @@
 "use client";
 
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { useState, useEffect } from "react";
+import { getDefaultConfig, RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { bsc, mainnet } from "wagmi/chains";
+import { bsc, mainnet, polygon, arbitrum, optimism, base } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
 
 /* ========================================
-   WAGMI CONFIG
+   WAGMI CONFIG - MULTI-CHAIN
    ======================================== */
 const config = getDefaultConfig({
   appName: "SwapPilot",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "demo",
-  chains: [bsc, mainnet],
+  chains: [bsc, mainnet, polygon, arbitrum, optimism, base],
   ssr: true,
 });
 
 const queryClient = new QueryClient();
 
 /* ========================================
-   CUSTOM RAINBOWKIT THEME
+   CUSTOM RAINBOWKIT THEMES
    ======================================== */
-const swapPilotTheme = darkTheme({
+const swapPilotDarkTheme = darkTheme({
   accentColor: "#F7C948",
   accentColorForeground: "#0B0F17",
   borderRadius: "large",
@@ -29,16 +30,37 @@ const swapPilotTheme = darkTheme({
   overlayBlur: "small",
 });
 
-// Override specific colors to match SwapPilot design
-const customTheme = {
-  ...swapPilotTheme,
+const swapPilotLightTheme = lightTheme({
+  accentColor: "#F7C948",
+  accentColorForeground: "#0B0F17",
+  borderRadius: "large",
+  fontStack: "system",
+  overlayBlur: "small",
+});
+
+// Override specific colors for dark theme
+const customDarkTheme = {
+  ...swapPilotDarkTheme,
   colors: {
-    ...swapPilotTheme.colors,
+    ...swapPilotDarkTheme.colors,
     modalBackground: "#0F1623",
     modalBorder: "rgba(255,255,255,0.08)",
     profileForeground: "#151D2E",
     connectButtonBackground: "#151D2E",
     connectButtonInnerBackground: "#1A2436",
+  },
+};
+
+// Override specific colors for light theme
+const customLightTheme = {
+  ...swapPilotLightTheme,
+  colors: {
+    ...swapPilotLightTheme.colors,
+    modalBackground: "#FFFFFF",
+    modalBorder: "rgba(18,25,38,0.08)",
+    profileForeground: "#F2F4F8",
+    connectButtonBackground: "#F2F4F8",
+    connectButtonInnerBackground: "#E8EBF0",
   },
 };
 
@@ -49,13 +71,46 @@ interface Web3ProviderProps {
   children: React.ReactNode;
 }
 
+function RainbowKitWrapper({ children }: Web3ProviderProps) {
+  const [isDark, setIsDark] = useState(true);
+
+  // Listen to theme changes via data-theme attribute
+  useEffect(() => {
+    const updateTheme = () => {
+      const theme = document.documentElement.getAttribute("data-theme");
+      setIsDark(theme !== "light");
+    };
+
+    // Initial check
+    updateTheme();
+
+    // Observe changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <RainbowKitProvider 
+      theme={isDark ? customDarkTheme : customLightTheme} 
+      modalSize="compact"
+    >
+      {children}
+    </RainbowKitProvider>
+  );
+}
+
 export function Web3Provider({ children }: Web3ProviderProps) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={customTheme} modalSize="compact">
+        <RainbowKitWrapper>
           {children}
-        </RainbowKitProvider>
+        </RainbowKitWrapper>
       </QueryClientProvider>
     </WagmiProvider>
   );

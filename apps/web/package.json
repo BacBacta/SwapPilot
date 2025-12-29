@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
+    "@swappilot/deeplinks": "workspace:*",
     "@swappilot/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.14",
     "class-variance-authority": "^0.7.1",
