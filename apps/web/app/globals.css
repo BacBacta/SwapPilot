@@ -5,6 +5,62 @@
 html, body { height: 100%; }
 body { font-family: ui-sans-serif, system-ui; }
 
+/* ========================================
+   THEME VARIABLES
+   ======================================== */
+
+/* Dark theme (default) */
+:root,
+.theme-dark,
+[data-theme="dark"] {
+  --sp-bg: #0B0F17;
+  --sp-surface: #0F1623;
+  --sp-surface2: #151D2E;
+  --sp-surface3: #1A2436;
+  --sp-border: rgba(255,255,255,.12);
+  --sp-border-hover: rgba(255,255,255,.20);
+  --sp-border-active: rgba(247,201,72,.5);
+  --sp-text: rgba(255,255,255,.95);
+  --sp-muted: rgba(255,255,255,.65);
+  --sp-muted2: rgba(255,255,255,.45);
+}
+
+/* Light theme */
+.theme-light,
+[data-theme="light"] {
+  --sp-bg: #F6F7FB;
+  --sp-surface: #FFFFFF;
+  --sp-surface2: #F2F4F8;
+  --sp-surface3: #E8EBF0;
+  --sp-border: rgba(18,25,38,.10);
+  --sp-border-hover: rgba(18,25,38,.18);
+  --sp-border-active: rgba(247,201,72,.5);
+  --sp-text: rgba(18,25,38,.95);
+  --sp-muted: rgba(18,25,38,.60);
+  --sp-muted2: rgba(18,25,38,.40);
+}
+
+/* Apply theme colors */
+.theme-dark body,
+[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 700px at 20% -10%, rgba(247,201,72,.22), transparent 55%),
+    radial-gradient(900px 600px at 95% 0%, rgba(77,142,255,.16), transparent 60%),
+    #0B0F17;
+  color: rgba(255,255,255,.95);
+}
+
+.theme-light body,
+[data-theme="light"] body {
+  background:
+    radial-gradient(1200px 700px at 20% -10%, rgba(247,201,72,.14), transparent 60%),
+    #F6F7FB;
+  color: rgba(18,25,38,.95);
+}
+
+/* ========================================
+   LEGACY BG CLASSES
+   ======================================== */
 .bg-dark {
   background:
     radial-gradient(1200px 700px at 20% -10%, rgba(247,201,72,.22), transparent 55%),
@@ -17,3 +73,46 @@ body { font-family: ui-sans-serif, system-ui; }
     radial-gradient(1200px 700px at 20% -10%, rgba(247,201,72,.14), transparent 60%),
     #F6F7FB;
 }
+
+/* ========================================
+   PWA SAFE AREA
+   ======================================== */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+  border-radius: 3px;
+}
+
+.theme-light ::-webkit-scrollbar-thumb,
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(18,25,38,.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,.25);
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(18,25,38,.25);
+}
+
