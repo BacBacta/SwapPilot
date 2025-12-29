@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      .s{stroke:#9ca3af;stroke-width:2;fill:#ffffff}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:16px;fill:#111827}
+      .m{font-size:13px;fill:#6b7280}
+      .h{font-size:20px;font-weight:600}
+      .k{fill:#f9fafb;stroke:#e5e7eb}
+    </style>
+  </defs>
+
+  <rect x="24" y="20" width="1392" height="72" rx="12" class="k" />
+  <text x="48" y="62" class="t h">SwapPilot — Wireframe C (Explainability‑First)</text>
+
+  <!-- Left: Quote selection -->
+  <rect x="24" y="112" width="640" height="764" rx="14" class="k" />
+  <text x="48" y="150" class="t h">Choisir une route</text>
+  <text x="48" y="178" class="m">Liste orientée “décision”: BEQ en premier, puis alternatives</text>
+
+  <rect x="48" y="206" width="592" height="104" rx="12" class="s" />
+  <text x="64" y="246" class="m">BEQ recommandé — Provider X</text>
+  <text x="64" y="272" class="m">Out / Fees / Risk / Confidence + Deep‑link</text>
+
+  <rect x="48" y="324" width="592" height="86" rx="12" class="s" />
+  <rect x="48" y="422" width="592" height="86" rx="12" class="s" />
+  <rect x="48" y="520" width="592" height="86" rx="12" class="s" />
+  <text x="64" y="372" class="m">Alternative</text>
+
+  <!-- Right: Receipt explanation -->
+  <rect x="688" y="112" width="728" height="764" rx="14" class="k" />
+  <text x="712" y="150" class="t h">Receipt / Explications</text>
+  <text x="712" y="178" class="m">Pourquoi cette route est “exécutable” (BEQ)</text>
+
+  <rect x="712" y="206" width="680" height="120" rx="12" class="s" />
+  <text x="728" y="242" class="m">Résumé: taxes, liquidity, gas, slippage, confidence</text>
+
+  <rect x="712" y="340" width="680" height="212" rx="12" class="s" />
+  <text x="728" y="376" class="m">Signals timeline: OK / UNCERTAIN / FAIL</text>
+  <text x="728" y="404" class="m">• Tax check</text>
+  <text x="728" y="430" class="m">• Sellability probe</text>
+  <text x="728" y="456" class="m">• Liquidity depth</text>
+
+  <rect x="712" y="566" width="680" height="140" rx="12" class="s" />
+  <text x="728" y="602" class="m">Numbers: Raw output vs BEQ output deltas</text>
+
+  <rect x="712" y="720" width="680" height="140" rx="12" class="s" />
+  <text x="728" y="756" class="m">CTA: Ouvrir sur provider / DEX (deep‑link)</text>
+</svg>

@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--callout:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .call{fill:var(--callout);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:22px;font-weight:800}
+      .h2{font-size:15px;font-weight:750}
+      .p{font-size:13px;fill:var(--fg)}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Editorial header -->
+  <rect class="panel" x="24" y="18" width="1392" height="82" rx="18"/>
+  <text class="t h1" x="48" y="54">SwapPilot Compare</text>
+  <text class="t m" x="48" y="78">Model 04 — Editorial • raconter la décision (BEQ) et ses raisons</text>
+  <rect class="card" x="1110" y="36" width="286" height="46" rx="16"/>
+  <text class="t m" x="1126" y="64">Wallet • Network • Settings</text>
+
+  <!-- Main -->
+  <rect class="panel" x="24" y="116" width="520" height="760" rx="18"/>
+  <rect class="panel" x="568" y="116" width="848" height="760" rx="18"/>
+
+  <!-- Left: inputs with labels -->
+  <text class="t h2" x="48" y="156">Paramètres</text>
+  <text class="t m" x="48" y="178">Choisis une paire, puis lis la décision.</text>
+
+  <text class="t m" x="48" y="214">Token In</text>
+  <rect class="card" x="48" y="222" width="472" height="50" rx="14"/>
+  <text class="t p" x="64" y="253">BNB</text>
+
+  <text class="t m" x="48" y="298">Amount</text>
+  <rect class="card" x="48" y="306" width="472" height="50" rx="14"/>
+  <text class="t p num" x="64" y="337">1.00</text>
+
+  <text class="t m" x="48" y="382">Token Out</text>
+  <rect class="card" x="48" y="390" width="472" height="50" rx="14"/>
+  <text class="t p" x="64" y="421">TOKEN</text>
+
+  <rect class="call" x="48" y="458" width="472" height="88" rx="14"/>
+  <text class="t h2" x="64" y="490">Ce que tu vas voir</text>
+  <text class="t m" x="64" y="512">BEQ ≠ meilleur output brut. BEQ privilégie l’exécutabilité.</text>
+
+  <rect class="card" x="48" y="564" width="472" height="54" rx="14"/>
+  <text class="t h2" x="64" y="598">Obtenir des quotes</text>
+
+  <text class="t h2" x="48" y="668">Receipt (aperçu)</text>
+  <rect class="card" x="48" y="680" width="472" height="196" rx="14"/>
+  <text class="t p" x="64" y="714">Pourquoi BEQ choisit Provider X</text>
+  <text class="t m" x="64" y="740">- Taxes détectées: faibles / gérables</text>
+  <text class="t m" x="64" y="762">- Sellability: incertain → pénalité</text>
+  <text class="t m" x="64" y="784">- Liquidité: suffisante</text>
+  <text class="t m" x="64" y="820">Conclusion: route plus sûre que la “raw best”.</text>
+
+  <!-- Right: compare as narrative cards -->
+  <text class="t h2" x="592" y="156">Comparer</text>
+  <text class="t m" x="592" y="178">Deux cartes + une liste, avec un ton “explicatif”.</text>
+
+  <rect class="card" x="592" y="204" width="400" height="170" rx="16"/>
+  <rect class="card" x="1010" y="204" width="382" height="170" rx="16"/>
+
+  <text class="t h2" x="612" y="238">BEQ recommandé</text>
+  <text class="t m" x="612" y="262">Provider X • exécutable</text>
+  <text class="t p num" x="612" y="296">Out 123,456.78</text>
+  <text class="t m" x="612" y="322">Risque: OK • Confiance: élevée</text>
+  <rect class="call" x="612" y="336" width="170" height="26" rx="13"/>
+  <text class="t m" x="626" y="354">Ouvrir (deep‑link)</text>
+
+  <text class="t h2" x="1030" y="238">Meilleur output brut</text>
+  <text class="t m" x="1030" y="262">Provider Y</text>
+  <text class="t p num" x="1030" y="296">Out 126,900.12</text>
+  <text class="t m" x="1030" y="322">Risque: incertain</text>
+  <rect class="call" x="1030" y="336" width="170" height="26" rx="13"/>
+  <text class="t m" x="1044" y="354">Ouvrir (deep‑link)</text>
+
+  <rect class="panel" x="592" y="392" width="800" height="44" rx="14"/>
+  <text class="t m" x="612" y="420">All quotes • Providers • DEX direct</text>
+
+  <rect class="card" x="592" y="452" width="800" height="86" rx="14"/>
+  <rect class="card" x="592" y="548" width="800" height="86" rx="14"/>
+  <rect class="card" x="592" y="644" width="800" height="86" rx="14"/>
+  <rect class="card" x="592" y="740" width="800" height="86" rx="14"/>
+  <text class="t p" x="612" y="498">Provider X — BEQ — Risk OK</text>
+  <text class="t m num" x="612" y="522">Out 123,456.78 • Fees 0.28%</text>
+
+  <text class="t p" x="612" y="594">Provider Y — Raw best — Risk UNC.</text>
+  <text class="t m num" x="612" y="618">Out 126,900.12 • Fees 0.35%</text>
+
+  <text class="t p" x="612" y="690">DEX direct — Risk OK</text>
+  <text class="t m num" x="612" y="714">Out 124,002.01 • Fees —</text>
+
+  <text class="t p" x="612" y="786">Provider Z — Risk FAIL</text>
+  <text class="t m num" x="612" y="810">Out 122,410.55 • Fees 0.22%</text>
+</svg>

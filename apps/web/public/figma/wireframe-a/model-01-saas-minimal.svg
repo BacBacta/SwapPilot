@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--chip:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .chip{fill:var(--chip);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:18px;font-weight:700}
+      .h2{font-size:14px;font-weight:700}
+      .m{font-size:12px;fill:var(--muted)}
+      .b{rx:14}
+      .r{rx:12}
+      .s{rx:10}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Header -->
+  <rect class="panel b" x="24" y="18" width="1392" height="68"/>
+  <text class="t h1" x="48" y="52">SwapPilot</text>
+  <text class="t m" x="48" y="70">Two‑Pane Compare • Model 01 — SaaS Minimal</text>
+  <rect class="card s" x="1128" y="34" width="268" height="36"/>
+  <text class="t m" x="1142" y="56">Wallet • BNB • Settings</text>
+
+  <!-- Columns -->
+  <rect class="panel b" x="24" y="104" width="520" height="772"/>
+  <rect class="panel b" x="568" y="104" width="848" height="772"/>
+
+  <!-- Left panel content -->
+  <text class="t h2" x="48" y="142">Paramètres</text>
+  <text class="t m" x="48" y="162">Token In / Token Out • Montant • Slippage</text>
+
+  <text class="t m" x="48" y="198">From</text>
+  <rect class="card r" x="48" y="206" width="472" height="44"/>
+  <text class="t m" x="62" y="232">BNB • 1.00</text>
+
+  <text class="t m" x="48" y="270">To</text>
+  <rect class="card r" x="48" y="278" width="472" height="44"/>
+  <text class="t m" x="62" y="304">TOKEN</text>
+
+  <rect class="card r" x="48" y="342" width="228" height="40"/>
+  <rect class="card r" x="292" y="342" width="228" height="40"/>
+  <text class="t m" x="62" y="368">Mode: SAFE</text>
+  <text class="t m" x="306" y="368">Slippage: 0.5%</text>
+
+  <rect class="card r" x="48" y="398" width="472" height="44"/>
+  <text class="t h2" x="62" y="426">Obtenir des quotes</text>
+
+  <text class="t h2" x="48" y="486">Résumé</text>
+  <rect class="card r" x="48" y="498" width="472" height="132"/>
+  <rect class="chip s" x="62" y="514" width="72" height="22"/>
+  <rect class="chip s" x="140" y="514" width="96" height="22"/>
+  <rect class="chip s" x="242" y="514" width="92" height="22"/>
+  <text class="t m" x="76" y="530">OK</text>
+  <text class="t m" x="154" y="530">High conf</text>
+  <text class="t m" x="256" y="530">Low MEV</text>
+  <text class="t h2" x="62" y="564">BEQ: Provider X</text>
+  <text class="t m num" x="62" y="586">Out est.  123,456.78</text>
+  <text class="t m" x="62" y="606">Receipt: fees, taxes, liquidity…</text>
+
+  <text class="t h2" x="48" y="686">Receipt (aperçu)</text>
+  <rect class="card r" x="48" y="698" width="472" height="178"/>
+  <text class="t m" x="62" y="726">1) Tax check: OK</text>
+  <text class="t m" x="62" y="748">2) Sellability: UNCERTAIN</text>
+  <text class="t m" x="62" y="770">3) Liquidity depth: OK</text>
+  <text class="t m" x="62" y="804">Decision: BEQ favorise la route exécutable.</text>
+
+  <!-- Right panel content -->
+  <text class="t h2" x="592" y="142">Comparer</text>
+  <text class="t m" x="592" y="162">BEQ vs Best Raw Output</text>
+
+  <rect class="card r" x="592" y="186" width="402" height="142"/>
+  <rect class="card r" x="1014" y="186" width="378" height="142"/>
+  <text class="t h2" x="612" y="214">BEQ</text>
+  <text class="t m" x="612" y="236">Provider X</text>
+  <text class="t m num" x="612" y="262">Out 123,456.78</text>
+  <rect class="chip s" x="612" y="278" width="66" height="22"/>
+  <rect class="chip s" x="682" y="278" width="96" height="22"/>
+  <text class="t m" x="628" y="294">OK</text>
+  <text class="t m" x="696" y="294">High conf</text>
+
+  <text class="t h2" x="1034" y="214">Raw</text>
+  <text class="t m" x="1034" y="236">Provider Y</text>
+  <text class="t m num" x="1034" y="262">Out 126,900.12</text>
+  <rect class="chip s" x="1034" y="278" width="92" height="22"/>
+  <text class="t m" x="1048" y="294">Best out</text>
+
+  <rect class="card r" x="592" y="346" width="800" height="44"/>
+  <text class="t m" x="612" y="374">Tabs: All quotes • Providers • DEX direct</text>
+
+  <!-- Table header -->
+  <rect class="card r" x="592" y="406" width="800" height="40"/>
+  <text class="t m" x="612" y="432">Provider</text>
+  <text class="t m" x="842" y="432">Out</text>
+  <text class="t m" x="980" y="432">Fees</text>
+  <text class="t m" x="1086" y="432">Risk</text>
+  <text class="t m" x="1186" y="432">Open</text>
+
+  <!-- Rows -->
+  <g>
+    <rect class="card r" x="592" y="456" width="800" height="56"/>
+    <rect class="card r" x="592" y="520" width="800" height="56"/>
+    <rect class="card r" x="592" y="584" width="800" height="56"/>
+    <rect class="card r" x="592" y="648" width="800" height="56"/>
+
+    <text class="t m" x="612" y="490">Provider X (BEQ)</text>
+    <text class="t m num" x="842" y="490">123,456.78</text>
+    <text class="t m num" x="980" y="490">0.28%</text>
+    <text class="t m" x="1086" y="490">OK</text>
+    <rect class="chip s" x="1186" y="472" width="80" height="24"/>
+    <text class="t m" x="1208" y="489">Open</text>
+
+    <text class="t m" x="612" y="554">Provider Y (Raw)</text>
+    <text class="t m num" x="842" y="554">126,900.12</text>
+    <text class="t m num" x="980" y="554">0.35%</text>
+    <text class="t m" x="1086" y="554">UNC.</text>
+    <rect class="chip s" x="1186" y="536" width="80" height="24"/>
+    <text class="t m" x="1208" y="553">Open</text>
+
+    <text class="t m" x="612" y="618">DEX direct</text>
+    <text class="t m num" x="842" y="618">124,002.01</text>
+    <text class="t m num" x="980" y="618">—</text>
+    <text class="t m" x="1086" y="618">OK</text>
+    <rect class="chip s" x="1186" y="600" width="80" height="24"/>
+    <text class="t m" x="1208" y="617">Open</text>
+
+    <text class="t m" x="612" y="682">Provider Z</text>
+    <text class="t m num" x="842" y="682">122,410.55</text>
+    <text class="t m num" x="980" y="682">0.22%</text>
+    <text class="t m" x="1086" y="682">FAIL</text>
+    <rect class="chip s" x="1186" y="664" width="80" height="24"/>
+    <text class="t m" x="1208" y="681">Open</text>
+  </g>
+
+  <!-- Footer note -->
+  <text class="t m" x="592" y="844">Composants: header, panel, cards, table, chips — palette neutre.</text>
+</svg>

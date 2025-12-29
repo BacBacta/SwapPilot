@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--zebra:#f3f4f6;--chip:#f9fafb}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .z{fill:var(--zebra);stroke:var(--border);stroke-width:1}
+      .chip{fill:var(--chip);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;fill:var(--fg)}
+      .h1{font-size:14px;font-weight:700}
+      .h2{font-size:12px;font-weight:700}
+      .m{font-size:11px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Dense header -->
+  <rect class="panel" x="16" y="14" width="1408" height="56" rx="10"/>
+  <text class="t h1" x="36" y="40">SWAPPILOT  |  MODEL 03  |  TERMINAL DENSE</text>
+  <text class="t m" x="36" y="58">A / Two‑Pane Compare • data‑dense layout</text>
+  <rect class="card" x="1110" y="26" width="296" height="32" rx="8"/>
+  <text class="t m" x="1124" y="47">WALLET: 0x…   NET: BNB   MODE: SAFE</text>
+
+  <!-- Columns -->
+  <rect class="panel" x="16" y="86" width="520" height="800" rx="10"/>
+  <rect class="panel" x="552" y="86" width="872" height="800" rx="10"/>
+
+  <!-- Left -->
+  <text class="t h2" x="36" y="118">INPUTS</text>
+  <rect class="card" x="36" y="130" width="480" height="34" rx="8"/>
+  <text class="t m" x="50" y="152">FROM: BNB  AMOUNT: 1.00</text>
+
+  <rect class="card" x="36" y="174" width="480" height="34" rx="8"/>
+  <text class="t m" x="50" y="196">TO: TOKEN</text>
+
+  <rect class="card" x="36" y="218" width="236" height="30" rx="8"/>
+  <rect class="card" x="280" y="218" width="236" height="30" rx="8"/>
+  <text class="t m" x="50" y="238">SLIP: 0.5%</text>
+  <text class="t m" x="294" y="238">TIMEOUT: 1200ms</text>
+
+  <rect class="z" x="36" y="260" width="480" height="36" rx="8"/>
+  <text class="t h2" x="50" y="284">RUN QUOTES</text>
+
+  <text class="t h2" x="36" y="334">SUMMARY</text>
+  <rect class="card" x="36" y="346" width="480" height="96" rx="10"/>
+  <text class="t m" x="50" y="372">BEQ: PROVIDER X</text>
+  <text class="t m num" x="50" y="392">OUT: 123456.78   FEES: 0.28%</text>
+  <text class="t m" x="50" y="412">RISK: OK   CONF: HIGH   MEV: LOW</text>
+
+  <text class="t h2" x="36" y="478">RECEIPT (PREVIEW)</text>
+  <rect class="card" x="36" y="490" width="480" height="174" rx="10"/>
+  <text class="t m" x="50" y="516">01 TAX_CHECK      OK</text>
+  <text class="t m" x="50" y="536">02 SELLABILITY     UNCERTAIN</text>
+  <text class="t m" x="50" y="556">03 LIQUIDITY_DEPTH OK</text>
+  <text class="t m" x="50" y="590">DECISION: EXECUTABLE PATH WINS</text>
+
+  <!-- Right -->
+  <text class="t h2" x="572" y="118">COMPARE</text>
+  <rect class="card" x="572" y="130" width="416" height="88" rx="10"/>
+  <rect class="card" x="1002" y="130" width="402" height="88" rx="10"/>
+  <text class="t m" x="586" y="156">BEQ  PROVIDER X</text>
+  <text class="t m num" x="586" y="176">OUT 123456.78  FEES 0.28%</text>
+  <text class="t m" x="586" y="196">RISK OK  CONF HIGH</text>
+
+  <text class="t m" x="1016" y="156">RAW  PROVIDER Y</text>
+  <text class="t m num" x="1016" y="176">OUT 126900.12  FEES 0.35%</text>
+  <text class="t m" x="1016" y="196">RISK UNC</text>
+
+  <rect class="z" x="572" y="232" width="832" height="34" rx="8"/>
+  <text class="t m" x="586" y="254">TABS: ALL | PROVIDERS | DEX_DIRECT</text>
+
+  <!-- Dense table -->
+  <rect class="card" x="572" y="278" width="832" height="36" rx="8"/>
+  <text class="t m" x="586" y="302">PROVIDER</text>
+  <text class="t m" x="872" y="302">OUT</text>
+  <text class="t m" x="1030" y="302">FEES</text>
+  <text class="t m" x="1140" y="302">RISK</text>
+  <text class="t m" x="1230" y="302">OPEN</text>
+
+  <rect class="z" x="572" y="322" width="832" height="40" rx="8"/>
+  <rect class="card" x="572" y="364" width="832" height="40" rx="8"/>
+  <rect class="z" x="572" y="406" width="832" height="40" rx="8"/>
+  <rect class="card" x="572" y="448" width="832" height="40" rx="8"/>
+  <rect class="z" x="572" y="490" width="832" height="40" rx="8"/>
+
+  <text class="t m" x="586" y="348">PROVIDER X (BEQ)</text>
+  <text class="t m num" x="872" y="348">123456.78</text>
+  <text class="t m num" x="1030" y="348">0.28%</text>
+  <text class="t m" x="1140" y="348">OK</text>
+  <text class="t m" x="1230" y="348">OPEN</text>
+
+  <text class="t m" x="586" y="390">PROVIDER Y (RAW)</text>
+  <text class="t m num" x="872" y="390">126900.12</text>
+  <text class="t m num" x="1030" y="390">0.35%</text>
+  <text class="t m" x="1140" y="390">UNC</text>
+  <text class="t m" x="1230" y="390">OPEN</text>
+
+  <text class="t m" x="586" y="432">DEX DIRECT</text>
+  <text class="t m num" x="872" y="432">124002.01</text>
+  <text class="t m num" x="1030" y="432">—</text>
+  <text class="t m" x="1140" y="432">OK</text>
+  <text class="t m" x="1230" y="432">OPEN</text>
+
+  <text class="t m" x="586" y="474">PROVIDER Z</text>
+  <text class="t m num" x="872" y="474">122410.55</text>
+  <text class="t m num" x="1030" y="474">0.22%</text>
+  <text class="t m" x="1140" y="474">FAIL</text>
+  <text class="t m" x="1230" y="474">OPEN</text>
+
+  <text class="t m" x="586" y="516">PROVIDER Q</text>
+  <text class="t m num" x="872" y="516">121998.10</text>
+  <text class="t m num" x="1030" y="516">0.18%</text>
+  <text class="t m" x="1140" y="516">OK</text>
+  <text class="t m" x="1230" y="516">OPEN</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <style>
+      .s{stroke:#9ca3af;stroke-width:2;fill:#ffffff}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:14px;fill:#111827}
+      .m{font-size:12px;fill:#6b7280}
+      .h{font-size:16px;font-weight:600}
+      .k{fill:#f9fafb;stroke:#e5e7eb}
+    </style>
+  </defs>
+
+  <rect x="14" y="16" width="362" height="56" rx="14" class="k" />
+  <text x="28" y="50" class="t h">Wireframe B</text>
+  <text x="150" y="50" class="m">Terminal</text>
+
+  <rect x="14" y="84" width="362" height="274" rx="14" class="k" />
+  <text x="28" y="118" class="t h">Trade</text>
+  <rect x="28" y="136" width="334" height="52" rx="12" class="s" />
+  <text x="42" y="166" class="m">From</text>
+  <rect x="28" y="196" width="334" height="52" rx="12" class="s" />
+  <text x="42" y="226" class="m">To</text>
+  <rect x="28" y="256" width="334" height="44" rx="12" class="s" />
+  <text x="42" y="282" class="m">Amount + Slippage</text>
+  <rect x="28" y="308" width="334" height="44" rx="12" class="s" />
+  <text x="42" y="334" class="m">Fetch quotes</text>
+
+  <rect x="14" y="372" width="362" height="200" rx="14" class="k" />
+  <text x="28" y="406" class="t h">Preview</text>
+  <rect x="28" y="424" width="334" height="132" rx="12" class="s" />
+  <text x="42" y="456" class="m">Chart/summary placeholder</text>
+
+  <rect x="14" y="586" width="362" height="242" rx="14" class="k" />
+  <text x="28" y="620" class="t h">Quotes</text>
+  <rect x="28" y="638" width="334" height="64" rx="12" class="s" />
+  <rect x="28" y="712" width="334" height="64" rx="12" class="s" />
+  <text x="42" y="678" class="m">Row dense</text>
+</svg>

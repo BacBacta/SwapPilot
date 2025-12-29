@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--tag:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .tag{fill:var(--tag);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:18px;font-weight:800}
+      .h2{font-size:14px;font-weight:700}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <rect class="panel" x="24" y="18" width="1392" height="68" rx="18"/>
+  <text class="t h1" x="48" y="52">SwapPilot</text>
+  <text class="t m" x="48" y="72">Model 06 — Card Marketplace (BEQ en avant)</text>
+
+  <rect class="panel" x="24" y="104" width="520" height="772" rx="18"/>
+  <rect class="panel" x="568" y="104" width="848" height="772" rx="18"/>
+
+  <!-- Left inputs -->
+  <text class="t h2" x="48" y="142">Paramètres</text>
+  <rect class="card" x="48" y="170" width="472" height="46" rx="14"/>
+  <rect class="card" x="48" y="226" width="472" height="46" rx="14"/>
+  <rect class="card" x="48" y="290" width="228" height="40" rx="12"/>
+  <rect class="card" x="292" y="290" width="228" height="40" rx="12"/>
+  <rect class="card" x="48" y="344" width="472" height="48" rx="14"/>
+  <text class="t h2" x="64" y="376">Obtenir des quotes</text>
+
+  <text class="t h2" x="48" y="438">Receipt (aperçu)</text>
+  <rect class="card" x="48" y="450" width="472" height="204" rx="16"/>
+  <rect class="tag" x="64" y="474" width="112" height="26" rx="13"/>
+  <rect class="tag" x="182" y="474" width="150" height="26" rx="13"/>
+  <rect class="tag" x="64" y="508" width="168" height="26" rx="13"/>
+  <text class="t m" x="78" y="492">Tax: OK</text>
+  <text class="t m" x="196" y="492">Sell: UNCERTAIN</text>
+  <text class="t m" x="78" y="526">Liquidity: OK</text>
+  <text class="t m" x="64" y="566">Décision: route exécutable priorisée.</text>
+
+  <!-- Right marketplace cards -->
+  <text class="t h2" x="592" y="142">Comparer</text>
+  <text class="t m" x="592" y="162">Quotes en cartes “produit”</text>
+
+  <!-- BEQ hero card -->
+  <rect class="card" x="592" y="186" width="800" height="150" rx="18"/>
+  <rect class="tag" x="612" y="206" width="140" height="28" rx="14"/>
+  <text class="t m" x="626" y="226">BEQ recommandé</text>
+  <text class="t h2" x="612" y="258">Provider X</text>
+  <text class="t m num" x="612" y="282">Out 123,456.78 • Fees 0.28% • Risk OK</text>
+  <rect class="tag" x="1220" y="234" width="156" height="34" rx="17"/>
+  <text class="t m" x="1250" y="256">Open</text>
+
+  <!-- Grid cards -->
+  <rect class="panel" x="592" y="356" width="800" height="44" rx="14"/>
+  <text class="t m" x="612" y="384">All quotes • Providers • DEX direct</text>
+
+  <g>
+    <rect class="card" x="592" y="416" width="388" height="150" rx="18"/>
+    <rect class="card" x="1004" y="416" width="388" height="150" rx="18"/>
+    <rect class="card" x="592" y="582" width="388" height="150" rx="18"/>
+    <rect class="card" x="1004" y="582" width="388" height="150" rx="18"/>
+
+    <text class="t h2" x="612" y="456">Provider Y (Raw)</text>
+    <text class="t m num" x="612" y="480">Out 126,900.12</text>
+    <text class="t m" x="612" y="504">Risk UNC. • Conf Med</text>
+    <rect class="tag" x="612" y="520" width="108" height="30" rx="15"/>
+    <text class="t m" x="642" y="541">Open</text>
+
+    <text class="t h2" x="1024" y="456">DEX direct</text>
+    <text class="t m num" x="1024" y="480">Out 124,002.01</text>
+    <text class="t m" x="1024" y="504">Risk OK • Conf High</text>
+    <rect class="tag" x="1024" y="520" width="108" height="30" rx="15"/>
+    <text class="t m" x="1054" y="541">Open</text>
+
+    <text class="t h2" x="612" y="622">Provider Z</text>
+    <text class="t m num" x="612" y="646">Out 122,410.55</text>
+    <text class="t m" x="612" y="670">Risk FAIL</text>
+    <rect class="tag" x="612" y="686" width="108" height="30" rx="15"/>
+    <text class="t m" x="642" y="707">Open</text>
+
+    <text class="t h2" x="1024" y="622">Provider Q</text>
+    <text class="t m num" x="1024" y="646">Out 121,998.10</text>
+    <text class="t m" x="1024" y="670">Risk OK</text>
+    <rect class="tag" x="1024" y="686" width="108" height="30" rx="15"/>
+    <text class="t m" x="1054" y="707">Open</text>
+  </g>
+</svg>

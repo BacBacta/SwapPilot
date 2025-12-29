@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <style>
+      .s{stroke:#9ca3af;stroke-width:2;fill:#ffffff}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:14px;fill:#111827}
+      .m{font-size:12px;fill:#6b7280}
+      .h{font-size:16px;font-weight:600}
+      .k{fill:#f9fafb;stroke:#e5e7eb}
+    </style>
+  </defs>
+
+  <rect x="14" y="16" width="362" height="56" rx="14" class="k" />
+  <text x="28" y="50" class="t h">Wireframe A</text>
+  <text x="140" y="50" class="m">Two‑Pane Compare</text>
+
+  <rect x="14" y="84" width="362" height="210" rx="14" class="k" />
+  <text x="28" y="118" class="t h">Paramètres</text>
+  <rect x="28" y="136" width="334" height="54" rx="12" class="s" />
+  <text x="42" y="168" class="m">From (token + amount)</text>
+  <rect x="28" y="200" width="334" height="54" rx="12" class="s" />
+  <text x="42" y="232" class="m">To (token)</text>
+  <rect x="28" y="264" width="334" height="42" rx="12" class="s" />
+  <text x="42" y="290" class="m">Obtenir des quotes</text>
+
+  <rect x="14" y="308" width="362" height="70" rx="14" class="k" />
+  <text x="28" y="342" class="t h">Switcher</text>
+  <text x="28" y="366" class="m">BEQ  |  Raw</text>
+
+  <rect x="14" y="392" width="362" height="132" rx="14" class="k" />
+  <text x="28" y="426" class="t h">Card (sélection)</text>
+  <text x="28" y="452" class="m">Provider • Out • Risk chips</text>
+  <rect x="28" y="468" width="334" height="40" rx="12" class="s" />
+  <text x="42" y="494" class="m">Deep‑link</text>
+
+  <rect x="14" y="538" width="362" height="290" rx="14" class="k" />
+  <text x="28" y="572" class="t h">Quotes</text>
+  <rect x="28" y="590" width="334" height="68" rx="12" class="s" />
+  <rect x="28" y="668" width="334" height="68" rx="12" class="s" />
+  <rect x="28" y="746" width="334" height="68" rx="12" class="s" />
+  <text x="42" y="630" class="m">Row: Provider • Out • Risk</text>
+
+</svg>

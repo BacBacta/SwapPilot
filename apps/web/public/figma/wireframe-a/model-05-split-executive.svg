@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--rail:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .rail{fill:var(--rail);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:18px;font-weight:800}
+      .h2{font-size:14px;font-weight:700}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Strong split header -->
+  <rect class="rail" x="0" y="0" width="1440" height="92"/>
+  <text class="t h1" x="28" y="44">SwapPilot</text>
+  <text class="t m" x="28" y="66">Model 05 — Split‑Screen Executive</text>
+  <rect class="card" x="1120" y="26" width="292" height="40" rx="12"/>
+  <text class="t m" x="1136" y="52">Wallet • BNB • Settings</text>
+
+  <!-- Left rail / settings -->
+  <rect class="rail" x="0" y="92" width="560" height="808"/>
+  <rect class="panel" x="24" y="116" width="512" height="760" rx="18"/>
+
+  <text class="t h2" x="48" y="154">Paramètres</text>
+  <text class="t m" x="48" y="176">Panneau “executive” (clair, structuré)</text>
+
+  <rect class="card" x="48" y="206" width="464" height="46" rx="14"/>
+  <text class="t m" x="64" y="234">From • BNB • 1.00</text>
+  <rect class="card" x="48" y="262" width="464" height="46" rx="14"/>
+  <text class="t m" x="64" y="290">To • TOKEN</text>
+
+  <rect class="card" x="48" y="322" width="224" height="40" rx="12"/>
+  <rect class="card" x="288" y="322" width="224" height="40" rx="12"/>
+  <text class="t m" x="64" y="348">SAFE</text>
+  <text class="t m" x="304" y="348">0.5%</text>
+
+  <rect class="card" x="48" y="378" width="464" height="50" rx="14"/>
+  <text class="t h2" x="64" y="410">Obtenir des quotes</text>
+
+  <rect class="panel" x="48" y="454" width="464" height="220" rx="16"/>
+  <text class="t h2" x="64" y="488">Receipt (aperçu)</text>
+  <text class="t m" x="64" y="514">Signaux décisionnels (OK/UNC/FAIL)</text>
+  <rect class="card" x="64" y="534" width="416" height="36" rx="10"/>
+  <rect class="card" x="64" y="578" width="416" height="36" rx="10"/>
+  <rect class="card" x="64" y="622" width="416" height="36" rx="10"/>
+  <text class="t m" x="78" y="556">Tax check: OK</text>
+  <text class="t m" x="78" y="600">Sellability: UNCERTAIN</text>
+  <text class="t m" x="78" y="644">Liquidity: OK</text>
+
+  <rect class="panel" x="48" y="694" width="464" height="182" rx="16"/>
+  <text class="t h2" x="64" y="728">Résumé</text>
+  <text class="t m num" x="64" y="754">BEQ Out 123,456.78  •  Raw Out 126,900.12</text>
+  <text class="t m" x="64" y="780">Δ exécutable vs brut: -2.7%</text>
+
+  <!-- Right workspace -->
+  <rect class="panel" x="584" y="116" width="832" height="760" rx="18"/>
+  <text class="t h2" x="608" y="154">Comparer</text>
+
+  <rect class="card" x="608" y="178" width="394" height="160" rx="16"/>
+  <rect class="card" x="1022" y="178" width="370" height="160" rx="16"/>
+  <text class="t h2" x="628" y="210">BEQ</text>
+  <text class="t m" x="628" y="234">Provider X</text>
+  <text class="t m num" x="628" y="262">Out 123,456.78</text>
+  <text class="t m" x="628" y="286">Risk OK • Conf High</text>
+  <rect class="rail" x="628" y="300" width="124" height="28" rx="14"/>
+  <text class="t m" x="642" y="320">Deep‑link</text>
+
+  <text class="t h2" x="1042" y="210">Raw</text>
+  <text class="t m" x="1042" y="234">Provider Y</text>
+  <text class="t m num" x="1042" y="262">Out 126,900.12</text>
+  <text class="t m" x="1042" y="286">Risk UNC.</text>
+  <rect class="rail" x="1042" y="300" width="124" height="28" rx="14"/>
+  <text class="t m" x="1056" y="320">Deep‑link</text>
+
+  <rect class="rail" x="608" y="354" width="784" height="44" rx="14"/>
+  <text class="t m" x="628" y="382">Tabs: All • Providers • DEX direct</text>
+
+  <rect class="card" x="608" y="414" width="784" height="64" rx="14"/>
+  <rect class="card" x="608" y="486" width="784" height="64" rx="14"/>
+  <rect class="card" x="608" y="558" width="784" height="64" rx="14"/>
+  <rect class="card" x="608" y="630" width="784" height="64" rx="14"/>
+  <text class="t m" x="628" y="452">Provider • Out • Fees • Risk • Confidence • Open</text>
+  <text class="t m" x="628" y="524">Row</text>
+  <text class="t m" x="628" y="596">Row</text>
+  <text class="t m" x="628" y="668">Row</text>
+</svg>

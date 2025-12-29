@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--chrome:#f3f4f6;--panel:#f9fafb}
+      .bg{fill:var(--bg)}
+      .chrome{fill:var(--chrome);stroke:var(--border);stroke-width:1}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .btn{fill:var(--chrome);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:16px;font-weight:800}
+      .h2{font-size:13px;font-weight:700}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Enterprise chrome bar -->
+  <rect class="chrome" x="0" y="0" width="1440" height="56"/>
+  <text class="t h1" x="24" y="34">SwapPilot</text>
+  <text class="t m" x="132" y="34">Model 10 — Enterprise Panel System</text>
+  <rect class="btn" x="1188" y="12" width="108" height="32" rx="10"/>
+  <rect class="btn" x="1306" y="12" width="110" height="32" rx="10"/>
+  <text class="t m" x="1216" y="33">Export</text>
+  <text class="t m" x="1334" y="33">Settings</text>
+
+  <!-- Workspace -->
+  <rect class="panel" x="16" y="72" width="520" height="812" rx="10"/>
+  <rect class="panel" x="552" y="72" width="872" height="812" rx="10"/>
+
+  <!-- Left: stacked panels -->
+  <rect class="card" x="32" y="88" width="488" height="260" rx="10"/>
+  <text class="t h2" x="48" y="118">Inputs</text>
+  <rect class="card" x="48" y="136" width="456" height="36" rx="8"/>
+  <rect class="card" x="48" y="180" width="456" height="36" rx="8"/>
+  <rect class="card" x="48" y="224" width="220" height="32" rx="8"/>
+  <rect class="card" x="284" y="224" width="220" height="32" rx="8"/>
+  <rect class="btn" x="48" y="270" width="456" height="42" rx="10"/>
+  <text class="t h2" x="64" y="298">Run quotes</text>
+
+  <rect class="card" x="32" y="364" width="488" height="260" rx="10"/>
+  <text class="t h2" x="48" y="394">Receipt</text>
+  <text class="t m" x="48" y="418">Signals + reasoning</text>
+  <rect class="card" x="48" y="436" width="456" height="34" rx="8"/>
+  <rect class="card" x="48" y="478" width="456" height="34" rx="8"/>
+  <rect class="card" x="48" y="520" width="456" height="34" rx="8"/>
+  <text class="t m" x="64" y="458">Tax check: OK</text>
+  <text class="t m" x="64" y="500">Sellability: UNCERTAIN</text>
+  <text class="t m" x="64" y="542">Liquidity: OK</text>
+
+  <rect class="card" x="32" y="640" width="488" height="228" rx="10"/>
+  <text class="t h2" x="48" y="670">Summary</text>
+  <text class="t m num" x="48" y="696">BEQ Out 123,456.78</text>
+  <text class="t m num" x="48" y="718">Raw Out 126,900.12</text>
+
+  <!-- Right: panels + table -->
+  <rect class="card" x="568" y="88" width="840" height="196" rx="10"/>
+  <text class="t h2" x="584" y="118">Compare</text>
+  <rect class="card" x="584" y="136" width="404" height="132" rx="10"/>
+  <rect class="card" x="1002" y="136" width="406" height="132" rx="10"/>
+  <text class="t h2" x="600" y="164">BEQ</text>
+  <text class="t m num" x="600" y="192">Out 123,456.78 • Fees 0.28%</text>
+  <text class="t m" x="600" y="216">Risk OK • Conf High</text>
+  <text class="t h2" x="1018" y="164">Raw</text>
+  <text class="t m num" x="1018" y="192">Out 126,900.12 • Fees 0.35%</text>
+  <text class="t m" x="1018" y="216">Risk UNC.</text>
+
+  <rect class="chrome" x="568" y="300" width="840" height="44" rx="10"/>
+  <text class="t m" x="584" y="328">All quotes</text>
+  <text class="t m" x="680" y="328">Providers</text>
+  <text class="t m" x="780" y="328">DEX direct</text>
+
+  <rect class="card" x="568" y="360" width="840" height="46" rx="10"/>
+  <text class="t m" x="584" y="388">Provider</text>
+  <text class="t m" x="900" y="388">Out</text>
+  <text class="t m" x="1044" y="388">Fees</text>
+  <text class="t m" x="1146" y="388">Risk</text>
+  <text class="t m" x="1248" y="388">Open</text>
+
+  <rect class="card" x="568" y="414" width="840" height="64" rx="10"/>
+  <rect class="card" x="568" y="486" width="840" height="64" rx="10"/>
+  <rect class="card" x="568" y="558" width="840" height="64" rx="10"/>
+  <rect class="card" x="568" y="630" width="840" height="64" rx="10"/>
+
+  <text class="t m" x="584" y="452">Provider X (BEQ)</text>
+  <text class="t m num" x="900" y="452">123,456.78</text>
+  <text class="t m num" x="1044" y="452">0.28%</text>
+  <text class="t m" x="1146" y="452">OK</text>
+  <text class="t m" x="1248" y="452">Open</text>
+
+  <text class="t m" x="584" y="524">Provider Y (Raw)</text>
+  <text class="t m num" x="900" y="524">126,900.12</text>
+  <text class="t m num" x="1044" y="524">0.35%</text>
+  <text class="t m" x="1146" y="524">UNC.</text>
+  <text class="t m" x="1248" y="524">Open</text>
+
+  <text class="t m" x="584" y="596">DEX direct</text>
+  <text class="t m num" x="900" y="596">124,002.01</text>
+  <text class="t m num" x="1044" y="596">—</text>
+  <text class="t m" x="1146" y="596">OK</text>
+  <text class="t m" x="1248" y="596">Open</text>
+
+  <text class="t m" x="584" y="668">Provider Z</text>
+  <text class="t m num" x="900" y="668">122,410.55</text>
+  <text class="t m num" x="1044" y="668">0.22%</text>
+  <text class="t m" x="1146" y="668">FAIL</text>
+  <text class="t m" x="1248" y="668">Open</text>
+</svg>

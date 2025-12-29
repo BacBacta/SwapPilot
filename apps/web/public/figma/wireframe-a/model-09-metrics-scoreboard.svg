@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#0b1220;--muted:#6b7280;--border:#e5e7eb;--panel:#f9fafb;--tile:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel);stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .tile{fill:var(--tile);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:18px;font-weight:800}
+      .h2{font-size:14px;font-weight:700}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <rect class="panel" x="24" y="18" width="1392" height="68" rx="18"/>
+  <text class="t h1" x="48" y="52">SwapPilot</text>
+  <text class="t m" x="48" y="72">Model 09 — Metrics‑First (Scoreboard)</text>
+
+  <rect class="panel" x="24" y="104" width="520" height="772" rx="18"/>
+  <rect class="panel" x="568" y="104" width="848" height="772" rx="18"/>
+
+  <!-- Left -->
+  <text class="t h2" x="48" y="142">Paramètres</text>
+  <rect class="card" x="48" y="170" width="472" height="46" rx="14"/>
+  <rect class="card" x="48" y="226" width="472" height="46" rx="14"/>
+  <rect class="card" x="48" y="288" width="228" height="40" rx="12"/>
+  <rect class="card" x="292" y="288" width="228" height="40" rx="12"/>
+  <rect class="card" x="48" y="344" width="472" height="48" rx="14"/>
+  <text class="t h2" x="64" y="376">Quotes</text>
+
+  <text class="t h2" x="48" y="438">Receipt</text>
+  <rect class="card" x="48" y="450" width="472" height="210" rx="16"/>
+  <text class="t m" x="64" y="484">Signals + explications</text>
+
+  <!-- Right scoreboard -->
+  <text class="t h2" x="592" y="142">Scoreboard</text>
+  <text class="t m" x="592" y="162">BEQ vs Raw avec métriques en grille</text>
+
+  <rect class="card" x="592" y="186" width="402" height="210" rx="16"/>
+  <rect class="card" x="1014" y="186" width="378" height="210" rx="16"/>
+
+  <text class="t h2" x="612" y="214">BEQ</text>
+  <text class="t m" x="612" y="236">Provider X</text>
+  <rect class="tile" x="612" y="252" width="180" height="58" rx="12"/>
+  <rect class="tile" x="802" y="252" width="172" height="58" rx="12"/>
+  <rect class="tile" x="612" y="318" width="180" height="58" rx="12"/>
+  <rect class="tile" x="802" y="318" width="172" height="58" rx="12"/>
+  <text class="t m" x="626" y="276">Out</text>
+  <text class="t m num" x="626" y="298">123,456.78</text>
+  <text class="t m" x="816" y="276">Fees</text>
+  <text class="t m num" x="816" y="298">0.28%</text>
+  <text class="t m" x="626" y="342">Risk</text>
+  <text class="t m" x="626" y="364">OK</text>
+  <text class="t m" x="816" y="342">Conf</text>
+  <text class="t m" x="816" y="364">High</text>
+
+  <text class="t h2" x="1034" y="214">Raw</text>
+  <text class="t m" x="1034" y="236">Provider Y</text>
+  <rect class="tile" x="1034" y="252" width="172" height="58" rx="12"/>
+  <rect class="tile" x="1214" y="252" width="158" height="58" rx="12"/>
+  <rect class="tile" x="1034" y="318" width="172" height="58" rx="12"/>
+  <rect class="tile" x="1214" y="318" width="158" height="58" rx="12"/>
+  <text class="t m" x="1048" y="276">Out</text>
+  <text class="t m num" x="1048" y="298">126,900.12</text>
+  <text class="t m" x="1228" y="276">Fees</text>
+  <text class="t m num" x="1228" y="298">0.35%</text>
+  <text class="t m" x="1048" y="342">Risk</text>
+  <text class="t m" x="1048" y="364">UNC.</text>
+  <text class="t m" x="1228" y="342">Conf</text>
+  <text class="t m" x="1228" y="364">Med</text>
+
+  <rect class="panel" x="592" y="414" width="800" height="44" rx="14"/>
+  <text class="t m" x="612" y="442">All quotes • Providers • DEX direct</text>
+
+  <rect class="card" x="592" y="474" width="800" height="64" rx="14"/>
+  <rect class="card" x="592" y="546" width="800" height="64" rx="14"/>
+  <rect class="card" x="592" y="618" width="800" height="64" rx="14"/>
+  <rect class="card" x="592" y="690" width="800" height="64" rx="14"/>
+  <text class="t m" x="612" y="514">Row: Provider • Out • Fees • Risk</text>
+  <text class="t m" x="612" y="586">Row</text>
+  <text class="t m" x="612" y="658">Row</text>
+  <text class="t m" x="612" y="730">Row</text>
+</svg>

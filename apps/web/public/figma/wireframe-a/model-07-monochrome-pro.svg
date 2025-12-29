@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      :root{--bg:#ffffff;--fg:#111827;--muted:#6b7280;--border:#e5e7eb;--panel:#ffffff;--line:#f3f4f6}
+      .bg{fill:var(--bg)}
+      .panel{fill:var(--panel)}
+      .line{stroke:var(--border);stroke-width:1}
+      .card{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .chip{fill:var(--bg);stroke:var(--border);stroke-width:1}
+      .t{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;fill:var(--fg)}
+      .h1{font-size:18px;font-weight:800;letter-spacing:-0.02em}
+      .h2{font-size:13px;font-weight:750}
+      .m{font-size:12px;fill:var(--muted)}
+      .num{font-variant-numeric:tabular-nums}
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+
+  <!-- Minimal header: no filled panels -->
+  <text class="t h1" x="28" y="44">SwapPilot</text>
+  <text class="t m" x="28" y="66">Model 07 — Monochrome Pro</text>
+  <line class="line" x1="24" y1="82" x2="1416" y2="82"/>
+
+  <!-- Two columns with lines only -->
+  <line class="line" x1="560" y1="98" x2="560" y2="876"/>
+  <rect class="card" x="24" y="98" width="520" height="778" rx="14"/>
+  <rect class="card" x="584" y="98" width="832" height="778" rx="14"/>
+
+  <text class="t h2" x="48" y="134">Paramètres</text>
+  <text class="t m" x="48" y="154">Minimal, contrastes subtils, chiffres alignés</text>
+
+  <text class="t m" x="48" y="188">From</text>
+  <rect class="card" x="48" y="196" width="472" height="44" rx="12"/>
+  <text class="t m" x="62" y="222">BNB • 1.00</text>
+
+  <text class="t m" x="48" y="262">To</text>
+  <rect class="card" x="48" y="270" width="472" height="44" rx="12"/>
+  <text class="t m" x="62" y="296">TOKEN</text>
+
+  <rect class="card" x="48" y="336" width="228" height="38" rx="12"/>
+  <rect class="card" x="292" y="336" width="228" height="38" rx="12"/>
+  <text class="t m" x="62" y="360">SAFE</text>
+  <text class="t m" x="306" y="360">0.5%</text>
+
+  <rect class="card" x="48" y="392" width="472" height="44" rx="12"/>
+  <text class="t h2" x="62" y="420">Quotes</text>
+
+  <text class="t h2" x="48" y="482">Receipt</text>
+  <rect class="card" x="48" y="494" width="472" height="182" rx="14"/>
+  <text class="t m" x="62" y="526">Tax check</text>
+  <text class="t m" x="420" y="526">OK</text>
+  <line class="line" x1="62" y1="538" x2="506" y2="538"/>
+  <text class="t m" x="62" y="564">Sellability</text>
+  <text class="t m" x="380" y="564">UNCERTAIN</text>
+  <line class="line" x1="62" y1="576" x2="506" y2="576"/>
+  <text class="t m" x="62" y="602">Liquidity depth</text>
+  <text class="t m" x="420" y="602">OK</text>
+
+  <!-- Right -->
+  <text class="t h2" x="608" y="134">Comparer</text>
+  <text class="t m" x="608" y="154">BEQ vs Raw</text>
+
+  <rect class="card" x="608" y="180" width="394" height="150" rx="14"/>
+  <rect class="card" x="1022" y="180" width="370" height="150" rx="14"/>
+
+  <text class="t h2" x="628" y="210">BEQ</text>
+  <text class="t m" x="628" y="232">Provider X</text>
+  <text class="t m num" x="628" y="258">Out 123,456.78</text>
+  <rect class="chip" x="628" y="276" width="64" height="22" rx="11"/>
+  <rect class="chip" x="698" y="276" width="100" height="22" rx="11"/>
+  <text class="t m" x="646" y="292">OK</text>
+  <text class="t m" x="720" y="292">High conf</text>
+
+  <text class="t h2" x="1042" y="210">Raw</text>
+  <text class="t m" x="1042" y="232">Provider Y</text>
+  <text class="t m num" x="1042" y="258">Out 126,900.12</text>
+  <rect class="chip" x="1042" y="276" width="92" height="22" rx="11"/>
+  <text class="t m" x="1058" y="292">Best out</text>
+
+  <line class="line" x1="608" y1="352" x2="1392" y2="352"/>
+  <text class="t m" x="608" y="378">All quotes • Providers • DEX direct</text>
+
+  <rect class="card" x="608" y="404" width="784" height="46" rx="12"/>
+  <text class="t m" x="628" y="432">Provider</text>
+  <text class="t m" x="906" y="432">Out</text>
+  <text class="t m" x="1044" y="432">Fees</text>
+  <text class="t m" x="1146" y="432">Risk</text>
+
+  <rect class="card" x="608" y="460" width="784" height="62" rx="12"/>
+  <rect class="card" x="608" y="530" width="784" height="62" rx="12"/>
+  <rect class="card" x="608" y="600" width="784" height="62" rx="12"/>
+  <rect class="card" x="608" y="670" width="784" height="62" rx="12"/>
+
+  <text class="t m" x="628" y="498">Provider X (BEQ)</text>
+  <text class="t m num" x="906" y="498">123,456.78</text>
+  <text class="t m num" x="1044" y="498">0.28%</text>
+  <text class="t m" x="1146" y="498">OK</text>
+
+  <text class="t m" x="628" y="568">Provider Y (Raw)</text>
+  <text class="t m num" x="906" y="568">126,900.12</text>
+  <text class="t m num" x="1044" y="568">0.35%</text>
+  <text class="t m" x="1146" y="568">UNC.</text>
+
+  <text class="t m" x="628" y="638">DEX direct</text>
+  <text class="t m num" x="906" y="638">124,002.01</text>
+  <text class="t m num" x="1044" y="638">—</text>
+  <text class="t m" x="1146" y="638">OK</text>
+
+  <text class="t m" x="628" y="708">Provider Z</text>
+  <text class="t m num" x="906" y="708">122,410.55</text>
+  <text class="t m num" x="1044" y="708">0.22%</text>
+  <text class="t m" x="1146" y="708">FAIL</text>
+</svg>
