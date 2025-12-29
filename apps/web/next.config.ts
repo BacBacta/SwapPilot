@@ -2,6 +2,15 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Handle optional dependencies that may not be available (WalletConnect, MetaMask SDK)
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      'pino-pretty': false,
+      '@react-native-async-storage/async-storage': false,
+    };
+    return config;
+  },
   // Configure external images for next/image
   images: {
     remotePatterns: [
