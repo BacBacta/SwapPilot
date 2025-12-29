@@ -5,7 +5,13 @@ import {
   type DecisionReceipt,
   type QuoteRequest,
   type QuoteResponse,
+  type RankedQuote,
 } from '@swappilot/shared';
+import { bestExecutable } from './mock';
+
+// Check if we should use mock data (no API URL configured or explicitly enabled)
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true' || 
+  (!process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_BASE_URL);
 
 function getApiBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
@@ -46,14 +52,88 @@ async function fetchJsonWithTimeout(input: string, init: RequestInit & { timeout
   }
 }
 
+// Generate mock quote response for demo mode
+function generateMockQuoteResponse(request: QuoteRequest): QuoteResponse {
+  const sellAmount = BigInt(request.sellAmount);
+  const mockRankedQuotes: RankedQuote[] = bestExecutable.map((row, index) => {
+    // Calculate buy amount based on mock data ratios
+    const ratio = row.outUsd / 13975; // Normalize against first quote
+    const buyAmount = (sellAmount * BigInt(Math.floor(ratio * 1000))) / 1000n;
+    
+    return {
+      providerId: row.provider,
+      sourceType: 'aggregator' as const,
+      capabilities: {
+        quote: true,
+        buildTx: true,
+        deepLink: true,
+      },
+      raw: {
+        sellAmount: request.sellAmount,
+        buyAmount: buyAmount.toString(),
+        estimatedGas: 250000,
+        feeBps: 30,
+        route: [request.sellToken, request.buyToken],
+      },
+      normalized: {
+        buyAmount: buyAmount.toString(),
+        effectivePrice: (Number(buyAmount) / Number(sellAmount)).toFixed(18),
+        estimatedGasUsd: "0.36",
+        feesUsd: "0.05",
+      },
+      signals: {
+        sellability: {
+          status: row.flags.includes('SELL_OK') ? 'OK' as const : 'UNCERTAIN' as const,
+          confidence: row.confidence / 100,
+          reasons: [],
+        },
+        revertRisk: {
+          level: 'LOW' as const,
+          reasons: [],
+        },
+        mevExposure: {
+          level: row.flags.includes('MEV') ? 'HIGH' as const : 'LOW' as const,
+          reasons: row.flags.includes('MEV') ? ['Potential sandwich attack'] : [],
+        },
+        churn: {
+          level: 'LOW' as const,
+          reasons: [],
+        },
+      },
+      score: {
+        beqScore: row.confidence,
+        rawOutputRank: index + 1,
+      },
+      deepLink: null,
+    };
+  });
+
+  return {
+    receiptId: `mock-${Date.now()}`,
+    bestExecutableQuoteProviderId: mockRankedQuotes[0]?.providerId ?? null,
+    bestRawOutputProviderId: mockRankedQuotes[0]?.providerId ?? null,
+    beqRecommendedProviderId: mockRankedQuotes[0]?.providerId ?? null,
+    rankedQuotes: mockRankedQuotes,
+    bestRawQuotes: mockRankedQuotes.slice(0, 3),
+  };
+}
+
 export async function postQuotes(params: {
   request: QuoteRequest;
   timeoutMs?: number;
 }): Promise<QuoteResponse> {
+  const validated = QuoteRequestSchema.parse(params.request);
+
+  // Use mock data if no API is configured
+  if (USE_MOCK) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+    console.log('[API] Using mock data (no NEXT_PUBLIC_API_URL configured)');
+    return generateMockQuoteResponse(validated);
+  }
+
   const timeoutMs = params.timeoutMs ?? 12_000;
   const baseUrl = getApiBaseUrl();
-
-  const validated = QuoteRequestSchema.parse(params.request);
 
   const { res, json } = await fetchJsonWithTimeout(`${baseUrl}/v1/quotes`, {
     method: 'POST',
