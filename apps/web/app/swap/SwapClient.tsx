@@ -164,7 +164,7 @@ function ProviderCard(params: {
 
       {deepLinkOnly ? (
         <div className="mt-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-          🔗 Ce provider fonctionne uniquement via deep-link. Cliquez pour ouvrir dans l'app du provider.
+          🔗 Ce provider fonctionne uniquement via deep-link. Cliquez pour ouvrir dans l&apos;app du provider.
         </div>
       ) : null}
 

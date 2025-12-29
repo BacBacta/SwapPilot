@@ -154,7 +154,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
     } else {
       setTokenError(null);
     }
-  }, [search]);
+  }, [search, fetchTokenByAddress]);
 
   // Enrich tokens with balances and USD values
   const enrichedTokens = useMemo(() => {
