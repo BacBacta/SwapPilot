@@ -1,5 +1,9 @@
-import { SwapClient } from './SwapClient';
+import { SwapInterface } from "@/components/swap/swap-interface";
 
-export default function SwapPage() {
-  return <SwapClient />;
+export default function Page() {
+  return (
+    <div className="p-4 md:p-6">
+      <SwapInterface />
+    </div>
+  );
 }
