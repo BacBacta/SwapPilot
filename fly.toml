@@ -1,13 +1,12 @@
 # Fly.io configuration for SwapPilot API
-# Deploy from repo root: fly deploy --config apps/api/fly.toml
+# Deploy: fly deploy
 # Docs: https://fly.io/docs/reference/configuration/
 
 app = "swappilot-api"
 primary_region = "fra"
 
 [build]
-  dockerfile = "Dockerfile"
-  [build.args]
+  dockerfile = "apps/api/Dockerfile"
 
 [env]
   NODE_ENV = "production"
