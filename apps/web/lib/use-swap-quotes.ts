@@ -13,9 +13,27 @@ export const TOKEN_ADDRESSES: Record<string, string> = {
   USDT: "0x55d398326f99059fF775485246999027B3197955",
   USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
   WBTC: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+  BTCB: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", // Alias
   CAKE: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
   SOL: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF", // Wrapped SOL on BSC
+  DAI: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3",
+  BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
 };
+
+// Helper to check if a string is an Ethereum address
+function isAddress(value: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(value);
+}
+
+// Get address from symbol or return as-is if already an address
+function resolveTokenAddress(tokenOrSymbol: string): string | null {
+  // If it's already an address, return it
+  if (isAddress(tokenOrSymbol)) {
+    return tokenOrSymbol;
+  }
+  // Otherwise look up the symbol
+  return TOKEN_ADDRESSES[tokenOrSymbol.toUpperCase()] ?? null;
+}
 
 const TOKEN_DECIMALS: Record<string, number> = {
   BNB: 18,
@@ -79,8 +97,8 @@ export function useSwapQuotes(): UseSwapQuotesReturn {
   });
 
   const fetchQuotes = useCallback(async (params: FetchQuotesParams) => {
-    const sellAddress = TOKEN_ADDRESSES[params.sellToken];
-    const buyAddress = TOKEN_ADDRESSES[params.buyToken];
+    const sellAddress = resolveTokenAddress(params.sellToken);
+    const buyAddress = resolveTokenAddress(params.buyToken);
 
     if (!sellAddress || !buyAddress) {
       setQuotes({
