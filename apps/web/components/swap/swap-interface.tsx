@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { CardDark } from "@/components/ui/surfaces";
-import { Button, Pill, Badge, Skeleton } from "@/components/ui/primitives";
+import { Button, Pill, Badge } from "@/components/ui/primitives";
 import { TokenInput, SwapDirectionButton } from "@/components/ui/token-input";
 import { Tabs, PresetButtons } from "@/components/ui/inputs";
 import { TokenPickerModal } from "@/components/swap/token-picker-modal";
@@ -25,6 +25,8 @@ import {
 } from "@/lib/use-swap-quotes";
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
 import { useTokenBalances } from "@/lib/use-token-balances";
+import { QuoteSkeleton } from "@/components/ui/skeleton";
+import { ErrorDisplay } from "@/components/ui/error-display";
 import type { RankedQuote } from "@swappilot/shared";
 
 /* ========================================
@@ -59,7 +61,7 @@ function ProviderRowAPI({
       onClick={onSelect}
       className={`group flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-200 ${
         isWinner
-          ? "border-sp-accent/40 bg-sp-accent/10 shadow-glow"
+          ? "border-sp-accent/40 bg-sp-accent/10 shadow-glow animate-glow"
           : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover hover:bg-sp-surface3"
       }`}
     >
@@ -317,9 +319,16 @@ export function SwapInterface() {
         <div className="p-5">
           {/* Error message */}
           {error && (
-            <div className="mb-4 rounded-xl border border-sp-bad/30 bg-sp-bad/10 px-4 py-3 text-caption text-sp-bad">
-              {error}
-            </div>
+            <ErrorDisplay 
+              error={{ 
+                type: quotes.error?.kind === 'timeout' ? 'timeout' : 
+                       quotes.error?.kind === 'network' ? 'network' : 'api',
+                message: error,
+                retryable: true
+              }}
+              onRetry={handleExecute}
+              className="mb-4"
+            />
           )}
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -413,29 +422,25 @@ export function SwapInterface() {
 
               <div className="space-y-2">
                 {loading ? (
-                  // Loading skeletons
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-xl border border-sp-border bg-sp-surface2 p-3.5">
-                      <Skeleton className="h-7 w-7 rounded-lg" />
-                      <Skeleton className="h-10 w-10 rounded-xl" />
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="mt-2 h-3 w-16" />
-                      </div>
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                  ))
+                  // Loading skeletons with staggered animation
+                  <div className="animate-slideDown space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <QuoteSkeleton key={i} />
+                    ))}
+                  </div>
                 ) : displayedQuotes.length > 0 ? (
-                  displayedQuotes.map((quote, i) => (
-                    <ProviderRowAPI
-                      key={quote.providerId}
-                      quote={quote}
-                      rank={i + 1}
-                      isWinner={i === 0}
-                      bestBuyAmount={bestBuyAmount}
-                      onSelect={() => handleViewReceipt(quote)}
-                    />
-                  ))
+                  <div className="animate-slideDown space-y-2">
+                    {displayedQuotes.map((quote, i) => (
+                      <ProviderRowAPI
+                        key={quote.providerId}
+                        quote={quote}
+                        rank={i + 1}
+                        isWinner={i === 0}
+                        bestBuyAmount={bestBuyAmount}
+                        onSelect={() => handleViewReceipt(quote)}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="py-8 text-center">
                     <div className="text-3xl">📊</div>
