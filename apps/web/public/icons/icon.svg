@@ -9,14 +9,8 @@
       <stop offset="100%" style="stop-color:#F7C948"/>
     </linearGradient>
   </defs>
-  
-  <!-- Background -->
   <rect width="512" height="512" rx="102" fill="url(#bg)"/>
-  
-  <!-- Glow effect -->
   <circle cx="256" cy="256" r="140" fill="#F7C948" opacity="0.15"/>
-  
-  <!-- SP Letters -->
   <text x="256" y="300" 
         font-family="system-ui, -apple-system, sans-serif" 
         font-size="180" 
@@ -25,8 +19,6 @@
         text-anchor="middle">
     SP
   </text>
-  
-  <!-- Swap arrows decoration -->
   <g fill="none" stroke="#F7C948" stroke-width="8" stroke-linecap="round" opacity="0.6">
     <path d="M140 380 L180 380 L160 360"/>
     <path d="M372 380 L332 380 L352 400"/>
