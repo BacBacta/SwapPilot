@@ -34,6 +34,8 @@ export type BuiltTx = {
   to: string;
   data: string;
   value: string;
+  gas?: string;
+  gasPrice?: string;
 };
 
 export interface Adapter {

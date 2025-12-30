@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -217,5 +217,77 @@ export class OneInchAdapter implements Adapter {
       return '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
     }
     return token;
+  }
+
+  /**
+   * Build a ready-to-sign transaction for the swap.
+   * Calls 1inch Swap API which returns calldata for on-chain execution.
+   */
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.quoteEnabled()) {
+      throw new Error('1inch API key not configured');
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const sellToken = this.normalizeNativeToken(request.sellToken);
+      const buyToken = this.normalizeNativeToken(request.buyToken);
+
+      // Calculate minReturn with slippage
+      const slippageBps = request.slippageBps ?? 100; // Default 1%
+      const buyAmount = BigInt(quote.raw.buyAmount);
+      const minReturn = (buyAmount * BigInt(10000 - slippageBps)) / 10000n;
+
+      const url = new URL(`${this.apiBaseUrl}/swap/v6.0/${this.chainId}/swap`);
+      url.searchParams.set('src', sellToken);
+      url.searchParams.set('dst', buyToken);
+      url.searchParams.set('amount', request.sellAmount);
+      url.searchParams.set('from', request.account);
+      url.searchParams.set('slippage', (slippageBps / 100).toString());
+      url.searchParams.set('disableEstimate', 'true'); // Skip on-chain simulation
+      url.searchParams.set('allowPartialFill', 'false');
+
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`1inch swap API error: ${res.status} - ${text}`);
+      }
+
+      const data = await res.json() as {
+        tx: {
+          to: string;
+          data: string;
+          value: string;
+          gas: number;
+          gasPrice: string;
+        };
+      };
+
+      return {
+        to: data.tx.to,
+        data: data.tx.data,
+        value: data.tx.value,
+        gas: String(data.tx.gas),
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 }

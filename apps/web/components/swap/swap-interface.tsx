@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { CardDark } from "@/components/ui/surfaces";
 import { Button, Pill, Badge } from "@/components/ui/primitives";
 import { TokenInput, SwapDirectionButton } from "@/components/ui/token-input";
@@ -29,7 +30,10 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { QuoteSkeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { ModeExplanationBadge } from "@/components/ui/tooltip";
+import { useTokenApproval } from "@/lib/hooks/use-token-approval";
+import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import type { RankedQuote } from "@swappilot/shared";
+import type { Address } from "viem";
 
 /* ========================================
    PROVIDER ROW (API Version)
@@ -204,6 +208,45 @@ export function SwapInterface() {
     isRefreshing,
   } = useSwapQuotes(resolveToken);
 
+  // Real swap execution hooks
+  const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
+  const { 
+    status: swapStatus, 
+    error: swapError, 
+    txHash, 
+    builtTx,
+    buildTransaction, 
+    executeSwap, 
+    reset: resetSwap,
+    isBuilding,
+    isPending: isSwapPending,
+    isSuccess: isSwapSuccess,
+  } = useExecuteSwap();
+
+  // Token approval hook - only for ERC-20 tokens
+  const sellAmountWei = useMemo(() => {
+    try {
+      const amountNum = parseFloat(fromAmount.replace(/,/g, "") || "0");
+      const decimals = fromTokenInfo?.decimals ?? 18;
+      return BigInt(Math.floor(amountNum * 10 ** decimals));
+    } catch {
+      return 0n;
+    }
+  }, [fromAmount, fromTokenInfo]);
+
+  const {
+    needsApproval,
+    isApproving,
+    isApproved,
+    approve,
+    allowance,
+    refetchAllowance,
+  } = useTokenApproval({
+    tokenAddress: fromTokenInfo?.address as Address | undefined,
+    spenderAddress: builtTx?.approvalAddress as Address | undefined,
+    amount: sellAmountWei,
+  });
+
   // Derived states from hook
   const loading = quotes.status === "loading";
   const error = quotes.error?.message ?? null;
@@ -322,8 +365,34 @@ export function SwapInterface() {
     }
   };
 
-  const handleSwapConfirm = (quote: RankedQuote) => {
-    // Add to transaction history (simulated)
+  // Handle real swap execution
+  const handleSwapConfirm = async (quote: RankedQuote) => {
+    if (!isWalletConnected || !walletAddress) {
+      toast.error("Wallet not connected", "Please connect your wallet to swap");
+      return;
+    }
+
+    if (!fromTokenInfo) {
+      toast.error("Token not found", "Unable to resolve token information");
+      return;
+    }
+
+    // Check if provider supports buildTx
+    const supportsBuildTx = quote.capabilities.buildTx;
+    
+    if (!supportsBuildTx) {
+      // Use deep link for providers that don't support buildTx
+      if (quote.deepLink) {
+        window.open(quote.deepLink, "_blank");
+        toast.info("Opening external swap", `Redirecting to ${quote.providerId}`);
+      } else {
+        toast.error("No execution method", `${quote.providerId} doesn't support direct swaps or deep links`);
+      }
+      setReceiptOpen(false);
+      return;
+    }
+
+    // Add to transaction history
     const txId = addTransaction({
       fromToken,
       toToken,
@@ -331,19 +400,89 @@ export function SwapInterface() {
       toAmount: formatQuoteOutput(quote),
       provider: quote.providerId,
       status: "pending",
-      chainId: 56, // BNB Chain
+      chainId: 56,
     });
 
-    toast.loading("Transaction pending...", `Swapping ${fromAmount} ${fromToken} via ${quote.providerId}`);
+    const loadingToastId = toast.loading("Building transaction...", `Preparing swap via ${quote.providerId}`);
 
-    // Simulate transaction completion (in real app, this would be actual tx monitoring)
-    setTimeout(() => {
-      updateTransaction(txId, {
-        status: "success",
-        hash: `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`,
+    try {
+      // Step 1: Build the transaction
+      const tx = await buildTransaction({
+        providerId: quote.providerId,
+        sellToken: fromTokenInfo.address,
+        buyToken: toTokenInfo?.address ?? quote.raw.route[quote.raw.route.length - 1],
+        sellAmount: sellAmountWei.toString(),
+        slippageBps: settings.slippageBps,
       });
-      toast.success("Swap successful!", `Received ${formatQuoteOutput(quote)} ${toToken}`);
-    }, 3000);
+
+      if (!tx) {
+        throw new Error("Failed to build transaction");
+      }
+
+      // Step 2: Check if approval is needed (for non-native tokens)
+      const isNativeToken = fromTokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
+                            fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
+
+      if (!isNativeToken && needsApproval) {
+        toast.updateToast(loadingToastId, {
+          type: "info",
+          title: "Approval required",
+          message: `Please approve ${fromToken} spending`,
+        });
+        approve();
+        // Wait for approval - the user will need to click swap again after approval
+        updateTransaction(txId, { status: "failed" });
+        setReceiptOpen(false);
+        return;
+      }
+
+      // Step 3: Execute the swap
+      toast.updateToast(loadingToastId, {
+        type: "info",
+        title: "Confirm in wallet",
+        message: "Please confirm the transaction in your wallet",
+      });
+
+      executeSwap(tx);
+
+      // The rest is handled by useEffect watching txHash and swapStatus
+      setReceiptOpen(false);
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.updateToast(loadingToastId, {
+        type: "error",
+        title: "Swap failed",
+        message,
+      });
+      updateTransaction(txId, { status: "failed" });
+    }
+  };
+
+  // Watch for transaction completion
+  useEffect(() => {
+    if (isSwapSuccess && txHash) {
+      toast.success("Swap successful!", `Transaction: ${txHash.slice(0, 10)}...`);
+      // Update the most recent pending transaction
+      const pendingTx = transactions.find(t => t.status === "pending");
+      if (pendingTx) {
+        updateTransaction(pendingTx.id, { status: "success", hash: txHash });
+      }
+      resetSwap();
+      refetchAllowance();
+    }
+  }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance]);
+
+  // Watch for swap errors
+  useEffect(() => {
+    if (swapError && swapStatus === "error") {
+      toast.error("Transaction failed", swapError);
+      const pendingTx = transactions.find(t => t.status === "pending");
+      if (pendingTx) {
+        updateTransaction(pendingTx.id, { status: "failed" });
+      }
+    }
+  }, [swapError, swapStatus, toast, transactions, updateTransaction]);
 
     setReceiptOpen(false);
   };
@@ -467,15 +606,57 @@ export function SwapInterface() {
                 />
               )}
 
-              {/* CTA */}
-              <Button 
-                className="mt-5 h-12 w-full text-body" 
-                size="lg" 
-                loading={loading}
-                onClick={handleExecute}
-              >
-                {loading ? "Finding best route..." : "Execute Best Quote"}
-              </Button>
+              {/* CTA - Dynamic based on wallet and swap state */}
+              {!isWalletConnected ? (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg"
+                  variant="primary"
+                  onClick={() => {
+                    // Trigger RainbowKit connect modal
+                    document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
+                  }}
+                >
+                  Connect Wallet
+                </Button>
+              ) : isApproving ? (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg"
+                  loading
+                  disabled
+                >
+                  Approving {fromToken}...
+                </Button>
+              ) : isBuilding ? (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg"
+                  loading
+                  disabled
+                >
+                  Building transaction...
+                </Button>
+              ) : isSwapPending ? (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg"
+                  loading
+                  disabled
+                >
+                  Confirming swap...
+                </Button>
+              ) : (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg" 
+                  loading={loading}
+                  onClick={handleExecute}
+                  disabled={!topQuote || loading}
+                >
+                  {loading ? "Finding best route..." : topQuote ? "Execute Best Quote" : "Enter amount"}
+                </Button>
+              )}
 
               <p className="mt-3 text-center text-micro text-sp-muted2">
                 {mode === "BEQ" 

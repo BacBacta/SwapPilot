@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -267,5 +267,101 @@ export class ParaSwapAdapter implements Adapter {
     if (!chainName) return null;
     
     return `https://app.paraswap.io/#/${chainName}/${request.sellToken}-${request.buyToken}`;
+  }
+
+  /**
+   * Build a ready-to-sign transaction using ParaSwap's Transaction API.
+   * First gets price route, then builds transaction.
+   */
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.isSupported()) {
+      throw new Error(`Chain ${this.chainId} not supported by ParaSwap`);
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const srcToken = this.normalizeToken(request.sellToken);
+      const destToken = this.normalizeToken(request.buyToken);
+      const slippageBps = request.slippageBps ?? 100;
+
+      // Step 1: Get price route (needed for transaction building)
+      const priceUrl = new URL(`${this.baseUrl}/prices`);
+      priceUrl.searchParams.set('srcToken', srcToken);
+      priceUrl.searchParams.set('destToken', destToken);
+      priceUrl.searchParams.set('amount', request.sellAmount);
+      priceUrl.searchParams.set('srcDecimals', '18');
+      priceUrl.searchParams.set('destDecimals', '18');
+      priceUrl.searchParams.set('side', 'SELL');
+      priceUrl.searchParams.set('network', String(this.chainId));
+      priceUrl.searchParams.set('partner', this.partner);
+
+      const priceRes = await fetch(priceUrl.toString(), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      });
+
+      if (!priceRes.ok) {
+        throw new Error(`ParaSwap price API error: ${priceRes.status}`);
+      }
+
+      const priceRoute = await priceRes.json();
+
+      // Step 2: Build transaction
+      const txUrl = `${this.baseUrl}/transactions/${this.chainId}`;
+      const txBody = {
+        srcToken,
+        destToken,
+        srcAmount: request.sellAmount,
+        destAmount: quote.raw.buyAmount,
+        priceRoute,
+        userAddress: request.account,
+        partner: this.partner,
+        slippage: slippageBps, // In basis points
+      };
+
+      const txRes = await fetch(txUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(txBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!txRes.ok) {
+        const text = await txRes.text();
+        throw new Error(`ParaSwap transaction API error: ${txRes.status} - ${text}`);
+      }
+
+      const txData = await txRes.json() as {
+        to: string;
+        data: string;
+        value: string;
+        gas: string;
+        gasPrice: string;
+        chainId: number;
+      };
+
+      return {
+        to: txData.to,
+        data: txData.data,
+        value: txData.value,
+        gas: txData.gas,
+        gasPrice: txData.gasPrice,
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 }

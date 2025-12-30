@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -201,6 +201,90 @@ export class OdosAdapter implements Adapter {
           feesUsd: null,
         },
       };
+    }
+  }
+
+  /**
+   * Build a ready-to-sign transaction using Odos Assemble API.
+   * Requires the pathId from the quote response.
+   */
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.isChainSupported()) {
+      throw new Error(`Chain ${this.chainId} not supported by Odos`);
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      // First, get a fresh quote to get the pathId
+      const quoteUrl = `${this.baseUrl}/sor/quote/v2`;
+      const quoteBody = {
+        chainId: this.chainId,
+        inputTokens: [{ tokenAddress: request.sellToken, amount: request.sellAmount }],
+        outputTokens: [{ tokenAddress: request.buyToken, proportion: 1 }],
+        slippageLimitPercent: (request.slippageBps ?? 100) / 100,
+        userAddr: request.account,
+      };
+
+      const quoteRes = await fetch(quoteUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quoteBody),
+        signal: controller.signal,
+      });
+
+      if (!quoteRes.ok) {
+        throw new Error(`Odos quote API error: ${quoteRes.status}`);
+      }
+
+      const quoteData = await quoteRes.json() as { pathId: string };
+
+      // Now assemble the transaction
+      const assembleUrl = `${this.baseUrl}/sor/assemble`;
+      const assembleBody = {
+        userAddr: request.account,
+        pathId: quoteData.pathId,
+        simulate: false,
+      };
+
+      const assembleRes = await fetch(assembleUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assembleBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!assembleRes.ok) {
+        const text = await assembleRes.text();
+        throw new Error(`Odos assemble API error: ${assembleRes.status} - ${text}`);
+      }
+
+      const txData = await assembleRes.json() as {
+        transaction: {
+          to: string;
+          data: string;
+          value: string;
+          gas: number;
+          gasPrice: number;
+        };
+      };
+
+      return {
+        to: txData.transaction.to,
+        data: txData.transaction.data,
+        value: txData.transaction.value,
+        gas: String(txData.transaction.gas),
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -197,6 +197,72 @@ export class OpenOceanAdapter implements Adapter {
           feesUsd: null,
         },
       };
+    }
+  }
+
+  /**
+   * Build a ready-to-sign transaction using OpenOcean's swap API.
+   */
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.isChainSupported()) {
+      throw new Error(`Chain ${this.chainId} not supported by OpenOcean`);
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const slippage = (request.slippageBps ?? 100) / 100; // Convert bps to percent
+
+      // OpenOcean swap endpoint returns transaction data
+      const url = new URL(`${this.apiBaseUrl}/${this.chainName}/swap`);
+      url.searchParams.set('inTokenAddress', request.sellToken);
+      url.searchParams.set('outTokenAddress', request.buyToken);
+      url.searchParams.set('amount', request.sellAmount);
+      url.searchParams.set('account', request.account);
+      url.searchParams.set('slippage', slippage.toString());
+      url.searchParams.set('gasPrice', '5'); // Use default gas price
+
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`OpenOcean swap API error: ${res.status} - ${text}`);
+      }
+
+      const json = await res.json() as {
+        code: number;
+        data?: {
+          to: string;
+          data: string;
+          value: string;
+          estimatedGas: number;
+        };
+      };
+
+      if (json.code !== 200 || !json.data) {
+        throw new Error(`OpenOcean swap returned error code: ${json.code}`);
+      }
+
+      return {
+        to: json.data.to,
+        data: json.data.data,
+        value: json.data.value,
+        gas: String(json.data.estimatedGas),
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
     }
   }
 }

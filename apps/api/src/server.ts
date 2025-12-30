@@ -399,5 +399,92 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     },
   );
 
+  // Build transaction endpoint - returns ready-to-sign calldata
+  const BuildTxRequestSchema = z.object({
+    providerId: z.string(),
+    sellToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    buyToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    sellAmount: z.string(),
+    slippageBps: z.number().int().min(1).max(5000).default(100),
+    account: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  });
+
+  const BuildTxResponseSchema = z.object({
+    to: z.string(),
+    data: z.string(),
+    value: z.string(),
+    gas: z.string().optional(),
+    gasPrice: z.string().optional(),
+    providerId: z.string(),
+    approvalAddress: z.string().optional(),
+  });
+
+  api.post(
+    '/v1/build-tx',
+    {
+      schema: {
+        body: BuildTxRequestSchema,
+        response: {
+          200: BuildTxResponseSchema,
+          400: z.object({ message: z.string() }),
+          404: z.object({ message: z.string() }),
+          500: z.object({ message: z.string() }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { providerId, sellToken, buyToken, sellAmount, slippageBps, account } = request.body;
+
+      const adapter = adapters.get(providerId);
+      if (!adapter) {
+        return reply.code(404).send({ message: `Provider '${providerId}' not found` });
+      }
+
+      if (!adapter.buildTx) {
+        return reply.code(400).send({ 
+          message: `Provider '${providerId}' does not support buildTx. Use deepLink instead.` 
+        });
+      }
+
+      const quoteRequest = {
+        chainId: 56,
+        sellToken,
+        buyToken,
+        sellAmount,
+        slippageBps,
+        account,
+        mode: 'NORMAL' as const,
+      };
+
+      try {
+        // First get a quote to pass to buildTx
+        const quote = await adapter.getQuote(quoteRequest);
+        
+        if (quote.isStub || BigInt(quote.raw.buyAmount) === 0n) {
+          return reply.code(400).send({ 
+            message: `Provider '${providerId}' returned no valid quote` 
+          });
+        }
+
+        // Build the transaction
+        const tx = await adapter.buildTx(quoteRequest, quote);
+
+        return {
+          to: tx.to,
+          data: tx.data,
+          value: tx.value,
+          gas: tx.gas,
+          gasPrice: tx.gasPrice,
+          providerId,
+          approvalAddress: tx.to, // For ERC-20 approvals, approve this address
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        request.log.error({ err, providerId }, 'buildTx failed');
+        return reply.code(500).send({ message: `Build transaction failed: ${message}` });
+      }
+    },
+  );
+
   return app;
 }
