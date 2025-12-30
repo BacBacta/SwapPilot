@@ -184,7 +184,7 @@ export function SwapInterface() {
     () => [fromTokenInfo, toTokenInfo].filter((t): t is NonNullable<typeof t> => Boolean(t)),
     [fromTokenInfo, toTokenInfo],
   );
-  const { getBalanceFormatted, isConnected } = useTokenBalances(balancesTokens);
+  const { getBalanceFormatted, isConnected, refetch: refetchBalances } = useTokenBalances(balancesTokens);
 
   // Transaction History Hook
   const { transactions, pendingCount, addTransaction, updateTransaction, clearHistory } = useTransactionHistory();
@@ -514,8 +514,24 @@ export function SwapInterface() {
       }
       resetSwap();
       refetchAllowance();
+      
+      // Refresh balances and quotes after successful swap
+      // Small delay to let the chain state propagate
+      setTimeout(() => {
+        refetchBalances();
+        // Re-fetch quotes to update output estimates
+        if (fromTokenInfo && toTokenInfo && fromAmount) {
+          fetchQuotes({
+            sellToken: fromTokenInfo.address,
+            buyToken: toTokenInfo.address,
+            sellAmount: fromAmount.replace(/,/g, ""),
+            slippageBps: settings.slippageBps,
+            mode: settings.mode,
+          });
+        }
+      }, 2000);
     }
-  }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance]);
+  }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance, refetchBalances, fetchQuotes, fromTokenInfo, toTokenInfo, fromAmount, settings.slippageBps, settings.mode]);
 
   // Watch for swap errors
   useEffect(() => {

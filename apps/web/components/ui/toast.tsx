@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /* ========================================
@@ -21,7 +21,6 @@ export interface Toast {
 }
 
 interface ToastContextValue {
-  toasts: Toast[];
   addToast: (toast: Omit<Toast, "id">) => string;
   removeToast: (id: string) => void;
   updateToast: (id: string, updates: Partial<Toast>) => void;
@@ -100,10 +99,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return addToast({ type: "loading", title, message });
   }, [addToast]);
 
+  const contextValue = useMemo<ToastContextValue>(
+    () => ({ addToast, removeToast, updateToast, success, error, warning, info, loading }),
+    [addToast, removeToast, updateToast, success, error, warning, info, loading]
+  );
+
   return (
-    <ToastContext.Provider
-      value={{ toasts, addToast, removeToast, updateToast, success, error, warning, info, loading }}
-    >
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>
