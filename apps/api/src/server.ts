@@ -34,6 +34,7 @@ import {
   OpenOceanAdapter,
   ZeroXAdapter,
   UniswapV3Adapter,
+  PROVIDERS,
   type Adapter,
 } from '@swappilot/adapters';
 
@@ -175,6 +176,25 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
   const metrics = options.metrics ?? createMetrics({ collectDefault: true });
   const providerHealth = options.providerHealth ?? new ProviderHealthTracker();
+
+  // Provider status endpoint for dashboard
+  api.get('/v1/providers/status', async () => {
+    const stats = providerHealth.getAllStats();
+    const providers = PROVIDERS.map((p) => {
+      const stat = stats.find((s) => s.providerId === p.providerId);
+      return {
+        providerId: p.providerId,
+        displayName: p.displayName,
+        category: p.category,
+        capabilities: p.capabilities,
+        successRate: stat?.successRate ?? 80, // Default if no observations
+        latencyMs: stat?.latencyMs ?? 500,
+        observations: stat?.observations ?? 0,
+        status: stat ? (stat.successRate >= 70 ? 'ok' : stat.successRate >= 40 ? 'degraded' : 'down') : 'unknown',
+      };
+    });
+    return { providers, timestamp: Date.now() };
+  });
 
   if (config.metrics.enabled) {
     api.get('/metrics', async (_request, reply) => {

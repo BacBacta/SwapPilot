@@ -84,4 +84,33 @@ export class ProviderHealthTracker {
     const runtime = this.getRuntimeFactor(params.providerId);
     return clamp01(base * (0.3 + 0.7 * runtime));
   }
+
+  /** Get all provider stats for status dashboard */
+  getAllStats(): Array<{
+    providerId: string;
+    successRate: number;
+    latencyMs: number;
+    observations: number;
+    lastUpdatedAt: number;
+  }> {
+    const result: Array<{
+      providerId: string;
+      successRate: number;
+      latencyMs: number;
+      observations: number;
+      lastUpdatedAt: number;
+    }> = [];
+
+    for (const [providerId, stats] of this.stats.entries()) {
+      result.push({
+        providerId,
+        successRate: Math.round(stats.ewmaSuccess * 100),
+        latencyMs: Math.round(stats.ewmaLatencyMs),
+        observations: stats.n,
+        lastUpdatedAt: stats.lastUpdatedAt,
+      });
+    }
+
+    return result.sort((a, b) => b.successRate - a.successRate);
+  }
 }
