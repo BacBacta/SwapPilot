@@ -37,12 +37,16 @@ function ProviderRowAPI({
   isWinner = false,
   rank,
   bestBuyAmount,
+  buyTokenDecimals = 18,
+  buyTokenPriceUsd,
   onSelect,
 }: {
   quote: RankedQuote;
   isWinner?: boolean;
   rank: number;
   bestBuyAmount: bigint | undefined;
+  buyTokenDecimals?: number;
+  buyTokenPriceUsd: number | undefined;
   onSelect?: () => void;
 }) {
   const confidence = getConfidenceFromQuote(quote);
@@ -95,10 +99,10 @@ function ProviderRowAPI({
 
       <div className="text-right">
         <div className={`text-h2 font-bold ${isWinner ? "text-sp-accent" : "text-sp-text"}`}>
-          {formatQuoteOutput(quote)}
+          {formatQuoteOutput(quote, buyTokenDecimals)}
         </div>
         <div className="mt-0.5 text-caption text-sp-muted">
-          {formatQuoteUsd(quote)}
+          {formatQuoteUsd(quote, buyTokenDecimals, buyTokenPriceUsd)}
         </div>
         {deltaPct !== 0 && (
           <div className={`text-micro font-medium ${deltaPct > 0 ? "text-sp-ok" : "text-sp-bad"}`}>
@@ -359,7 +363,7 @@ export function SwapInterface() {
             <div className="space-y-1">
               <TokenInput
                 label="From"
-                token={fromToken}
+                token={fromTokenInfo?.symbol ?? fromToken}
                 balance={isConnected && fromTokenInfo ? getBalanceFormatted(fromTokenInfo) : undefined}
                 value={fromAmount}
                 usdValue={fromUsdValue > 0 ? `≈ $${fromUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ""}
@@ -375,10 +379,10 @@ export function SwapInterface() {
 
               <TokenInput
                 label="To"
-                token={toToken}
+                token={toTokenInfo?.symbol ?? toToken}
                 balance={isConnected && toTokenInfo ? getBalanceFormatted(toTokenInfo) : undefined}
-                value={loading ? "" : topQuote ? formatQuoteOutput(topQuote) : "—"}
-                usdValue={loading ? "" : topQuote ? formatQuoteUsd(topQuote) : ""}
+                value={loading ? "" : topQuote ? formatQuoteOutput(topQuote, toTokenInfo?.decimals ?? 18) : "—"}
+                usdValue={loading ? "" : topQuote ? formatQuoteUsd(topQuote, toTokenInfo?.decimals ?? 18, getPrice(toTokenInfo?.symbol ?? "") ?? undefined) : ""}
                 loading={loading}
                 readOnly
                 onTokenClick={() => openTokenPicker("to")}
@@ -477,6 +481,8 @@ export function SwapInterface() {
                         rank={i + 1}
                         isWinner={i === 0}
                         bestBuyAmount={bestBuyAmount}
+                        buyTokenDecimals={toTokenInfo?.decimals ?? 18}
+                        buyTokenPriceUsd={getPrice(toTokenInfo?.symbol ?? "") ?? undefined}
                         onSelect={() => handleViewReceipt(quote)}
                       />
                     ))}

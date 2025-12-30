@@ -212,19 +212,22 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
 /* ========================================
    HELPERS
    ======================================== */
-export function formatQuoteOutput(quote: RankedQuote): string {
+export function formatQuoteOutput(quote: RankedQuote, buyTokenDecimals = 18): string {
   const amount = BigInt(quote.normalized.buyAmount);
-  const decimals = 18; // Assume 18 decimals
-  const value = Number(amount) / 10 ** decimals;
-  return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const value = Number(amount) / 10 ** buyTokenDecimals;
+  // For large amounts, use fewer decimal places
+  const maxDecimals = value >= 1000 ? 2 : value >= 1 ? 4 : 6;
+  return value.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
 }
 
-export function formatQuoteUsd(quote: RankedQuote): string {
-  // Simplified: use effectivePrice as proxy
-  const price = parseFloat(quote.normalized.effectivePrice);
-  const amount = Number(BigInt(quote.normalized.buyAmount)) / 10 ** 18;
-  // This is simplified - in production you'd use actual price feeds
-  return `$${(amount * 1).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+export function formatQuoteUsd(quote: RankedQuote, buyTokenDecimals = 18, priceUsd?: number): string {
+  const amount = Number(BigInt(quote.normalized.buyAmount)) / 10 ** buyTokenDecimals;
+  if (priceUsd && priceUsd > 0) {
+    const usdValue = amount * priceUsd;
+    return `≈ $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+  // Fallback: no USD value available
+  return "";
 }
 
 export function getConfidenceFromQuote(quote: RankedQuote): number {
