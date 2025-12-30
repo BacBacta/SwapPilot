@@ -372,7 +372,7 @@ export function SwapInterface() {
       return;
     }
 
-    if (!fromTokenInfo) {
+    if (!fromTokenInfo || !toTokenInfo) {
       toast.error("Token not found", "Unable to resolve token information");
       return;
     }
@@ -410,7 +410,7 @@ export function SwapInterface() {
       const tx = await buildTransaction({
         providerId: quote.providerId,
         sellToken: fromTokenInfo.address,
-        buyToken: toTokenInfo?.address ?? quote.raw.route[quote.raw.route.length - 1],
+        buyToken: toTokenInfo.address,
         sellAmount: sellAmountWei.toString(),
         slippageBps: settings.slippageBps,
       });
