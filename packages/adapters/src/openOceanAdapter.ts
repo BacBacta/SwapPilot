@@ -81,7 +81,8 @@ export class OpenOceanAdapter implements Adapter {
   constructor(config: OpenOceanAdapterConfig) {
     this.chainId = config.chainId;
     this.chainName = CHAIN_NAMES[config.chainId] ?? 'bsc';
-    this.apiBaseUrl = config.apiBaseUrl ?? 'https://open-api.openocean.finance/v3';
+    // Use V4 API - V3 swap endpoint has issues (NETWORK_ERROR)
+    this.apiBaseUrl = config.apiBaseUrl ?? 'https://open-api.openocean.finance/v4';
     this.timeoutMs = config.timeoutMs ?? 10000;
   }
 
