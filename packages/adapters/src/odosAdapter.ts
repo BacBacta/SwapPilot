@@ -222,7 +222,7 @@ export class OdosAdapter implements Adapter {
 
     try {
       // First, get a fresh quote to get the pathId
-      const quoteUrl = `${this.baseUrl}/sor/quote/v2`;
+      const quoteUrl = `${this.apiBaseUrl}/sor/quote/v2`;
       const quoteBody = {
         chainId: this.chainId,
         inputTokens: [{ tokenAddress: request.sellToken, amount: request.sellAmount }],
@@ -245,7 +245,7 @@ export class OdosAdapter implements Adapter {
       const quoteData = await quoteRes.json() as { pathId: string };
 
       // Now assemble the transaction
-      const assembleUrl = `${this.baseUrl}/sor/assemble`;
+      const assembleUrl = `${this.apiBaseUrl}/sor/assemble`;
       const assembleBody = {
         userAddr: request.account,
         pathId: quoteData.pathId,
