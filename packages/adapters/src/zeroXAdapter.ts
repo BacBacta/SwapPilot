@@ -154,14 +154,18 @@ export class ZeroXAdapter implements Adapter {
       const data = await res.json() as {
         buyAmount: string;
         sellAmount: string;
-        estimatedGas: string;
+        estimatedGas: string | number;
         sources: Array<{ name: string; proportion: string }>;
       };
+
+      const gasEstimate = typeof data.estimatedGas === 'string'
+        ? parseInt(data.estimatedGas, 10) || 200000
+        : data.estimatedGas ?? 200000;
 
       const raw = {
         sellAmount: request.sellAmount,
         buyAmount: data.buyAmount,
-        estimatedGas: parseInt(data.estimatedGas, 10) || 200000,
+        estimatedGas: gasEstimate,
         feeBps: 0, // 0x doesn't charge swap fees
         route: [request.sellToken, request.buyToken],
       };

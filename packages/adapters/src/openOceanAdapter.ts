@@ -150,7 +150,7 @@ export class OpenOceanAdapter implements Adapter {
         code: number;
         data?: {
           outAmount: string;
-          estimatedGas: number;
+          estimatedGas: number | string;
         };
       };
 
@@ -161,7 +161,9 @@ export class OpenOceanAdapter implements Adapter {
       const raw = {
         sellAmount: request.sellAmount,
         buyAmount: json.data.outAmount,
-        estimatedGas: json.data.estimatedGas ?? 200000,
+        estimatedGas: typeof json.data.estimatedGas === 'string' 
+          ? parseInt(json.data.estimatedGas, 10) || 200000 
+          : json.data.estimatedGas ?? 200000,
         feeBps: 0,
         route: [request.sellToken, request.buyToken],
       };

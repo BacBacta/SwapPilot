@@ -155,16 +155,19 @@ export class OdosAdapter implements Adapter {
 
       const data = await res.json() as {
         outAmounts: string[];
-        gasEstimate: number;
+        gasEstimate: number | string;
         pathId: string;
       };
 
       const buyAmount = data.outAmounts?.[0] ?? '0';
+      const gasEstimate = typeof data.gasEstimate === 'string'
+        ? parseInt(data.gasEstimate, 10) || 200000
+        : data.gasEstimate ?? 200000;
 
       const raw = {
         sellAmount: request.sellAmount,
         buyAmount,
-        estimatedGas: data.gasEstimate ?? 200000,
+        estimatedGas: gasEstimate,
         feeBps: 0,
         route: [request.sellToken, request.buyToken],
       };
