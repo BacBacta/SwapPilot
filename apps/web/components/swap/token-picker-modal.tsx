@@ -12,7 +12,7 @@ import { useFavorites, FavoriteButton } from "@/lib/use-favorites";
 
 import type { TokenInfo } from "@/lib/tokens";
 import { isAddress, normalizeAddress } from "@/lib/tokens";
-import { useTokenRegistry } from "@/lib/use-token-registry";
+import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { resolveTokenMetadata } from "@/lib/api";
 
 const RECENT_TOKENS = ["ETH", "BNB", "USDT", "USDC"];

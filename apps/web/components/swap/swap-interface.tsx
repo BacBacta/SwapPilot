@@ -24,7 +24,7 @@ import {
 } from "@/lib/use-swap-quotes";
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
 import { useTokenBalances } from "@/lib/use-token-balances";
-import { useTokenRegistry } from "@/lib/use-token-registry";
+import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { QuoteSkeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import type { RankedQuote } from "@swappilot/shared";

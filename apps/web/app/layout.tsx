@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { Web3Provider } from '@/components/providers/web3-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SettingsProvider } from '@/components/providers/settings-provider';
+import { TokenRegistryProvider } from '@/components/providers/token-registry-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import './globals.css';
 
@@ -39,11 +40,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-sp-bg text-sp-text">
         <ThemeProvider>
           <SettingsProvider>
-            <Web3Provider>
-              <ToastProvider>
-                <AppShell>{children}</AppShell>
-              </ToastProvider>
-            </Web3Provider>
+            <TokenRegistryProvider>
+              <Web3Provider>
+                <ToastProvider>
+                  <AppShell>{children}</AppShell>
+                </ToastProvider>
+              </Web3Provider>
+            </TokenRegistryProvider>
           </SettingsProvider>
         </ThemeProvider>
       </body>
