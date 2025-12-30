@@ -314,16 +314,18 @@ export class ParaSwapAdapter implements Adapter {
       const priceRoute = await priceRes.json();
 
       // Step 2: Build transaction
+      // ParaSwap requires: for SELL side, use slippage (not destAmount)
+      // The priceRoute must be passed unmodified
       const txUrl = `${this.baseUrl}/transactions/${this.chainId}`;
       const txBody = {
         srcToken,
         destToken,
         srcAmount: request.sellAmount,
-        destAmount: quote.raw.buyAmount,
+        // For SELL side: use slippage, NOT destAmount (cannot specify both)
+        slippage: slippageBps / 100, // ParaSwap expects slippage as percentage (1 = 1%)
         priceRoute,
         userAddress: request.account,
         partner: this.partner,
-        slippage: slippageBps, // In basis points
       };
 
       const txRes = await fetch(txUrl, {
