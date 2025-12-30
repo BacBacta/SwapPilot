@@ -122,7 +122,7 @@ export function ModeExplanationBadge({ mode }: { mode: "BEQ" | "RAW" }) {
             </span>
             <span className="font-semibold text-sp-text">{title}</span>
           </div>
-          <p className="mt-2 text-micro leading-relaxed text-sp-muted text-justify">
+          <p className="mt-2 text-micro leading-relaxed text-sp-muted">
             {description}
           </p>
           {mode === "BEQ" && (
