@@ -1,6 +1,11 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
+/**
+ * OpenOcean API expects amount in human-readable units (e.g., "1" for 1 token),
+ * but returns amounts in wei. We need to fetch token decimals first to convert.
+ */
+
 function placeholderSignals(reason: string): RiskSignals {
   return {
     sellability: { status: 'OK', confidence: 0.8, reasons: [reason] },
@@ -57,6 +62,9 @@ export class OpenOceanAdapter implements Adapter {
   private readonly chainName: string;
   private readonly apiBaseUrl: string;
   private readonly timeoutMs: number;
+  
+  // Cache for token decimals to avoid repeated API calls
+  private tokenDecimalsCache: Map<string, number> = new Map();
 
   constructor(config: OpenOceanAdapterConfig) {
     this.chainId = config.chainId;
@@ -67,6 +75,84 @@ export class OpenOceanAdapter implements Adapter {
 
   private isChainSupported(): boolean {
     return this.chainId in CHAIN_NAMES;
+  }
+
+  /**
+   * Fetch token decimals from OpenOcean token info API.
+   * OpenOcean expects amount in human-readable units, so we need decimals to convert.
+   */
+  private async getTokenDecimals(tokenAddress: string): Promise<number> {
+    const cacheKey = `${this.chainId}:${tokenAddress.toLowerCase()}`;
+    const cached = this.tokenDecimalsCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    // Native token placeholder addresses
+    const nativePlaceholders = [
+      '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      '0x0000000000000000000000000000000000000000',
+    ];
+    if (nativePlaceholders.includes(tokenAddress.toLowerCase())) {
+      this.tokenDecimalsCache.set(cacheKey, 18);
+      return 18;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      const url = new URL(`${this.apiBaseUrl}/${this.chainName}/tokenList`);
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const json = await res.json() as {
+          code: number;
+          data?: Array<{ address: string; decimals: number }>;
+        };
+        if (json.code === 200 && json.data) {
+          const token = json.data.find(
+            (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
+          );
+          if (token) {
+            this.tokenDecimalsCache.set(cacheKey, token.decimals);
+            return token.decimals;
+          }
+        }
+      }
+    } catch {
+      // Fall through to default
+    }
+
+    // Default to 18 decimals if we can't determine
+    this.tokenDecimalsCache.set(cacheKey, 18);
+    return 18;
+  }
+
+  /**
+   * Convert wei amount to human-readable units for OpenOcean API.
+   */
+  private weiToHuman(weiAmount: string, decimals: number): string {
+    const wei = BigInt(weiAmount);
+    const divisor = 10n ** BigInt(decimals);
+    const intPart = wei / divisor;
+    const fracPart = wei % divisor;
+    
+    if (fracPart === 0n) {
+      return intPart.toString();
+    }
+    
+    // Format fractional part with leading zeros
+    const fracStr = fracPart.toString().padStart(decimals, '0');
+    // Remove trailing zeros
+    const trimmedFrac = fracStr.replace(/0+$/, '');
+    
+    return trimmedFrac.length > 0 
+      ? `${intPart}.${trimmedFrac}`
+      : intPart.toString();
   }
 
   getProviderMeta(): ProviderMeta {
@@ -120,6 +206,11 @@ export class OpenOceanAdapter implements Adapter {
     }
 
     try {
+      // OpenOcean expects amount in human-readable units, not wei
+      // First, get the decimals for the sell token
+      const sellTokenDecimals = await this.getTokenDecimals(request.sellToken);
+      const humanAmount = this.weiToHuman(request.sellAmount, sellTokenDecimals);
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -127,7 +218,7 @@ export class OpenOceanAdapter implements Adapter {
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/quote`);
       url.searchParams.set('inTokenAddress', request.sellToken);
       url.searchParams.set('outTokenAddress', request.buyToken);
-      url.searchParams.set('amount', request.sellAmount);
+      url.searchParams.set('amount', humanAmount);
       url.searchParams.set('slippage', String((request.slippageBps ?? 50) / 100));
       url.searchParams.set('gasPrice', '5'); // Default gas price in gwei
 
@@ -212,6 +303,10 @@ export class OpenOceanAdapter implements Adapter {
       throw new Error('Account address required for building transaction');
     }
 
+    // OpenOcean expects amount in human-readable units, not wei
+    const sellTokenDecimals = await this.getTokenDecimals(request.sellToken);
+    const humanAmount = this.weiToHuman(request.sellAmount, sellTokenDecimals);
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -222,7 +317,7 @@ export class OpenOceanAdapter implements Adapter {
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/swap`);
       url.searchParams.set('inTokenAddress', request.sellToken);
       url.searchParams.set('outTokenAddress', request.buyToken);
-      url.searchParams.set('amount', request.sellAmount);
+      url.searchParams.set('amount', humanAmount);
       url.searchParams.set('account', request.account);
       url.searchParams.set('slippage', slippage.toString());
       url.searchParams.set('gasPrice', '5'); // Use default gas price
