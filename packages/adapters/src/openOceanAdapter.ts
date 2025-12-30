@@ -57,6 +57,18 @@ const CHAIN_NAMES: Record<number, string> = {
   250: 'fantom',
 };
 
+// Wrapped native token addresses per chain (OpenOcean uses these for native tokens)
+const WRAPPED_NATIVE_TOKENS: Record<number, string> = {
+  1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+  56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+  137: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', // WMATIC
+  42161: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH on Arbitrum
+  10: '0x4200000000000000000000000000000000000006', // WETH on Optimism
+  8453: '0x4200000000000000000000000000000000000006', // WETH on Base
+  43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', // WAVAX
+  250: '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83', // WFTM
+};
+
 export class OpenOceanAdapter implements Adapter {
   private readonly chainId: number;
   private readonly chainName: string;
@@ -75,6 +87,22 @@ export class OpenOceanAdapter implements Adapter {
 
   private isChainSupported(): boolean {
     return this.chainId in CHAIN_NAMES;
+  }
+
+  /**
+   * Normalize token address for OpenOcean API.
+   * OpenOcean doesn't accept 0xEeee... for native tokens, use wrapped token address instead.
+   */
+  private normalizeTokenAddress(tokenAddress: string): string {
+    const lower = tokenAddress.toLowerCase();
+    const nativePlaceholders = [
+      '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      '0x0000000000000000000000000000000000000000',
+    ];
+    if (nativePlaceholders.includes(lower)) {
+      return WRAPPED_NATIVE_TOKENS[this.chainId] ?? tokenAddress;
+    }
+    return tokenAddress;
   }
 
   /**
@@ -314,9 +342,13 @@ export class OpenOceanAdapter implements Adapter {
       const slippage = (request.slippageBps ?? 100) / 100; // Convert bps to percent
 
       // OpenOcean swap endpoint returns transaction data
+      // Normalize native token addresses to wrapped versions
+      const inToken = this.normalizeTokenAddress(request.sellToken);
+      const outToken = this.normalizeTokenAddress(request.buyToken);
+      
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/swap`);
-      url.searchParams.set('inTokenAddress', request.sellToken);
-      url.searchParams.set('outTokenAddress', request.buyToken);
+      url.searchParams.set('inTokenAddress', inToken);
+      url.searchParams.set('outTokenAddress', outToken);
       url.searchParams.set('amount', humanAmount);
       url.searchParams.set('account', request.account);
       url.searchParams.set('slippage', slippage.toString());
