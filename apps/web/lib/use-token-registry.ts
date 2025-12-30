@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { NATIVE_BNB, type TokenInfo, isAddress, loadCustomTokens, normalizeAddress, normalizeSymbol, saveCustomTokens } from './tokens';
+import { BASE_TOKENS, NATIVE_BNB, type TokenInfo, isAddress, loadCustomTokens, normalizeAddress, normalizeSymbol, saveCustomTokens } from './tokens';
 
 type TokenListToken = {
   chainId?: number;
@@ -119,11 +119,14 @@ export function useTokenRegistry() {
   }, [refresh]);
 
   const tokens = useMemo(() => {
-    // Ensure native BNB always present.
+    // Start with base tokens as fallback (always available)
     const map = new Map<string, TokenInfo>();
-    map.set(normalizeAddress(NATIVE_BNB.address), NATIVE_BNB);
+    for (const t of BASE_TOKENS) map.set(normalizeAddress(t.address), t);
 
+    // Add tokens from external list (may override base tokens with richer data)
     for (const t of listTokens) map.set(normalizeAddress(t.address), t);
+    
+    // Add custom tokens (highest priority)
     for (const t of customTokens) map.set(normalizeAddress(t.address), t);
 
     return Array.from(map.values());
