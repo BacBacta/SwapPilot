@@ -8,7 +8,7 @@ import { parseUnits } from "viem";
 import type { TokenInfo } from "@/lib/tokens";
 
 const BSC_CHAIN_ID = 56;
-const QUOTE_REFRESH_INTERVAL_MS = 10_000; // Refresh quotes every 10 seconds
+const QUOTE_REFRESH_INTERVAL_MS = 12_000; // Refresh quotes every 12 seconds
 
 export type ResolveTokenFn = (tokenOrSymbolOrAddress: string) => TokenInfo | null;
 
@@ -42,6 +42,7 @@ export interface UseSwapQuotesReturn {
   bestExecutableQuote: RankedQuote | null;
   bestRawQuote: RankedQuote | null;
   rankedQuotes: RankedQuote[];
+  bestRawQuotes: RankedQuote[];
 }
 
 export interface FetchQuotesParams {
@@ -186,11 +187,14 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
   const rankedQuotes = (quotes.data?.rankedQuotes ?? []).filter(
     (q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n
   );
+  const bestRawQuotes = (quotes.data?.bestRawQuotes ?? []).filter(
+    (q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n
+  );
   const bestExecutableQuote = quotes.data
     ? rankedQuotes.find((q) => q.providerId === quotes.data?.bestExecutableQuoteProviderId) ?? null
     : null;
   const bestRawQuote = quotes.data
-    ? (quotes.data.bestRawQuotes.find((q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n) ?? null)
+    ? (bestRawQuotes[0] ?? null)
     : null;
 
   return {
@@ -206,6 +210,7 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
     bestExecutableQuote,
     bestRawQuote,
     rankedQuotes,
+    bestRawQuotes,
   };
 }
 

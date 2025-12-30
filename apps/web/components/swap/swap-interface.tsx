@@ -173,6 +173,7 @@ export function SwapInterface() {
     quotes,
     receipt,
     rankedQuotes,
+    bestRawQuotes,
     bestExecutableQuote,
     bestRawQuote,
     fetchQuotes,
@@ -205,8 +206,8 @@ export function SwapInterface() {
 
   // Get quotes based on mode
   const activeQuotes = useMemo(() => {
-    return mode === "BEQ" ? rankedQuotes : rankedQuotes;
-  }, [mode, rankedQuotes]);
+    return mode === "BEQ" ? rankedQuotes : bestRawQuotes;
+  }, [mode, rankedQuotes, bestRawQuotes]);
 
   const displayedQuotes = useMemo(() => {
     return showMore ? activeQuotes : activeQuotes.slice(0, 3);

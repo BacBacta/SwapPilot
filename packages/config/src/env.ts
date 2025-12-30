@@ -14,7 +14,7 @@ export const EnvSchema = z.object({
 
   // Redis / caching
   REDIS_URL: z.string().default(''),
-  QUOTE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(10),
+  QUOTE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(5),
 
   // API gateway rate limiting
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10_000).default(120),
