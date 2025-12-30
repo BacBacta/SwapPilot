@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 import { createHmac } from 'crypto';
 
@@ -73,6 +73,10 @@ export class OkxDexAdapter implements Adapter {
     return Boolean(this.apiKey && this.secretKey && this.passphrase);
   }
 
+  private buildTxEnabled(): boolean {
+    return this.quoteEnabled();
+  }
+
   getProviderMeta(): ProviderMeta {
     return {
       providerId: 'okx-dex',
@@ -81,14 +85,12 @@ export class OkxDexAdapter implements Adapter {
       homepageUrl: 'https://www.okx.com/web3/dex',
       capabilities: {
         quote: this.quoteEnabled(),
-        // OKX DEX adapter currently supports quotes only.
-        // Execution is handled via deep-link in the UI.
-        buildTx: false,
+        buildTx: this.buildTxEnabled(),
         deepLink: true,
       },
       integrationConfidence: this.quoteEnabled() ? 0.85 : 0.2,
       notes: this.quoteEnabled()
-        ? 'OKX DEX API integration enabled (quote-only)'
+        ? 'OKX DEX API integration enabled (quote + buildTx)'
         : 'API credentials not configured, deep-link only',
     };
   }
@@ -228,6 +230,144 @@ export class OkxDexAdapter implements Adapter {
           feesUsd: null,
         },
       };
+    }
+  }
+
+  /**
+   * Build a ready-to-sign transaction for the swap.
+   * Calls OKX DEX Aggregator swap endpoint which returns calldata.
+   */
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.buildTxEnabled()) {
+      throw new Error('OKX API credentials not configured');
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
+    const slippage = String((request.slippageBps ?? 50) / 10000);
+
+    const path = '/api/v5/dex/aggregator/swap';
+    const queryParams = new URLSearchParams({
+      chainId: chainIdStr,
+      fromTokenAddress: this.normalizeNativeToken(request.sellToken),
+      toTokenAddress: this.normalizeNativeToken(request.buyToken),
+      amount: request.sellAmount,
+      slippage,
+      userWalletAddress: request.account,
+    });
+
+    const url = `https://www.okx.com${path}?${queryParams.toString()}`;
+    const timestamp = new Date().toISOString();
+    const preHashGet = timestamp + 'GET' + path + '?' + queryParams.toString();
+    const signatureGet = createHmac('sha256', this.secretKey!).update(preHashGet).digest('base64');
+
+    try {
+      let res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'OK-ACCESS-KEY': this.apiKey!,
+          'OK-ACCESS-SIGN': signatureGet,
+          'OK-ACCESS-TIMESTAMP': timestamp,
+          'OK-ACCESS-PASSPHRASE': this.passphrase!,
+        },
+        signal: controller.signal,
+      });
+
+      // Some OKX deployments may require POST; try a simple fallback.
+      if (!res.ok && res.status === 405) {
+        const body = JSON.stringify(Object.fromEntries(queryParams.entries()));
+        const preHashPost = timestamp + 'POST' + path + body;
+        const signaturePost = createHmac('sha256', this.secretKey!).update(preHashPost).digest('base64');
+        res = await fetch(`https://www.okx.com${path}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'OK-ACCESS-KEY': this.apiKey!,
+            'OK-ACCESS-SIGN': signaturePost,
+            'OK-ACCESS-TIMESTAMP': timestamp,
+            'OK-ACCESS-PASSPHRASE': this.passphrase!,
+          },
+          body,
+          signal: controller.signal,
+        });
+      }
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`OKX swap API error: ${res.status} - ${text}`);
+      }
+
+      const json = (await res.json()) as {
+        code: string;
+        msg?: string;
+        data?: Array<{
+          tx?: {
+            to?: string;
+            data?: string;
+            value?: string;
+            gas?: string | number;
+            gasPrice?: string | number;
+          };
+          transaction?: {
+            to?: string;
+            data?: string;
+            value?: string;
+            gas?: string | number;
+            gasPrice?: string | number;
+          };
+        }>;
+      };
+
+      if (json.code !== '0' || !json.data?.[0]) {
+        throw new Error(`OKX swap API error: ${json.msg ?? 'No swap data'}`);
+      }
+
+      const item = json.data[0];
+      const tx = item.tx ?? item.transaction;
+      const to = tx?.to;
+      const data = tx?.data;
+      const value = tx?.value ?? '0';
+
+      if (!to || !data) {
+        throw new Error('OKX swap API returned no tx calldata');
+      }
+
+      const gasRaw = tx?.gas;
+      const gasStr =
+        typeof gasRaw === 'number'
+          ? gasRaw > 0
+            ? String(gasRaw)
+            : null
+          : typeof gasRaw === 'string'
+            ? gasRaw !== '0' && gasRaw.trim() !== ''
+              ? gasRaw
+              : null
+            : null;
+
+      // Note: we intentionally omit gasPrice and gas unless present and non-zero
+      // to let the wallet estimate properly when possible.
+      return {
+        to,
+        data,
+        value,
+        ...(gasStr ? { gas: gasStr } : {}),
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`OKX buildTx failed: ${message}`);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

@@ -366,7 +366,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         metrics,
         providerHealth,
         rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
-        sellability: sellabilityDeps,
+        ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
       });
 
       await receiptStore.put(receipt);
