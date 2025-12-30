@@ -182,13 +182,15 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
     lastFetchParamsRef.current = null;
   }, []);
 
-  // Computed values
-  const rankedQuotes = quotes.data?.rankedQuotes ?? [];
+  // Computed values - filter out deepLink-only providers with no quote data
+  const rankedQuotes = (quotes.data?.rankedQuotes ?? []).filter(
+    (q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n
+  );
   const bestExecutableQuote = quotes.data
     ? rankedQuotes.find((q) => q.providerId === quotes.data?.bestExecutableQuoteProviderId) ?? null
     : null;
   const bestRawQuote = quotes.data
-    ? (quotes.data.bestRawQuotes[0] ?? null)
+    ? (quotes.data.bestRawQuotes.find((q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n) ?? null)
     : null;
 
   return {
