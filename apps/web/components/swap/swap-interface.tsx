@@ -27,6 +27,7 @@ import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { QuoteSkeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
+import { ModeExplanationBadge } from "@/components/ui/tooltip";
 import type { RankedQuote } from "@swappilot/shared";
 
 /* ========================================
@@ -329,15 +330,18 @@ export function SwapInterface() {
               pendingCount={pendingCount} 
               onClick={() => setHistoryOpen(true)} 
             />
-            <Tabs
-              tabs={[
-                { value: "BEQ", label: "Best Exec" },
-                { value: "RAW", label: "Raw Output" },
-              ]}
-              value={mode}
-              onChange={setMode}
-              size="sm"
-            />
+            <div className="flex items-center gap-1.5">
+              <Tabs
+                tabs={[
+                  { value: "BEQ", label: "Best Exec" },
+                  { value: "RAW", label: "Raw Output" },
+                ]}
+                value={mode}
+                onChange={setMode}
+                size="sm"
+              />
+              <ModeExplanationBadge mode={mode} />
+            </div>
             <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
               <SettingsIcon className="h-4 w-4" />
             </Button>
