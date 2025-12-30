@@ -183,12 +183,12 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
     lastFetchParamsRef.current = null;
   }, []);
 
-  // Computed values - filter out deepLink-only providers with no quote data
+  // Computed values - filter out providers with no valid quote (buyAmount = 0)
   const rankedQuotes = (quotes.data?.rankedQuotes ?? []).filter(
-    (q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n
+    (q) => BigInt(q.raw.buyAmount) > 0n
   );
   const bestRawQuotes = (quotes.data?.bestRawQuotes ?? []).filter(
-    (q) => q.capabilities.quote || BigInt(q.raw.buyAmount) > 0n
+    (q) => BigInt(q.raw.buyAmount) > 0n
   );
   const bestExecutableQuote = quotes.data
     ? rankedQuotes.find((q) => q.providerId === quotes.data?.bestExecutableQuoteProviderId) ?? null
