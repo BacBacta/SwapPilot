@@ -71,9 +71,20 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   } = useSendTransaction({
     mutation: {
       onSuccess: () => {
+        console.info("[swap][sendTransaction] submitted", {
+          txHash,
+          providerId: builtTx?.providerId,
+        });
         setStatus("pending");
       },
       onError: (err) => {
+        console.error("[swap][sendTransaction] error", {
+          message: err.message,
+          name: err.name,
+          cause: (err as unknown as { cause?: unknown })?.cause,
+          providerId: builtTx?.providerId,
+          builtTx,
+        });
         setError(err.message);
         setStatus("error");
       },
@@ -87,6 +98,10 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
 
   // Update status when transaction is confirmed
   if (isTxConfirmed && status === "pending") {
+    console.info("[swap][receipt] confirmed", {
+      txHash,
+      providerId: builtTx?.providerId,
+    });
     setStatus("success");
   }
 
@@ -102,6 +117,15 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     setError(null);
 
     try {
+      console.info("[swap][buildTx] request", {
+        providerId: params.providerId,
+        sellToken: params.sellToken,
+        buyToken: params.buyToken,
+        sellAmount: params.sellAmount,
+        slippageBps: params.slippageBps,
+        hasQuoteRaw: Boolean(params.quoteRaw),
+      });
+
       const res = await fetch(`${API_URL}/v1/build-tx`, {
         method: "POST",
         headers: {
@@ -120,16 +144,49 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
-        throw new Error(data.message || `Failed to build transaction`);
+        const rawText = await res.text().catch(() => "");
+        let parsed: unknown = null;
+        try {
+          parsed = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          parsed = rawText;
+        }
+
+        console.error("[swap][buildTx] http_error", {
+          status: res.status,
+          providerId: params.providerId,
+          response: parsed,
+        });
+
+        const message =
+          typeof parsed === "object" && parsed && "message" in (parsed as any)
+            ? String((parsed as any).message)
+            : `HTTP ${res.status}`;
+        throw new Error(message || "Failed to build transaction");
       }
 
       const tx = await res.json() as BuiltTransaction;
+
+      console.info("[swap][buildTx] success", {
+        providerId: tx.providerId,
+        to: tx.to,
+        value: tx.value,
+        gas: tx.gas,
+        dataPrefix: typeof tx.data === "string" ? tx.data.slice(0, 10) : null,
+      });
+
       setBuiltTx(tx);
       setStatus("awaiting-approval");
       return tx;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+
+      console.error("[swap][buildTx] error", {
+        providerId: params.providerId,
+        message,
+        err,
+      });
+
       setError(message);
       setStatus("error");
       return null;
@@ -163,6 +220,14 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
         return undefined;
       }
     })();
+
+    console.info("[swap][execute] sending", {
+      providerId: transaction.providerId,
+      to: transaction.to,
+      value: transaction.value,
+      gas: transaction.gas,
+      dataPrefix: typeof transaction.data === "string" ? transaction.data.slice(0, 10) : null,
+    });
 
     sendTransaction({
       to: transaction.to as Address,

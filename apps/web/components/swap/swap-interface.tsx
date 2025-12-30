@@ -367,13 +367,35 @@ export function SwapInterface() {
 
   // Handle real swap execution
   const handleSwapConfirm = async (quote: RankedQuote) => {
+    console.groupCollapsed("[swap][ui] confirm", quote.providerId);
+    console.info("[swap][ui] context", {
+      fromToken,
+      toToken,
+      fromAmount,
+      sellAmountWei: sellAmountWei.toString(),
+      slippageBps: settings.slippageBps,
+      walletAddress,
+      isWalletConnected,
+      quote: {
+        providerId: quote.providerId,
+        capabilities: quote.capabilities,
+        raw: quote.raw,
+        normalized: quote.normalized,
+        deepLink: quote.deepLink,
+      },
+    });
+
     if (!isWalletConnected || !walletAddress) {
       toast.error("Wallet not connected", "Please connect your wallet to swap");
+      console.warn("[swap][ui] blocked: wallet not connected");
+      console.groupEnd();
       return;
     }
 
     if (!fromTokenInfo || !toTokenInfo) {
       toast.error("Token not found", "Unable to resolve token information");
+      console.warn("[swap][ui] blocked: token info missing", { fromTokenInfo, toTokenInfo });
+      console.groupEnd();
       return;
     }
 
@@ -389,6 +411,8 @@ export function SwapInterface() {
         toast.error("No execution method", `${quote.providerId} doesn't support direct swaps or deep links`);
       }
       setReceiptOpen(false);
+      console.warn("[swap][ui] provider has no buildTx", { providerId: quote.providerId });
+      console.groupEnd();
       return;
     }
 
@@ -421,11 +445,20 @@ export function SwapInterface() {
         throw new Error("Failed to build transaction");
       }
 
+      console.info("[swap][ui] builtTx", tx);
+
       // Step 2: Check if approval is needed (for non-native tokens)
       const isNativeToken = fromTokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
                             fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
 
       if (!isNativeToken && needsApproval) {
+        console.info("[swap][ui] approval needed", {
+          token: fromTokenInfo.address,
+          spender: builtTx?.approvalAddress,
+          needsApproval,
+          allowance: allowance?.toString?.(),
+          amount: sellAmountWei.toString(),
+        });
         toast.updateToast(loadingToastId, {
           type: "info",
           title: "Approval required",
@@ -435,6 +468,7 @@ export function SwapInterface() {
         // Wait for approval - the user will need to click swap again after approval
         updateTransaction(txId, { status: "failed" });
         setReceiptOpen(false);
+        console.groupEnd();
         return;
       }
 
@@ -450,14 +484,22 @@ export function SwapInterface() {
       // The rest is handled by useEffect watching txHash and swapStatus
       setReceiptOpen(false);
 
+      console.groupEnd();
+
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("[swap][ui] swap failed", {
+        providerId: quote.providerId,
+        message,
+        err,
+      });
       toast.updateToast(loadingToastId, {
         type: "error",
         title: "Swap failed",
         message,
       });
       updateTransaction(txId, { status: "failed" });
+      console.groupEnd();
     }
   };
 

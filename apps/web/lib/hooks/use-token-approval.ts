@@ -74,6 +74,12 @@ export function useTokenApproval({
   } = useWriteContract({
     mutation: {
       onError: (err) => {
+        console.error("[swap][approve] error", {
+          message: err.message,
+          name: err.name,
+          tokenAddress,
+          spenderAddress,
+        });
         setError(err);
       },
     },
@@ -103,6 +109,11 @@ export function useTokenApproval({
   // Approve infinite (max uint256)
   const approve = useCallback(() => {
     if (!tokenAddress || !spenderAddress) return;
+    console.info("[swap][approve] request", {
+      tokenAddress,
+      spenderAddress,
+      mode: "infinite",
+    });
     setError(null);
     writeContract({
       address: tokenAddress,
@@ -115,6 +126,12 @@ export function useTokenApproval({
   // Approve exact amount
   const approveExact = useCallback((exactAmount: bigint) => {
     if (!tokenAddress || !spenderAddress) return;
+    console.info("[swap][approve] request", {
+      tokenAddress,
+      spenderAddress,
+      mode: "exact",
+      exactAmount: exactAmount.toString(),
+    });
     setError(null);
     writeContract({
       address: tokenAddress,
