@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { Button, Toggle, Divider } from "@/components/ui/primitives";
 import { Slider, PresetButtons } from "@/components/ui/inputs";
+import { useSettings } from "@/components/providers/settings-provider";
 
 /* ========================================
    SETTINGS DRAWER
@@ -16,14 +17,23 @@ interface SettingsDrawerProps {
 
 export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [mounted, setMounted] = useState(false);
+  const { settings, updateSettings, resetSettings } = useSettings();
   
-  // Settings state
-  const [slippage, setSlippage] = useState(0.5);
+  // Derive slippage percentage from bps (100 bps = 1%)
+  const slippage = settings.slippageBps / 100;
+  const setSlippage = (pct: number) => updateSettings({ slippageBps: Math.round(pct * 100) });
+  
+  // Local UI state
   const [customSlippage, setCustomSlippage] = useState(false);
   const [deadline, setDeadline] = useState(20);
-  const [mevProtection, setMevProtection] = useState(true);
-  const [expertMode, setExpertMode] = useState(false);
-  const [autoRouter, setAutoRouter] = useState(true);
+  
+  // Map settings to toggles
+  const mevProtection = settings.mevAwareScoring;
+  const setMevProtection = (v: boolean) => updateSettings({ mevAwareScoring: v });
+  const autoRouter = settings.sellabilityCheck;
+  const setAutoRouter = (v: boolean) => updateSettings({ sellabilityCheck: v });
+  const expertMode = settings.mode === "DEGEN";
+  const setExpertMode = (v: boolean) => updateSettings({ mode: v ? "DEGEN" : "NORMAL" });
 
   // Mount check for portal
   useEffect(() => {
@@ -210,11 +220,8 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
               variant="ghost" 
               className="flex-1 border-sp-lightBorder text-sp-lightText hover:bg-sp-lightSurface2"
               onClick={() => {
-                setSlippage(0.5);
+                resetSettings();
                 setDeadline(20);
-                setMevProtection(true);
-                setExpertMode(false);
-                setAutoRouter(true);
               }}
             >
               Reset to Default

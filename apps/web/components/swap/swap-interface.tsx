@@ -25,6 +25,7 @@ import {
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
+import { useSettings } from "@/components/providers/settings-provider";
 import { QuoteSkeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { ModeExplanationBadge } from "@/components/ui/tooltip";
@@ -132,8 +133,16 @@ function StatCard({ label, value, subValue }: { label: string; value: string; su
    MAIN SWAP INTERFACE
    ======================================== */
 export function SwapInterface() {
+  // Global Settings
+  const { settings, updateSettings, resetSettings } = useSettings();
+  
+  // Derive mode from settings (map API modes to UI modes)
+  const mode = settings.mode === "DEGEN" ? "RAW" : "BEQ";
+  const setMode = (m: "BEQ" | "RAW") => {
+    updateSettings({ mode: m === "RAW" ? "DEGEN" : "NORMAL" });
+  };
+  
   // State
-  const [mode, setMode] = useState<"BEQ" | "RAW">("BEQ");
   const [fromToken, setFromToken] = useState("BNB");
   const [toToken, setToToken] = useState("ETH");
   const [fromAmount, setFromAmount] = useState("1");
@@ -264,6 +273,8 @@ export function SwapInterface() {
         sellToken: fromToken,
         buyToken: toToken,
         sellAmount: fromAmount,
+        slippageBps: settings.slippageBps,
+        mode: settings.mode,
       });
       toast.updateToast(loadingToastId, {
         type: "success",
