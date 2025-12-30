@@ -484,9 +484,6 @@ export function SwapInterface() {
     }
   }, [swapError, swapStatus, toast, transactions, updateTransaction]);
 
-    setReceiptOpen(false);
-  };
-
   const handleViewReceipt = (quote: RankedQuote) => {
     setSelectedQuoteForReceipt(quote);
     setReceiptOpen(true);
