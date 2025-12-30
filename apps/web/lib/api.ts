@@ -9,6 +9,14 @@ import {
 } from '@swappilot/shared';
 import { bestExecutable } from './mock';
 
+export type TokenMetadata = {
+  address: `0x${string}`;
+  symbol: string | null;
+  name: string | null;
+  decimals: number;
+  isNative: boolean;
+};
+
 // Production API URL
 const PRODUCTION_API_URL = 'https://swappilot-api.fly.dev';
 
@@ -186,4 +194,42 @@ export async function getReceipt(params: { id: string; timeoutMs?: number }): Pr
   } catch {
     throw { kind: 'invalid_response', message: 'Invalid receipt response from API' } satisfies ApiError;
   }
+}
+
+export async function resolveTokenMetadata(params: {
+  address: `0x${string}`;
+  timeoutMs?: number;
+}): Promise<TokenMetadata> {
+  const timeoutMs = params.timeoutMs ?? 12_000;
+  const baseUrl = getApiBaseUrl();
+
+  const { res, json } = await fetchJsonWithTimeout(
+    `${baseUrl}/v1/tokens/resolve?address=${encodeURIComponent(params.address)}`,
+    {
+      method: 'GET',
+      timeoutMs,
+      headers: {},
+    },
+  );
+
+  if (!res.ok) {
+    const message =
+      typeof json === 'object' && json && 'message' in json && typeof (json as any).message === 'string'
+        ? (json as any).message
+        : `HTTP ${res.status}`;
+
+    throw { kind: 'http', message, status: res.status } satisfies ApiError;
+  }
+
+  if (
+    !json ||
+    typeof json !== 'object' ||
+    typeof (json as any).address !== 'string' ||
+    typeof (json as any).decimals !== 'number' ||
+    typeof (json as any).isNative !== 'boolean'
+  ) {
+    throw { kind: 'invalid_response', message: 'Invalid token metadata response from API' } satisfies ApiError;
+  }
+
+  return json as TokenMetadata;
 }

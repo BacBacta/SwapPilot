@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { SearchInput } from "@/components/ui/inputs";
@@ -10,38 +10,12 @@ import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/use-token-prices";
 import { useFavorites, FavoriteButton } from "@/lib/use-favorites";
 
-/* ========================================
-   TOKEN DATA
-   ======================================== */
-interface TokenInfo {
-  symbol: string;
-  name: string;
-  address?: string;
-  decimals?: number;
-  isCustom?: boolean;
-}
-
-const TOKENS: TokenInfo[] = [
-  { symbol: "ETH", name: "Ethereum", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  { symbol: "BNB", name: "BNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c" },
-  { symbol: "USDT", name: "Tether USD", address: "0x55d398326f99059fF775485246999027B3197955" },
-  { symbol: "USDC", name: "USD Coin", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" },
-  { symbol: "SOL", name: "Solana", address: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF" },
-  { symbol: "BTCB", name: "Bitcoin BEP20", address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c" },
-  { symbol: "CAKE", name: "PancakeSwap", address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82" },
-  { symbol: "BUSD", name: "Binance USD", address: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56" },
-  { symbol: "DAI", name: "Dai Stablecoin", address: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3" },
-];
+import type { TokenInfo } from "@/lib/tokens";
+import { isAddress, normalizeAddress } from "@/lib/tokens";
+import { useTokenRegistry } from "@/lib/use-token-registry";
+import { resolveTokenMetadata } from "@/lib/api";
 
 const RECENT_TOKENS = ["ETH", "BNB", "USDT", "USDC"];
-
-// Check if string looks like an Ethereum address
-function isAddress(value: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(value);
-}
-
-// Custom tokens storage key
-const CUSTOM_TOKENS_KEY = "swappilot_custom_tokens";
 
 /* ========================================
    TOKEN PICKER MODAL
@@ -56,96 +30,55 @@ interface TokenPickerModalProps {
 export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: TokenPickerModalProps) {
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  const { tokens: registryTokens, loading: registryLoading, upsertCustomToken } = useTokenRegistry();
+
   // Hooks for balances, prices, and favorites
-  const { getBalanceFormatted, isConnected } = useTokenBalances();
+  const balancesQueryTokens = useMemo(() => {
+    // Balance calls are expensive; only query for top visible results.
+    const list = registryTokens;
+    return list.slice(0, 30);
+  }, [registryTokens]);
+
+  const { balances, getBalanceFormatted, isConnected } = useTokenBalances(balancesQueryTokens);
   const { getPrice, formatUsd } = useTokenPrices();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
-  // Load custom tokens from localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(CUSTOM_TOKENS_KEY);
-        if (stored) {
-          setCustomTokens(JSON.parse(stored));
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }, []);
-
-  // All tokens (built-in + custom)
-  const allTokens = useMemo(() => [...TOKENS, ...customTokens], [customTokens]);
-
   // Fetch token info from blockchain when address is entered
-  const fetchTokenByAddress = async (address: string) => {
+  const fetchTokenByAddress = useCallback(async (address: string) => {
     setIsLoadingToken(true);
     setTokenError(null);
     
     try {
       // Check if already exists
-      const existing = allTokens.find(
-        t => t.address?.toLowerCase() === address.toLowerCase()
-      );
+      const existing = registryTokens.find((t) => normalizeAddress(t.address) === normalizeAddress(address));
       if (existing) {
         setIsLoadingToken(false);
         return existing;
       }
 
-      // Fetch from BSCScan API (or use on-chain call)
-      const response = await fetch(
-        `https://api.bscscan.com/api?module=token&action=tokeninfo&contractaddress=${address}`
-      );
-      const data = await response.json();
-      
-      if (data.status === "1" && data.result?.[0]) {
-        const tokenData = data.result[0];
-        const newToken: TokenInfo = {
-          symbol: tokenData.symbol || "???",
-          name: tokenData.name || "Unknown Token",
-          address: address,
-          decimals: parseInt(tokenData.divisor) || 18,
-          isCustom: true,
-        };
-        
-        // Save to custom tokens
-        const updatedCustom = [...customTokens, newToken];
-        setCustomTokens(updatedCustom);
-        localStorage.setItem(CUSTOM_TOKENS_KEY, JSON.stringify(updatedCustom));
-        
-        setIsLoadingToken(false);
-        return newToken;
-      } else {
-        // Try fallback: create unknown token entry
-        const newToken: TokenInfo = {
-          symbol: address.slice(0, 6) + "...",
-          name: "Unknown Token",
-          address: address,
-          decimals: 18,
-          isCustom: true,
-        };
-        
-        // Still add it so user can select
-        const updatedCustom = [...customTokens, newToken];
-        setCustomTokens(updatedCustom);
-        localStorage.setItem(CUSTOM_TOKENS_KEY, JSON.stringify(updatedCustom));
-        
-        setIsLoadingToken(false);
-        setTokenError("Token found but info unavailable. Verify the address.");
-        return newToken;
-      }
+      // Resolve via backend (RPC-based)
+      const meta = await resolveTokenMetadata({ address: address as `0x${string}` });
+      const newToken: TokenInfo = {
+        symbol: (meta.symbol ?? address.slice(0, 6) + "...").toUpperCase(),
+        name: meta.name ?? "Unknown Token",
+        address: meta.address,
+        decimals: meta.decimals ?? 18,
+        isCustom: true,
+      };
+
+      upsertCustomToken(newToken);
+      setIsLoadingToken(false);
+      return newToken;
     } catch (err) {
       setIsLoadingToken(false);
       setTokenError("Failed to fetch token info. Check your connection.");
       return null;
     }
-  };
+  }, [registryTokens, upsertCustomToken]);
 
   // Handle address search
   useEffect(() => {
@@ -158,8 +91,8 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
 
   // Enrich tokens with balances and USD values
   const enrichedTokens = useMemo(() => {
-    return allTokens.map((token) => {
-      const balance = getBalanceFormatted(token.symbol);
+    return registryTokens.map((token) => {
+      const balance = balances[token.address]?.balanceFormatted ?? "—";
       const price = getPrice(token.symbol);
       const balanceNum = parseFloat(balance);
       const usdValue = price && balanceNum > 0 
@@ -171,7 +104,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
         usd: isConnected ? usdValue : "—",
       };
     });
-  }, [allTokens, getBalanceFormatted, getPrice, isConnected]);
+  }, [registryTokens, balances, getPrice, isConnected]);
 
   // Filter tokens
   const filteredTokens = useMemo(() => {
@@ -273,7 +206,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
           <div className="text-micro font-medium text-sp-lightMuted">Recent</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {RECENT_TOKENS.map((symbol) => {
-              const token = TOKENS.find((t) => t.symbol === symbol);
+              const token = registryTokens.find((t) => t.symbol === symbol);
               if (!token) return null;
               return (
                 <button
@@ -303,7 +236,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {favorites.map((symbol) => {
-                const token = TOKENS.find((t) => t.symbol === symbol);
+                const token = registryTokens.find((t) => t.symbol === symbol);
                 if (!token) return null;
                 return (
                   <button
@@ -327,7 +260,12 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
 
         {/* Token list */}
         <div className="max-h-80 overflow-y-auto p-2">
-          {isLoadingToken && isAddress(search) ? (
+          {registryLoading ? (
+            <div className="flex items-center justify-center gap-3 py-8">
+              <LoadingSpinner className="h-5 w-5 text-sp-accent" />
+              <span className="text-caption text-sp-lightMuted">Loading token list...</span>
+            </div>
+          ) : isLoadingToken && isAddress(search) ? (
             <div className="flex items-center justify-center gap-3 py-8">
               <LoadingSpinner className="h-5 w-5 text-sp-accent" />
               <span className="text-caption text-sp-lightMuted">Loading token info...</span>
@@ -346,7 +284,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
           ) : (
             filteredTokens.map((token) => (
               <div
-                key={token.address || token.symbol}
+                key={token.address}
                 className={cn(
                   "flex w-full items-center justify-between rounded-xl px-3 py-3 transition",
                   selectedToken === token.symbol
@@ -373,11 +311,9 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                       )}
                     </div>
                     <div className="text-caption text-sp-lightMuted">{token.name}</div>
-                    {token.address && (
-                      <div className="mt-0.5 font-mono text-[10px] text-sp-lightMuted2">
-                        {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                      </div>
-                    )}
+                    <div className="mt-0.5 font-mono text-[10px] text-sp-lightMuted2">
+                      {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                    </div>
                   </div>
                 </button>
                 <div className="flex items-center gap-2">

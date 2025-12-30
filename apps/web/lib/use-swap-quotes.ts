@@ -4,46 +4,10 @@ import { useState, useCallback } from "react";
 import { postQuotes, getReceipt, type ApiError } from "@/lib/api";
 import type { QuoteResponse, QuoteRequest, DecisionReceipt, RankedQuote } from "@swappilot/shared";
 
-/* ========================================
-   TOKEN ADDRESSES (BNB Chain = 56)
-   ======================================== */
-export const TOKEN_ADDRESSES: Record<string, string> = {
-  BNB: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // Native
-  ETH: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", // WETH on BSC
-  USDT: "0x55d398326f99059fF775485246999027B3197955",
-  USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-  WBTC: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-  BTCB: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", // Alias
-  CAKE: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
-  SOL: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF", // Wrapped SOL on BSC
-  DAI: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3",
-  BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
-};
+import { parseUnits } from "viem";
+import { useTokenRegistry } from "@/lib/use-token-registry";
 
-// Helper to check if a string is an Ethereum address
-function isAddress(value: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(value);
-}
-
-// Get address from symbol or return as-is if already an address
-function resolveTokenAddress(tokenOrSymbol: string): string | null {
-  // If it's already an address, return it
-  if (isAddress(tokenOrSymbol)) {
-    return tokenOrSymbol;
-  }
-  // Otherwise look up the symbol
-  return TOKEN_ADDRESSES[tokenOrSymbol.toUpperCase()] ?? null;
-}
-
-const TOKEN_DECIMALS: Record<string, number> = {
-  BNB: 18,
-  ETH: 18,
-  USDT: 18,
-  USDC: 18,
-  WBTC: 18,
-  CAKE: 18,
-  SOL: 18,
-};
+const BSC_CHAIN_ID = 56;
 
 /* ========================================
    TYPES
@@ -75,7 +39,7 @@ export interface UseSwapQuotesReturn {
 export interface FetchQuotesParams {
   sellToken: string;
   buyToken: string;
-  sellAmountUsd: number;
+  sellAmount: string;
   slippageBps?: number;
   mode?: "SAFE" | "NORMAL" | "DEGEN";
 }
@@ -84,6 +48,8 @@ export interface FetchQuotesParams {
    HOOK
    ======================================== */
 export function useSwapQuotes(): UseSwapQuotesReturn {
+  const { resolveToken } = useTokenRegistry();
+
   const [quotes, setQuotes] = useState<QuoteState>({
     status: "idle",
     data: null,
@@ -97,8 +63,11 @@ export function useSwapQuotes(): UseSwapQuotesReturn {
   });
 
   const fetchQuotes = useCallback(async (params: FetchQuotesParams) => {
-    const sellAddress = resolveTokenAddress(params.sellToken);
-    const buyAddress = resolveTokenAddress(params.buyToken);
+    const sell = resolveToken(params.sellToken);
+    const buy = resolveToken(params.buyToken);
+
+    const sellAddress = sell?.address ?? null;
+    const buyAddress = buy?.address ?? null;
 
     if (!sellAddress || !buyAddress) {
       setQuotes({
@@ -109,13 +78,21 @@ export function useSwapQuotes(): UseSwapQuotesReturn {
       return;
     }
 
-    // Convert USD to approximate token amount (simplified)
-    const decimals = TOKEN_DECIMALS[params.sellToken] ?? 18;
-    // Assume 1 token ≈ $1 for simplicity in demo
-    const sellAmount = BigInt(Math.floor(params.sellAmountUsd * 10 ** decimals)).toString();
+    const decimals = sell?.decimals ?? 18;
+    let sellAmount: string;
+    try {
+      sellAmount = parseUnits(params.sellAmount, decimals).toString();
+    } catch {
+      setQuotes({
+        status: "error",
+        data: null,
+        error: { kind: "invalid_response", message: `Invalid amount: ${params.sellAmount}` },
+      });
+      return;
+    }
 
     const request: QuoteRequest = {
-      chainId: 56, // BNB Chain
+      chainId: BSC_CHAIN_ID,
       sellToken: sellAddress,
       buyToken: buyAddress,
       sellAmount,
@@ -135,7 +112,7 @@ export function useSwapQuotes(): UseSwapQuotesReturn {
         error: err as ApiError,
       });
     }
-  }, []);
+  }, [resolveToken]);
 
   const fetchReceipt = useCallback(async (receiptId: string) => {
     setReceipt({ status: "loading", data: null, error: null });

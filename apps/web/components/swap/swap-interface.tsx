@@ -21,10 +21,10 @@ import {
   getQuoteFlags,
   formatQuoteOutput,
   formatQuoteUsd,
-  TOKEN_ADDRESSES,
 } from "@/lib/use-swap-quotes";
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
 import { useTokenBalances } from "@/lib/use-token-balances";
+import { useTokenRegistry } from "@/lib/use-token-registry";
 import { QuoteSkeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import type { RankedQuote } from "@swappilot/shared";
@@ -146,8 +146,17 @@ export function SwapInterface() {
   // Prices Hook
   const { prices, getPrice, loading: pricesLoading } = useTokenPrices();
 
+  // Token registry
+  const { resolveToken } = useTokenRegistry();
+  const fromTokenInfo = useMemo(() => resolveToken(fromToken), [resolveToken, fromToken]);
+  const toTokenInfo = useMemo(() => resolveToken(toToken), [resolveToken, toToken]);
+
   // Balances Hook
-  const { getBalanceFormatted, isConnected } = useTokenBalances();
+  const balancesTokens = useMemo(
+    () => [fromTokenInfo, toTokenInfo].filter((t): t is NonNullable<typeof t> => Boolean(t)),
+    [fromTokenInfo, toTokenInfo],
+  );
+  const { getBalanceFormatted, isConnected } = useTokenBalances(balancesTokens);
 
   // Transaction History Hook
   const { transactions, pendingCount, addTransaction, updateTransaction, clearHistory } = useTransactionHistory();
@@ -220,21 +229,23 @@ export function SwapInterface() {
   };
 
   const handleExecute = async () => {
-    if (fromUsdValue <= 0) {
+    if (fromAmountNum <= 0 || Number.isNaN(fromAmountNum)) {
       toast.warning("Invalid amount", "Please enter a valid amount to swap");
       return;
     }
 
-    const sellToken = TOKEN_ADDRESSES[fromToken as keyof typeof TOKEN_ADDRESSES] ?? fromToken;
-    const buyToken = TOKEN_ADDRESSES[toToken as keyof typeof TOKEN_ADDRESSES] ?? toToken;
+    if (!fromTokenInfo || !toTokenInfo) {
+      toast.warning("Token list not ready", "Please wait for tokens to load");
+      return;
+    }
 
     const loadingToastId = toast.loading("Finding best route...", `Comparing quotes for ${fromToken} → ${toToken}`);
 
     try {
       await fetchQuotes({
-        sellToken,
-        buyToken,
-        sellAmountUsd: fromUsdValue,
+        sellToken: fromToken,
+        buyToken: toToken,
+        sellAmount: fromAmount,
       });
       toast.updateToast(loadingToastId, {
         type: "success",
@@ -337,12 +348,15 @@ export function SwapInterface() {
               <TokenInput
                 label="From"
                 token={fromToken}
-                balance={isConnected ? getBalanceFormatted(fromToken) : undefined}
+                balance={isConnected && fromTokenInfo ? getBalanceFormatted(fromTokenInfo) : undefined}
                 value={fromAmount}
                 usdValue={fromUsdValue > 0 ? `≈ $${fromUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ""}
                 onChange={setFromAmount}
                 onTokenClick={() => openTokenPicker("from")}
-                onMaxClick={() => setFromAmount(getBalanceFormatted(fromToken))}
+                onMaxClick={() => {
+                  if (!fromTokenInfo) return;
+                  setFromAmount(getBalanceFormatted(fromTokenInfo));
+                }}
               />
 
               <SwapDirectionButton onClick={handleSwapDirection} />
@@ -350,7 +364,7 @@ export function SwapInterface() {
               <TokenInput
                 label="To"
                 token={toToken}
-                balance={isConnected ? getBalanceFormatted(toToken) : undefined}
+                balance={isConnected && toTokenInfo ? getBalanceFormatted(toTokenInfo) : undefined}
                 value={loading ? "" : topQuote ? formatQuoteOutput(topQuote) : "—"}
                 usdValue={loading ? "" : topQuote ? formatQuoteUsd(topQuote) : ""}
                 loading={loading}
