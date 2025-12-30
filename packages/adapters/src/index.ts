@@ -7,3 +7,7 @@ export * from './oneInchAdapter';
 export * from './okxDexAdapter';
 export * from './kyberSwapAdapter';
 export * from './paraSwapAdapter';
+export * from './odosAdapter';
+export * from './openOceanAdapter';
+export * from './zeroXAdapter';
+export * from './uniswapV3Adapter';

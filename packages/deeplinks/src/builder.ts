@@ -65,6 +65,33 @@ export function deepLinkBuilder(providerId: string, request: QuoteRequest): Deep
       return { url, fallbackUrl: 'https://liquidmesh.com', confidence: 0.2 };
     }
 
+    case 'odos': {
+      const url = `https://app.odos.xyz/?chain=${encode(String(request.chainId))}&inputToken=${encode(request.sellToken)}&outputToken=${encode(request.buyToken)}&inputAmount=${encode(request.sellAmount)}`;
+      return { url, fallbackUrl: 'https://app.odos.xyz', confidence: 0.8 };
+    }
+
+    case 'openocean': {
+      const chainNames: Record<number, string> = { 1: 'eth', 56: 'bsc', 137: 'polygon', 42161: 'arbitrum' };
+      const chain = chainNames[request.chainId] ?? 'bsc';
+      const url = `https://openocean.finance/swap/${chain}/${encode(request.sellToken)}/${encode(request.buyToken)}`;
+      return { url, fallbackUrl: 'https://openocean.finance', confidence: 0.7 };
+    }
+
+    case '0x': {
+      const url = `https://matcha.xyz/trade?${query}`;
+      return { url, fallbackUrl: 'https://matcha.xyz', confidence: 0.8 };
+    }
+
+    case 'uniswap-v3': {
+      const url = `https://app.uniswap.org/swap?chain=bnb&inputCurrency=${encode(request.sellToken)}&outputCurrency=${encode(request.buyToken)}&exactAmount=${encode(request.sellAmount)}&exactField=input`;
+      return { url, fallbackUrl: 'https://app.uniswap.org', confidence: 0.85 };
+    }
+
+    case 'paraswap': {
+      const url = `https://app.paraswap.io/?network=bsc#/${encode(request.sellToken)}-${encode(request.buyToken)}/${encode(request.sellAmount)}`;
+      return { url, fallbackUrl: 'https://app.paraswap.io', confidence: 0.7 };
+    }
+
     default: {
       // Safe default: include request params as opaque query.
       return {

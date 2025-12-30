@@ -30,6 +30,10 @@ import {
   OkxDexAdapter,
   KyberSwapAdapter,
   ParaSwapAdapter,
+  OdosAdapter,
+  OpenOceanAdapter,
+  ZeroXAdapter,
+  UniswapV3Adapter,
   type Adapter,
 } from '@swappilot/adapters';
 
@@ -233,6 +237,30 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     timeoutMs: 10000,
   });
 
+  const odosAdapter = new OdosAdapter({
+    chainId: 56,
+    timeoutMs: 10000,
+  });
+
+  const openOceanAdapter = new OpenOceanAdapter({
+    chainId: 56,
+    timeoutMs: 10000,
+  });
+
+  const zeroXAdapter = new ZeroXAdapter({
+    apiKey: process.env.ZEROX_API_KEY ?? null,
+    chainId: 56,
+    timeoutMs: 10000,
+  });
+
+  const uniswapV3Adapter = new UniswapV3Adapter({
+    chainId: 56,
+    rpcUrl: config.rpc.bscUrls[0] ?? null,
+    quoterAddress: null, // Will use default BSC quoter
+    weth: config.pancakeswap.wbnb,
+    quoteTimeoutMs: 5000,
+  });
+
   // Create adapters map for the mock quote builder
   const adapters = new Map<string, Adapter>([
     ['pancakeswap', pancakeSwapAdapter],
@@ -240,6 +268,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['okx-dex', okxAdapter],
     ['kyberswap', kyberSwapAdapter],
     ['paraswap', paraSwapAdapter],
+    ['odos', odosAdapter],
+    ['openocean', openOceanAdapter],
+    ['0x', zeroXAdapter],
+    ['uniswap-v3', uniswapV3Adapter],
   ]);
 
   api.get(
