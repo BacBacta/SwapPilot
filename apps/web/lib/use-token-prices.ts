@@ -46,32 +46,34 @@ const COINGECKO_IDS: Record<string, string> = {
 };
 
 /* ========================================
-   CACHE & STATIC FALLBACK PRICES
+   CACHE & DYNAMIC FALLBACK PRICES
    ======================================== */
 const CACHE_DURATION_MS = 60_000; // 1 minute
 let lastFetchTime = 0;
 
-// Static prices as fallback (updated periodically, good enough for demo)
-const STATIC_PRICES: TokenPrices = {
-  BNB: { usd: 710, usd_24h_change: 1.2 },
-  ETH: { usd: 3400, usd_24h_change: 0.8 },
+// Seed prices - only used before first successful API call
+// These are intentionally conservative; real prices replace them immediately
+const SEED_PRICES: TokenPrices = {
+  BNB: { usd: 700, usd_24h_change: 0 },
+  ETH: { usd: 3500, usd_24h_change: 0 },
   USDT: { usd: 1, usd_24h_change: 0 },
   USDC: { usd: 1, usd_24h_change: 0 },
-  WBTC: { usd: 98000, usd_24h_change: 1.5 },
-  CAKE: { usd: 2.50, usd_24h_change: -0.5 },
-  SOL: { usd: 195, usd_24h_change: 2.1 },
+  WBTC: { usd: 95000, usd_24h_change: 0 },
+  BTCB: { usd: 95000, usd_24h_change: 0 },
+  CAKE: { usd: 2.50, usd_24h_change: 0 },
+  SOL: { usd: 200, usd_24h_change: 0 },
   BUSD: { usd: 1, usd_24h_change: 0 },
   DAI: { usd: 1, usd_24h_change: 0 },
-  LINK: { usd: 23, usd_24h_change: 1.0 },
-  UNI: { usd: 14, usd_24h_change: 0.3 },
-  AAVE: { usd: 350, usd_24h_change: 1.8 },
-  MATIC: { usd: 0.55, usd_24h_change: -0.2 },
-  ARB: { usd: 0.95, usd_24h_change: 0.5 },
-  OP: { usd: 2.10, usd_24h_change: 0.7 },
-  BTCB: { usd: 98000, usd_24h_change: 1.5 },
+  LINK: { usd: 20, usd_24h_change: 0 },
+  UNI: { usd: 12, usd_24h_change: 0 },
+  AAVE: { usd: 300, usd_24h_change: 0 },
+  MATIC: { usd: 0.50, usd_24h_change: 0 },
+  ARB: { usd: 0.80, usd_24h_change: 0 },
+  OP: { usd: 2.00, usd_24h_change: 0 },
 };
 
-let cachedPrices: TokenPrices = { ...STATIC_PRICES };
+// Dynamic cache: starts with seeds, updated with real prices on successful fetch
+let cachedPrices: TokenPrices = { ...SEED_PRICES };
 
 /* ========================================
    FETCH PRICES VIA API ROUTE (avoids CORS)
@@ -83,14 +85,14 @@ async function fetchPricesFromAPI(): Promise<TokenPrices> {
     });
 
     if (!response.ok) {
-      console.warn('[Prices] API returned', response.status, '- using static prices');
-      return STATIC_PRICES;
+      console.warn('[Prices] API returned', response.status, '- using cached prices');
+      return cachedPrices; // Return last known good prices
     }
 
     const data = await response.json();
 
     // Convert CoinGecko IDs back to our symbols
-    const prices: TokenPrices = { ...STATIC_PRICES };
+    const prices: TokenPrices = { ...cachedPrices }; // Start with cached to preserve known prices
     for (const [symbol, coinGeckoId] of Object.entries(COINGECKO_IDS)) {
       if (data[coinGeckoId]) {
         prices[symbol] = {
@@ -102,8 +104,8 @@ async function fetchPricesFromAPI(): Promise<TokenPrices> {
 
     return prices;
   } catch (err) {
-    console.warn('[Prices] Failed to fetch, using static prices:', err);
-    return STATIC_PRICES;
+    console.warn('[Prices] Failed to fetch, using cached prices:', err);
+    return cachedPrices; // Return last known good prices
   }
 }
 
@@ -111,7 +113,7 @@ async function fetchPricesFromAPI(): Promise<TokenPrices> {
    HOOK: useTokenPrices
    ======================================== */
 export function useTokenPrices(symbols: string[] = Object.keys(COINGECKO_IDS)): UsePricesReturn {
-  const [prices, setPrices] = useState<TokenPrices>(STATIC_PRICES);
+  const [prices, setPrices] = useState<TokenPrices>(cachedPrices);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fetchingRef = useRef(false);
@@ -181,25 +183,15 @@ export function useTokenPrices(symbols: string[] = Object.keys(COINGECKO_IDS)): 
 }
 
 /* ========================================
-   UTILITY: Get static price (server-side or fallback)
+   UTILITY: Get cached/seed price (server-side or fallback)
    ======================================== */
 export function getStaticPrice(symbol: string): number {
-  // Fallback static prices if API fails
-  const STATIC_PRICES: Record<string, number> = {
-    BNB: 600,
-    ETH: 3500,
-    USDT: 1,
-    USDC: 1,
-    WBTC: 95000,
-    CAKE: 2.5,
-    SOL: 200,
-    BUSD: 1,
-    DAI: 1,
-    LINK: 22,
-    UNI: 12,
-    AAVE: 350,
-  };
-  return STATIC_PRICES[symbol.toUpperCase()] ?? 1;
+  // Use cached prices if available (dynamically updated), otherwise seed prices
+  const cached = cachedPrices[symbol.toUpperCase()]?.usd;
+  if (cached != null) return cached;
+  
+  const seed = SEED_PRICES[symbol.toUpperCase()]?.usd;
+  return seed ?? 1;
 }
 
 /* ========================================

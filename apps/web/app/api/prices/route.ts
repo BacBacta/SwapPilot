@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// Cache prices for 60 seconds
+// Cache prices - starts empty, populated on first successful fetch
 let cachedPrices: Record<string, { usd: number; usd_24h_change?: number }> | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 60_000; // 60 seconds
@@ -23,33 +23,41 @@ const COINGECKO_IDS = [
   'optimism',
 ];
 
-// Fallback prices when API is unavailable
-const FALLBACK_PRICES: Record<string, { usd: number; usd_24h_change: number }> = {
-  'binancecoin': { usd: 710, usd_24h_change: 1.2 },
-  'ethereum': { usd: 3400, usd_24h_change: 0.8 },
+// Initial seed prices - only used if CoinGecko has never responded successfully
+// These are intentionally conservative estimates; real prices will replace them on first fetch
+const SEED_PRICES: Record<string, { usd: number; usd_24h_change: number }> = {
+  'binancecoin': { usd: 700, usd_24h_change: 0 },
+  'ethereum': { usd: 3500, usd_24h_change: 0 },
   'tether': { usd: 1, usd_24h_change: 0 },
   'usd-coin': { usd: 1, usd_24h_change: 0 },
-  'wrapped-bitcoin': { usd: 98000, usd_24h_change: 1.5 },
-  'pancakeswap-token': { usd: 2.50, usd_24h_change: -0.5 },
-  'solana': { usd: 195, usd_24h_change: 2.1 },
+  'wrapped-bitcoin': { usd: 95000, usd_24h_change: 0 },
+  'pancakeswap-token': { usd: 2.50, usd_24h_change: 0 },
+  'solana': { usd: 200, usd_24h_change: 0 },
   'binance-usd': { usd: 1, usd_24h_change: 0 },
   'dai': { usd: 1, usd_24h_change: 0 },
-  'chainlink': { usd: 23, usd_24h_change: 1.0 },
-  'uniswap': { usd: 14, usd_24h_change: 0.3 },
-  'aave': { usd: 350, usd_24h_change: 1.8 },
-  'matic-network': { usd: 0.55, usd_24h_change: -0.2 },
-  'arbitrum': { usd: 0.95, usd_24h_change: 0.5 },
-  'optimism': { usd: 2.10, usd_24h_change: 0.7 },
+  'chainlink': { usd: 20, usd_24h_change: 0 },
+  'uniswap': { usd: 12, usd_24h_change: 0 },
+  'aave': { usd: 300, usd_24h_change: 0 },
+  'matic-network': { usd: 0.50, usd_24h_change: 0 },
+  'arbitrum': { usd: 0.80, usd_24h_change: 0 },
+  'optimism': { usd: 2.00, usd_24h_change: 0 },
 };
+
+// Use last known good prices as fallback, or seed prices if never fetched
+function getFallbackPrices(): Record<string, { usd: number; usd_24h_change?: number }> {
+  return cachedPrices ?? SEED_PRICES;
+}
 
 export async function GET() {
   const now = Date.now();
+  const cacheAgeMs = cachedPrices ? now - cacheTimestamp : null;
   
   // Return cached prices if still valid
   if (cachedPrices && now - cacheTimestamp < CACHE_TTL) {
     return NextResponse.json(cachedPrices, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'X-Price-Age-Ms': String(cacheAgeMs ?? 0),
       },
     });
   }
@@ -66,43 +74,39 @@ export async function GET() {
     });
 
     if (!response.ok) {
-      console.warn(`[Prices API] CoinGecko returned ${response.status}, using fallback`);
-      return NextResponse.json(FALLBACK_PRICES, {
+      console.warn(`[Prices API] CoinGecko returned ${response.status}, using last known prices`);
+      const fallback = getFallbackPrices();
+      return NextResponse.json(fallback, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
           'X-Fallback': 'true',
+          'X-Price-Age-Ms': String(cacheAgeMs ?? 'seed'),
         },
       });
     }
 
     const data = await response.json();
     
-    // Update cache
+    // Update cache with fresh prices
     cachedPrices = data;
     cacheTimestamp = now;
 
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'X-Price-Age-Ms': '0',
       },
     });
   } catch (error) {
     console.error('[Prices API] Error fetching prices:', error);
     
-    // Return cached data if available, otherwise fallback
-    if (cachedPrices) {
-      return NextResponse.json(cachedPrices, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-          'X-Cached': 'true',
-        },
-      });
-    }
-
-    return NextResponse.json(FALLBACK_PRICES, {
+    // Return last known good prices (dynamic fallback)
+    const fallback = getFallbackPrices();
+    return NextResponse.json(fallback, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
         'X-Fallback': 'true',
+        'X-Price-Age-Ms': String(cacheAgeMs ?? 'seed'),
       },
     });
   }
