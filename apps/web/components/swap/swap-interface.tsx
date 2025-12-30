@@ -413,6 +413,8 @@ export function SwapInterface() {
         buyToken: toTokenInfo.address,
         sellAmount: sellAmountWei.toString(),
         slippageBps: settings.slippageBps,
+        quoteRaw: quote.raw,
+        quoteNormalized: quote.normalized,
       });
 
       if (!tx) {

@@ -17,6 +17,9 @@ import {
   DecisionReceiptSchema,
   QuoteRequestSchema,
   QuoteResponseSchema,
+  ProviderQuoteRawSchema,
+  ProviderQuoteNormalizedSchema,
+  type RiskSignals,
 } from '@swappilot/shared';
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
@@ -407,6 +410,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     sellAmount: z.string(),
     slippageBps: z.number().int().min(1).max(5000).default(100),
     account: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    // Optional: pass the exact quote selected in the UI so we can build the tx
+    // without re-quoting (more reliable, avoids "no valid quote" on transient outages).
+    quoteRaw: ProviderQuoteRawSchema.optional(),
+    quoteNormalized: ProviderQuoteNormalizedSchema.optional(),
   });
 
   const BuildTxResponseSchema = z.object({
@@ -433,7 +440,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
     },
     async (request, reply) => {
-      const { providerId, sellToken, buyToken, sellAmount, slippageBps, account } = request.body;
+      const {
+        providerId,
+        sellToken,
+        buyToken,
+        sellAmount,
+        slippageBps,
+        account,
+        quoteRaw,
+        quoteNormalized,
+      } = request.body;
 
       const adapter = adapters.get(providerId);
       if (!adapter) {
@@ -456,13 +472,40 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         mode: 'NORMAL' as const,
       };
 
+      const placeholderSignals = (reason: string): RiskSignals => ({
+        sellability: { status: 'OK', confidence: 0.8, reasons: [reason] },
+        revertRisk: { level: 'LOW', reasons: [reason] },
+        mevExposure: { level: 'LOW', reasons: [reason] },
+        churn: { level: 'LOW', reasons: [reason] },
+        preflight: { ok: true, pRevert: 0, confidence: 1, reasons: [reason] },
+      });
+
       try {
-        // First get a quote to pass to buildTx
-        const quote = await adapter.getQuote(quoteRequest);
-        
+        // Prefer quote provided by client (selected in UI), to avoid re-quoting.
+        const quote = quoteRaw
+          ? {
+              providerId,
+              sourceType: 'aggregator' as const,
+              capabilities: adapter.getCapabilities(),
+              raw: quoteRaw,
+              normalized:
+                quoteNormalized ??
+                ({
+                  buyAmount: quoteRaw.buyAmount,
+                  effectivePrice: '0',
+                  estimatedGasUsd: null,
+                  feesUsd: null,
+                } as const),
+              signals: placeholderSignals('build_tx_client_quote'),
+              deepLink: null,
+              warnings: ['client_quote_used'],
+              isStub: false,
+            }
+          : await adapter.getQuote(quoteRequest);
+
         if (quote.isStub || BigInt(quote.raw.buyAmount) === 0n) {
-          return reply.code(400).send({ 
-            message: `Provider '${providerId}' returned no valid quote` 
+          return reply.code(400).send({
+            message: `Provider '${providerId}' returned no valid quote`,
           });
         }
 

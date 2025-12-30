@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import type { Address } from "viem";
+import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://swappilot-api.fly.dev";
 
@@ -12,6 +13,8 @@ export type SwapParams = {
   buyToken: string;
   sellAmount: string;
   slippageBps: number;
+  quoteRaw?: ProviderQuoteRaw;
+  quoteNormalized?: ProviderQuoteNormalized;
 };
 
 export type BuiltTransaction = {
@@ -111,6 +114,8 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           sellAmount: params.sellAmount,
           slippageBps: params.slippageBps,
           account: userAddress,
+          quoteRaw: params.quoteRaw,
+          quoteNormalized: params.quoteNormalized,
         }),
       });
 
