@@ -150,6 +150,7 @@ export function SwapInterface() {
   const [fromToken, setFromToken] = useState("BNB");
   const [toToken, setToToken] = useState("ETH");
   const [fromAmount, setFromAmount] = useState("1");
+  const [fromAmountRawWei, setFromAmountRawWei] = useState<string | null>(null); // Exact wei amount when Max is clicked
   const [showMore, setShowMore] = useState(false);
   
   // Map settings.mode to execution mode display
@@ -184,7 +185,7 @@ export function SwapInterface() {
     () => [fromTokenInfo, toTokenInfo].filter((t): t is NonNullable<typeof t> => Boolean(t)),
     [fromTokenInfo, toTokenInfo],
   );
-  const { getBalanceFormatted, isConnected, refetch: refetchBalances } = useTokenBalances(balancesTokens);
+  const { getBalanceFormatted, getBalance, isConnected, refetch: refetchBalances } = useTokenBalances(balancesTokens);
 
   // Transaction History Hook
   const { transactions, pendingCount, addTransaction, updateTransaction, clearHistory } = useTransactionHistory();
@@ -226,13 +227,18 @@ export function SwapInterface() {
   // Token approval hook - only for ERC-20 tokens
   const sellAmountWei = useMemo(() => {
     try {
+      // If we have an exact wei amount from Max click, use it directly
+      if (fromAmountRawWei) {
+        return BigInt(fromAmountRawWei);
+      }
+      // Otherwise, calculate from the display amount (may have precision loss)
       const amountNum = parseFloat(fromAmount.replace(/,/g, "") || "0");
       const decimals = fromTokenInfo?.decimals ?? 18;
       return BigInt(Math.floor(amountNum * 10 ** decimals));
     } catch {
       return 0n;
     }
-  }, [fromAmount, fromTokenInfo]);
+  }, [fromAmount, fromAmountRawWei, fromTokenInfo]);
 
   const {
     needsApproval,
@@ -611,11 +617,17 @@ export function SwapInterface() {
                 balance={isConnected && fromTokenInfo ? getBalanceFormatted(fromTokenInfo) : undefined}
                 value={fromAmount}
                 usdValue={fromUsdValue > 0 ? `≈ $${fromUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ""}
-                onChange={setFromAmount}
+                onChange={(val) => {
+                  setFromAmount(val);
+                  // Clear exact wei when user manually types (will recalculate from display value)
+                  setFromAmountRawWei(null);
+                }}
                 onTokenClick={() => openTokenPicker("from")}
                 onMaxClick={() => {
                   if (!fromTokenInfo) return;
                   setFromAmount(getBalanceFormatted(fromTokenInfo));
+                  // Store the exact wei amount to avoid precision loss
+                  setFromAmountRawWei(getBalance(fromTokenInfo));
                 }}
               />
 
