@@ -173,7 +173,7 @@ export function SwapInterface() {
     bestRawQuote,
     fetchQuotes,
     reset,
-  } = useSwapQuotes();
+  } = useSwapQuotes(resolveToken);
 
   // Derived states from hook
   const loading = quotes.status === "loading";

@@ -5,9 +5,11 @@ import { postQuotes, getReceipt, type ApiError } from "@/lib/api";
 import type { QuoteResponse, QuoteRequest, DecisionReceipt, RankedQuote } from "@swappilot/shared";
 
 import { parseUnits } from "viem";
-import { useTokenRegistry } from "@/lib/use-token-registry";
+import type { TokenInfo } from "@/lib/tokens";
 
 const BSC_CHAIN_ID = 56;
+
+export type ResolveTokenFn = (tokenOrSymbolOrAddress: string) => TokenInfo | null;
 
 /* ========================================
    TYPES
@@ -47,9 +49,7 @@ export interface FetchQuotesParams {
 /* ========================================
    HOOK
    ======================================== */
-export function useSwapQuotes(): UseSwapQuotesReturn {
-  const { resolveToken } = useTokenRegistry();
-
+export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn {
   const [quotes, setQuotes] = useState<QuoteState>({
     status: "idle",
     data: null,
