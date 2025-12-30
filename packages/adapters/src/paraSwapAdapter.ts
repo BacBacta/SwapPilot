@@ -311,16 +311,21 @@ export class ParaSwapAdapter implements Adapter {
         throw new Error(`ParaSwap price API error: ${priceRes.status}`);
       }
 
-      const priceRoute = await priceRes.json();
+      const priceData = await priceRes.json() as { priceRoute: Record<string, unknown> };
+      const priceRoute = priceData.priceRoute;
+      
+      if (!priceRoute) {
+        throw new Error('ParaSwap price API returned no priceRoute');
+      }
 
       // Step 2: Build transaction
       // ParaSwap requires: for SELL side, use slippage (not destAmount)
-      // The priceRoute must be passed unmodified
+      // Use tokens from priceRoute to ensure exact match (case-sensitive!)
       const txUrl = `${this.baseUrl}/transactions/${this.chainId}`;
       const txBody = {
-        srcToken,
-        destToken,
-        srcAmount: request.sellAmount,
+        srcToken: priceRoute.srcToken,
+        destToken: priceRoute.destToken,
+        srcAmount: priceRoute.srcAmount,
         // For SELL side: use slippage, NOT destAmount (cannot specify both)
         slippage: slippageBps / 100, // ParaSwap expects slippage as percentage (1 = 1%)
         priceRoute,
