@@ -81,12 +81,14 @@ export class OkxDexAdapter implements Adapter {
       homepageUrl: 'https://www.okx.com/web3/dex',
       capabilities: {
         quote: this.quoteEnabled(),
-        buildTx: this.quoteEnabled(),
+        // OKX DEX adapter currently supports quotes only.
+        // Execution is handled via deep-link in the UI.
+        buildTx: false,
         deepLink: true,
       },
       integrationConfidence: this.quoteEnabled() ? 0.85 : 0.2,
       notes: this.quoteEnabled()
-        ? 'OKX DEX API integration enabled'
+        ? 'OKX DEX API integration enabled (quote-only)'
         : 'API credentials not configured, deep-link only',
     };
   }

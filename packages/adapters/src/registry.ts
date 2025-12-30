@@ -17,9 +17,9 @@ export const PROVIDERS: ProviderMeta[] = [
     displayName: 'OKX DEX',
     category: 'aggregator',
     homepageUrl: 'https://www.okx.com/web3/dex',
-    capabilities: { quote: true, buildTx: true, deepLink: true },
+    capabilities: { quote: true, buildTx: false, deepLink: true },
     integrationConfidence: 0.85,
-    notes: 'OKX DEX Aggregator API integration. Requires API credentials.',
+    notes: 'OKX DEX Aggregator API integration (quote-only). Requires API credentials.',
   },
   {
     providerId: '1inch',

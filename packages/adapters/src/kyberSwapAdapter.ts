@@ -326,11 +326,13 @@ export class KyberSwapAdapter implements Adapter {
         throw new Error(buildJson.message ?? 'KyberSwap: failed to build transaction');
       }
 
+      const gas = buildJson.data.gas ?? null;
+
       return {
         to: buildJson.data.routerAddress,
         data: buildJson.data.data,
         value: buildJson.data.transactionValue ?? '0',
-        gas: buildJson.data.gas,
+        ...(gas ? { gas } : {}),
       };
     } catch (err) {
       clearTimeout(timeout);

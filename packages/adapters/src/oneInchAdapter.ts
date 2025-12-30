@@ -279,11 +279,13 @@ export class OneInchAdapter implements Adapter {
         };
       };
 
+      const gas = data.tx.gas && data.tx.gas > 0 ? String(data.tx.gas) : null;
+
       return {
         to: data.tx.to,
         data: data.tx.data,
         value: data.tx.value,
-        gas: data.tx.gas && data.tx.gas > 0 ? String(data.tx.gas) : undefined,
+        ...(gas ? { gas } : {}),
       };
     } catch (err) {
       clearTimeout(timeout);
