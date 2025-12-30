@@ -208,6 +208,28 @@ export function SwapInterface() {
   const loading = quotes.status === "loading";
   const error = quotes.error?.message ?? null;
 
+  // Auto-fetch quotes when tokens or amount change (debounced)
+  useEffect(() => {
+    // Don't fetch if tokens are the same or amount is invalid
+    if (fromToken === toToken) return;
+    const amountNum = parseFloat(fromAmount.replace(/,/g, "") || "0");
+    if (amountNum <= 0 || Number.isNaN(amountNum)) return;
+    if (!fromTokenInfo || !toTokenInfo) return;
+
+    // Debounce to avoid too many API calls while typing
+    const timeoutId = setTimeout(() => {
+      fetchQuotes({
+        sellToken: fromToken,
+        buyToken: toToken,
+        sellAmount: fromAmount,
+        slippageBps: settings.slippageBps,
+        mode: settings.mode,
+      });
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [fromToken, toToken, fromAmount, fromTokenInfo, toTokenInfo, settings.slippageBps, settings.mode, fetchQuotes]);
+
   // Force re-render every second to update "Updated Xs ago" display
   const [, setTick] = useState(0);
   useEffect(() => {
