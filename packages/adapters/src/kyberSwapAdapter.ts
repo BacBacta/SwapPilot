@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -226,6 +226,115 @@ export class KyberSwapAdapter implements Adapter {
           feesUsd: null,
         },
       };
+    }
+  }
+
+  /**
+   * Build a ready-to-sign transaction using KyberSwap's build endpoint.
+   * Flow:
+   * - GET /routes to get a fresh routeSummary
+   * - POST /route/build with routeSummary + sender/recipient
+   */
+  async buildTx(request: QuoteRequest, _quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.isSupported()) {
+      throw new Error(`Chain ${this.chainId} not supported by KyberSwap`);
+    }
+
+    if (!request.account) {
+      throw new Error('Account address required for building transaction');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      // 1) Fetch a fresh route summary.
+      const routesUrl = new URL(`${this.baseUrl}/routes`);
+      routesUrl.searchParams.set('tokenIn', this.normalizeToken(request.sellToken));
+      routesUrl.searchParams.set('tokenOut', this.normalizeToken(request.buyToken));
+      routesUrl.searchParams.set('amountIn', request.sellAmount);
+      routesUrl.searchParams.set('saveGas', 'false');
+      routesUrl.searchParams.set('gasInclude', 'true');
+      routesUrl.searchParams.set('clientData', JSON.stringify({ source: this.clientId }));
+
+      const routesRes = await fetch(routesUrl.toString(), {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'x-client-id': this.clientId,
+        },
+        signal: controller.signal,
+      });
+
+      if (!routesRes.ok) {
+        const text = await routesRes.text();
+        throw new Error(`KyberSwap routes API error: ${routesRes.status} - ${text}`);
+      }
+
+      const routesJson = (await routesRes.json()) as {
+        code: number;
+        message?: string;
+        data?: {
+          routeSummary?: unknown;
+        };
+      };
+
+      if (routesJson.code !== 0 || !routesJson.data?.routeSummary) {
+        throw new Error(routesJson.message ?? 'KyberSwap: no route found');
+      }
+
+      // 2) Build calldata.
+      const deadline = Math.floor(Date.now() / 1000) + 20 * 60; // 20 minutes
+      const slippageTolerance = request.slippageBps ?? 100;
+
+      const buildRes = await fetch(`${this.baseUrl}/route/build`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'x-client-id': this.clientId,
+        },
+        body: JSON.stringify({
+          routeSummary: routesJson.data.routeSummary,
+          sender: request.account,
+          recipient: request.account,
+          slippageTolerance,
+          deadline,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!buildRes.ok) {
+        const text = await buildRes.text();
+        throw new Error(`KyberSwap build API error: ${buildRes.status} - ${text}`);
+      }
+
+      const buildJson = (await buildRes.json()) as {
+        code: number;
+        message?: string;
+        data?: {
+          routerAddress?: string;
+          transactionValue?: string;
+          gas?: string;
+          data?: string;
+        };
+      };
+
+      if (buildJson.code !== 0 || !buildJson.data?.routerAddress || !buildJson.data?.data) {
+        throw new Error(buildJson.message ?? 'KyberSwap: failed to build transaction');
+      }
+
+      return {
+        to: buildJson.data.routerAddress,
+        data: buildJson.data.data,
+        value: buildJson.data.transactionValue ?? '0',
+        gas: buildJson.data.gas,
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
     }
   }
 
