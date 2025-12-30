@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { postQuotes, getReceipt, type ApiError } from "@/lib/api";
 import type { QuoteResponse, QuoteRequest, DecisionReceipt, RankedQuote } from "@swappilot/shared";
 
@@ -8,6 +8,7 @@ import { parseUnits } from "viem";
 import type { TokenInfo } from "@/lib/tokens";
 
 const BSC_CHAIN_ID = 56;
+const QUOTE_REFRESH_INTERVAL_MS = 10_000; // Refresh quotes every 10 seconds
 
 export type ResolveTokenFn = (tokenOrSymbolOrAddress: string) => TokenInfo | null;
 
@@ -32,6 +33,11 @@ export interface UseSwapQuotesReturn {
   fetchQuotes: (params: FetchQuotesParams) => Promise<void>;
   fetchReceipt: (receiptId: string) => Promise<void>;
   reset: () => void;
+  // Auto-refresh control
+  isAutoRefreshEnabled: boolean;
+  setAutoRefresh: (enabled: boolean) => void;
+  lastUpdatedAt: number | null;
+  isRefreshing: boolean;
   // Computed values
   bestExecutableQuote: RankedQuote | null;
   bestRawQuote: RankedQuote | null;
@@ -62,7 +68,16 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
     error: null,
   });
 
-  const fetchQuotes = useCallback(async (params: FetchQuotesParams) => {
+  // Auto-refresh state
+  const [isAutoRefreshEnabled, setAutoRefresh] = useState(true);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Store last fetch params for auto-refresh
+  const lastFetchParamsRef = useRef<FetchQuotesParams | null>(null);
+  const fetchingRef = useRef(false);
+
+  const fetchQuotes = useCallback(async (params: FetchQuotesParams, isAutoRefresh = false) => {
     const sell = resolveToken(params.sellToken);
     const buy = resolveToken(params.buyToken);
 
@@ -100,19 +115,50 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
       mode: params.mode ?? "NORMAL",
     };
 
-    setQuotes({ status: "loading", data: null, error: null });
+    // Store params for auto-refresh
+    lastFetchParamsRef.current = params;
+
+    // For auto-refresh, don't reset to loading state (keeps previous data visible)
+    if (isAutoRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setQuotes({ status: "loading", data: null, error: null });
+    }
 
     try {
+      fetchingRef.current = true;
       const response = await postQuotes({ request, timeoutMs: 15_000 });
       setQuotes({ status: "success", data: response, error: null });
+      setLastUpdatedAt(Date.now());
     } catch (err) {
-      setQuotes({
-        status: "error",
-        data: null,
-        error: err as ApiError,
-      });
+      // On auto-refresh error, keep previous data
+      if (!isAutoRefresh) {
+        setQuotes({
+          status: "error",
+          data: null,
+          error: err as ApiError,
+        });
+      }
+    } finally {
+      fetchingRef.current = false;
+      setIsRefreshing(false);
     }
   }, [resolveToken]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!isAutoRefreshEnabled || quotes.status !== "success" || !lastFetchParamsRef.current) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      if (!fetchingRef.current && lastFetchParamsRef.current) {
+        fetchQuotes(lastFetchParamsRef.current, true);
+      }
+    }, QUOTE_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isAutoRefreshEnabled, quotes.status, fetchQuotes]);
 
   const fetchReceipt = useCallback(async (receiptId: string) => {
     setReceipt({ status: "loading", data: null, error: null });
@@ -132,6 +178,8 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
   const reset = useCallback(() => {
     setQuotes({ status: "idle", data: null, error: null });
     setReceipt({ status: "idle", data: null, error: null });
+    setLastUpdatedAt(null);
+    lastFetchParamsRef.current = null;
   }, []);
 
   // Computed values
@@ -146,9 +194,13 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
   return {
     quotes,
     receipt,
-    fetchQuotes,
+    fetchQuotes: useCallback((params: FetchQuotesParams) => fetchQuotes(params, false), [fetchQuotes]),
     fetchReceipt,
     reset,
+    isAutoRefreshEnabled,
+    setAutoRefresh,
+    lastUpdatedAt,
+    isRefreshing,
     bestExecutableQuote,
     bestRawQuote,
     rankedQuotes,

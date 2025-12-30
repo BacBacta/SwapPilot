@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { CardDark } from "@/components/ui/surfaces";
 import { Button, Pill, Badge } from "@/components/ui/primitives";
 import { TokenInput, SwapDirectionButton } from "@/components/ui/token-input";
@@ -173,11 +173,23 @@ export function SwapInterface() {
     bestRawQuote,
     fetchQuotes,
     reset,
+    isAutoRefreshEnabled,
+    setAutoRefresh,
+    lastUpdatedAt,
+    isRefreshing,
   } = useSwapQuotes(resolveToken);
 
   // Derived states from hook
   const loading = quotes.status === "loading";
   const error = quotes.error?.message ?? null;
+
+  // Force re-render every second to update "Updated Xs ago" display
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!lastUpdatedAt) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [lastUpdatedAt]);
 
   // Calculate USD value of input
   const fromAmountNum = parseFloat(fromAmount.replace(/,/g, "") || "0");
@@ -429,6 +441,20 @@ export function SwapInterface() {
                     {activeQuotes.length > 0 
                       ? `${activeQuotes.length} providers compared` 
                       : "Enter amount to get quotes"}
+                    {lastUpdatedAt && activeQuotes.length > 0 && (
+                      <span className="ml-2">
+                        {isRefreshing ? (
+                          <span className="inline-flex items-center gap-1 text-sp-accent">
+                            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-sp-accent" />
+                            Updating...
+                          </span>
+                        ) : (
+                          <span className="text-sp-muted2">
+                            • Updated {Math.round((Date.now() - lastUpdatedAt) / 1000)}s ago
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <Pill tone={mode === "BEQ" ? "accent" : "blue"}>{mode}</Pill>
