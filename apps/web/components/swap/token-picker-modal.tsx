@@ -293,7 +293,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                 )}
               >
                 <button
-                  onClick={() => onSelect(token.symbol)}
+                  onClick={() => onSelect(token.isCustom ? token.address : token.symbol)}
                   className="flex flex-1 items-center gap-3"
                 >
                   <TokenImage symbol={token.symbol} size="xl" />
