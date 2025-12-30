@@ -154,11 +154,21 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
 
     setError(null);
 
+    const gas = (() => {
+      if (!transaction.gas) return undefined;
+      try {
+        const gasValue = BigInt(transaction.gas);
+        return gasValue > 0n ? gasValue : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+
     sendTransaction({
       to: transaction.to as Address,
       data: transaction.data as `0x${string}`,
       value: BigInt(transaction.value || "0"),
-      gas: transaction.gas ? BigInt(transaction.gas) : undefined,
+      gas,
     });
   }, [builtTx, isConnected, sendTransaction]);
 

@@ -283,7 +283,7 @@ export class OneInchAdapter implements Adapter {
         to: data.tx.to,
         data: data.tx.data,
         value: data.tx.value,
-        gas: String(data.tx.gas),
+        gas: data.tx.gas && data.tx.gas > 0 ? String(data.tx.gas) : undefined,
       };
     } catch (err) {
       clearTimeout(timeout);
