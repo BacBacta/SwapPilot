@@ -43,6 +43,9 @@ import { createMetrics, type Metrics } from './obs/metrics';
 import { NoopQuoteCache, type QuoteCache } from './cache/quoteCache';
 import { createRedisClient, RedisQuoteCache } from './cache/redisQuoteCache';
 
+import { resolveErc20Metadata } from './tokens/erc20Metadata';
+import { ProviderHealthTracker } from './obs/providerHealth';
+
 export type CreateServerOptions = {
   logger?: boolean;
   config?: AppConfig;
@@ -52,6 +55,7 @@ export type CreateServerOptions = {
   pancakeSwapAdapter?: Adapter;
   quoteCache?: QuoteCache;
   metrics?: Metrics;
+  providerHealth?: ProviderHealthTracker;
 };
 
 export function createServer(options: CreateServerOptions = {}): FastifyInstance {
@@ -166,6 +170,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   const api = app.withTypeProvider<ZodTypeProvider>();
 
   const metrics = options.metrics ?? createMetrics({ collectDefault: true });
+  const providerHealth = options.providerHealth ?? new ProviderHealthTracker();
 
   if (config.metrics.enabled) {
     api.get('/metrics', async (_request, reply) => {
@@ -237,6 +242,34 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['paraswap', paraSwapAdapter],
   ]);
 
+  api.get(
+    '/v1/tokens/resolve',
+    {
+      schema: {
+        querystring: z.object({
+          address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+        }),
+        response: {
+          200: z.object({
+            address: z.string(),
+            symbol: z.string().nullable(),
+            name: z.string().nullable(),
+            decimals: z.number().int().min(0).max(255),
+            isNative: z.boolean(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const meta = await resolveErc20Metadata({
+        address: request.query.address,
+        rpcUrls: config.rpc.bscUrls,
+        timeoutMs: config.rpc.timeoutMs,
+      });
+      return meta;
+    },
+  );
+
   api.post(
     '/v1/quotes',
     {
@@ -248,6 +281,18 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
     },
     async (request) => {
+      const sellabilityDeps = config.sellability
+        ? {
+            multicall3Address: config.sellability.multicall3Address,
+            baseTokensBsc: config.sellability.baseTokensBsc,
+            pancake: {
+              v2Factory: config.pancakeswap.v2Factory,
+              v3Factory: config.pancakeswap.v3Factory,
+              wbnb: config.pancakeswap.wbnb,
+            },
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -264,6 +309,9 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         quoteCacheTtlSeconds: config.redis.quoteCacheTtlSeconds,
         logger: request.log,
         metrics,
+        providerHealth,
+        rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
+        sellability: sellabilityDeps,
       });
 
       await receiptStore.put(receipt);

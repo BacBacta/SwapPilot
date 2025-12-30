@@ -54,10 +54,36 @@ export const EnvSchema = z.object({
   // Leave empty to keep PancakeSwap deep-link only.
   PANCAKESWAP_V2_ROUTER: z.string().default('0x10ED43C718714eb63d5aA57B78B54704E256024E'),
   PANCAKESWAP_V3_QUOTER: z.string().default(''),
+  // PancakeSwap factories (used by on-chain sellability heuristics)
+  // Defaults are from PancakeSwap developer docs (BSC mainnet).
+  PANCAKESWAP_V2_FACTORY: z.string().default('0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'),
+  PANCAKESWAP_V3_FACTORY: z.string().default('0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865'),
   // Wrapped native token used for BNB (BSC mainnet WBNB by default).
   // Override if you run against a different chain/RPC.
   PANCAKESWAP_WBNB: z.string().default('0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'),
   PANCAKESWAP_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(2_000),
+
+  // Sellability heuristic configuration (BSC)
+  // Multicall3 default is the standard deployment address.
+  SELLABILITY_MULTICALL3_ADDRESS: z.string().default('0xcA11bde05977b3631167028862bE2a173976CA11'),
+  // Comma-separated list of base tokens to check liquidity against on BSC.
+  // Defaults include common bases; override if you prefer a smaller set.
+  SELLABILITY_BASE_TOKENS_BSC: z
+    .string()
+    .default(
+      [
+        // WBNB
+        '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+        // USDT
+        '0x55d398326f99059fF775485246999027B3197955',
+        // USDC
+        '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
+        // BTCB
+        '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+        // ETH (Binance-Peg ETH)
+        '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+      ].join(','),
+    ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -94,8 +120,14 @@ export type AppConfig = {
   pancakeswap: {
     v2Router: string | null;
     v3Quoter: string | null;
+    v2Factory: string;
+    v3Factory: string;
     wbnb: string;
     quoteTimeoutMs: number;
+  };
+  sellability: {
+    multicall3Address: string;
+    baseTokensBsc: string[];
   };
 };
 
@@ -144,8 +176,14 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     pancakeswap: {
       v2Router: env.PANCAKESWAP_V2_ROUTER.trim().length > 0 ? env.PANCAKESWAP_V2_ROUTER.trim() : null,
       v3Quoter: env.PANCAKESWAP_V3_QUOTER.trim().length > 0 ? env.PANCAKESWAP_V3_QUOTER.trim() : null,
+      v2Factory: env.PANCAKESWAP_V2_FACTORY.trim(),
+      v3Factory: env.PANCAKESWAP_V3_FACTORY.trim(),
       wbnb: env.PANCAKESWAP_WBNB.trim(),
       quoteTimeoutMs: env.PANCAKESWAP_QUOTE_TIMEOUT_MS,
+    },
+    sellability: {
+      multicall3Address: env.SELLABILITY_MULTICALL3_ADDRESS.trim(),
+      baseTokensBsc: splitCsv(env.SELLABILITY_BASE_TOKENS_BSC),
     },
   };
 }

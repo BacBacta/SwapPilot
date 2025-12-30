@@ -37,7 +37,7 @@ type ReceiptSummary = {
 };
 
 describe('Option 1 API', () => {
-  it('POST /v1/quotes is deterministic and stores receipt', async () => {
+  it('POST /v1/quotes is deterministic and stores receipt', { timeout: 15_000 }, async () => {
     const app = createServer({
       logger: false,
       preflightClient: {
@@ -102,7 +102,7 @@ describe('Option 1 API', () => {
     expect(anyWithPreflight).toBe(true);
   });
 
-  it('SAFE mode excludes preflight failures from BEQ ranking', async () => {
+  it('SAFE mode excludes preflight failures from BEQ ranking', { timeout: 15_000 }, async () => {
     const app = createServer({
       logger: false,
       preflightClient: {

@@ -19,6 +19,8 @@ import type { RiskEngine } from '@swappilot/risk';
 
 import type { Metrics } from './obs/metrics';
 import type { QuoteCache } from './cache/quoteCache';
+import { ProviderHealthTracker } from './obs/providerHealth';
+import { assessOnchainSellability } from './risk/onchainSellability';
 
 type Logger = {
   info(obj: unknown, msg?: string): void;
@@ -46,6 +48,13 @@ export function buildQuotes(
     quoteCacheTtlSeconds?: number;
     logger?: Logger;
     metrics?: Metrics;
+    providerHealth?: ProviderHealthTracker;
+    rpc?: { bscUrls: string[]; timeoutMs: number };
+    sellability?: {
+      multicall3Address: string;
+      baseTokensBsc: string[];
+      pancake: { v2Factory: string; v3Factory: string; wbnb: string };
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -69,6 +78,13 @@ async function buildQuotesImpl(
     quoteCacheTtlSeconds?: number;
     logger?: Logger;
     metrics?: Metrics;
+    providerHealth?: ProviderHealthTracker;
+    rpc?: { bscUrls: string[]; timeoutMs: number };
+    sellability?: {
+      multicall3Address: string;
+      baseTokensBsc: string[];
+      pancake: { v2Factory: string; v3Factory: string; wbnb: string };
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -85,6 +101,9 @@ async function buildQuotesImpl(
 
   const log = deps.logger ?? noopLogger;
   const metrics = deps.metrics;
+  const providerHealth = deps.providerHealth;
+  const rpc = deps.rpc;
+  const sellability = deps.sellability;
   const quoteCache = deps.quoteCache;
   const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
@@ -98,7 +117,17 @@ async function buildQuotesImpl(
     }
     return p;
   });
-  const providerMeta = new Map(enabledProviders.map((p) => [p.providerId, p] as const));
+
+  // Dynamic integration confidence: base * runtime health factor.
+  const providerMeta = new Map(
+    enabledProviders.map((p) => {
+      const base = p.integrationConfidence;
+      const integrationConfidence = providerHealth
+        ? providerHealth.getIntegrationConfidence({ providerId: p.providerId, base })
+        : base;
+      return [p.providerId, { ...p, integrationConfidence }] as const;
+    }),
+  );
 
   const assumptions = defaultAssumptions();
 
@@ -133,6 +162,7 @@ async function buildQuotesImpl(
                   metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'cache_hit' }).inc();
                   const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
                   metrics?.providerQuoteDurationMs.labels({ providerId, status: 'cache_hit' }).observe(durationMs);
+                  providerHealth?.record({ providerId, status: 'cache_hit', durationMs });
                   log.info({ providerId, cache: 'hit', durationMs }, 'provider.quote');
                   return {
                     providerId,
@@ -154,6 +184,7 @@ async function buildQuotesImpl(
               }
 
               metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'cache_miss' }).inc();
+              providerHealth?.record({ providerId, status: 'cache_miss', durationMs: null });
 
               // Small retry budget for transient provider/RPC outages.
               const maxAttempts = 2;
@@ -167,6 +198,7 @@ async function buildQuotesImpl(
                   const status = quote.isStub || quote.capabilities.quote === false ? 'stub' : 'success';
                   metrics?.providerQuoteRequestsTotal.labels({ providerId, status }).inc();
                   metrics?.providerQuoteDurationMs.labels({ providerId, status }).observe(durationMs);
+                  providerHealth?.record({ providerId, status, durationMs });
                   log.info(
                     {
                       providerId,
@@ -214,6 +246,7 @@ async function buildQuotesImpl(
               const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
               metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'failure' }).inc();
               metrics?.providerQuoteDurationMs.labels({ providerId, status: 'failure' }).observe(durationMs);
+              providerHealth?.record({ providerId, status: 'failure', durationMs });
               log.error(
                 { providerId, durationMs, error: err instanceof Error ? err.message : String(err) },
                 'provider.quote.failed',
@@ -316,13 +349,44 @@ async function buildQuotesImpl(
         preflight: preflightResult,
       });
 
+      // Best-effort on-chain heuristic: detects obvious non-contract/non-ERC20 tokens.
+      const onchainSellability = rpc
+        ? await assessOnchainSellability({
+            chainId: parsed.chainId,
+            buyToken: parsed.buyToken,
+            rpcUrls: rpc.bscUrls,
+            timeoutMs: rpc.timeoutMs,
+            multicall3Address: sellability?.multicall3Address ?? null,
+            baseTokens: sellability?.baseTokensBsc ?? null,
+            pancake: sellability?.pancake ?? null,
+          })
+        : null;
+
+      const mergedSignals = onchainSellability
+        ? {
+            ...riskSignals,
+            sellability:
+              onchainSellability.status === 'FAIL'
+                ? {
+                    status: 'FAIL' as const,
+                    confidence: Math.max(riskSignals.sellability.confidence, onchainSellability.confidence),
+                    reasons: [...riskSignals.sellability.reasons, ...onchainSellability.reasons],
+                  }
+                : {
+                    status: riskSignals.sellability.status,
+                    confidence: Math.max(riskSignals.sellability.confidence, onchainSellability.confidence),
+                    reasons: [...riskSignals.sellability.reasons, ...onchainSellability.reasons],
+                  },
+          }
+        : riskSignals;
+
       return {
         providerId: item.provider.providerId,
         sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
         capabilities: item.capabilities,
         raw: item.raw,
         normalized: item.normalized,
-        signals: riskSignals,
+        signals: mergedSignals,
         score: { beqScore: 0, rawOutputRank: 0 },
         deepLink: item.deepLink.url,
       };
