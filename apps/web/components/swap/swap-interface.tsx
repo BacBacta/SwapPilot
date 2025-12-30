@@ -146,8 +146,18 @@ export function SwapInterface() {
   const [fromToken, setFromToken] = useState("BNB");
   const [toToken, setToToken] = useState("ETH");
   const [fromAmount, setFromAmount] = useState("1");
-  const [executionMode, setExecutionMode] = useState<string | number>("balanced");
   const [showMore, setShowMore] = useState(false);
+  
+  // Map settings.mode to execution mode display
+  const executionMode = settings.mode === "SAFE" ? "safe" : settings.mode === "DEGEN" ? "turbo" : "balanced";
+  const setExecutionMode = (m: string | number) => {
+    const modeMap: Record<string, "SAFE" | "NORMAL" | "DEGEN"> = {
+      safe: "SAFE",
+      balanced: "NORMAL",
+      turbo: "DEGEN",
+    };
+    updateSettings({ mode: modeMap[String(m)] ?? "NORMAL" });
+  };
   
   // Modals/Drawers
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
@@ -421,7 +431,7 @@ export function SwapInterface() {
               {/* Stats row */}
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <StatCard label="Network" value="$0.36" subValue="~12s" />
-                <StatCard label="Slippage" value="0.5%" />
+                <StatCard label="Slippage" value={`${(settings.slippageBps / 100).toFixed(1)}%`} />
                 <StatCard label="Impact" value="-0.02%" />
               </div>
 
