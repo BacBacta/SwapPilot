@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import type { Address } from "viem";
 import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/shared";
@@ -97,13 +97,16 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   });
 
   // Update status when transaction is confirmed
-  if (isTxConfirmed && status === "pending") {
+  useEffect(() => {
+    if (!isTxConfirmed) return;
+    if (status !== "pending") return;
+
     console.info("[swap][receipt] confirmed", {
       txHash,
       providerId: builtTx?.providerId,
     });
     setStatus("success");
-  }
+  }, [isTxConfirmed, status, txHash, builtTx?.providerId]);
 
   // Build transaction from API
   const buildTransaction = useCallback(async (params: SwapParams): Promise<BuiltTransaction | null> => {
