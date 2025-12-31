@@ -45,7 +45,7 @@ export const FEE_ADDRESSES = {
   TREASURY: '0xa5ad3569b95f56a2777206934f2af8a4b4c5d8be' as const,
   
   /** PILOT token contract address */
-  PILOT_TOKEN: '0x0000000000000000000000000000000000000000' as const, // TODO: Deploy and set
+  PILOT_TOKEN: '0xe3f77E20226fdc7BA85E495158615dEF83b48192' as const,
   
   /** Burn address for PILOT tokens */
   BURN_ADDRESS: '0x000000000000000000000000000000000000dEaD' as const,

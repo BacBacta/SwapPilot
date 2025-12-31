@@ -20,8 +20,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - Deflationary via burn mechanism
  */
 contract PILOTToken is ERC20, ERC20Burnable, Ownable {
-    /// @notice Maximum total supply (100 million tokens with 18 decimals)
-    uint256 public constant MAX_SUPPLY = 100_000_000 * 10**18;
+    /// @notice Maximum total supply (1 billion tokens with 18 decimals)
+    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18;
 
     /// @notice Whether initial distribution has been completed
     bool public distributionCompleted;
