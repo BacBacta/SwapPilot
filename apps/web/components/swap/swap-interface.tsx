@@ -272,6 +272,9 @@ export function SwapInterface() {
   const error = quotes.error?.message ?? null;
 
   // Auto-fetch quotes when tokens or amount change (debounced)
+  // NOTE: We use settings.slippageBps (not effectiveSlippageBps) to avoid
+  // a dependency cycle where dynamic slippage changes trigger new quotes,
+  // which change the signals, which change dynamic slippage again.
   useEffect(() => {
     // Don't fetch if tokens are the same or amount is invalid
     if (fromToken === toToken) return;
@@ -285,13 +288,13 @@ export function SwapInterface() {
         sellToken: fromToken,
         buyToken: toToken,
         sellAmount: fromAmount,
-        slippageBps: effectiveSlippageBps,
+        slippageBps: settings.slippageBps, // Use user setting, not dynamic
         mode: settings.mode,
       });
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [fromToken, toToken, fromAmount, fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings.mode, fetchQuotes]);
+  }, [fromToken, toToken, fromAmount, fromTokenInfo, toTokenInfo, settings.slippageBps, settings.mode, fetchQuotes]);
 
   // Force re-render every second to update "Updated Xs ago" display
   const [, setTick] = useState(0);
