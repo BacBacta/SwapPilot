@@ -109,6 +109,21 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     },
   });
 
+  // Debug: log receipt polling state
+  useEffect(() => {
+    const hash = submittedTxHash ?? txHash;
+    if (!hash) return;
+    console.info("[swap][receipt] polling", {
+      hash,
+      chainId,
+      isWaitingReceipt,
+      isTxConfirmed,
+      isTxReceiptError,
+      status,
+      receiptStatus: txReceipt?.status,
+    });
+  }, [submittedTxHash, txHash, chainId, isWaitingReceipt, isTxConfirmed, isTxReceiptError, status, txReceipt?.status]);
+
   // Update status when transaction is confirmed
   useEffect(() => {
     if (!isTxConfirmed) return;
