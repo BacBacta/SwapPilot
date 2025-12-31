@@ -1,6 +1,11 @@
 "use client";
 
-import { ReferralsPanel } from "@/components/referrals/referrals-panel";
+import dynamic from "next/dynamic";
+
+const ReferralsPanel = dynamic(
+  () => import("@/components/referrals/referrals-panel").then((mod) => mod.ReferralsPanel),
+  { ssr: false }
+);
 
 export default function ReferralsPage() {
   return (
