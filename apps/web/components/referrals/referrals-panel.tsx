@@ -424,12 +424,26 @@ function ClaimRewardsCard({ pendingRewards }: { pendingRewards: string }) {
    ======================================== */
 export function ReferralsPanel() {
   const [mounted, setMounted] = useState(false);
-  const { address, isConnected } = useAccount();
 
   // Wait for client-side hydration
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Show loading state before hydration
+  if (!mounted) {
+    return (
+      <div className="rounded-2xl border border-sp-border bg-sp-surface p-8 text-center">
+        <div className="animate-pulse text-sp-muted">Chargement...</div>
+      </div>
+    );
+  }
+
+  return <ReferralsPanelContent />;
+}
+
+function ReferralsPanelContent() {
+  const { address, isConnected } = useAccount();
 
   // Generate referral code from wallet address
   const referralCode = useMemo(() => {
@@ -440,15 +454,6 @@ export function ReferralsPanel() {
   // Mock data for now - will be replaced with real API calls
   const stats = MOCK_STATS;
   const referrals = MOCK_REFERRALS;
-
-  // Show loading state before hydration
-  if (!mounted) {
-    return (
-      <div className="rounded-2xl border border-sp-border bg-sp-surface p-8 text-center">
-        <div className="animate-pulse text-sp-muted">Chargement...</div>
-      </div>
-    );
-  }
 
   if (!isConnected) {
     return (
