@@ -154,8 +154,9 @@ export function useDynamicSlippage({
       reason = "Auto: standard token";
     }
 
-    // Ensure we're at least at user's minimum
-    const finalBps = Math.max(baseBps, userSlippageBps);
+    // Use the calculated base slippage when auto is enabled
+    // Don't force it higher than what's calculated - user can still set higher manually
+    const finalBps = baseBps;
 
     return {
       slippageBps: finalBps,

@@ -98,10 +98,34 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                   Your transaction will revert if the price changes unfavorably
                 </p>
               </div>
-              <span className="text-h2 font-bold text-sp-lightText">{slippage}%</span>
+              <span className="text-h2 font-bold text-sp-lightText">
+                {settings.autoSlippage ? (
+                  <span className="text-sp-accent">Auto</span>
+                ) : (
+                  `${slippage}%`
+                )}
+              </span>
             </div>
 
-            <div className="mt-4">
+            {/* Auto-slippage toggle */}
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-sp-lightBorder bg-sp-lightSurface2 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-body font-medium text-sp-lightText">⚡ Auto-Slippage</span>
+                <span className="text-caption text-sp-lightMuted">
+                  Ajusté selon le risque
+                </span>
+              </div>
+              <Toggle
+                on={settings.autoSlippage}
+                onChange={(on) => updateSettings({ autoSlippage: on })}
+              />
+            </div>
+
+            {/* Manual slippage controls */}
+            <div className={settings.autoSlippage ? "mt-4 opacity-50 pointer-events-none" : "mt-4"}>
+              <div className="text-caption text-sp-lightMuted mb-2">
+                {settings.autoSlippage ? "Slippage minimum (fallback)" : "Slippage manuel"}
+              </div>
               <PresetButtons
                 options={[
                   { value: 0.1, label: "0.1%" },
@@ -115,27 +139,27 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 }}
                 className="[&>button]:flex-1 [&>button]:border-sp-lightBorder [&>button]:bg-sp-lightSurface [&>button]:text-sp-lightText"
               />
-            </div>
 
-            <div className="mt-3">
-              <Slider
-                value={slippage}
-                min={0.1}
-                max={5}
-                step={0.1}
-                onChange={(v) => {
-                  setSlippage(v);
-                  setCustomSlippage(true);
-                }}
-                className="[&_input]:bg-sp-lightSurface2"
-              />
-            </div>
-
-            {slippage > 1 && (
-              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-caption text-amber-700">
-                ⚠️ High slippage increases risk of front-running
+              <div className="mt-3">
+                <Slider
+                  value={slippage}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  onChange={(v) => {
+                    setSlippage(v);
+                    setCustomSlippage(true);
+                  }}
+                  className="[&_input]:bg-sp-lightSurface2"
+                />
               </div>
-            )}
+
+              {slippage > 1 && !settings.autoSlippage && (
+                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-caption text-amber-700">
+                  ⚠️ High slippage increases risk of front-running
+                </div>
+              )}
+            </div>
           </section>
 
           <Divider />
