@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/cn";
 
@@ -423,7 +423,13 @@ function ClaimRewardsCard({ pendingRewards }: { pendingRewards: string }) {
    MAIN PANEL
    ======================================== */
 export function ReferralsPanel() {
+  const [mounted, setMounted] = useState(false);
   const { address, isConnected } = useAccount();
+
+  // Wait for client-side hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Generate referral code from wallet address
   const referralCode = useMemo(() => {
@@ -434,6 +440,15 @@ export function ReferralsPanel() {
   // Mock data for now - will be replaced with real API calls
   const stats = MOCK_STATS;
   const referrals = MOCK_REFERRALS;
+
+  // Show loading state before hydration
+  if (!mounted) {
+    return (
+      <div className="rounded-2xl border border-sp-border bg-sp-surface p-8 text-center">
+        <div className="animate-pulse text-sp-muted">Chargement...</div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

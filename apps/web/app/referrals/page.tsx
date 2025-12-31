@@ -1,10 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
 const ReferralsPanel = dynamic(
   () => import("@/components/referrals/referrals-panel").then((mod) => mod.ReferralsPanel),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-sp-border bg-sp-surface p-8 text-center">
+        <div className="animate-pulse text-sp-muted">Chargement...</div>
+      </div>
+    ),
+  }
 );
 
 export default function ReferralsPage() {
@@ -15,7 +23,9 @@ export default function ReferralsPage() {
         Invitez vos amis et gagnez des récompenses sur leurs swaps
       </p>
       <div className="mt-6">
-        <ReferralsPanel />
+        <Suspense fallback={<div className="text-sp-muted">Chargement...</div>}>
+          <ReferralsPanel />
+        </Suspense>
       </div>
     </div>
   );
