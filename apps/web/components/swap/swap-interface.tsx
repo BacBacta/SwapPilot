@@ -531,14 +531,66 @@ export function SwapInterface() {
           toast.updateToast(loadingToastId, {
             type: "info",
             title: "Approval required",
-            message: `Please approve ${fromToken} spending`,
+            message: `Please approve ${fromToken} spending in your wallet`,
           });
-          approve();
-          // Wait for approval - the user will need to click swap again after approval
-          updateTransaction(txId, { status: "failed" });
-          setReceiptOpen(false);
-          console.groupEnd();
-          return;
+
+          // Request approval and wait for it
+          const { writeContract, waitForTransactionReceipt } = await import("viem/actions");
+          const { createWalletClient, custom, maxUint256 } = await import("viem");
+          
+          try {
+            // Create wallet client from window.ethereum
+            const walletClient = createWalletClient({
+              chain: bsc,
+              transport: custom((window as any).ethereum),
+            });
+
+            // Send approval transaction
+            const approvalHash = await walletClient.writeContract({
+              address: fromTokenInfo.address as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [tx.approvalAddress as `0x${string}`, maxUint256],
+              account: walletAddress as `0x${string}`,
+            });
+
+            console.info("[swap][ui] approval tx sent", approvalHash);
+
+            toast.updateToast(loadingToastId, {
+              type: "info",
+              title: "Waiting for approval...",
+              message: "Confirming on blockchain",
+            });
+
+            // Wait for approval to be confirmed
+            await publicClient.waitForTransactionReceipt({
+              hash: approvalHash,
+              confirmations: 1,
+            });
+
+            console.info("[swap][ui] approval confirmed", approvalHash);
+            
+            toast.updateToast(loadingToastId, {
+              type: "success",
+              title: "Approval confirmed!",
+              message: "Now executing swap...",
+            });
+
+            // Small delay to let the chain state propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+          } catch (approvalError) {
+            const msg = approvalError instanceof Error ? approvalError.message : "Approval failed";
+            console.error("[swap][ui] approval failed", approvalError);
+            toast.updateToast(loadingToastId, {
+              type: "error",
+              title: "Approval failed",
+              message: msg.includes("User rejected") ? "User rejected the request" : msg,
+            });
+            updateTransaction(txId, { status: "failed" });
+            console.groupEnd();
+            return;
+          }
         }
       }
 
