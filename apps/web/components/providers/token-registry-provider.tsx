@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from 'react';
 import { BASE_TOKENS, NATIVE_BNB, type TokenInfo, isAddress, loadCustomTokens, normalizeAddress, normalizeSymbol, saveCustomTokens } from '@/lib/tokens';
+import { resolveTokenMetadata } from '@/lib/api';
 
 type TokenListToken = {
   chainId?: number;
@@ -154,15 +155,56 @@ export function TokenRegistryProvider({ children }: { children: ReactNode }) {
     return m;
   }, [tokens]);
 
+  // Track pending resolution requests to avoid duplicates
+  const pendingResolutions = useRef<Set<string>>(new Set());
+
   const resolveToken = useCallback(
     (tokenOrSymbolOrAddress: string): TokenInfo | null => {
       const raw = tokenOrSymbolOrAddress.trim();
       if (!raw) return null;
       if (isAddress(raw)) {
-        return byAddress.get(normalizeAddress(raw)) ?? { 
+        const existing = byAddress.get(normalizeAddress(raw));
+        if (existing) return existing;
+        
+        // Token not in registry - trigger async resolution if not already pending
+        const normalizedAddr = normalizeAddress(raw);
+        if (!pendingResolutions.current.has(normalizedAddr)) {
+          pendingResolutions.current.add(normalizedAddr);
+          
+          // Fire and forget - will update customTokens when resolved
+          resolveTokenMetadata({ address: raw as `0x${string}`, timeoutMs: 5000 })
+            .then((meta) => {
+              const newToken: TokenInfo = {
+                address: raw as `0x${string}`,
+                symbol: meta.symbol ?? raw.slice(0, 6) + '…',
+                name: meta.name ?? 'Unknown Token',
+                decimals: meta.decimals,
+                isCustom: true,
+                isNative: meta.isNative,
+              };
+              // Add to custom tokens to persist and trigger re-render
+              setCustomTokens((prev) => {
+                // Don't add if already exists
+                if (prev.some(t => normalizeAddress(t.address) === normalizedAddr)) return prev;
+                const next = [...prev, newToken];
+                saveCustomTokens(next);
+                return next;
+              });
+            })
+            .catch(() => {
+              // Ignore errors - will use default decimals
+            })
+            .finally(() => {
+              pendingResolutions.current.delete(normalizedAddr);
+            });
+        }
+        
+        // Return placeholder immediately with default decimals
+        // Will be updated on next render after async resolution completes
+        return { 
           symbol: raw.slice(0, 6) + '…', 
           name: 'Unknown Token', 
-          address: raw, 
+          address: raw as `0x${string}`, 
           decimals: 18, 
           isCustom: true 
         };
