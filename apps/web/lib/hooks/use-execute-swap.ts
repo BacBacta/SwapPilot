@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount, useChainId, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useSendTransaction, useWaitForTransactionReceipt, useEstimateGas, usePublicClient } from "wagmi";
 import type { Address } from "viem";
 import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/shared";
 
@@ -58,6 +58,7 @@ export type UseExecuteSwapReturn = {
 export function useExecuteSwap(): UseExecuteSwapReturn {
   const { address: userAddress, isConnected } = useAccount();
   const chainId = useChainId();
+  const publicClient = usePublicClient();
   
   const [status, setStatus] = useState<SwapStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   // Send transaction hook
   const {
     sendTransaction,
+    sendTransactionAsync,
     data: txHash,
     isPending: isSendPending,
     reset: resetSendTx,
@@ -262,8 +264,8 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     }
   }, [isConnected, userAddress]);
 
-  // Execute the swap transaction
-  const executeSwap = useCallback((tx?: BuiltTransaction) => {
+  // Execute the swap transaction with pre-flight simulation
+  const executeSwap = useCallback(async (tx?: BuiltTransaction) => {
     const transaction = tx || builtTx;
     
     if (!transaction) {
@@ -272,7 +274,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       return;
     }
 
-    if (!isConnected) {
+    if (!isConnected || !userAddress) {
       setError("Wallet not connected");
       setStatus("error");
       return;
@@ -280,7 +282,68 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
 
     setError(null);
 
+    const txRequest = {
+      to: transaction.to as Address,
+      data: transaction.data as `0x${string}`,
+      value: BigInt(transaction.value || "0"),
+      account: userAddress,
+    };
+
+    // Step 1: Estimate gas to simulate the transaction before sending
+    // This catches revert errors early with better messages
+    let estimatedGas: bigint | undefined;
+    try {
+      if (publicClient) {
+        console.info("[swap][execute] estimating gas...", {
+          providerId: transaction.providerId,
+          to: transaction.to,
+        });
+        
+        estimatedGas = await publicClient.estimateGas(txRequest);
+        
+        console.info("[swap][execute] gas estimated", {
+          providerId: transaction.providerId,
+          estimatedGas: estimatedGas.toString(),
+          providedGas: transaction.gas,
+        });
+      }
+    } catch (estimateError) {
+      // Gas estimation failed = transaction would revert
+      const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
+      
+      // Parse common revert reasons
+      let userMessage = "Transaction would fail: ";
+      if (errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT")) {
+        userMessage += "Slippage too low. Try increasing slippage tolerance.";
+      } else if (errMsg.includes("INSUFFICIENT_LIQUIDITY")) {
+        userMessage += "Not enough liquidity for this swap.";
+      } else if (errMsg.includes("TRANSFER_FROM_FAILED") || errMsg.includes("TransferHelper")) {
+        userMessage += "Token transfer failed. Check approval or token balance.";
+      } else if (errMsg.includes("EXPIRED")) {
+        userMessage += "Quote expired. Please refresh and try again.";
+      } else if (errMsg.includes("insufficient funds") || errMsg.includes("insufficient balance")) {
+        userMessage += "Insufficient balance for gas + value.";
+      } else {
+        userMessage += errMsg.slice(0, 200);
+      }
+
+      console.error("[swap][execute] simulation failed", {
+        providerId: transaction.providerId,
+        error: errMsg,
+        userMessage,
+      });
+      
+      setError(userMessage);
+      setStatus("error");
+      return;
+    }
+
+    // Use estimated gas with 20% buffer, or provided gas
     const gas = (() => {
+      if (estimatedGas) {
+        // Add 20% buffer to estimated gas
+        return (estimatedGas * 120n) / 100n;
+      }
       if (!transaction.gas) return undefined;
       try {
         const gasValue = BigInt(transaction.gas);
@@ -290,21 +353,52 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       }
     })();
 
-    console.info("[swap][execute] sending", {
+    console.info("[swap][execute] sending transaction", {
       providerId: transaction.providerId,
       to: transaction.to,
       value: transaction.value,
-      gas: transaction.gas,
+      gas: gas?.toString(),
       dataPrefix: typeof transaction.data === "string" ? transaction.data.slice(0, 10) : null,
     });
 
-    sendTransaction({
-      to: transaction.to as Address,
-      data: transaction.data as `0x${string}`,
-      value: BigInt(transaction.value || "0"),
-      gas,
-    });
-  }, [builtTx, isConnected, sendTransaction]);
+    // Step 2: Send the transaction
+    try {
+      const hash = await sendTransactionAsync({
+        to: transaction.to as Address,
+        data: transaction.data as `0x${string}`,
+        value: BigInt(transaction.value || "0"),
+        gas,
+      });
+      
+      console.info("[swap][execute] transaction sent", {
+        hash,
+        providerId: transaction.providerId,
+      });
+      
+      // Note: onSuccess callback handles setSubmittedTxHash and setStatus
+    } catch (sendError) {
+      // This catches wallet rejections and RPC errors during broadcast
+      const errMsg = sendError instanceof Error ? sendError.message : "Unknown error";
+      
+      let userMessage = errMsg;
+      if (errMsg.includes("User rejected") || errMsg.includes("user rejected") || errMsg.includes("User denied")) {
+        userMessage = "Transaction cancelled by user";
+      } else if (errMsg.includes("nonce")) {
+        userMessage = "Nonce error - please try again";
+      } else if (errMsg.includes("replacement transaction underpriced")) {
+        userMessage = "A pending transaction exists. Wait or speed up the previous transaction.";
+      }
+
+      console.error("[swap][execute] send failed", {
+        providerId: transaction.providerId,
+        error: errMsg,
+        userMessage,
+      });
+      
+      setError(userMessage);
+      setStatus("error");
+    }
+  }, [builtTx, isConnected, userAddress, publicClient, sendTransactionAsync]);
 
   // Reset state
   const reset = useCallback(() => {
