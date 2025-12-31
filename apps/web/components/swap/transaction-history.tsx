@@ -193,17 +193,17 @@ function TransactionRow({
 
   return (
     <div className="bg-sp-surface2 hover:bg-sp-surface3 transition">
-      <button
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
-      >
+      <div className="flex w-full items-center gap-3 px-4 py-3">
         {/* Status icon */}
         <div className={cn("flex-shrink-0", status.color)}>
           {status.icon}
         </div>
 
         {/* Swap info */}
-        <div className="flex-1 min-w-0">
+        <button
+          onClick={onToggle}
+          className="flex-1 min-w-0 text-left"
+        >
           <div className="flex items-center gap-2">
             <span className="font-medium text-sp-text text-caption">
               {transaction.fromAmount} {transaction.fromToken}
@@ -218,37 +218,62 @@ function TransactionRow({
             <span>•</span>
             <span>{timeAgo}</span>
           </div>
-        </div>
+        </button>
+
+        {/* Explorer link - always visible for completed transactions */}
+        {transaction.hash && (
+          <a
+            href={getExplorerLink(transaction.chainId, transaction.hash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 rounded-lg bg-sp-accent/10 px-2 py-1 text-micro font-medium text-sp-accent hover:bg-sp-accent/20 transition"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLinkIcon className="h-3 w-3" />
+            <span className="hidden sm:inline">View</span>
+          </a>
+        )}
 
         {/* Expand icon */}
-        <ChevronIcon
-          className={cn(
-            "h-4 w-4 text-sp-muted transition",
-            expanded && "rotate-180"
-          )}
-        />
-      </button>
+        <button onClick={onToggle} className="p-1">
+          <ChevronIcon
+            className={cn(
+              "h-4 w-4 text-sp-muted transition",
+              expanded && "rotate-180"
+            )}
+          />
+        </button>
+      </div>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-sp-border bg-sp-surface px-4 py-3 space-y-2">
+        <div className="border-t border-sp-border bg-sp-surface px-4 py-3 space-y-3">
           <div className="flex items-center justify-between text-micro">
             <span className="text-sp-muted">Status</span>
             <span className={status.color}>{status.label}</span>
           </div>
+          <div className="flex items-center justify-between text-micro">
+            <span className="text-sp-muted">Chain</span>
+            <span className="text-sp-text">{getChainName(transaction.chainId)}</span>
+          </div>
           {transaction.hash && (
-            <div className="flex items-center justify-between text-micro">
-              <span className="text-sp-muted">Transaction</span>
+            <>
+              <div className="flex items-center justify-between text-micro">
+                <span className="text-sp-muted">Tx Hash</span>
+                <span className="font-mono text-sp-text">
+                  {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
+                </span>
+              </div>
               <a
                 href={getExplorerLink(transaction.chainId, transaction.hash)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sp-accent hover:underline"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-sp-accent py-2 text-caption font-semibold text-black hover:bg-sp-accent/90 transition"
               >
-                {transaction.hash.slice(0, 8)}...{transaction.hash.slice(-6)}
-                <ExternalLinkIcon className="ml-1 inline h-3 w-3" />
+                <ExternalLinkIcon className="h-4 w-4" />
+                View on {getExplorerName(transaction.chainId)}
               </a>
-            </div>
+            </>
           )}
           {transaction.gasUsed && (
             <div className="flex items-center justify-between text-micro">
@@ -369,8 +394,34 @@ function getExplorerLink(chainId: number, hash: string): string {
     56: "https://bscscan.com/tx/",
     137: "https://polygonscan.com/tx/",
     42161: "https://arbiscan.io/tx/",
+    10: "https://optimistic.etherscan.io/tx/",
+    8453: "https://basescan.org/tx/",
   };
   return `${explorers[chainId] ?? "https://bscscan.com/tx/"}${hash}`;
+}
+
+function getExplorerName(chainId: number): string {
+  const names: Record<number, string> = {
+    1: "Etherscan",
+    56: "BscScan",
+    137: "Polygonscan",
+    42161: "Arbiscan",
+    10: "Optimism Explorer",
+    8453: "Basescan",
+  };
+  return names[chainId] ?? "Explorer";
+}
+
+function getChainName(chainId: number): string {
+  const names: Record<number, string> = {
+    1: "Ethereum",
+    56: "BNB Chain",
+    137: "Polygon",
+    42161: "Arbitrum",
+    10: "Optimism",
+    8453: "Base",
+  };
+  return names[chainId] ?? `Chain ${chainId}`;
 }
 
 /* ========================================
