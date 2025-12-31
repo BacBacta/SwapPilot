@@ -98,9 +98,9 @@ export const PROVIDERS: ProviderMeta[] = [
     displayName: 'PancakeSwap',
     category: 'dex',
     homepageUrl: 'https://pancakeswap.finance/swap',
-    capabilities: { quote: true, buildTx: false, deepLink: true },
+    capabilities: { quote: true, buildTx: true, deepLink: true },
     integrationConfidence: 0.9,
-    notes: 'PancakeSwap V2 on-chain quote via Router.getAmountsOut.',
+    notes: 'PancakeSwap V2 on-chain quote and buildTx via Router.',
   },
   {
     providerId: 'uniswap-v3',

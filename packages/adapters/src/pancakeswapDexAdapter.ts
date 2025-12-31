@@ -1,4 +1,4 @@
-import type { Adapter, AdapterQuote, ProviderMeta } from './types';
+import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
@@ -12,6 +12,44 @@ const PANCAKESWAP_V2_ROUTER_ABI = [
     inputs: [
       { name: 'amountIn', type: 'uint256' },
       { name: 'path', type: 'address[]' },
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
+  },
+  {
+    type: 'function',
+    name: 'swapExactETHForTokens',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForETH',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
     ],
     outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
@@ -68,6 +106,10 @@ export class PancakeSwapDexAdapter implements Adapter {
     '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase(),
   ]);
 
+  private isNativeToken(token: string): boolean {
+    return this.nativePlaceholders.has(token.toLowerCase());
+  }
+
   private normalizeToken(token: string): string {
     const t = token.toLowerCase();
     if (this.nativePlaceholders.has(t)) return this.config.wbnb;
@@ -106,6 +148,10 @@ export class PancakeSwapDexAdapter implements Adapter {
     return Boolean(this.config.rpcUrl && this.config.v2RouterAddress);
   }
 
+  private buildTxEnabled(): boolean {
+    return this.quoteEnabled();
+  }
+
   getProviderMeta(): ProviderMeta {
     return {
       providerId: 'pancakeswap',
@@ -114,12 +160,12 @@ export class PancakeSwapDexAdapter implements Adapter {
       homepageUrl: 'https://pancakeswap.finance/swap',
       capabilities: {
         quote: this.quoteEnabled(),
-        buildTx: false,
+        buildTx: this.buildTxEnabled(),
         deepLink: true,
       },
-      integrationConfidence: this.quoteEnabled() ? 0.7 : 0.6,
+      integrationConfidence: this.quoteEnabled() ? 0.9 : 0.6,
       notes: this.quoteEnabled()
-        ? 'On-chain quote enabled via Router.getAmountsOut (v2, direct path only). Deep-link always available.'
+        ? 'On-chain quote and buildTx enabled via Router (v2, direct path only). Deep-link always available.'
         : 'DEX deep-link implemented. On-chain quoting disabled (missing router/RPC config).',
     };
   }
@@ -277,5 +323,75 @@ export class PancakeSwapDexAdapter implements Adapter {
         normalized: normalizeQuoteFromRaw({ sellAmount: request.sellAmount, buyAmount: '0' }),
       };
     }
+  }
+
+  async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    if (!this.buildTxEnabled()) {
+      throw new Error('PancakeSwap buildTx not available: missing RPC or router config');
+    }
+
+    if (!quote.raw?.buyAmount || quote.raw.buyAmount === '0') {
+      throw new Error('Cannot build tx: no valid quote available');
+    }
+
+    const router = this.config.v2RouterAddress!;
+    const sellTokenIsNative = this.isNativeToken(request.sellToken);
+    const buyTokenIsNative = this.isNativeToken(request.buyToken);
+
+    const sellToken = this.normalizeToken(request.sellToken);
+    const buyToken = this.normalizeToken(request.buyToken);
+
+    const amountIn = BigInt(request.sellAmount);
+    const expectedOut = BigInt(quote.raw.buyAmount);
+    // Apply slippage (default 1% = 100 bps)
+    const slippageBps = request.slippageBps ?? 100;
+    const amountOutMin = expectedOut - (expectedOut * BigInt(slippageBps)) / 10000n;
+
+    const path = [sellToken, buyToken] as `0x${string}`[];
+    const to = request.account as `0x${string}`;
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+
+    let data: `0x${string}`;
+    let value: string;
+
+    if (sellTokenIsNative) {
+      // BNB → Token: use swapExactETHForTokens
+      data = encodeFunctionData({
+        abi: PANCAKESWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactETHForTokens',
+        args: [amountOutMin, path, to, deadline],
+      });
+      value = amountIn.toString();
+    } else if (buyTokenIsNative) {
+      // Token → BNB: use swapExactTokensForETH
+      data = encodeFunctionData({
+        abi: PANCAKESWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactTokensForETH',
+        args: [amountIn, amountOutMin, path, to, deadline],
+      });
+      value = '0';
+    } else {
+      // Token → Token: use swapExactTokensForTokens
+      data = encodeFunctionData({
+        abi: PANCAKESWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactTokensForTokens',
+        args: [amountIn, amountOutMin, path, to, deadline],
+      });
+      value = '0';
+    }
+
+    const result: BuiltTx = {
+      to: router,
+      data,
+      value,
+      gas: '200000', // Conservative gas estimate for V2 swaps
+    };
+
+    // For ERC-20 tokens, user needs to approve the router first
+    if (!sellTokenIsNative) {
+      result.approvalAddress = router;
+    }
+
+    return result;
   }
 }
