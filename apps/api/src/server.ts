@@ -539,5 +539,178 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     },
   );
 
+  // ─────────────────────────────────────────────────────────────
+  // Fee calculation endpoint
+  // ─────────────────────────────────────────────────────────────
+  const FeeCalculationRequestSchema = z.object({
+    swapValueUsd: z.number().positive(),
+    userAddress: z.string().optional(),
+  });
+
+  const FeeCalculationResponseSchema = z.object({
+    feeApplies: z.boolean(),
+    baseFeesBps: z.number(),
+    discountPercent: z.number(),
+    finalFeeBps: z.number(),
+    feeAmountUsd: z.number(),
+    pilotTier: z.enum(['none', 'bronze', 'silver', 'gold']),
+    pilotBalance: z.string(),
+    freeThresholdUsd: z.number(),
+    distribution: z.object({
+      burnPercent: z.number(),
+      treasuryPercent: z.number(),
+      referralPercent: z.number(),
+    }),
+  });
+
+  api.post(
+    '/v1/fees/calculate',
+    {
+      schema: {
+        body: FeeCalculationRequestSchema,
+        response: {
+          200: FeeCalculationResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { swapValueUsd, userAddress } = request.body;
+
+      // Import fee calculator (lazy to avoid issues if package not built yet)
+      let pilotBalance = 0n;
+      
+      // If user address provided, try to get PILOT balance
+      const rpcUrl = config.rpc.bscUrls[0];
+      if (userAddress && rpcUrl) {
+        try {
+          const { getPilotBalanceCached } = await import('@swappilot/fees');
+          pilotBalance = await getPilotBalanceCached(userAddress, {
+            rpcUrl,
+            timeoutMs: 3000,
+          });
+        } catch {
+          // PILOT token not deployed yet, use 0 balance
+        }
+      }
+
+      // Calculate fees
+      const { calculateFees, FEE_CONFIG } = await import('@swappilot/fees');
+      const result = calculateFees({
+        swapValueUsd,
+        pilotBalance,
+      });
+
+      return {
+        feeApplies: result.feeApplies,
+        baseFeesBps: result.baseFeesBps,
+        discountPercent: result.discountPercent,
+        finalFeeBps: result.finalFeeBps,
+        feeAmountUsd: result.feeAmountUsd,
+        pilotTier: result.pilotTier,
+        pilotBalance: pilotBalance.toString(),
+        freeThresholdUsd: FEE_CONFIG.FREE_TIER_THRESHOLD_USD,
+        distribution: {
+          burnPercent: FEE_CONFIG.DISTRIBUTION.BURN,
+          treasuryPercent: FEE_CONFIG.DISTRIBUTION.TREASURY,
+          referralPercent: FEE_CONFIG.DISTRIBUTION.REFERRAL,
+        },
+      };
+    },
+  );
+
+  // ─────────────────────────────────────────────────────────────
+  // PILOT tier info endpoint (for UI display)
+  // ─────────────────────────────────────────────────────────────
+  const PilotTierRequestSchema = z.object({
+    userAddress: z.string(),
+  });
+
+  const PilotTierResponseSchema = z.object({
+    tier: z.enum(['none', 'bronze', 'silver', 'gold']),
+    discountPercent: z.number(),
+    balance: z.string(),
+    balanceFormatted: z.string(),
+    nextTier: z.object({
+      name: z.string(),
+      requiredBalance: z.string(),
+      additionalNeeded: z.string(),
+      discountPercent: z.number(),
+    }).nullable(),
+  });
+
+  api.post(
+    '/v1/pilot/tier',
+    {
+      schema: {
+        body: PilotTierRequestSchema,
+        response: {
+          200: PilotTierResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { userAddress } = request.body;
+
+      let pilotBalance = 0n;
+      const rpcUrl = config.rpc.bscUrls[0];
+      
+      if (rpcUrl) {
+        try {
+          const { getPilotBalanceCached } = await import('@swappilot/fees');
+          pilotBalance = await getPilotBalanceCached(userAddress, {
+            rpcUrl,
+            timeoutMs: 3000,
+          });
+        } catch {
+          // PILOT token not deployed yet
+        }
+      }
+
+      const { getPilotTier, formatPilotBalance, FEE_CONFIG } = await import('@swappilot/fees');
+      const { tier, discountPercent } = getPilotTier(pilotBalance);
+
+      // Calculate next tier info
+      let nextTier = null;
+      const tiers = FEE_CONFIG.PILOT_TIERS;
+      
+      // Find current tier index and next tier
+      let currentTierIndex = -1;
+      for (let i = 0; i < tiers.length; i++) {
+        const tierConfig = tiers[i];
+        if (tierConfig && pilotBalance >= tierConfig.minHolding) {
+          currentTierIndex = i;
+          break;
+        }
+      }
+
+      // Next tier is the one before current in the array (since array is sorted high to low)
+      const nextTierIndex = currentTierIndex === -1 ? tiers.length - 1 : currentTierIndex - 1;
+      
+      if (nextTierIndex >= 0) {
+        const nextTierConfig = tiers[nextTierIndex];
+        if (nextTierConfig) {
+          const additionalNeeded = nextTierConfig.minHolding - pilotBalance;
+          const tierName = nextTierConfig.discountPercent >= 20 ? 'Gold' :
+                           nextTierConfig.discountPercent >= 15 ? 'Silver' : 'Bronze';
+          
+          nextTier = {
+            name: tierName,
+            requiredBalance: nextTierConfig.minHolding.toString(),
+            additionalNeeded: additionalNeeded.toString(),
+            discountPercent: nextTierConfig.discountPercent,
+          };
+        }
+      }
+
+      return {
+        tier,
+        discountPercent,
+        balance: pilotBalance.toString(),
+        balanceFormatted: formatPilotBalance(pilotBalance),
+        nextTier,
+      };
+    },
+  );
+
   return app;
 }

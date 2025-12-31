@@ -20,6 +20,7 @@
     "@swappilot/adapters": "workspace:*",
     "@swappilot/config": "workspace:*",
     "@swappilot/deeplinks": "workspace:*",
+    "@swappilot/fees": "workspace:*",
     "@swappilot/preflight": "workspace:*",
     "@swappilot/risk": "workspace:*",
     "@swappilot/scoring": "workspace:*",
