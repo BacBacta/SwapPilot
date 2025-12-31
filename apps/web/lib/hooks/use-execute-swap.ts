@@ -61,6 +61,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   const [status, setStatus] = useState<SwapStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [builtTx, setBuiltTx] = useState<BuiltTransaction | null>(null);
+  const [submittedTxHash, setSubmittedTxHash] = useState<`0x${string}` | undefined>(undefined);
 
   // Send transaction hook
   const {
@@ -75,6 +76,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           txHash: hash,
           providerId: builtTx?.providerId,
         });
+        setSubmittedTxHash(hash);
         setStatus("pending");
       },
       onError: (err) => {
@@ -93,7 +95,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
 
   // Wait for transaction receipt
   const { isLoading: isWaitingReceipt, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash,
+    hash: submittedTxHash ?? txHash,
   });
 
   // Update status when transaction is confirmed
@@ -102,11 +104,11 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     if (status !== "pending") return;
 
     console.info("[swap][receipt] confirmed", {
-      txHash,
+      txHash: submittedTxHash ?? txHash,
       providerId: builtTx?.providerId,
     });
     setStatus("success");
-  }, [isTxConfirmed, status, txHash, builtTx?.providerId]);
+  }, [isTxConfirmed, status, txHash, submittedTxHash, builtTx?.providerId]);
 
   // Build transaction from API
   const buildTransaction = useCallback(async (params: SwapParams): Promise<BuiltTransaction | null> => {
@@ -245,13 +247,14 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     setStatus("idle");
     setError(null);
     setBuiltTx(null);
+    setSubmittedTxHash(undefined);
     resetSendTx();
   }, [resetSendTx]);
 
   return {
     status,
     error,
-    txHash,
+    txHash: submittedTxHash ?? txHash,
     builtTx,
     buildTransaction,
     executeSwap,
