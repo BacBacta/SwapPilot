@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - Future: Governance voting on protocol parameters
  * 
  * Tokenomics:
- * - Max Supply: 100,000,000 PILOT
+ * - Max Supply: 1,000,000,000 PILOT (1 billion)
  * - No mint function after initial distribution
  * - Deflationary via burn mechanism
  */
