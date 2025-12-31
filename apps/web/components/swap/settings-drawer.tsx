@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { Button, Toggle, Divider } from "@/components/ui/primitives";
 import { Slider, PresetButtons } from "@/components/ui/inputs";
 import { useSettings } from "@/components/providers/settings-provider";
+import { PilotTierCard } from "@/components/swap/pilot-tier";
 
 /* ========================================
    SETTINGS DRAWER
@@ -185,6 +186,17 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
               onChange={setExpertMode}
               warning="Use at your own risk"
             />
+          </section>
+
+          <Divider />
+
+          {/* PILOT Token Tier */}
+          <section>
+            <h3 className="text-body font-semibold text-sp-lightText mb-3">PILOT Token</h3>
+            <PilotTierCard />
+            <p className="mt-2 text-micro text-sp-lightMuted">
+              Hold PILOT tokens to get up to 20% discount on platform fees. 15% of all fees are used to buy and burn PILOT.
+            </p>
           </section>
 
           <Divider />

@@ -15,6 +15,8 @@ import {
   TransactionHistoryDrawer, 
   useTransactionHistory 
 } from "@/components/swap/transaction-history";
+import { PilotTierBadge, FeeBreakdown } from "@/components/swap/pilot-tier";
+import { useFeeCalculation } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
 import { 
   useSwapQuotes, 
@@ -306,6 +308,9 @@ export function SwapInterface() {
     if (!price || isNaN(fromAmountNum)) return 0;
     return fromAmountNum * price;
   }, [fromToken, fromAmountNum, getPrice]);
+
+  // Fee calculation based on swap value
+  const { data: feeData } = useFeeCalculation(fromUsdValue);
 
   // Check if amount exceeds balance
   const fromBalanceNum = useMemo(() => {
@@ -604,6 +609,7 @@ export function SwapInterface() {
           </div>
 
           <div className="flex items-center gap-3">
+            <PilotTierBadge />
             <TransactionHistoryButton 
               pendingCount={pendingCount} 
               onClick={() => setHistoryOpen(true)} 
@@ -715,8 +721,24 @@ export function SwapInterface() {
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <StatCard label="Network" value="$0.36" subValue="~12s" />
                 <StatCard label="Slippage" value={`${(settings.slippageBps / 100).toFixed(1)}%`} />
-                <StatCard label="Impact" value="-0.02%" />
+                <StatCard 
+                  label="Platform Fee" 
+                  value={feeData?.feeApplies ? `${(feeData.finalFeeBps / 100).toFixed(2)}%` : "Free"} 
+                  {...(feeData?.discountPercent ? { subValue: `-${feeData.discountPercent}% PILOT` } : {})}
+                />
               </div>
+
+              {/* Fee breakdown when applicable */}
+              {feeData && feeData.feeApplies && (
+                <div className="mt-3 rounded-lg border border-sp-border bg-sp-surface2 p-3">
+                  <FeeBreakdown
+                    swapValueUsd={fromUsdValue}
+                    feeBps={feeData.finalFeeBps}
+                    discountPercent={feeData.discountPercent}
+                    pilotTier={feeData.pilotTier}
+                  />
+                </div>
+              )}
 
               {/* Route Visualization */}
               {topQuote && (

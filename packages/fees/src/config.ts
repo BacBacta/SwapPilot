@@ -12,8 +12,8 @@
  * 
  * Fee Distribution:
  * - 15% -> PILOT burn (deflationary)
- * - 60% -> Treasury (operations)
- * - 25% -> Referral pool
+ * - 80% -> Treasury (operations)
+ * - 5% -> Referral pool
  */
 
 /** Fee configuration constants */
@@ -27,8 +27,8 @@ export const FEE_CONFIG = {
   /** Fee distribution percentages (must sum to 100) */
   DISTRIBUTION: {
     BURN: 15,      // 15% -> Buy and burn PILOT
-    TREASURY: 60,  // 60% -> Treasury wallet
-    REFERRAL: 25,  // 25% -> Referral rewards
+    TREASURY: 80,  // 80% -> Treasury wallet
+    REFERRAL: 5,   // 5% -> Referral rewards
   },
   
   /** PILOT token holding thresholds for discounts */

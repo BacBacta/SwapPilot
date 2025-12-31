@@ -10,16 +10,16 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @title SwapPilot Fee Collector
  * @notice Collects platform fees and distributes according to tokenomics:
  *         - 15% -> Buy and burn PILOT
- *         - 60% -> Treasury
- *         - 25% -> Referral pool
+ *         - 80% -> Treasury
+ *         - 5% -> Referral pool
  */
 contract FeeCollector is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice Distribution percentages (must sum to 100)
     uint256 public constant BURN_PERCENT = 15;
-    uint256 public constant TREASURY_PERCENT = 60;
-    uint256 public constant REFERRAL_PERCENT = 25;
+    uint256 public constant TREASURY_PERCENT = 80;
+    uint256 public constant REFERRAL_PERCENT = 5;
 
     /// @notice PILOT token address
     IERC20 public immutable pilotToken;
