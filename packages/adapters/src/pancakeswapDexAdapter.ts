@@ -53,6 +53,45 @@ const PANCAKESWAP_V2_ROUTER_ABI = [
     ],
     outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
+  // Fee-on-transfer token methods (required for tokens with taxes)
+  {
+    type: 'function',
+    name: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -343,38 +382,41 @@ export class PancakeSwapDexAdapter implements Adapter {
 
     const amountIn = BigInt(request.sellAmount);
     const expectedOut = BigInt(quote.raw.buyAmount);
-    // Apply slippage (default 1% = 100 bps)
-    const slippageBps = request.slippageBps ?? 100;
+    // Apply slippage - use higher default (2%) for better success rate on BSC tokens
+    const slippageBps = request.slippageBps ?? 200;
     const amountOutMin = expectedOut - (expectedOut * BigInt(slippageBps)) / 10000n;
 
     const path = [sellToken, buyToken] as `0x${string}`[];
     const to = request.account as `0x${string}`;
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+    // Extended deadline for network congestion (30 minutes)
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
 
     let data: `0x${string}`;
     let value: string;
 
+    // Use "SupportingFeeOnTransferTokens" methods by default
+    // These work for ALL tokens (including those with taxes) and are safer on BSC
     if (sellTokenIsNative) {
-      // BNB → Token: use swapExactETHForTokens
+      // BNB → Token: use swapExactETHForTokensSupportingFeeOnTransferTokens
       data = encodeFunctionData({
         abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactETHForTokens',
+        functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
         args: [amountOutMin, path, to, deadline],
       });
       value = amountIn.toString();
     } else if (buyTokenIsNative) {
-      // Token → BNB: use swapExactTokensForETH
+      // Token → BNB: use swapExactTokensForETHSupportingFeeOnTransferTokens
       data = encodeFunctionData({
         abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForETH',
+        functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
         args: [amountIn, amountOutMin, path, to, deadline],
       });
       value = '0';
     } else {
-      // Token → Token: use swapExactTokensForTokens
+      // Token → Token: use swapExactTokensForTokensSupportingFeeOnTransferTokens
       data = encodeFunctionData({
         abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForTokens',
+        functionName: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
         args: [amountIn, amountOutMin, path, to, deadline],
       });
       value = '0';
@@ -384,7 +426,8 @@ export class PancakeSwapDexAdapter implements Adapter {
       to: router,
       data,
       value,
-      gas: '200000', // Conservative gas estimate for V2 swaps
+      // Higher gas for fee-on-transfer tokens and complex token logic
+      gas: '350000',
     };
 
     // For ERC-20 tokens, user needs to approve the router first

@@ -52,6 +52,45 @@ const UNISWAP_V2_ROUTER_ABI = [
     ],
     outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
+  // Fee-on-transfer token methods (required for tokens with taxes)
+  {
+    type: 'function',
+    name: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -336,6 +375,8 @@ export class UniswapV2Adapter implements Adapter {
 
   /**
    * Build a ready-to-sign transaction for Uniswap V2 swap.
+   * Uses SupportingFeeOnTransferTokens methods by default for better compatibility
+   * with tokens that have taxes/fees on transfer (common on BSC).
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
     if (!this.quoteEnabled()) {
@@ -354,35 +395,37 @@ export class UniswapV2Adapter implements Adapter {
     const path = [tokenIn, tokenOut] as `0x${string}`[];
     
     const amountIn = BigInt(request.sellAmount);
-    const slippageBps = request.slippageBps ?? 100;
+    // Default to 2% slippage for better success rate on volatile tokens
+    const slippageBps = request.slippageBps ?? 200;
     const amountOutMin = (BigInt(quote.raw.buyAmount) * BigInt(10000 - slippageBps)) / 10000n;
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+    // 30 minute deadline for network congestion
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
     const to = request.account as `0x${string}`;
 
     let data: `0x${string}`;
     let value: string;
 
     if (sellTokenIsNative) {
-      // ETH -> Token: swapExactETHForTokens
+      // ETH -> Token: Use SupportingFeeOnTransferTokens for compatibility with all tokens
       data = encodeFunctionData({
         abi: UNISWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactETHForTokens',
+        functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
         args: [amountOutMin, path, to, deadline],
       });
       value = amountIn.toString();
     } else if (buyTokenIsNative) {
-      // Token -> ETH: swapExactTokensForETH
+      // Token -> ETH: Use SupportingFeeOnTransferTokens for compatibility with all tokens
       data = encodeFunctionData({
         abi: UNISWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForETH',
+        functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
         args: [amountIn, amountOutMin, path, to, deadline],
       });
       value = '0';
     } else {
-      // Token -> Token: swapExactTokensForTokens
+      // Token -> Token: Use SupportingFeeOnTransferTokens for compatibility with all tokens
       data = encodeFunctionData({
         abi: UNISWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForTokens',
+        functionName: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
         args: [amountIn, amountOutMin, path, to, deadline],
       });
       value = '0';
@@ -392,7 +435,7 @@ export class UniswapV2Adapter implements Adapter {
       to: this.routerAddress!,
       data,
       value,
-      gas: '200000', // Conservative gas estimate
+      gas: '350000', // Higher gas limit for fee-on-transfer tokens
     };
 
     // For ERC-20 tokens, user needs to approve the router first
