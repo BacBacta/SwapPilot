@@ -104,10 +104,32 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   } = useWaitForTransactionReceipt({
     chainId,
     hash: submittedTxHash ?? txHash,
+    // Retry more aggressively for faster feedback
     query: {
       enabled: Boolean(submittedTxHash ?? txHash),
+      retry: 60, // Retry up to 60 times
+      retryDelay: 3000, // Every 3 seconds = 3 minutes total
     },
   });
+
+  // Timeout: if still pending after 3 minutes, show error
+  useEffect(() => {
+    const hash = submittedTxHash ?? txHash;
+    if (!hash || status !== "pending") return;
+
+    const timeoutId = setTimeout(() => {
+      if (status === "pending" && !isTxConfirmed && !isTxReceiptError) {
+        console.warn("[swap][receipt] timeout - transaction may have failed to broadcast", {
+          hash,
+          chainId,
+        });
+        setError("Transaction timeout - the transaction may not have been broadcast to the network. Check your wallet or block explorer.");
+        setStatus("error");
+      }
+    }, 180_000); // 3 minutes
+
+    return () => clearTimeout(timeoutId);
+  }, [submittedTxHash, txHash, status, isTxConfirmed, isTxReceiptError, chainId]);
 
   // Debug: log receipt polling state
   useEffect(() => {
