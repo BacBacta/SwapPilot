@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useAccount, useChainId, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { erc20Abi, type Address, maxUint256 } from "viem";
 
 export type UseTokenApprovalParams = {
@@ -41,6 +41,7 @@ export function useTokenApproval({
   amount,
 }: UseTokenApprovalParams): UseTokenApprovalReturn {
   const { address: userAddress } = useAccount();
+  const chainId = useChainId();
   const [error, setError] = useState<Error | null>(null);
 
   // Check if this is a native token (no approval needed)
@@ -86,9 +87,24 @@ export function useTokenApproval({
   });
 
   // Wait for approval transaction
-  const { isLoading: isWaitingForTx, isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({
+  const {
+    error: approvalReceiptError,
+    isError: isApprovalReceiptError,
+    isLoading: isWaitingForTx,
+    isSuccess: isApprovalConfirmed,
+  } = useWaitForTransactionReceipt({
+    chainId,
     hash: approvalHash,
+    query: {
+      enabled: Boolean(approvalHash),
+    },
   });
+
+  useEffect(() => {
+    if (!isApprovalReceiptError) return;
+    if (!(approvalReceiptError instanceof Error)) return;
+    setError(approvalReceiptError);
+  }, [isApprovalReceiptError, approvalReceiptError]);
 
   const isApproving = isWritePending || isWaitingForTx;
 

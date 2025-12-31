@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import type { Address } from "viem";
 import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/shared";
 
@@ -57,6 +57,7 @@ export type UseExecuteSwapReturn = {
 
 export function useExecuteSwap(): UseExecuteSwapReturn {
   const { address: userAddress, isConnected } = useAccount();
+  const chainId = useChainId();
   
   const [status, setStatus] = useState<SwapStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -94,8 +95,18 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   });
 
   // Wait for transaction receipt
-  const { isLoading: isWaitingReceipt, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+  const {
+    data: txReceipt,
+    error: txReceiptError,
+    isError: isTxReceiptError,
+    isLoading: isWaitingReceipt,
+    isSuccess: isTxConfirmed,
+  } = useWaitForTransactionReceipt({
+    chainId,
     hash: submittedTxHash ?? txHash,
+    query: {
+      enabled: Boolean(submittedTxHash ?? txHash),
+    },
   });
 
   // Update status when transaction is confirmed
@@ -106,9 +117,25 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     console.info("[swap][receipt] confirmed", {
       txHash: submittedTxHash ?? txHash,
       providerId: builtTx?.providerId,
+      receiptStatus: txReceipt?.status,
     });
     setStatus("success");
-  }, [isTxConfirmed, status, txHash, submittedTxHash, builtTx?.providerId]);
+  }, [isTxConfirmed, status, txHash, submittedTxHash, builtTx?.providerId, txReceipt?.status]);
+
+  useEffect(() => {
+    if (!isTxReceiptError) return;
+    if (status !== "pending") return;
+
+    const message = txReceiptError instanceof Error ? txReceiptError.message : "Failed to fetch transaction receipt";
+    console.error("[swap][receipt] error", {
+      txHash: submittedTxHash ?? txHash,
+      providerId: builtTx?.providerId,
+      message,
+      err: txReceiptError,
+    });
+    setError(message);
+    setStatus("error");
+  }, [isTxReceiptError, status, txHash, submittedTxHash, builtTx?.providerId, txReceiptError]);
 
   // Build transaction from API
   const buildTransaction = useCallback(async (params: SwapParams): Promise<BuiltTransaction | null> => {
