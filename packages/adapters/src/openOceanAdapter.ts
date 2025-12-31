@@ -321,6 +321,17 @@ export class OpenOceanAdapter implements Adapter {
   }
 
   /**
+   * Check if a token address represents the native token (ETH/BNB/etc.)
+   */
+  private isNativeToken(tokenAddress: string): boolean {
+    const lower = tokenAddress.toLowerCase();
+    return (
+      lower === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+      lower === '0x0000000000000000000000000000000000000000'
+    );
+  }
+
+  /**
    * Build a ready-to-sign transaction using OpenOcean's swap API.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
@@ -382,10 +393,15 @@ export class OpenOceanAdapter implements Adapter {
         throw new Error(`OpenOcean swap returned error code: ${json.code}`);
       }
 
+      // Fix: If selling native token (BNB/ETH), ensure value is set to sellAmount
+      // OpenOcean API sometimes returns value: "0" for native token swaps
+      const sellTokenIsNative = this.isNativeToken(request.sellToken);
+      const txValue = sellTokenIsNative ? request.sellAmount : json.data.value;
+
       return {
         to: json.data.to,
         data: json.data.data,
-        value: json.data.value,
+        value: txValue,
         gas: String(json.data.estimatedGas),
       };
     } catch (err) {
