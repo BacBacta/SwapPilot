@@ -27,33 +27,58 @@ export function FrameSettingsPanel() {
               </div>
             </div>
             <div className="text-sm font-bold text-sp-lightText">
-              {(settings.slippageBps / 100).toFixed(2)}%
+              {settings.autoSlippage ? (
+                <span className="text-sp-accent">Auto</span>
+              ) : (
+                `${(settings.slippageBps / 100).toFixed(2)}%`
+              )}
             </div>
           </div>
-          <div className="mt-3 flex gap-2">
-            {SLIPPAGE_PRESETS.map((bps) => (
-              <button
-                key={bps}
-                onClick={() => updateSettings({ slippageBps: bps })}
-                className={`flex-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all ${
-                  settings.slippageBps === bps
-                    ? 'bg-sp-lightText text-white'
-                    : 'border border-sp-lightBorder bg-sp-lightSurface2 text-sp-lightText hover:bg-sp-lightBorder'
-                }`}
-              >
-                {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
-              </button>
-            ))}
+
+          {/* Auto-slippage toggle */}
+          <div className="mt-3 flex items-center justify-between rounded-md border border-sp-lightBorder bg-sp-lightSurface2 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-sp-lightText">⚡ Auto-Slippage</span>
+              <span className="text-[10px] text-sp-lightMuted">
+                Ajusté selon le risque du token
+              </span>
+            </div>
+            <Toggle
+              on={settings.autoSlippage}
+              onChange={(on) => updateSettings({ autoSlippage: on })}
+            />
           </div>
-          <input
-            type="range"
-            min="10"
-            max="1000"
-            step="10"
-            value={settings.slippageBps}
-            onChange={(e) => updateSettings({ slippageBps: Number(e.target.value) })}
-            className="mt-3 w-full accent-sp-accent"
-          />
+
+          {/* Manual slippage controls - shown when auto is off or as fallback */}
+          <div className={`mt-3 ${settings.autoSlippage ? 'opacity-50' : ''}`}>
+            <div className="text-[10px] text-sp-lightMuted mb-2">
+              {settings.autoSlippage ? 'Slippage minimum (fallback)' : 'Slippage manuel'}
+            </div>
+            <div className="flex gap-2">
+              {SLIPPAGE_PRESETS.map((bps) => (
+                <button
+                  key={bps}
+                  onClick={() => updateSettings({ slippageBps: bps })}
+                  className={`flex-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all ${
+                    settings.slippageBps === bps
+                      ? 'bg-sp-lightText text-white'
+                      : 'border border-sp-lightBorder bg-sp-lightSurface2 text-sp-lightText hover:bg-sp-lightBorder'
+                  }`}
+                >
+                  {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
+                </button>
+              ))}
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="1000"
+              step="10"
+              value={settings.slippageBps}
+              onChange={(e) => updateSettings({ slippageBps: Number(e.target.value) })}
+              className="mt-3 w-full accent-sp-accent"
+            />
+          </div>
         </div>
 
         {/* Mode Selector */}

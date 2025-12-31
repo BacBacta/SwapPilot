@@ -5,6 +5,8 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 export type SwapSettings = {
   /** Slippage tolerance in basis points (100 = 1%) */
   slippageBps: number;
+  /** Enable auto-slippage based on token risk signals */
+  autoSlippage: boolean;
   /** Enable sellability check - affects scoring */
   sellabilityCheck: boolean;
   /** Enable MEV-aware scoring */
@@ -17,6 +19,7 @@ export type SwapSettings = {
 
 const DEFAULT_SETTINGS: SwapSettings = {
   slippageBps: 100, // 1%
+  autoSlippage: true, // Enable by default
   sellabilityCheck: true,
   mevAwareScoring: true,
   canonicalPoolsOnly: true,

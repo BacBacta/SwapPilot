@@ -32,6 +32,7 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { ModeExplanationBadge } from "@/components/ui/tooltip";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
+import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import type { RankedQuote } from "@swappilot/shared";
 import type { Address } from "viem";
 
@@ -253,6 +254,17 @@ export function SwapInterface() {
     amount: sellAmountWei,
   });
 
+  // Dynamic slippage calculation based on selected quote
+  const dynamicSlippage = useDynamicSlippage({
+    quote: selectedQuoteForReceipt ?? bestExecutableQuote,
+    userSlippageBps: settings.slippageBps,
+    autoSlippageEnabled: settings.autoSlippage,
+    tokenSymbol: toToken,
+  });
+
+  // The effective slippage to use for swaps
+  const effectiveSlippageBps = dynamicSlippage.slippageBps;
+
   // Derived states from hook
   const loading = quotes.status === "loading";
   const error = quotes.error?.message ?? null;
@@ -271,13 +283,13 @@ export function SwapInterface() {
         sellToken: fromToken,
         buyToken: toToken,
         sellAmount: fromAmount,
-        slippageBps: settings.slippageBps,
+        slippageBps: effectiveSlippageBps,
         mode: settings.mode,
       });
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [fromToken, toToken, fromAmount, fromTokenInfo, toTokenInfo, settings.slippageBps, settings.mode, fetchQuotes]);
+  }, [fromToken, toToken, fromAmount, fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings.mode, fetchQuotes]);
 
   // Force re-render every second to update "Updated Xs ago" display
   const [, setTick] = useState(0);
@@ -448,6 +460,14 @@ export function SwapInterface() {
 
     const loadingToastId = toast.loading("Building transaction...", `Preparing swap via ${quote.providerId}`);
 
+    // Log the slippage being used
+    console.info("[swap][ui] using slippage", {
+      effectiveSlippageBps,
+      isAuto: dynamicSlippage.isAuto,
+      reason: dynamicSlippage.reason,
+      riskLevel: dynamicSlippage.riskLevel,
+    });
+
     try {
       // Step 1: Build the transaction
       const tx = await buildTransaction({
@@ -455,7 +475,7 @@ export function SwapInterface() {
         sellToken: fromTokenInfo.address,
         buyToken: toTokenInfo.address,
         sellAmount: sellAmountWei.toString(),
-        slippageBps: settings.slippageBps,
+        slippageBps: effectiveSlippageBps, // Use dynamic slippage
         quoteRaw: quote.raw,
         quoteNormalized: quote.normalized,
       });
@@ -600,9 +620,28 @@ export function SwapInterface() {
               />
               <ModeExplanationBadge mode={mode} />
             </div>
-            <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
-              <SettingsIcon className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Dynamic slippage indicator */}
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-micro font-medium transition-all ${
+                  dynamicSlippage.riskLevel === "high"
+                    ? "bg-sp-bad/20 text-sp-bad border border-sp-bad/30"
+                    : dynamicSlippage.riskLevel === "medium"
+                      ? "bg-sp-warn/20 text-sp-warn border border-sp-warn/30"
+                      : "bg-sp-surface3 text-sp-muted border border-sp-border hover:border-sp-borderHover"
+                }`}
+                title={dynamicSlippage.reason}
+              >
+                {dynamicSlippage.isAuto && (
+                  <span className="text-[10px]">⚡</span>
+                )}
+                <span>{(effectiveSlippageBps / 100).toFixed(1)}%</span>
+              </button>
+              <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
