@@ -107,9 +107,18 @@ export const PROVIDERS: ProviderMeta[] = [
     displayName: 'Uniswap V3',
     category: 'dex',
     homepageUrl: 'https://app.uniswap.org',
-    capabilities: { quote: true, buildTx: false, deepLink: true },
+    capabilities: { quote: true, buildTx: true, deepLink: true },
     integrationConfidence: 0.75,
     notes: 'Uniswap V3 on-chain quote via Quoter. Tries multiple fee tiers.',
+  },
+  {
+    providerId: 'uniswap-v2',
+    displayName: 'Uniswap V2',
+    category: 'dex',
+    homepageUrl: 'https://app.uniswap.org',
+    capabilities: { quote: true, buildTx: true, deepLink: true },
+    integrationConfidence: 0.85,
+    notes: 'Uniswap V2 on-chain quote via Router.getAmountsOut.',
   },
 ];
 

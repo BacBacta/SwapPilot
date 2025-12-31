@@ -2,59 +2,65 @@ import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 import { decodeFunctionResult, encodeFunctionData, isAddress } from 'viem';
 
-// Uniswap V3 Quoter ABI (simplified for quoteExactInputSingle)
-const UNISWAP_V3_QUOTER_ABI = [
+// Uniswap V2 Router ABI
+const UNISWAP_V2_ROUTER_ABI = [
   {
     type: 'function',
-    name: 'quoteExactInputSingle',
+    name: 'getAmountsOut',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForTokens',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'tokenIn', type: 'address' },
-      { name: 'tokenOut', type: 'address' },
-      { name: 'fee', type: 'uint24' },
       { name: 'amountIn', type: 'uint256' },
-      { name: 'sqrtPriceLimitX96', type: 'uint160' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
     ],
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
-] as const;
-
-// Uniswap V3 SwapRouter ABI
-const UNISWAP_V3_ROUTER_ABI = [
   {
     type: 'function',
-    name: 'exactInputSingle',
+    name: 'swapExactETHForTokens',
     stateMutability: 'payable',
     inputs: [
-      {
-        name: 'params',
-        type: 'tuple',
-        components: [
-          { name: 'tokenIn', type: 'address' },
-          { name: 'tokenOut', type: 'address' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'recipient', type: 'address' },
-          { name: 'deadline', type: 'uint256' },
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMinimum', type: 'uint256' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' },
-        ],
-      },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
     ],
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
+  },
+  {
+    type: 'function',
+    name: 'swapExactTokensForETH',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
 ] as const;
-
-// Common fee tiers in Uniswap V3 (in basis points * 100)
-const FEE_TIERS = [500, 3000, 10000] as const; // 0.05%, 0.3%, 1%
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
     sellability: { status: 'UNCERTAIN', confidence: 0.5, reasons: [reason] },
     revertRisk: { level: 'MEDIUM', reasons: [reason] },
-    mevExposure: { level: 'HIGH', reasons: ['uniswap_v3_direct'] },
+    mevExposure: { level: 'HIGH', reasons: ['uniswap_v2_direct'] },
     churn: { level: 'LOW', reasons: [reason] },
-    preflight: { ok: true, pRevert: 0.4, confidence: 0.5, reasons: [reason] },
+    preflight: { ok: true, pRevert: 0.3, confidence: 0.6, reasons: [reason] },
   };
 }
 
@@ -81,33 +87,22 @@ function normalizeQuote(raw: { sellAmount: string; buyAmount: string }): {
   };
 }
 
-export type UniswapV3AdapterConfig = {
+export type UniswapV2AdapterConfig = {
   chainId: number;
   rpcUrl: string | null;
-  quoterAddress: string | null;
-  routerAddress?: string | null;
-  weth: string; // WETH/WBNB address for native token wrapping
+  routerAddress: string | null;
+  weth: string;
   quoteTimeoutMs?: number;
 };
 
-// Known Uniswap V3 Quoter addresses by chain
-const QUOTER_ADDRESSES: Record<number, string> = {
-  1: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',   // Ethereum
-  56: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',  // BSC (PancakeSwap V3 Quoter)
-  137: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // Polygon
-  42161: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // Arbitrum
-  10: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',  // Optimism
-  8453: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a', // Base
-};
-
-// Known Uniswap V3 SwapRouter addresses by chain
+// Known Uniswap V2 Router addresses by chain
 const ROUTER_ADDRESSES: Record<number, string> = {
-  1: '0xE592427A0AEce92De3Edee1F18E0157C05861564',   // Ethereum
-  56: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4',  // BSC (PancakeSwap V3 Router)
-  137: '0xE592427A0AEce92De3Edee1F18E0157C05861564', // Polygon
-  42161: '0xE592427A0AEce92De3Edee1F18E0157C05861564', // Arbitrum
-  10: '0xE592427A0AEce92De3Edee1F18E0157C05861564',  // Optimism
-  8453: '0x2626664c2603336E57B271c5C0b26F421741e481', // Base
+  1: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',   // Ethereum (Uniswap V2)
+  56: '0x10ED43C718714eb63d5aA57B78B54704E256024E',  // BSC (PancakeSwap V2)
+  137: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff', // Polygon (QuickSwap)
+  42161: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506', // Arbitrum (SushiSwap)
+  10: '0x9c12939390052919aF3155f41Bf4160Fd3666A6f',  // Optimism (Velodrome)
+  8453: '0x8cFe327CEc66d1C090Dd72bd0FF11d690C33a2Eb', // Base (BaseSwap)
 };
 
 // WETH/WBNB addresses by chain
@@ -120,18 +115,16 @@ const WRAPPED_NATIVE: Record<number, string> = {
   8453: '0x4200000000000000000000000000000000000006', // WETH on Base
 };
 
-export class UniswapV3Adapter implements Adapter {
+export class UniswapV2Adapter implements Adapter {
   private readonly chainId: number;
   private readonly rpcUrl: string | null;
-  private readonly quoterAddress: string | null;
   private readonly routerAddress: string | null;
   private readonly weth: string;
   private readonly quoteTimeoutMs: number;
 
-  constructor(config: UniswapV3AdapterConfig) {
+  constructor(config: UniswapV2AdapterConfig) {
     this.chainId = config.chainId;
     this.rpcUrl = config.rpcUrl;
-    this.quoterAddress = config.quoterAddress ?? QUOTER_ADDRESSES[config.chainId] ?? null;
     this.routerAddress = config.routerAddress ?? ROUTER_ADDRESSES[config.chainId] ?? null;
     this.weth = config.weth ?? WRAPPED_NATIVE[config.chainId] ?? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
     this.quoteTimeoutMs = config.quoteTimeoutMs ?? 5000;
@@ -144,9 +137,12 @@ export class UniswapV3Adapter implements Adapter {
     '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase(),
   ]);
 
+  private isNativeToken(token: string): boolean {
+    return this.nativePlaceholders.has(token.toLowerCase());
+  }
+
   private normalizeToken(token: string): string {
-    const t = token.toLowerCase();
-    if (this.nativePlaceholders.has(t)) return this.weth;
+    if (this.isNativeToken(token)) return this.weth;
     return token;
   }
 
@@ -179,32 +175,24 @@ export class UniswapV3Adapter implements Adapter {
   }
 
   private quoteEnabled(): boolean {
-    return Boolean(this.rpcUrl && this.quoterAddress);
-  }
-
-  private buildTxEnabled(): boolean {
     return Boolean(this.rpcUrl && this.routerAddress);
-  }
-
-  private isNativeToken(token: string): boolean {
-    return this.nativePlaceholders.has(token.toLowerCase());
   }
 
   getProviderMeta(): ProviderMeta {
     return {
-      providerId: 'uniswap-v3',
-      displayName: 'Uniswap V3',
+      providerId: 'uniswap-v2',
+      displayName: 'Uniswap V2',
       category: 'dex',
       homepageUrl: 'https://app.uniswap.org',
       capabilities: {
         quote: this.quoteEnabled(),
-        buildTx: this.buildTxEnabled(),
+        buildTx: this.quoteEnabled(),
         deepLink: true,
       },
-      integrationConfidence: this.quoteEnabled() ? 0.75 : 0.5,
+      integrationConfidence: this.quoteEnabled() ? 0.8 : 0.5,
       notes: this.quoteEnabled()
-        ? 'On-chain quote via Uniswap V3 Quoter. Tries multiple fee tiers.'
-        : 'Deep-link only. On-chain quoting disabled (missing RPC/Quoter config).',
+        ? 'On-chain quote + swap via Uniswap V2 Router.'
+        : 'Deep-link only. On-chain quoting disabled (missing RPC/Router config).',
     };
   }
 
@@ -214,10 +202,10 @@ export class UniswapV3Adapter implements Adapter {
 
   async getQuote(request: QuoteRequest): Promise<AdapterQuote> {
     const base: Omit<AdapterQuote, 'raw' | 'normalized'> = {
-      providerId: 'uniswap-v3',
+      providerId: 'uniswap-v2',
       sourceType: 'dex',
       capabilities: this.getCapabilities(),
-      signals: placeholderSignals('uniswap_v3_adapter'),
+      signals: placeholderSignals('uniswap_v2_adapter'),
       deepLink: null,
       warnings: [],
       isStub: true,
@@ -265,50 +253,70 @@ export class UniswapV3Adapter implements Adapter {
       };
     }
 
-    // Try all fee tiers and pick the best quote
-    let bestBuyAmount = 0n;
-    let bestFeeTier: number = FEE_TIERS[1]; // Default to 0.3%
+    try {
+      const path = [tokenIn, tokenOut] as `0x${string}`[];
+      
+      const callData = encodeFunctionData({
+        abi: UNISWAP_V2_ROUTER_ABI,
+        functionName: 'getAmountsOut',
+        args: [BigInt(request.sellAmount), path],
+      });
 
-    for (const fee of FEE_TIERS) {
-      try {
-        const callData = encodeFunctionData({
-          abi: UNISWAP_V3_QUOTER_ABI,
-          functionName: 'quoteExactInputSingle',
-          args: [
-            tokenIn as `0x${string}`,
-            tokenOut as `0x${string}`,
-            fee,
-            BigInt(request.sellAmount),
-            0n, // sqrtPriceLimitX96 = 0 means no limit
-          ],
-        });
+      const result = await this.ethCall({
+        to: this.routerAddress!,
+        data: callData,
+      });
 
-        const result = await this.ethCall({
-          to: this.quoterAddress!,
-          data: callData,
-        });
+      const decoded = decodeFunctionResult({
+        abi: UNISWAP_V2_ROUTER_ABI,
+        functionName: 'getAmountsOut',
+        data: result,
+      }) as bigint[];
 
-        const decoded = decodeFunctionResult({
-          abi: UNISWAP_V3_QUOTER_ABI,
-          functionName: 'quoteExactInputSingle',
-          data: result,
-        });
-        const amountOut = decoded as bigint;
+      const amountOut = decoded[decoded.length - 1] ?? 0n;
 
-        if (amountOut > bestBuyAmount) {
-          bestBuyAmount = amountOut;
-          bestFeeTier = fee;
-        }
-      } catch {
-        // Fee tier not available for this pair, continue to next
-        continue;
+      if (amountOut === 0n) {
+        return {
+          ...base,
+          warnings: ['No liquidity found'],
+          raw: {
+            sellAmount: request.sellAmount,
+            buyAmount: '0',
+            estimatedGas: null,
+            feeBps: null,
+            route: [request.sellToken, request.buyToken],
+          },
+          normalized: {
+            buyAmount: '0',
+            effectivePrice: '0',
+            estimatedGasUsd: null,
+            feesUsd: null,
+          },
+        };
       }
-    }
 
-    if (bestBuyAmount === 0n) {
+      const raw = {
+        sellAmount: request.sellAmount,
+        buyAmount: amountOut.toString(),
+        estimatedGas: 120000, // Typical V2 swap gas
+        feeBps: 30, // 0.3% standard V2 fee
+        route: [request.sellToken, request.buyToken],
+      };
+
       return {
         ...base,
-        warnings: ['No liquidity found in any fee tier'],
+        isStub: false,
+        raw,
+        normalized: {
+          ...normalizeQuote(raw),
+          estimatedGasUsd: '0.30',
+          feesUsd: null,
+        },
+      };
+    } catch (err) {
+      return {
+        ...base,
+        warnings: [`Quote failed: ${err instanceof Error ? err.message : 'Unknown error'}`],
         raw: {
           sellAmount: request.sellAmount,
           buyAmount: '0',
@@ -324,34 +332,14 @@ export class UniswapV3Adapter implements Adapter {
         },
       };
     }
-
-    const raw = {
-      sellAmount: request.sellAmount,
-      buyAmount: bestBuyAmount.toString(),
-      estimatedGas: 150000, // Typical V3 swap gas
-      feeBps: bestFeeTier / 100, // Convert from hundredths of bps to bps
-      feeTier: bestFeeTier, // Store the actual fee tier for buildTx
-      route: [request.sellToken, request.buyToken],
-    };
-
-    return {
-      ...base,
-      isStub: false,
-      raw,
-      normalized: {
-        ...normalizeQuote(raw),
-        estimatedGasUsd: '0.40',
-        feesUsd: null,
-      },
-    };
   }
 
   /**
-   * Build a ready-to-sign transaction for Uniswap V3 swap.
+   * Build a ready-to-sign transaction for Uniswap V2 swap.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
-    if (!this.buildTxEnabled()) {
-      throw new Error('Uniswap V3 Router not configured for this chain');
+    if (!this.quoteEnabled()) {
+      throw new Error('Uniswap V2 not configured for this chain');
     }
 
     if (!request.account) {
@@ -361,40 +349,50 @@ export class UniswapV3Adapter implements Adapter {
     const sellTokenIsNative = this.isNativeToken(request.sellToken);
     const buyTokenIsNative = this.isNativeToken(request.buyToken);
     
-    const tokenIn = this.normalizeToken(request.sellToken) as `0x${string}`;
-    const tokenOut = this.normalizeToken(request.buyToken) as `0x${string}`;
+    const tokenIn = this.normalizeToken(request.sellToken);
+    const tokenOut = this.normalizeToken(request.buyToken);
+    const path = [tokenIn, tokenOut] as `0x${string}`[];
     
     const amountIn = BigInt(request.sellAmount);
     const slippageBps = request.slippageBps ?? 100;
     const amountOutMin = (BigInt(quote.raw.buyAmount) * BigInt(10000 - slippageBps)) / 10000n;
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
-    const recipient = request.account as `0x${string}`;
-    
-    // Get fee tier from quote, default to 3000 (0.3%)
-    const feeTier = (quote.raw as { feeTier?: number }).feeTier ?? 3000;
+    const to = request.account as `0x${string}`;
 
-    const params = {
-      tokenIn,
-      tokenOut,
-      fee: feeTier,
-      recipient: buyTokenIsNative ? this.routerAddress! as `0x${string}` : recipient, // For ETH output, send to router first
-      deadline,
-      amountIn,
-      amountOutMinimum: amountOutMin,
-      sqrtPriceLimitX96: 0n, // No price limit
-    };
+    let data: `0x${string}`;
+    let value: string;
 
-    const data = encodeFunctionData({
-      abi: UNISWAP_V3_ROUTER_ABI,
-      functionName: 'exactInputSingle',
-      args: [params],
-    });
+    if (sellTokenIsNative) {
+      // ETH -> Token: swapExactETHForTokens
+      data = encodeFunctionData({
+        abi: UNISWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactETHForTokens',
+        args: [amountOutMin, path, to, deadline],
+      });
+      value = amountIn.toString();
+    } else if (buyTokenIsNative) {
+      // Token -> ETH: swapExactTokensForETH
+      data = encodeFunctionData({
+        abi: UNISWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactTokensForETH',
+        args: [amountIn, amountOutMin, path, to, deadline],
+      });
+      value = '0';
+    } else {
+      // Token -> Token: swapExactTokensForTokens
+      data = encodeFunctionData({
+        abi: UNISWAP_V2_ROUTER_ABI,
+        functionName: 'swapExactTokensForTokens',
+        args: [amountIn, amountOutMin, path, to, deadline],
+      });
+      value = '0';
+    }
 
     const result: BuiltTx = {
       to: this.routerAddress!,
       data,
-      value: sellTokenIsNative ? amountIn.toString() : '0',
-      gas: '250000', // Conservative gas estimate for V3
+      value,
+      gas: '200000', // Conservative gas estimate
     };
 
     // For ERC-20 tokens, user needs to approve the router first

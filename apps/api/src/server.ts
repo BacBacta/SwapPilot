@@ -37,6 +37,7 @@ import {
   OpenOceanAdapter,
   ZeroXAdapter,
   UniswapV3Adapter,
+  UniswapV2Adapter,
   PROVIDERS,
   type Adapter,
 } from '@swappilot/adapters';
@@ -284,6 +285,14 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     quoteTimeoutMs: 5000,
   });
 
+  const uniswapV2Adapter = new UniswapV2Adapter({
+    chainId: 56,
+    rpcUrl: config.rpc.bscUrls[0] ?? null,
+    routerAddress: null, // Will use default BSC router
+    weth: config.pancakeswap.wbnb,
+    quoteTimeoutMs: 5000,
+  });
+
   // Create adapters map for the mock quote builder
   const adapters = new Map<string, Adapter>([
     ['pancakeswap', pancakeSwapAdapter],
@@ -295,6 +304,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['openocean', openOceanAdapter],
     ['0x', zeroXAdapter],
     ['uniswap-v3', uniswapV3Adapter],
+    ['uniswap-v2', uniswapV2Adapter],
   ]);
 
   api.get(

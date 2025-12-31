@@ -11,3 +11,4 @@ export * from './odosAdapter';
 export * from './openOceanAdapter';
 export * from './zeroXAdapter';
 export * from './uniswapV3Adapter';
+export * from './uniswapV2Adapter';
