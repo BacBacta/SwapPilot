@@ -51,7 +51,7 @@ export function Button({
   disabled = false,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "soft";
+  variant?: "primary" | "secondary" | "ghost" | "soft" | "destructive";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }) {
@@ -62,6 +62,7 @@ export function Button({
     secondary: "bg-sp-blue text-white hover:brightness-110 active:scale-[0.98]",
     soft: "border border-sp-border bg-sp-surface2 text-sp-text hover:bg-sp-surface3 hover:border-sp-borderHover",
     ghost: "border border-sp-border bg-transparent text-sp-text hover:bg-white/5",
+    destructive: "bg-sp-bad/20 text-sp-bad border border-sp-bad/40 cursor-not-allowed",
   };
 
   const sizeStyles = {

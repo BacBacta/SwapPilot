@@ -15,6 +15,7 @@ interface TokenInputProps {
   onMaxClick?: () => void;
   readOnly?: boolean;
   loading?: boolean;
+  error?: string | undefined;
   className?: string;
 }
 
@@ -29,6 +30,7 @@ export function TokenInput({
   onMaxClick,
   readOnly = false,
   loading = false,
+  error,
   className,
 }: TokenInputProps) {
   const [focused, setFocused] = useState(false);
@@ -37,9 +39,11 @@ export function TokenInput({
     <div
       className={cn(
         "group relative rounded-xl border bg-sp-surface2 p-4 transition-all duration-200",
-        focused
-          ? "border-sp-borderActive shadow-glow"
-          : "border-sp-border hover:border-sp-borderHover",
+        error
+          ? "border-sp-bad/60 bg-sp-bad/5"
+          : focused
+            ? "border-sp-borderActive shadow-glow"
+            : "border-sp-border hover:border-sp-borderHover",
         className
       )}
     >
@@ -48,7 +52,9 @@ export function TokenInput({
         <span className="text-caption text-sp-muted">{label}</span>
         {balance && (
           <div className="flex items-center gap-2">
-            <span className="text-micro text-sp-muted2">Balance: {balance}</span>
+            <span className={cn("text-micro", error ? "text-sp-bad" : "text-sp-muted2")}>
+              Balance: {balance}
+            </span>
             {onMaxClick && !readOnly && (
               <button
                 onClick={onMaxClick}
@@ -89,13 +95,16 @@ export function TokenInput({
                 onBlur={() => setFocused(false)}
                 readOnly={readOnly}
                 className={cn(
-                  "w-full bg-transparent text-right text-h1 font-bold text-sp-text placeholder:text-sp-muted2 focus:outline-none",
+                  "w-full bg-transparent text-right text-h1 font-bold placeholder:text-sp-muted2 focus:outline-none",
+                  error ? "text-sp-bad" : "text-sp-text",
                   readOnly && "cursor-default"
                 )}
               />
-              {usdValue && (
+              {error ? (
+                <div className="mt-1 text-caption text-sp-bad">{error}</div>
+              ) : usdValue ? (
                 <div className="mt-1 text-caption text-sp-muted">{usdValue}</div>
-              )}
+              ) : null}
             </>
           )}
         </div>

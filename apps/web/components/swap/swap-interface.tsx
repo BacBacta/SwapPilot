@@ -295,6 +295,19 @@ export function SwapInterface() {
     return fromAmountNum * price;
   }, [fromToken, fromAmountNum, getPrice]);
 
+  // Check if amount exceeds balance
+  const fromBalanceNum = useMemo(() => {
+    if (!fromTokenInfo || !isConnected) return 0;
+    const balanceStr = getBalanceFormatted(fromTokenInfo);
+    return parseFloat(balanceStr.replace(/,/g, "") || "0");
+  }, [fromTokenInfo, isConnected, getBalanceFormatted]);
+
+  const insufficientBalance = useMemo(() => {
+    if (!isConnected || !fromTokenInfo) return false;
+    if (isNaN(fromAmountNum) || fromAmountNum === 0) return false;
+    return fromAmountNum > fromBalanceNum;
+  }, [isConnected, fromTokenInfo, fromAmountNum, fromBalanceNum]);
+
   // Get quotes based on mode
   const activeQuotes = useMemo(() => {
     return mode === "BEQ" ? rankedQuotes : bestRawQuotes;
@@ -617,6 +630,7 @@ export function SwapInterface() {
                 balance={isConnected && fromTokenInfo ? getBalanceFormatted(fromTokenInfo) : undefined}
                 value={fromAmount}
                 usdValue={fromUsdValue > 0 ? `≈ $${fromUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ""}
+                error={insufficientBalance ? "Insufficient balance" : undefined}
                 onChange={(val) => {
                   setFromAmount(val);
                   // Clear exact wei when user manually types (will recalculate from display value)
@@ -714,6 +728,15 @@ export function SwapInterface() {
                   disabled
                 >
                   Confirming swap...
+                </Button>
+              ) : insufficientBalance ? (
+                <Button 
+                  className="mt-5 h-12 w-full text-body" 
+                  size="lg"
+                  disabled
+                  variant="destructive"
+                >
+                  Insufficient balance
                 </Button>
               ) : (
                 <Button 
