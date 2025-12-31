@@ -52,6 +52,9 @@ export const FEE_ADDRESSES = {
   
   /** Referral pool contract/wallet */
   REFERRAL_POOL: '0xe810e4cfa68620cb51cd68618642ee1d44382f45' as const,
+  
+  /** FeeCollector contract address */
+  FEE_COLLECTOR: '0xEe841Def61326C116F92e71FceF8cb11FBC05034' as const,
 } as const;
 
 export type FeeConfig = typeof FEE_CONFIG;

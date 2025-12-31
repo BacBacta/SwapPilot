@@ -35,10 +35,10 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: {
-      bsc: BSCSCAN_API_KEY,
-      bscTestnet: BSCSCAN_API_KEY,
-    },
+    apiKey: BSCSCAN_API_KEY,
+  },
+  sourcify: {
+    enabled: false,
   },
 };
 
