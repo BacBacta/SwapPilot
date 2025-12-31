@@ -311,19 +311,47 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       // Gas estimation failed = transaction would revert
       const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
       
-      // Parse common revert reasons
+      // Parse common revert reasons for better UX
       let userMessage = "Transaction would fail: ";
-      if (errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT")) {
-        userMessage += "Slippage too low. Try increasing slippage tolerance.";
-      } else if (errMsg.includes("INSUFFICIENT_LIQUIDITY")) {
-        userMessage += "Not enough liquidity for this swap.";
-      } else if (errMsg.includes("TRANSFER_FROM_FAILED") || errMsg.includes("TransferHelper")) {
-        userMessage += "Token transfer failed. Check approval or token balance.";
-      } else if (errMsg.includes("EXPIRED")) {
-        userMessage += "Quote expired. Please refresh and try again.";
-      } else if (errMsg.includes("insufficient funds") || errMsg.includes("insufficient balance")) {
-        userMessage += "Insufficient balance for gas + value.";
-      } else {
+      
+      // 1inch ReturnAmountIsNotEnough error (0x064a4ec6)
+      if (errMsg.includes("0x064a4ec6") || errMsg.includes("ReturnAmountIsNotEnough")) {
+        userMessage = "Price moved too much since quote. Increase slippage or refresh the quote.";
+      }
+      // Generic slippage errors
+      else if (errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT") || errMsg.includes("Too little received")) {
+        userMessage = "Slippage too low. Try increasing slippage tolerance.";
+      } 
+      // Liquidity errors
+      else if (errMsg.includes("INSUFFICIENT_LIQUIDITY") || errMsg.includes("INSUFFICIENT_INPUT_AMOUNT")) {
+        userMessage = "Not enough liquidity for this swap.";
+      } 
+      // Token transfer errors (common with fee-on-transfer tokens)
+      else if (errMsg.includes("TRANSFER_FROM_FAILED") || errMsg.includes("TransferHelper") || errMsg.includes("STF")) {
+        userMessage = "Token transfer failed. Check approval or token balance.";
+      } 
+      // Quote/deadline expired
+      else if (errMsg.includes("EXPIRED") || errMsg.includes("Transaction too old")) {
+        userMessage = "Quote expired. Please refresh and try again.";
+      } 
+      // Balance issues
+      else if (errMsg.includes("insufficient funds") || errMsg.includes("insufficient balance")) {
+        userMessage = "Insufficient balance for gas + value.";
+      }
+      // 0x Protocol errors
+      else if (errMsg.includes("IncompleteFillError") || errMsg.includes("OrderNotFillableError")) {
+        userMessage = "Order could not be filled. Try a different provider or smaller amount.";
+      }
+      // ParaSwap errors
+      else if (errMsg.includes("InvalidBalance") || errMsg.includes("BadBalance")) {
+        userMessage = "Balance check failed. Ensure you have enough tokens.";
+      }
+      // OpenOcean errors
+      else if (errMsg.includes("MinReturnError")) {
+        userMessage = "Price slipped too much. Increase slippage or refresh quote.";
+      }
+      // Fallback: show truncated error
+      else {
         userMessage += errMsg.slice(0, 200);
       }
 
