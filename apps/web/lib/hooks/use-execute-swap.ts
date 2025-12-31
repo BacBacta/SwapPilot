@@ -70,9 +70,9 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     reset: resetSendTx,
   } = useSendTransaction({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (hash) => {
         console.info("[swap][sendTransaction] submitted", {
-          txHash,
+          txHash: hash,
           providerId: builtTx?.providerId,
         });
         setStatus("pending");
