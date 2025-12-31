@@ -51,7 +51,7 @@ export const FEE_ADDRESSES = {
   BURN_ADDRESS: '0x000000000000000000000000000000000000dEaD' as const,
   
   /** Referral pool contract/wallet */
-  REFERRAL_POOL: '0x0000000000000000000000000000000000000000' as const, // TODO: Set real address
+  REFERRAL_POOL: '0xa5ad3569b95f56a2777206934f2af8a4b4c5d8be' as const,
 } as const;
 
 export type FeeConfig = typeof FEE_CONFIG;

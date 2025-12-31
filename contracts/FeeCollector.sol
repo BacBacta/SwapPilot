@@ -177,6 +177,50 @@ contract FeeCollector is Ownable, ReentrancyGuard {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
     }
+
+    /**
+     * @notice Convert ERC-20 token fees to BNB
+     * @param token The token to convert
+     * @param minBnbOut Minimum BNB to receive (slippage protection)
+     */
+    function convertTokenToBnb(address token, uint256 minBnbOut) external nonReentrant {
+        require(token != address(0), "Use BNB directly");
+        require(token != address(pilotToken), "Cannot convert PILOT");
+        require(dexRouter != address(0), "DEX router not set");
+        
+        uint256 tokenBalance = IERC20(token).balanceOf(address(this));
+        require(tokenBalance > 0, "No tokens to convert");
+        
+        // Approve router
+        IERC20(token).safeIncreaseAllowance(dexRouter, tokenBalance);
+        
+        // Build swap path: Token -> WBNB
+        address[] memory path = new address[](2);
+        path[0] = token;
+        path[1] = wbnb;
+        
+        // Swap tokens for BNB
+        IPancakeRouter(dexRouter).swapExactTokensForETHSupportingFeeOnTransferTokens(
+            tokenBalance,
+            minBnbOut,
+            path,
+            address(this),
+            block.timestamp + 300
+        );
+        
+        emit FeesCollected(token, tokenBalance);
+    }
+
+    /**
+     * @notice Collect ERC-20 token fees (tokens sent directly to this contract)
+     * @param token The token that was sent
+     */
+    function collectTokenFees(address token) external {
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        if (balance > 0) {
+            emit FeesCollected(token, balance);
+        }
+    }
 }
 
 /**
@@ -189,4 +233,12 @@ interface IPancakeRouter {
         address to,
         uint deadline
     ) external payable;
+    
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external;
 }
