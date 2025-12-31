@@ -41,8 +41,8 @@ export const FEE_CONFIG = {
 
 /** Treasury and token addresses (BSC Mainnet) */
 export const FEE_ADDRESSES = {
-  /** Treasury wallet - receives 60% of fees */
-  TREASURY: '0x0000000000000000000000000000000000000000' as const, // TODO: Set real address
+  /** Treasury wallet - receives 80% of fees */
+  TREASURY: '0xa5ad3569b95f56a2777206934f2af8a4b4c5d8be' as const,
   
   /** PILOT token contract address */
   PILOT_TOKEN: '0x0000000000000000000000000000000000000000' as const, // TODO: Deploy and set
