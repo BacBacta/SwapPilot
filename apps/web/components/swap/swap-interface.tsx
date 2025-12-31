@@ -495,25 +495,51 @@ export function SwapInterface() {
       const isNativeToken = fromTokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
                             fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
 
-      if (!isNativeToken && needsApproval) {
-        console.info("[swap][ui] approval needed", {
+      // Manually check allowance since the hook may not have updated yet with new spender
+      if (!isNativeToken && tx.approvalAddress) {
+        // Read current allowance directly
+        const { readContract } = await import("viem/actions");
+        const { createPublicClient, http, erc20Abi } = await import("viem");
+        const { bsc } = await import("viem/chains");
+        
+        const publicClient = createPublicClient({
+          chain: bsc,
+          transport: http(),
+        });
+
+        let currentAllowance = 0n;
+        try {
+          currentAllowance = await publicClient.readContract({
+            address: fromTokenInfo.address as `0x${string}`,
+            abi: erc20Abi,
+            functionName: "allowance",
+            args: [walletAddress as `0x${string}`, tx.approvalAddress as `0x${string}`],
+          });
+        } catch (e) {
+          console.warn("[swap][ui] failed to read allowance", e);
+        }
+
+        console.info("[swap][ui] allowance check", {
           token: fromTokenInfo.address,
-          spender: builtTx?.approvalAddress,
-          needsApproval,
-          allowance: allowance?.toString?.(),
-          amount: sellAmountWei.toString(),
+          spender: tx.approvalAddress,
+          currentAllowance: currentAllowance.toString(),
+          requiredAmount: sellAmountWei.toString(),
+          needsApproval: currentAllowance < sellAmountWei,
         });
-        toast.updateToast(loadingToastId, {
-          type: "info",
-          title: "Approval required",
-          message: `Please approve ${fromToken} spending`,
-        });
-        approve();
-        // Wait for approval - the user will need to click swap again after approval
-        updateTransaction(txId, { status: "failed" });
-        setReceiptOpen(false);
-        console.groupEnd();
-        return;
+
+        if (currentAllowance < sellAmountWei) {
+          toast.updateToast(loadingToastId, {
+            type: "info",
+            title: "Approval required",
+            message: `Please approve ${fromToken} spending`,
+          });
+          approve();
+          // Wait for approval - the user will need to click swap again after approval
+          updateTransaction(txId, { status: "failed" });
+          setReceiptOpen(false);
+          console.groupEnd();
+          return;
+        }
       }
 
       // Step 3: Execute the swap
