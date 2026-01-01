@@ -76,4 +76,29 @@ describe('rankQuotes', () => {
     expect(out.beqRecommendedProviderId).toBe('ok');
     expect(out.whyWinner[0]).toBe('ranked_by_beq');
   });
+
+  it('ranks larger buyAmount higher when sellability is equal', () => {
+    const assumptions = defaultAssumptions();
+    // Simulating real scenario: Odos returns ~6k tokens, others return ~39k tokens
+    const quotes = [
+      makeQuote({ providerId: 'odos', buyAmount: '5939199929033357787136', mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'paraswap', buyAmount: '38701337942755908699944', mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'kyberswap', buyAmount: '38500000000000000000000', mode: 'NORMAL', sellability: 'OK' }),
+    ];
+
+    const providerMeta = new Map<string, ProviderMeta>([
+      ['odos', { providerId: 'odos', displayName: 'Odos', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.9, notes: '' }],
+      ['paraswap', { providerId: 'paraswap', displayName: 'ParaSwap', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.9, notes: '' }],
+      ['kyberswap', { providerId: 'kyberswap', displayName: 'KyberSwap', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.9, notes: '' }],
+    ]);
+
+    const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
+    
+    // ParaSwap should be #1 because it has the highest buyAmount
+    expect(out.rankedQuotes[0].providerId).toBe('paraswap');
+    expect(out.beqRecommendedProviderId).toBe('paraswap');
+    
+    // Odos should be last because it has the lowest buyAmount
+    expect(out.rankedQuotes[out.rankedQuotes.length - 1].providerId).toBe('odos');
+  });
 });

@@ -34,6 +34,7 @@ export type ScoreInput = {
   signals: RiskSignals;
   mode: QuoteMode;
   scoringOptions?: ScoringOptions | undefined;
+  scaleFactor?: number; // Common scale factor for fair comparison across quotes
 };
 
 export type ScoreOutput = {

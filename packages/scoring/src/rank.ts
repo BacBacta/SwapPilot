@@ -19,6 +19,18 @@ export function rankQuotes(input: {
   assumptions: NormalizationAssumptions;
   scoringOptions?: ScoringOptions;
 }): RankResult {
+  // Find the maximum buyAmount to use as a normalization reference
+  // This ensures all quotes are scaled by the same factor for fair comparison
+  const maxBuyAmount = input.quotes.reduce((max, q) => {
+    const amt = BigInt(q.raw.buyAmount);
+    return amt > max ? amt : max;
+  }, 0n);
+  
+  // Calculate a common scale factor based on the largest buyAmount
+  // This ensures all quotes are compared on the same scale
+  const maxDigits = maxBuyAmount > 0n ? maxBuyAmount.toString().length : 1;
+  const commonScaleFactor = Math.max(0, maxDigits - 12);
+
   const scored = input.quotes.map((q) => {
     const meta = input.providerMeta.get(q.providerId);
     const integrationConfidence = meta?.integrationConfidence ?? 0.1;
@@ -32,6 +44,7 @@ export function rankQuotes(input: {
       signals: q.signals,
       mode: input.mode,
       scoringOptions: input.scoringOptions,
+      scaleFactor: commonScaleFactor, // Pass common scale factor
     });
 
     return { quote: q, score };
