@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/cn";
 import { Button, Pill } from "@/components/ui/primitives";
@@ -62,16 +62,23 @@ export function useTransactionHistory() {
   const { address: walletAddress } = useAccount();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Track the address for which we've loaded transactions
+  const loadedAddressRef = useRef<string | undefined>(undefined);
 
   // Load from localStorage when wallet address changes
   useEffect(() => {
-    setTransactions(getStoredTransactions(walletAddress));
+    const newTransactions = getStoredTransactions(walletAddress);
+    setTransactions(newTransactions);
+    loadedAddressRef.current = walletAddress;
     setIsLoaded(true);
   }, [walletAddress]);
 
-  // Save to localStorage on change
+  // Save to localStorage on change - only if we've loaded for this address
   useEffect(() => {
-    if (isLoaded) {
+    // Only save if we've loaded data for the current address
+    // This prevents overwriting data when address changes before load completes
+    if (isLoaded && loadedAddressRef.current === walletAddress) {
       saveTransactions(transactions, walletAddress);
     }
   }, [transactions, isLoaded, walletAddress]);
