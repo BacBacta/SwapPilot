@@ -133,6 +133,14 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
       fetchingRef.current = true;
       const response = await postQuotes({ request, timeoutMs: 15_000 });
       setQuotes({ status: "success", data: response, error: null });
+      // If the API embeds a receipt in the quotes response, surface it immediately.
+      // This avoids relying on an ephemeral receipt store.
+      if (response.receipt) {
+        setReceipt({ status: "success", data: response.receipt, error: null });
+      } else {
+        // Keep receipt idle unless explicitly fetched.
+        setReceipt({ status: "idle", data: null, error: null });
+      }
       setLastUpdatedAt(Date.now());
     } catch (err) {
       // On auto-refresh error, keep previous data
@@ -142,6 +150,7 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
           data: null,
           error: err as ApiError,
         });
+        setReceipt({ status: "idle", data: null, error: null });
       }
     } finally {
       fetchingRef.current = false;

@@ -205,6 +205,7 @@ export function SwapInterface() {
     bestExecutableQuote,
     bestRawQuote,
     fetchQuotes,
+    fetchReceipt,
     reset,
     isAutoRefreshEnabled,
     setAutoRefresh,
@@ -669,9 +670,14 @@ export function SwapInterface() {
     }
   }, [swapError, swapStatus, toast, transactions, updateTransaction]);
 
-  const handleViewReceipt = (quote: RankedQuote) => {
+  const handleViewReceipt = async (quote: RankedQuote) => {
     setSelectedQuoteForReceipt(quote);
     setReceiptOpen(true);
+
+    // If receipt wasn't embedded (or got cleared), try fetching it using receiptId.
+    if (!receipt.data && quotes.data?.receiptId) {
+      await fetchReceipt(quotes.data.receiptId);
+    }
   };
 
   return (
