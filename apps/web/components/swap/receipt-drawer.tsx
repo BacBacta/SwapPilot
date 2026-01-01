@@ -121,12 +121,14 @@ export function ReceiptDrawer({ open, onClose, receipt, selectedQuote, loading, 
    RECEIPT CONTENT
    ======================================== */
 function ReceiptContent({ receipt, selectedQuote }: { receipt: DecisionReceipt; selectedQuote: RankedQuote | null | undefined }) {
+  const buyTokenDecimals = receipt.request.buyTokenDecimals ?? 18;
+
   return (
     <>
       {/* Winner */}
       <section>
         <div className="flex items-center justify-between">
-          <span className="text-caption text-sp-lightMuted">Selected Provider</span>
+          <span className="text-caption text-sp-lightMuted">Best Executable Provider</span>
           <Pill tone="accent">{receipt.bestExecutableQuoteProviderId ?? "N/A"}</Pill>
         </div>
         
@@ -148,7 +150,7 @@ function ReceiptContent({ receipt, selectedQuote }: { receipt: DecisionReceipt; 
               </div>
               <div className="text-right">
                 <div className="text-h2 font-bold text-sp-lightText">
-                  {formatBuyAmount(selectedQuote.normalized.buyAmount)}
+                  {formatBuyAmount(selectedQuote.normalized.buyAmount, buyTokenDecimals)}
                 </div>
                 <div className="text-caption text-sp-ok font-medium">
                   BEQ Score: {selectedQuote.score.beqScore.toFixed(2)}
@@ -223,7 +225,7 @@ function ReceiptContent({ receipt, selectedQuote }: { receipt: DecisionReceipt; 
                 <span className="text-body font-medium text-sp-lightText">{q.providerId}</span>
               </div>
               <div className="text-body font-semibold text-sp-lightText">
-                {formatBuyAmount(q.normalized.buyAmount)}
+                {formatBuyAmount(q.normalized.buyAmount, buyTokenDecimals)}
               </div>
             </div>
           ))}
@@ -321,8 +323,8 @@ function EmptyState() {
 /* ========================================
    UTILS
    ======================================== */
-function formatBuyAmount(amount: string): string {
-  const value = Number(BigInt(amount)) / 10 ** 18;
+function formatBuyAmount(amount: string, decimals: number): string {
+  const value = Number(BigInt(amount)) / 10 ** decimals;
   return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 
