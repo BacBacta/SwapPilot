@@ -298,8 +298,6 @@ function TransactionRow({
           )}
         </div>
       )}
-        </div>
-      )}
     </div>
   );
 }
