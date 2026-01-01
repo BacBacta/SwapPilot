@@ -41,7 +41,7 @@ export function Pill({
 }
 
 /* ========================================
-   BUTTON - Primary actions
+   BUTTON - Primary actions with 48px touch targets
    ======================================== */
 export function Button({
   children,
@@ -52,23 +52,25 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "soft" | "destructive";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   loading?: boolean;
 }) {
-  const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "relative inline-flex items-center justify-center font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
   
   const variantStyles = {
-    primary: "bg-sp-accent text-black hover:bg-sp-accentHover hover:shadow-glow active:scale-[0.98]",
-    secondary: "bg-sp-blue text-white hover:brightness-110 active:scale-[0.98]",
-    soft: "border border-sp-border bg-sp-surface2 text-sp-text hover:bg-sp-surface3 hover:border-sp-borderHover",
-    ghost: "border border-sp-border bg-transparent text-sp-text hover:bg-white/5",
+    primary: "bg-gradient-to-r from-sp-accent to-sp-accent/90 text-black hover:shadow-glow active:scale-[0.97] active:shadow-none",
+    secondary: "bg-gradient-to-r from-sp-blue to-sp-blue/90 text-white hover:brightness-110 active:scale-[0.97]",
+    soft: "border border-sp-border bg-sp-surface2 text-sp-text hover:bg-sp-surface3 hover:border-sp-borderHover active:scale-[0.98]",
+    ghost: "border border-sp-border bg-transparent text-sp-text hover:bg-white/5 active:scale-[0.98]",
     destructive: "bg-sp-bad/20 text-sp-bad border border-sp-bad/40 cursor-not-allowed",
   };
 
+  // Minimum 48px touch target on mobile
   const sizeStyles = {
-    sm: "h-8 px-3 text-micro rounded-lg gap-1.5",
-    md: "h-10 px-4 text-caption rounded-xl gap-2",
-    lg: "h-12 px-6 text-body rounded-xl gap-2",
+    sm: "min-h-[40px] px-4 text-caption rounded-xl gap-2",
+    md: "min-h-[48px] px-5 text-body rounded-xl gap-2",
+    lg: "min-h-[52px] px-6 text-body rounded-2xl gap-2.5",
+    xl: "min-h-[56px] px-8 text-h2 rounded-2xl gap-3",
   };
 
   return (
@@ -77,7 +79,11 @@ export function Button({
       disabled={disabled || loading}
       className={cn(baseStyles, variantStyles[variant], sizeStyles[size], props.className)}
     >
-      {loading && <Spinner className="h-4 w-4" />}
+      {/* Subtle shine effect on primary */}
+      {variant === "primary" && !disabled && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+      )}
+      {loading && <Spinner className="h-5 w-5" />}
       {children}
     </button>
   );
@@ -117,7 +123,7 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 /* ========================================
-   TOGGLE - On/off switch
+   TOGGLE - On/off switch with 48px touch target
    ======================================== */
 export function Toggle({ on, onChange }: { on: boolean; onChange?: (value: boolean) => void }) {
   return (
@@ -126,14 +132,18 @@ export function Toggle({ on, onChange }: { on: boolean; onChange?: (value: boole
       aria-checked={on}
       onClick={() => onChange?.(!on)}
       className={cn(
-        "relative h-6 w-11 rounded-full border transition-all duration-200",
-        on ? "border-sp-ok/40 bg-sp-ok/20" : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover"
+        "relative h-8 w-14 rounded-full border transition-all duration-300",
+        on 
+          ? "border-sp-ok/40 bg-sp-ok/20" 
+          : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover"
       )}
     >
       <div
         className={cn(
-          "absolute top-1 h-4 w-4 rounded-full transition-all duration-200",
-          on ? "left-6 bg-sp-ok shadow-glowOk" : "left-1 bg-sp-muted"
+          "absolute top-1 h-6 w-6 rounded-full transition-all duration-300 ease-out",
+          on 
+            ? "left-7 bg-sp-ok shadow-glowOk" 
+            : "left-1 bg-sp-muted"
         )}
       />
     </button>
@@ -161,18 +171,28 @@ export function Progress({ value, tone = "ok" }: { value: number; tone?: "ok" | 
 }
 
 /* ========================================
-   ICON BUTTON - Circular icon actions
+   ICON BUTTON - Circular icon actions with 48px touch target
    ======================================== */
 export function IconButton({
   children,
   className,
+  size = "md",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeStyles = {
+    sm: "h-10 w-10 rounded-xl",
+    md: "h-12 w-12 rounded-xl",
+    lg: "h-14 w-14 rounded-2xl",
+  };
+
   return (
     <button
       {...props}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-xl border border-sp-border bg-sp-surface2 text-sp-muted transition-all hover:border-sp-borderHover hover:bg-sp-surface3 hover:text-sp-text active:scale-95",
+        "flex items-center justify-center border border-sp-border bg-sp-surface2 text-sp-muted transition-all duration-200 hover:border-sp-borderHover hover:bg-sp-surface3 hover:text-sp-text active:scale-95",
+        sizeStyles[size],
         className
       )}
     >

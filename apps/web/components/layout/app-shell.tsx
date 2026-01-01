@@ -9,11 +9,11 @@ import { ChainSelector } from "@/components/swap/chain-selector";
 import { InstallBanner, OfflineIndicator, UpdatePrompt } from "@/lib/use-pwa";
 
 /* ========================================
-   MOBILE BOTTOM NAVIGATION
+   MOBILE BOTTOM NAVIGATION - Floating Island Style
    ======================================== */
 const NAV_ITEMS = [
   { href: "/swap", label: "Swap", icon: SwapIcon },
-  { href: "/referrals", label: "Referrals", icon: ReferralsIcon },
+  { href: "/referrals", label: "Rewards", icon: ReferralsIcon },
   { href: "/status", label: "Status", icon: StatusIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
@@ -22,35 +22,49 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sp-border bg-sp-surface/95 backdrop-blur-lg md:hidden">
-      <div className="safe-bottom flex h-16 items-center justify-around px-4">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 transition-all duration-200",
-                isActive
-                  ? "text-sp-accent"
-                  : "text-sp-muted hover:text-sp-text"
-              )}
-            >
-              <Icon className={cn("h-5 w-5", isActive && "scale-110")} />
-              <span className={cn(
-                "text-micro font-medium",
-                isActive && "font-semibold"
-              )}>
-                {item.label}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-1 h-1 w-8 rounded-full bg-sp-accent" />
-              )}
-            </Link>
-          );
-        })}
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-2 md:hidden safe-bottom">
+      {/* Floating Island Container */}
+      <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-sp-surface/90 shadow-2xl backdrop-blur-xl">
+        <div className="flex h-[72px] items-center justify-around px-2">
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative flex min-h-[56px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-300",
+                  isActive
+                    ? "bg-sp-accent/15 text-sp-accent scale-105"
+                    : "text-sp-muted active:scale-95 active:bg-white/5"
+                )}
+              >
+                <div className={cn(
+                  "relative transition-transform duration-300",
+                  isActive && "animate-bounce-subtle"
+                )}>
+                  <Icon className={cn(
+                    "h-6 w-6 transition-all duration-300",
+                    isActive && "drop-shadow-[0_0_8px_rgba(247,201,72,0.5)]"
+                  )} />
+                  {isActive && (
+                    <div className="absolute -inset-1 rounded-full bg-sp-accent/20 blur-md -z-10" />
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-semibold tracking-wide transition-all duration-300",
+                  isActive ? "opacity-100" : "opacity-70"
+                )}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="absolute -bottom-0.5 h-1 w-6 rounded-full bg-sp-accent shadow-[0_0_12px_rgba(247,201,72,0.6)]" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
@@ -124,25 +138,36 @@ export function DesktopSidebar() {
 }
 
 /* ========================================
-   HEADER (Mobile)
+   HEADER (Mobile) - Premium Style
    ======================================== */
 export function MobileHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-sp-border bg-sp-bg/95 backdrop-blur-lg md:hidden">
-      <div className="flex h-14 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-sp-accent font-bold text-black text-micro shadow-glow">
+    <header className="sticky top-0 z-40 bg-sp-bg/80 backdrop-blur-xl md:hidden">
+      <div className="flex h-16 items-center justify-between px-5">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-sp-accent to-sp-accent/70 font-bold text-black text-sm shadow-glow">
             SP
+            <div className="absolute -inset-0.5 rounded-xl bg-sp-accent/30 blur-md -z-10" />
           </div>
-          <span className="text-body font-semibold text-sp-text">SwapPilot</span>
+          <div>
+            <span className="text-body font-bold text-sp-text">SwapPilot</span>
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-sp-ok animate-pulse" />
+              <span className="text-[10px] text-sp-muted">Connected</span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Actions */}
+        <div className="flex items-center gap-3">
           <ChainSelector compact showLabel={false} />
           <ThemeToggle />
           <WalletButton showBalance={false} showChainStatus={false} />
         </div>
       </div>
+      {/* Subtle bottom gradient */}
+      <div className="h-px bg-gradient-to-r from-transparent via-sp-border to-transparent" />
     </header>
   );
 }

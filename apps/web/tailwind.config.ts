@@ -101,6 +101,10 @@ const config: Config = {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-4px)' },
         },
+        'bounce-subtle': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-2px)' },
+        },
         spin: {
           '0%': { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(360deg)' },
@@ -117,6 +121,21 @@ const config: Config = {
           '0%, 100%': { boxShadow: '0 0 20px rgba(247,201,72,.25)' },
           '50%': { boxShadow: '0 0 30px rgba(247,201,72,.45)' },
         },
+        'press': {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(0.95)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        'success-pop': {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '50%': { transform: 'scale(1.2)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        'shake': {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '25%': { transform: 'translateX(-4px)' },
+          '75%': { transform: 'translateX(4px)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 2s infinite linear',
@@ -128,10 +147,14 @@ const config: Config = {
         slideDown: 'slideDown 0.2s ease-out',
         pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         bounce: 'bounce 1s ease-in-out infinite',
+        'bounce-subtle': 'bounce-subtle 0.4s ease-out',
         spin: 'spin 1s linear infinite',
         wiggle: 'wiggle 0.3s ease-in-out',
         float: 'float 3s ease-in-out infinite',
         glow: 'glow 2s ease-in-out infinite',
+        press: 'press 0.15s ease-out',
+        'success-pop': 'success-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        shake: 'shake 0.3s ease-in-out',
       },
     },
   },

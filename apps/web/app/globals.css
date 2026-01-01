@@ -86,6 +86,61 @@ body { font-family: ui-sans-serif, system-ui; }
 }
 
 /* ========================================
+   PREMIUM EFFECTS
+   ======================================== */
+
+/* Glassmorphism utility */
+.glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #F7C948 0%, #FFDA6A 50%, #F7C948 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium glow effect */
+.premium-glow {
+  box-shadow: 
+    0 0 20px rgba(247,201,72,.15),
+    0 0 40px rgba(247,201,72,.08),
+    0 0 60px rgba(247,201,72,.04);
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) {
+  .touch-feedback:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+}
+
+/* Smooth momentum scrolling for iOS */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus ring for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid rgba(247,201,72,.5);
+  outline-offset: 2px;
+}
+
+/* ========================================
    SCROLLBAR STYLING
    ======================================== */
 ::-webkit-scrollbar {
@@ -98,21 +153,34 @@ body { font-family: ui-sans-serif, system-ui; }
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.15);
+  background: rgba(255,255,255,.12);
   border-radius: 3px;
 }
 
 .theme-light ::-webkit-scrollbar-thumb,
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(18,25,38,.15);
+  background: rgba(18,25,38,.12);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,.25);
+  background: rgba(255,255,255,.20);
 }
 
 .theme-light ::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(18,25,38,.25);
+  background: rgba(18,25,38,.20);
+}
+
+/* ========================================
+   SELECTION STYLING
+   ======================================== */
+::selection {
+  background: rgba(247,201,72,.3);
+  color: inherit;
+}
+
+.theme-light ::selection,
+[data-theme="light"] ::selection {
+  background: rgba(247,201,72,.4);
 }
 
