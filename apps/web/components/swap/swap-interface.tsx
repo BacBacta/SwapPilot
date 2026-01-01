@@ -678,7 +678,7 @@ export function SwapInterface() {
     <>
       <CardDark className="overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-sp-border bg-sp-surface/80 px-5 py-4">
+        <div className="flex flex-col gap-3 border-b border-sp-border bg-sp-surface/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-sp-accent font-bold text-black shadow-glow">
               SP
@@ -689,7 +689,7 @@ export function SwapInterface() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
             <PilotTierBadge />
             <TransactionHistoryButton 
               pendingCount={pendingCount} 
