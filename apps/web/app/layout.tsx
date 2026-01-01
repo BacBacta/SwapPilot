@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { AppShell } from '@/components/layout/app-shell';
-import { Web3Provider } from '@/components/providers/web3-provider';
+import { Web3ProviderWrapper } from '@/components/providers/web3-provider-wrapper';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SettingsProvider } from '@/components/providers/settings-provider';
 import { TokenRegistryProvider } from '@/components/providers/token-registry-provider';
@@ -41,11 +41,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <SettingsProvider>
             <TokenRegistryProvider>
-              <Web3Provider>
+              <Web3ProviderWrapper>
                 <ToastProvider>
                   <AppShell>{children}</AppShell>
                 </ToastProvider>
-              </Web3Provider>
+              </Web3ProviderWrapper>
             </TokenRegistryProvider>
           </SettingsProvider>
         </ThemeProvider>

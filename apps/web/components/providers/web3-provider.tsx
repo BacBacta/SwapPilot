@@ -72,10 +72,18 @@ interface Web3ProviderProps {
 }
 
 function RainbowKitWrapper({ children }: Web3ProviderProps) {
+  const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(true);
+
+  // Ensure client-side only rendering to avoid indexedDB SSR issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Listen to theme changes via data-theme attribute
   useEffect(() => {
+    if (!mounted) return;
+    
     const updateTheme = () => {
       const theme = document.documentElement.getAttribute("data-theme");
       setIsDark(theme !== "light");
@@ -92,7 +100,12 @@ function RainbowKitWrapper({ children }: Web3ProviderProps) {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [mounted]);
+
+  // Prevent SSR flash - show nothing until mounted
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <RainbowKitProvider 
@@ -105,6 +118,20 @@ function RainbowKitWrapper({ children }: Web3ProviderProps) {
 }
 
 export function Web3Provider({ children }: Web3ProviderProps) {
+  const [mounted, setMounted] = useState(false);
+
+  // WalletConnect uses indexedDB which doesn't exist in SSR
+  // Only render the full provider tree on the client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // During SSR and initial hydration, render children without Web3 providers
+  // This prevents indexedDB errors from WalletConnect
+  if (!mounted) {
+    return <>{children}</>;
+  }
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
