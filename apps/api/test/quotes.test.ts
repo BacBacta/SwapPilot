@@ -67,20 +67,20 @@ describe('Option 1 API', () => {
     const json2 = res2.json();
 
     expect(json1.receiptId).toBe(json2.receiptId);
-    expect(json1.rankedQuotes).toHaveLength(8);
-    expect(json2.rankedQuotes).toHaveLength(8);
-    expect(json1.bestRawQuotes).toHaveLength(8);
-    expect(json2.bestRawQuotes).toHaveLength(8);
+    expect(json1.rankedQuotes).toHaveLength(13);
+    expect(json2.rankedQuotes).toHaveLength(13);
+    expect(json1.bestRawQuotes).toHaveLength(13);
+    expect(json2.bestRawQuotes).toHaveLength(13);
     expect(typeof json1.beqRecommendedProviderId === 'string' || json1.beqRecommendedProviderId === null).toBe(true);
 
     const ids = json1.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
     expect(ids).toEqual(
-      ['1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'okx-dex', 'pancakeswap', 'paraswap'].sort(),
+      ['0x', '1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'odos', 'okx-dex', 'openocean', 'pancakeswap', 'paraswap', 'uniswap-v2', 'uniswap-v3'].sort(),
     );
 
     const rawIds = json1.bestRawQuotes.map((q: { providerId: string }) => q.providerId).sort();
     expect(rawIds).toEqual(
-      ['1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'okx-dex', 'pancakeswap', 'paraswap'].sort(),
+      ['0x', '1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'odos', 'okx-dex', 'openocean', 'pancakeswap', 'paraswap', 'uniswap-v2', 'uniswap-v3'].sort(),
     );
 
     const receiptRes = await app.inject({
@@ -91,8 +91,8 @@ describe('Option 1 API', () => {
     expect(receiptRes.statusCode).toBe(200);
     const receipt = receiptRes.json() as ReceiptSummary;
     expect(receipt.id).toBe(json1.receiptId);
-    expect(receipt.rankedQuotes).toHaveLength(8);
-    expect(receipt.bestRawQuotes).toHaveLength(8);
+    expect(receipt.rankedQuotes).toHaveLength(13);
+    expect(receipt.bestRawQuotes).toHaveLength(13);
     expect(typeof receipt.beqRecommendedProviderId === 'string' || receipt.beqRecommendedProviderId === null).toBe(true);
     expect(Array.isArray(receipt.whyWinner)).toBe(true);
     expect(receipt.normalization?.assumptions?.priceModel).toBe('ratio_sell_buy');

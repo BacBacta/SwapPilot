@@ -153,10 +153,18 @@ function ReceiptContent({ receipt, selectedQuote }: { receipt: DecisionReceipt; 
                   {formatBuyAmount(selectedQuote.normalized.buyAmount, buyTokenDecimals)}
                 </div>
                 <div className="text-caption text-sp-ok font-medium">
-                  BEQ Score: {selectedQuote.score.beqScore.toFixed(2)}
+                  BEQ Score: {selectedQuote.score.beqScore.toFixed(1)}/100
                 </div>
               </div>
             </div>
+
+            {/* BEQ v2 Score Breakdown */}
+            {selectedQuote.score.v2Details && (
+              <div className="mt-4 pt-4 border-t border-sp-lightBorder">
+                <div className="text-caption font-semibold text-sp-lightText mb-2">Score Breakdown</div>
+                <BeqScoreBreakdown details={selectedQuote.score.v2Details} />
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -316,6 +324,130 @@ function EmptyState() {
       <div className="mt-1 text-caption text-sp-lightMuted">
         Execute a swap to see the decision receipt
       </div>
+    </div>
+  );
+}
+
+/* ========================================
+   BEQ V2 SCORE BREAKDOWN
+   ======================================== */
+interface BeqV2DetailsType {
+  beqScore: number;
+  disqualified: boolean;
+  disqualifiedReason?: string | undefined;
+  components: {
+    outputScore: number;
+    reliabilityFactor: number;
+    sellabilityFactor: number;
+    riskFactor: number;
+    preflightFactor: number;
+    qualityMultiplier?: number | undefined;
+    riskMultiplier?: number | undefined;
+  };
+  explanation: string[];
+  rawData: {
+    buyAmount: string;
+    maxBuyAmount: string;
+    feeBps: number | null;
+    integrationConfidence: number;
+    netBuyAmount?: string | undefined;
+  };
+}
+
+function BeqScoreBreakdown({ details }: { details: BeqV2DetailsType }) {
+  const { components, explanation } = details;
+  
+  return (
+    <div className="space-y-3">
+      {/* Visual score bar */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-micro text-sp-lightMuted">
+          <span>Output Score</span>
+          <span className="font-medium text-sp-lightText">{components.outputScore.toFixed(1)}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-sp-lightBorder overflow-hidden">
+          <div 
+            className="h-full bg-sp-primary rounded-full transition-all" 
+            style={{ width: `${Math.min(components.outputScore, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Factor breakdown */}
+      <div className="grid grid-cols-2 gap-2">
+        <ScoreFactorPill 
+          label="Reliability" 
+          value={components.reliabilityFactor} 
+          tooltip="Integration confidence with this provider"
+        />
+        <ScoreFactorPill 
+          label="Sellability" 
+          value={components.sellabilityFactor}
+          tooltip="Ability to sell the output token"
+        />
+        <ScoreFactorPill 
+          label="Risk" 
+          value={components.riskFactor}
+          tooltip="Risk assessment (revert, MEV, churn)"
+        />
+        <ScoreFactorPill 
+          label="Preflight" 
+          value={components.preflightFactor}
+          tooltip="Simulation result confidence"
+        />
+      </div>
+
+      {/* Formula explanation */}
+      <div className="text-micro text-sp-lightMuted bg-sp-lightSurface rounded-lg px-3 py-2">
+        <div className="font-medium text-sp-lightText mb-1">Formula:</div>
+        <code className="text-micro">
+          BEQ = Output × Quality × Risk
+        </code>
+        <div className="mt-1">
+          = {components.outputScore.toFixed(1)} × {(components.qualityMultiplier ?? (components.reliabilityFactor * components.sellabilityFactor)).toFixed(3)} × {(components.riskMultiplier ?? (components.riskFactor * components.preflightFactor)).toFixed(3)}
+        </div>
+        <div className="mt-1 font-semibold text-sp-ok">
+          = {details.beqScore.toFixed(1)}/100
+        </div>
+      </div>
+
+      {/* Explanation list */}
+      {explanation.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-micro font-medium text-sp-lightText">Details:</div>
+          <ul className="text-micro text-sp-lightMuted space-y-0.5">
+            {explanation.map((exp, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-sp-lightMuted">•</span>
+                <span>{exp}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScoreFactorPill({ label, value, tooltip }: { label: string; value: number; tooltip: string }) {
+  const percentage = (value * 100).toFixed(0);
+  const tone = value >= 0.8 ? 'ok' : value >= 0.5 ? 'warn' : 'bad';
+  const colorClass = tone === 'ok' 
+    ? 'text-sp-ok bg-sp-ok/10' 
+    : tone === 'warn' 
+    ? 'text-sp-warn bg-sp-warn/10' 
+    : 'text-sp-bad bg-sp-bad/10';
+  
+  return (
+    <div 
+      className={cn(
+        "flex items-center justify-between rounded-lg px-2 py-1.5 text-micro",
+        colorClass
+      )}
+      title={tooltip}
+    >
+      <span>{label}</span>
+      <span className="font-semibold">{percentage}%</span>
     </div>
   );
 }

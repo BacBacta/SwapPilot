@@ -98,6 +98,49 @@ export const RiskSignalsSchema = z.object({
 
 export type RiskSignals = z.infer<typeof RiskSignalsSchema>;
 
+// BEQ v2 Score Components - transparent and traceable scoring breakdown
+export const BeqV2ComponentsSchema = z.object({
+  /** Output score: 0-100, relative to best quote */
+  outputScore: z.number().min(0).max(100),
+  /** Reliability factor: 0-1, based on integration confidence */
+  reliabilityFactor: z.number().min(0).max(1),
+  /** Sellability factor: 0-1, based on token sellability assessment */
+  sellabilityFactor: z.number().min(0).max(1),
+  /** Risk factor: 0-1, aggregated from revert/MEV/churn risk */
+  riskFactor: z.number().min(0).max(1),
+  /** Preflight factor: 0-1, based on simulation result */
+  preflightFactor: z.number().min(0).max(1),
+  /** Combined quality multiplier = reliability × sellability */
+  qualityMultiplier: z.number().min(0).max(1),
+  /** Combined risk multiplier = risk × preflight */
+  riskMultiplier: z.number().min(0).max(1),
+});
+
+export type BeqV2Components = z.infer<typeof BeqV2ComponentsSchema>;
+
+export const BeqV2DetailsSchema = z.object({
+  /** Final BEQ score: 0-100 */
+  beqScore: z.number(),
+  /** Whether this quote was disqualified */
+  disqualified: z.boolean(),
+  /** Reason for disqualification, if any */
+  disqualifiedReason: z.string().optional(),
+  /** Score component breakdown */
+  components: BeqV2ComponentsSchema,
+  /** Human-readable explanation of the score */
+  explanation: z.array(z.string()),
+  /** Raw data for audit trail */
+  rawData: z.object({
+    buyAmount: z.string(),
+    maxBuyAmount: z.string(),
+    feeBps: z.number().nullable(),
+    integrationConfidence: z.number(),
+    netBuyAmount: z.string(),
+  }),
+});
+
+export type BeqV2Details = z.infer<typeof BeqV2DetailsSchema>;
+
 export const RankedQuoteSchema = z.object({
   providerId: z.string().min(1),
   sourceType: z.enum(['aggregator', 'dex']),
@@ -108,6 +151,8 @@ export const RankedQuoteSchema = z.object({
   score: z.object({
     beqScore: z.number(),
     rawOutputRank: z.number().int().nonnegative(),
+    /** BEQ v2 detailed breakdown (optional for backward compatibility) */
+    v2Details: BeqV2DetailsSchema.optional(),
   }),
   deepLink: z.string().url().nullable(),
 });

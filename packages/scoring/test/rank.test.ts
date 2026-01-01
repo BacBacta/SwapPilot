@@ -118,4 +118,46 @@ describe('rankQuotes', () => {
     expect(out.rankedQuotes[0].providerId).toBe('okx-dex');
     expect(out.beqRecommendedProviderId).toBe('okx-dex');
   });
+
+  it('BEQ v2 produces scores in 0-100 range with detailed breakdown', () => {
+    const assumptions = defaultAssumptions();
+    const quotes = [
+      makeQuote({ providerId: 'best', buyAmount: '100000000000000000000', mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'medium', buyAmount: '80000000000000000000', mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'worst', buyAmount: '50000000000000000000', mode: 'NORMAL', sellability: 'OK' }),
+    ];
+
+    const providerMeta = new Map<string, ProviderMeta>([
+      ['best', { providerId: 'best', displayName: 'Best', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 1.0, notes: '' }],
+      ['medium', { providerId: 'medium', displayName: 'Medium', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.9, notes: '' }],
+      ['worst', { providerId: 'worst', displayName: 'Worst', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.8, notes: '' }],
+    ]);
+
+    const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
+    
+    // All scores should be in 0-100 range
+    for (const q of out.rankedQuotes) {
+      expect(q.score.beqScore).toBeGreaterThanOrEqual(0);
+      expect(q.score.beqScore).toBeLessThanOrEqual(100);
+      
+      // v2Details should be attached
+      expect(q.score.v2Details).toBeDefined();
+      expect(q.score.v2Details?.components.outputScore).toBeGreaterThanOrEqual(0);
+      expect(q.score.v2Details?.components.outputScore).toBeLessThanOrEqual(100);
+      expect(q.score.v2Details?.explanation.length).toBeGreaterThan(0);
+    }
+    
+    // Best should have highest score (100 output × factors)
+    expect(out.rankedQuotes[0].providerId).toBe('best');
+    // Score is 100 * quality * risk, so may be slightly less than 100
+    expect(out.rankedQuotes[0].score.beqScore).toBeGreaterThan(90);
+    
+    // Medium should have ~80% output score
+    expect(out.rankedQuotes[1].providerId).toBe('medium');
+    expect(out.rankedQuotes[1].score.v2Details?.components.outputScore).toBeCloseTo(80, 0);
+    
+    // Worst should have ~50% output score
+    expect(out.rankedQuotes[2].providerId).toBe('worst');
+    expect(out.rankedQuotes[2].score.v2Details?.components.outputScore).toBeCloseTo(50, 0);
+  });
 });

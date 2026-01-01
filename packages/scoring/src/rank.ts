@@ -1,8 +1,8 @@
-import type { NormalizationAssumptions, QuoteMode, RankedQuote, ScoringOptions } from '@swappilot/shared';
+import type { BeqV2Details, NormalizationAssumptions, QuoteMode, RankedQuote, ScoringOptions } from '@swappilot/shared';
 
 import type { ProviderMeta } from '@swappilot/adapters';
 
-import { computeBeqScore } from './beq';
+import { computeBeqScoreV2, type BeqV2Output } from './beq-v2';
 import type { WhyRule } from './types';
 
 export type RankResult = {
@@ -10,6 +10,8 @@ export type RankResult = {
   rankedQuotes: RankedQuote[];
   bestRawQuotes: RankedQuote[];
   whyWinner: WhyRule[];
+  /** BEQ v2: Detailed score breakdown for each provider */
+  scoreDetails?: Map<string, BeqV2Output>;
 };
 
 export function rankQuotes(input: {
@@ -19,37 +21,32 @@ export function rankQuotes(input: {
   assumptions: NormalizationAssumptions;
   scoringOptions?: ScoringOptions;
 }): RankResult {
-  // Find the maximum buyAmount to use as a normalization reference
-  // This ensures all quotes are scaled by the same factor for fair comparison
+  // Find the maximum buyAmount for relative scoring
   const maxBuyAmount = input.quotes.reduce((max, q) => {
     const amt = BigInt(q.raw.buyAmount);
     return amt > max ? amt : max;
   }, 0n);
-  
-  // Calculate a common scale factor based on the largest buyAmount
-  // This ensures all quotes are compared on the same scale
-  const maxDigits = maxBuyAmount > 0n ? maxBuyAmount.toString().length : 1;
-  const commonScaleFactor = Math.max(0, maxDigits - 12);
 
+  // Score all quotes using BEQ v2 (normalized 0-100 scale)
+  const scoreDetails = new Map<string, BeqV2Output>();
   const scored = input.quotes.map((q) => {
     const meta = input.providerMeta.get(q.providerId);
-    // If provider meta is missing, don't catastrophically penalize the quote.
-    // Missing meta should be treated as "unknown" rather than "bad", otherwise
-    // BEQ can incorrectly prefer a lower-output provider purely due to defaulting.
-    const integrationConfidence = meta?.integrationConfidence ?? 1;
+    // Default to 0.9 for unknown providers (reasonable assumption, not punitive)
+    const integrationConfidence = meta?.integrationConfidence ?? 0.9;
 
     const buyAmount = BigInt(q.raw.buyAmount);
-    const score = computeBeqScore({
+    const score = computeBeqScoreV2({
       providerId: q.providerId,
       buyAmount,
+      maxBuyAmount,
       feeBps: q.raw.feeBps,
       integrationConfidence,
       signals: q.signals,
       mode: input.mode,
       scoringOptions: input.scoringOptions,
-      scaleFactor: commonScaleFactor, // Pass common scale factor
     });
 
+    scoreDetails.set(q.providerId, score);
     return { quote: q, score };
   });
 
@@ -65,6 +62,21 @@ export function rankQuotes(input: {
     quote.score.rawOutputRank = index;
   }
 
+  // Helper to build v2Details without undefined properties (for exactOptionalPropertyTypes)
+  const buildV2Details = (score: BeqV2Output): BeqV2Details => {
+    const details: BeqV2Details = {
+      beqScore: score.beqScore,
+      disqualified: score.disqualified,
+      components: score.components,
+      explanation: score.explanation,
+      rawData: score.rawData,
+    };
+    if (score.disqualifiedReason !== undefined) {
+      details.disqualifiedReason = score.disqualifiedReason;
+    }
+    return details;
+  };
+
   // BEQ ranking: sort by beqScore, tie-break by raw output.
   const rankedQuotes = scored
     .filter((s) => !s.score.disqualified)
@@ -77,19 +89,36 @@ export function rankQuotes(input: {
     })
     .map((s) => {
       s.quote.score.beqScore = s.score.beqScore;
+      // Attach BEQ v2 details for transparency
+      s.quote.score.v2Details = buildV2Details(s.score);
       return s.quote;
     });
 
-  const winner = rankedQuotes[0] ?? null;
+  // Also attach v2Details to bestRawQuotes
+  for (const q of bestRawQuotes) {
+    const details = scoreDetails.get(q.providerId);
+    if (details) {
+      q.score.v2Details = buildV2Details(details);
+    }
+  }
 
-  const whyWinner: WhyRule[] = winner
-    ? ['ranked_by_beq', ...scored.find((s) => s.quote.providerId === winner.providerId)!.score.why]
-    : ['ranked_by_beq'];
+  const winner = rankedQuotes[0] ?? null;
+  const winnerScore = winner ? scoreDetails.get(winner.providerId) : null;
+
+  // Build whyWinner from BEQ v2 explanation
+  const whyWinner: WhyRule[] = ['ranked_by_beq'];
+  if (winnerScore) {
+    // Add BEQ v2 explanation as WhyRule entries
+    for (const exp of winnerScore.explanation) {
+      whyWinner.push(exp as WhyRule);
+    }
+  }
 
   return {
     beqRecommendedProviderId: winner?.providerId ?? null,
     rankedQuotes,
     bestRawQuotes,
     whyWinner,
+    scoreDetails,
   };
 }
