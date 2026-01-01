@@ -128,10 +128,10 @@ function ProviderRowAPI({
    ======================================== */
 function StatCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
-    <div className="rounded-xl border border-sp-border bg-sp-surface2 p-3 text-center transition hover:border-sp-borderHover">
-      <div className="text-micro text-sp-muted">{label}</div>
-      <div className="mt-1 text-body font-bold text-sp-text">{value}</div>
-      {subValue && <div className="mt-0.5 text-micro text-sp-muted2">{subValue}</div>}
+    <div className="rounded-xl border border-sp-border bg-sp-surface2 p-3 sm:p-4 text-center transition hover:border-sp-borderHover min-h-[72px] flex flex-col justify-center">
+      <div className="text-[10px] sm:text-micro text-sp-muted uppercase tracking-wide">{label}</div>
+      <div className="mt-1 text-body sm:text-h2 font-bold text-sp-text">{value}</div>
+      {subValue && <div className="mt-0.5 text-[10px] sm:text-micro text-sp-muted2">{subValue}</div>}
     </div>
   );
 }
@@ -828,7 +828,7 @@ export function SwapInterface() {
               </div>
 
               {/* Stats row */}
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-1.5 sm:gap-2">
                 <StatCard label="Network" value="$0.36" subValue="~12s" />
                 <StatCard label="Slippage" value={`${(settings.slippageBps / 100).toFixed(1)}%`} />
                 <StatCard 
@@ -1007,8 +1007,8 @@ export function SwapInterface() {
       </CardDark>
 
       {/* Mobile Sticky CTA - Fixed at bottom above nav */}
-      <div className="fixed bottom-20 left-0 right-0 z-40 p-4 md:hidden">
-        <div className="rounded-2xl border border-sp-border bg-sp-surface/95 p-4 shadow-2xl backdrop-blur-xl">
+      <div className="fixed bottom-[88px] left-0 right-0 z-40 px-4 md:hidden safe-bottom">
+        <div className="mx-auto max-w-lg rounded-2xl border border-sp-accent/20 bg-sp-surface/98 p-4 shadow-2xl backdrop-blur-xl" style={{ boxShadow: '0 -8px 32px rgba(0,0,0,0.4), 0 0 24px rgba(247,201,72,0.1)' }}>
           {/* Summary row */}
           {topQuote && (
             <div className="mb-3 flex items-center justify-between text-caption">
@@ -1022,7 +1022,7 @@ export function SwapInterface() {
           {/* CTA Button */}
           {!isWalletConnected ? (
             <Button 
-              className="h-14 w-full text-body font-bold" 
+              className="h-14 w-full text-body font-bold shadow-glow" 
               size="xl"
               variant="primary"
               onClick={() => {
@@ -1049,7 +1049,7 @@ export function SwapInterface() {
             </Button>
           ) : (
             <Button 
-              className="h-14 w-full text-body font-bold" 
+              className="h-14 w-full text-body font-bold shadow-glow" 
               size="xl"
               loading={loading}
               onClick={handleExecute}
@@ -1062,7 +1062,7 @@ export function SwapInterface() {
       </div>
 
       {/* Spacer for mobile sticky CTA */}
-      <div className="h-32 md:hidden" />
+      <div className="h-40 md:hidden" />
 
       {/* Token Picker Modal */}
       <TokenPickerModal
