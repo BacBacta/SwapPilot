@@ -101,4 +101,21 @@ describe('rankQuotes', () => {
     // Odos should be last because it has the lowest buyAmount
     expect(out.rankedQuotes[out.rankedQuotes.length - 1].providerId).toBe('odos');
   });
+
+  it('does not catastrophically penalize missing provider meta', () => {
+    const assumptions = defaultAssumptions();
+    const quotes = [
+      makeQuote({ providerId: 'odos', buyAmount: '5939199929033357787136', mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'okx-dex', buyAmount: '38701337942755908699944', mode: 'NORMAL', sellability: 'OK' }),
+    ];
+
+    // Only Odos is present in providerMeta (simulates a meta wiring bug).
+    const providerMeta = new Map<string, ProviderMeta>([
+      ['odos', { providerId: 'odos', displayName: 'Odos', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 0.9, notes: '' }],
+    ]);
+
+    const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
+    expect(out.rankedQuotes[0].providerId).toBe('okx-dex');
+    expect(out.beqRecommendedProviderId).toBe('okx-dex');
+  });
 });

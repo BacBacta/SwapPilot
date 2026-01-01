@@ -33,7 +33,10 @@ export function rankQuotes(input: {
 
   const scored = input.quotes.map((q) => {
     const meta = input.providerMeta.get(q.providerId);
-    const integrationConfidence = meta?.integrationConfidence ?? 0.1;
+    // If provider meta is missing, don't catastrophically penalize the quote.
+    // Missing meta should be treated as "unknown" rather than "bad", otherwise
+    // BEQ can incorrectly prefer a lower-output provider purely due to defaulting.
+    const integrationConfidence = meta?.integrationConfidence ?? 1;
 
     const buyAmount = BigInt(q.raw.buyAmount);
     const score = computeBeqScore({
