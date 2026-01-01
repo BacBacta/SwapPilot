@@ -43,6 +43,9 @@ export const QuoteRequestSchema = z.object({
   providers: z.array(z.string().min(1)).optional(),
   mode: QuoteModeSchema.optional(),
   scoringOptions: ScoringOptionsSchema.optional(),
+  // Token decimals for accurate quote calculation
+  sellTokenDecimals: z.number().int().min(0).max(18).optional(),
+  buyTokenDecimals: z.number().int().min(0).max(18).optional(),
 });
 
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>;

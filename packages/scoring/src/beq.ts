@@ -108,11 +108,12 @@ export function computeBeqScore(input: ScoreInput): ScoreOutput {
   // Apply preflight revert probability as a multiplicative penalty when available.
   const preflightPenalty = preflight ? 1 - clamp01(preflight.pRevert) : 1;
 
-  // Score is a scaled float; keep deterministic ordering by using bigint netOut then multipliers.
-  // Use Number(netOut) can overflow; instead scale down by taking first 15 digits.
-  const netOutStr = netOut.toString();
-  const head = netOutStr.length > 15 ? netOutStr.slice(0, 15) : netOutStr;
-  const netOutScaled = Number(head);
+  // Score is a scaled float; we need to normalize netOut to a comparable scale.
+  // Use logarithmic scaling to handle large bigint values safely.
+  // This ensures quotes with larger buyAmounts get proportionally higher scores.
+  const netOutScaled = netOut > 0n 
+    ? Number(netOut / 10n ** BigInt(Math.max(0, netOut.toString().length - 15)))
+    : 0;
 
   const beqScore = disqualified
     ? 0

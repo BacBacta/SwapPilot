@@ -95,6 +95,7 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
     }
 
     const decimals = sell?.decimals ?? 18;
+    const buyDecimals = buy?.decimals ?? 18;
     let sellAmount: string;
     try {
       sellAmount = parseUnits(params.sellAmount, decimals).toString();
@@ -114,6 +115,8 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
       sellAmount,
       slippageBps: params.slippageBps ?? 50,
       mode: params.mode ?? "NORMAL",
+      sellTokenDecimals: decimals,
+      buyTokenDecimals: buyDecimals,
     };
 
     // Store params for auto-refresh

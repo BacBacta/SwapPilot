@@ -236,8 +236,8 @@ export class OpenOceanAdapter implements Adapter {
 
     try {
       // OpenOcean expects amount in human-readable units, not wei
-      // First, get the decimals for the sell token
-      const sellTokenDecimals = await this.getTokenDecimals(request.sellToken);
+      // Use decimals from request if provided, otherwise fall back to API lookup
+      const sellTokenDecimals = request.sellTokenDecimals ?? await this.getTokenDecimals(request.sellToken);
       const humanAmount = this.weiToHuman(request.sellAmount, sellTokenDecimals);
 
       const controller = new AbortController();
@@ -344,7 +344,8 @@ export class OpenOceanAdapter implements Adapter {
     }
 
     // OpenOcean expects amount in human-readable units, not wei
-    const sellTokenDecimals = await this.getTokenDecimals(request.sellToken);
+    // Use decimals from request if provided, otherwise fall back to API lookup
+    const sellTokenDecimals = request.sellTokenDecimals ?? await this.getTokenDecimals(request.sellToken);
     const humanAmount = this.weiToHuman(request.sellAmount, sellTokenDecimals);
 
     const controller = new AbortController();

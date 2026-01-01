@@ -129,8 +129,8 @@ export class ParaSwapAdapter implements Adapter {
       url.searchParams.set('srcToken', this.normalizeToken(request.sellToken));
       url.searchParams.set('destToken', this.normalizeToken(request.buyToken));
       url.searchParams.set('amount', request.sellAmount);
-      url.searchParams.set('srcDecimals', '18'); // Default to 18 decimals for most tokens
-      url.searchParams.set('destDecimals', '18');
+      url.searchParams.set('srcDecimals', String(request.sellTokenDecimals ?? 18));
+      url.searchParams.set('destDecimals', String(request.buyTokenDecimals ?? 18));
       url.searchParams.set('side', 'SELL');
       url.searchParams.set('network', String(this.chainId));
       url.searchParams.set('partner', this.partner);
@@ -295,8 +295,8 @@ export class ParaSwapAdapter implements Adapter {
       priceUrl.searchParams.set('srcToken', srcToken);
       priceUrl.searchParams.set('destToken', destToken);
       priceUrl.searchParams.set('amount', request.sellAmount);
-      priceUrl.searchParams.set('srcDecimals', '18');
-      priceUrl.searchParams.set('destDecimals', '18');
+      priceUrl.searchParams.set('srcDecimals', String(request.sellTokenDecimals ?? 18));
+      priceUrl.searchParams.set('destDecimals', String(request.buyTokenDecimals ?? 18));
       priceUrl.searchParams.set('side', 'SELL');
       priceUrl.searchParams.set('network', String(this.chainId));
       priceUrl.searchParams.set('partner', this.partner);
