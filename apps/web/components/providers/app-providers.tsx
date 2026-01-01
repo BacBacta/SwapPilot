@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, type ReactNode, Suspense } from "react";
-import { AppShell } from "@/components/layout/app-shell";
-import { ToastProvider } from "@/components/ui/toast";
+import { useState, useEffect, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -19,6 +18,17 @@ function LoadingFallback() {
     </div>
   );
 }
+
+// Dynamic imports with ssr: false to prevent any wagmi code from running on server
+const AppShell = dynamic(
+  () => import("@/components/layout/app-shell").then((mod) => mod.AppShell),
+  { ssr: false }
+);
+
+const ToastProvider = dynamic(
+  () => import("@/components/ui/toast").then((mod) => mod.ToastProvider),
+  { ssr: false }
+);
 
 export function AppProviders({ children }: AppProvidersProps) {
   const [Web3Provider, setWeb3Provider] = useState<React.ComponentType<{ children: ReactNode }> | null>(null);
