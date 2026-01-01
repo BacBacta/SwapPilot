@@ -202,7 +202,7 @@ function TransactionRow({
   const timeAgo = formatTimeAgo(transaction.timestamp);
 
   return (
-    <div className="bg-sp-surface2 hover:bg-sp-surface3 transition">
+    <div className="rounded-xl border border-sp-border bg-sp-surface2 overflow-hidden">
       <div className="flex w-full items-center gap-3 px-4 py-3">
         {/* Status icon */}
         <div className={cn("flex-shrink-0", status.color)}>
@@ -214,19 +214,19 @@ function TransactionRow({
           onClick={onToggle}
           className="flex-1 min-w-0 text-left"
         >
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sp-text text-caption">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sp-text text-caption truncate">
               {transaction.fromAmount} {transaction.fromToken}
             </span>
-            <ArrowIcon className="h-3 w-3 text-sp-muted" />
-            <span className="font-medium text-sp-ok text-caption">
+            <ArrowIcon className="h-3 w-3 flex-shrink-0 text-sp-muted" />
+            <span className="font-medium text-sp-ok text-caption truncate">
               {transaction.toAmount} {transaction.toToken}
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-2 text-micro text-sp-muted">
-            <span>via {transaction.provider}</span>
+            <span className="truncate">via {transaction.provider}</span>
             <span>•</span>
-            <span>{timeAgo}</span>
+            <span className="flex-shrink-0">{timeAgo}</span>
           </div>
         </button>
 
@@ -236,7 +236,7 @@ function TransactionRow({
             href={getExplorerLink(transaction.chainId, transaction.hash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-lg bg-sp-accent/10 px-2 py-1 text-micro font-medium text-sp-accent hover:bg-sp-accent/20 transition"
+            className="flex-shrink-0 flex items-center gap-1 rounded-lg bg-sp-accent/10 px-2 py-1 text-micro font-medium text-sp-accent hover:bg-sp-accent/20 transition"
             onClick={(e) => e.stopPropagation()}
           >
             <ExternalLinkIcon className="h-3 w-3" />
@@ -245,7 +245,7 @@ function TransactionRow({
         )}
 
         {/* Expand icon */}
-        <button onClick={onToggle} className="p-1">
+        <button onClick={onToggle} className="flex-shrink-0 p-1">
           <ChevronIcon
             className={cn(
               "h-4 w-4 text-sp-muted transition",
@@ -270,7 +270,7 @@ function TransactionRow({
             <>
               <div className="flex items-center justify-between text-micro">
                 <span className="text-sp-muted">Tx Hash</span>
-                <span className="font-mono text-sp-text">
+                <span className="font-mono text-sp-text truncate ml-2">
                   {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
                 </span>
               </div>
@@ -292,10 +292,12 @@ function TransactionRow({
             </div>
           )}
           {transaction.error && (
-            <div className="mt-2 rounded bg-sp-bad/10 px-2 py-1.5 text-micro text-sp-bad">
+            <div className="mt-2 rounded bg-sp-bad/10 px-2 py-1.5 text-micro text-sp-bad break-words">
               {transaction.error}
             </div>
           )}
+        </div>
+      )}
         </div>
       )}
     </div>
@@ -344,6 +346,8 @@ export function TransactionHistoryDrawer({
   transactions: Transaction[];
   onClear?: () => void;
 }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
   if (!open) return null;
 
   return (
@@ -358,25 +362,54 @@ export function TransactionHistoryDrawer({
       <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md animate-slideInRight">
         <div className="flex h-full flex-col bg-sp-surface border-l border-sp-border">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-sp-border px-5 py-4">
+          <div className="flex-shrink-0 flex items-center justify-between border-b border-sp-border px-5 py-4">
             <div className="flex items-center gap-2">
               <HistoryIcon className="h-5 w-5 text-sp-accent" />
               <h2 className="text-h3 font-bold text-sp-text">Transaction History</h2>
+              {transactions.length > 0 && (
+                <Pill tone="neutral" size="sm">{transactions.length}</Pill>
+              )}
             </div>
-            <button
-              onClick={onClose}
-              className="grid h-8 w-8 place-items-center rounded-lg text-sp-muted hover:bg-sp-surface3 hover:text-sp-text transition"
-            >
-              <XIcon className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onClear && transactions.length > 0 && (
+                <button
+                  onClick={onClear}
+                  className="text-micro text-sp-muted hover:text-sp-bad transition"
+                >
+                  Clear all
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="grid h-8 w-8 place-items-center rounded-lg text-sp-muted hover:bg-sp-surface3 hover:text-sp-text transition"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <TransactionHistoryPanel
-              transactions={transactions}
-              onClear={onClear}
-            />
+          <div className="flex-1 min-h-0 overflow-y-auto p-4">
+            {transactions.length === 0 ? (
+              <div className="rounded-xl border border-sp-border bg-sp-surface2 p-6 text-center">
+                <HistoryIcon className="mx-auto h-10 w-10 text-sp-muted2" />
+                <div className="mt-3 text-caption font-medium text-sp-text">No transactions yet</div>
+                <div className="mt-1 text-micro text-sp-muted">
+                  Your swap history will appear here
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {transactions.map((tx) => (
+                  <TransactionRow
+                    key={tx.id}
+                    transaction={tx}
+                    expanded={expanded === tx.id}
+                    onToggle={() => setExpanded(expanded === tx.id ? null : tx.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
