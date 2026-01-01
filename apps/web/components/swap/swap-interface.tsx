@@ -771,6 +771,35 @@ export function SwapInterface() {
                 }}
               />
 
+              {/* Quick Amount Buttons - Mobile friendly */}
+              {isConnected && fromTokenInfo && (
+                <div className="flex gap-2 px-1 py-2">
+                  {[
+                    { label: "25%", pct: 0.25 },
+                    { label: "50%", pct: 0.5 },
+                    { label: "75%", pct: 0.75 },
+                    { label: "MAX", pct: 1 },
+                  ].map(({ label, pct }) => (
+                    <button
+                      key={label}
+                      onClick={() => {
+                        const bal = getBalance(fromTokenInfo);
+                        if (!bal) return;
+                        // Convert bal from string to bigint for calculation
+                        const balBigInt = BigInt(bal);
+                        const pctAmount = (balBigInt * BigInt(Math.floor(pct * 100))) / 100n;
+                        const formatted = (Number(pctAmount) / 10 ** (fromTokenInfo.decimals ?? 18)).toString();
+                        setFromAmount(formatted);
+                        setFromAmountRawWei(pctAmount.toString());
+                      }}
+                      className="flex-1 rounded-xl border border-sp-border bg-sp-surface2 py-2.5 text-caption font-semibold text-sp-muted transition hover:border-sp-accent hover:text-sp-accent active:scale-95"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <SwapDirectionButton onClick={handleSwapDirection} />
 
               <TokenInput
@@ -831,66 +860,69 @@ export function SwapInterface() {
                 />
               )}
 
-              {/* CTA - Dynamic based on wallet and swap state */}
-              {!isWalletConnected ? (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg"
-                  variant="primary"
-                  onClick={() => {
-                    // Trigger RainbowKit connect modal
-                    document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
-                  }}
-                >
-                  Connect Wallet
-                </Button>
-              ) : isApproving ? (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg"
-                  loading
-                  disabled
-                >
-                  Approving {fromToken}...
-                </Button>
-              ) : isBuilding ? (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg"
-                  loading
-                  disabled
-                >
-                  Building transaction...
-                </Button>
-              ) : isSwapPending ? (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg"
-                  loading
-                  disabled
-                >
-                  Confirming swap...
-                </Button>
-              ) : insufficientBalance ? (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg"
-                  disabled
-                  variant="destructive"
-                >
-                  Insufficient balance
-                </Button>
-              ) : (
-                <Button 
-                  className="mt-5 h-12 w-full text-body" 
-                  size="lg" 
-                  loading={loading}
-                  onClick={handleExecute}
-                  disabled={!topQuote || loading}
-                >
-                  {loading ? "Finding best route..." : topQuote ? "Execute Best Quote" : "Enter amount"}
-                </Button>
-              )}
+              {/* Desktop CTA - Hidden on mobile (we show sticky version below) */}
+              <div className="hidden md:block">
+                {/* CTA - Dynamic based on wallet and swap state */}
+                {!isWalletConnected ? (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg"
+                    variant="primary"
+                    onClick={() => {
+                      // Trigger RainbowKit connect modal
+                      document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
+                    }}
+                  >
+                    Connect Wallet
+                  </Button>
+                ) : isApproving ? (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg"
+                    loading
+                    disabled
+                  >
+                    Approving {fromToken}...
+                  </Button>
+                ) : isBuilding ? (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg"
+                    loading
+                    disabled
+                  >
+                    Building transaction...
+                  </Button>
+                ) : isSwapPending ? (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg"
+                    loading
+                    disabled
+                  >
+                    Confirming swap...
+                  </Button>
+                ) : insufficientBalance ? (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg"
+                    disabled
+                    variant="destructive"
+                  >
+                    Insufficient balance
+                  </Button>
+                ) : (
+                  <Button 
+                    className="mt-5 h-12 w-full text-body" 
+                    size="lg" 
+                    loading={loading}
+                    onClick={handleExecute}
+                    disabled={!topQuote || loading}
+                  >
+                    {loading ? "Finding best route..." : topQuote ? "Execute Best Quote" : "Enter amount"}
+                  </Button>
+                )}
+              </div>
 
               <p className="mt-3 text-center text-micro text-sp-muted2">
                 {mode === "BEQ" 
@@ -973,6 +1005,64 @@ export function SwapInterface() {
           </div>
         </div>
       </CardDark>
+
+      {/* Mobile Sticky CTA - Fixed at bottom above nav */}
+      <div className="fixed bottom-20 left-0 right-0 z-40 p-4 md:hidden">
+        <div className="rounded-2xl border border-sp-border bg-sp-surface/95 p-4 shadow-2xl backdrop-blur-xl">
+          {/* Summary row */}
+          {topQuote && (
+            <div className="mb-3 flex items-center justify-between text-caption">
+              <span className="text-sp-muted">You receive</span>
+              <span className="font-bold text-sp-accent">
+                {formatQuoteOutput(topQuote, toTokenInfo?.decimals ?? 18)} {toToken}
+              </span>
+            </div>
+          )}
+          
+          {/* CTA Button */}
+          {!isWalletConnected ? (
+            <Button 
+              className="h-14 w-full text-body font-bold" 
+              size="xl"
+              variant="primary"
+              onClick={() => {
+                document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
+              }}
+            >
+              Connect Wallet
+            </Button>
+          ) : isApproving ? (
+            <Button className="h-14 w-full text-body font-bold" size="xl" loading disabled>
+              Approving {fromToken}...
+            </Button>
+          ) : isBuilding ? (
+            <Button className="h-14 w-full text-body font-bold" size="xl" loading disabled>
+              Building...
+            </Button>
+          ) : isSwapPending ? (
+            <Button className="h-14 w-full text-body font-bold" size="xl" loading disabled>
+              Confirming...
+            </Button>
+          ) : insufficientBalance ? (
+            <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
+              Insufficient Balance
+            </Button>
+          ) : (
+            <Button 
+              className="h-14 w-full text-body font-bold" 
+              size="xl"
+              loading={loading}
+              onClick={handleExecute}
+              disabled={!topQuote || loading}
+            >
+              {loading ? "Finding route..." : topQuote ? "Swap Now" : "Enter amount"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Spacer for mobile sticky CTA */}
+      <div className="h-32 md:hidden" />
 
       {/* Token Picker Modal */}
       <TokenPickerModal

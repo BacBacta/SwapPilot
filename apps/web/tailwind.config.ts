@@ -12,19 +12,34 @@ const config: Config = {
         sans: ["ui-sans-serif", "system-ui", "Segoe UI", "Inter", "Roboto", "Helvetica", "Arial"],
       },
       fontSize: {
-        // Scale typographique professionnelle
-        'display': ['2.25rem', { lineHeight: '2.5rem', fontWeight: '800' }],  // 36px
-        'h1': ['1.5rem', { lineHeight: '2rem', fontWeight: '700' }],          // 24px
-        'h2': ['1.125rem', { lineHeight: '1.5rem', fontWeight: '600' }],      // 18px
-        'body': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],   // 14px
-        'caption': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],    // 12px
-        'micro': ['0.6875rem', { lineHeight: '0.875rem', fontWeight: '500' }],// 11px
+        // Scale typographique professionnelle avec fluid typography
+        'display': ['clamp(1.75rem, 5vw, 2.25rem)', { lineHeight: '1.15', fontWeight: '800' }],  // 28-36px
+        'h1': ['clamp(1.25rem, 4vw, 1.5rem)', { lineHeight: '1.3', fontWeight: '700' }],          // 20-24px
+        'h2': ['clamp(1rem, 3vw, 1.125rem)', { lineHeight: '1.4', fontWeight: '600' }],           // 16-18px
+        'body': ['clamp(0.8125rem, 2.5vw, 0.875rem)', { lineHeight: '1.5', fontWeight: '400' }],  // 13-14px
+        'caption': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],                         // 12px
+        'micro': ['0.6875rem', { lineHeight: '0.875rem', fontWeight: '500' }],                     // 11px
+        // Large mobile-friendly sizes
+        'amount': ['clamp(1.5rem, 7vw, 2rem)', { lineHeight: '1.1', fontWeight: '700' }],         // 24-32px for amounts
+        'balance': ['clamp(1.75rem, 8vw, 2.5rem)', { lineHeight: '1.1', fontWeight: '800' }],     // 28-40px for balances
       },
       borderRadius: {
+        '3xl': '24px',
         '2xl': '20px',
         xl: '16px',
         lg: '12px',
         md: '8px',
+      },
+      spacing: {
+        // Touch-friendly spacing
+        'touch': '48px',      // Minimum touch target
+        'touch-lg': '56px',   // Large touch target
+        'safe-b': 'env(safe-area-inset-bottom, 0)',
+        'safe-t': 'env(safe-area-inset-top, 0)',
+      },
+      minHeight: {
+        'touch': '48px',
+        'touch-lg': '56px',
       },
       boxShadow: {
         soft: "0 18px 60px rgba(0,0,0,.18)",
