@@ -67,6 +67,7 @@ async function fetchJsonWithTimeout(input: string, init: RequestInit & { timeout
 
 // Generate mock quote response for demo mode
 function generateMockQuoteResponse(request: QuoteRequest): QuoteResponse {
+  const receiptId = `mock-${Date.now()}`;
   const sellAmount = BigInt(request.sellAmount);
   const mockRankedQuotes: RankedQuote[] = bestExecutable.map((row, index) => {
     // Calculate buy amount based on mock data ratios
@@ -122,12 +123,36 @@ function generateMockQuoteResponse(request: QuoteRequest): QuoteResponse {
   });
 
   return {
-    receiptId: `mock-${Date.now()}`,
+    receiptId,
     bestExecutableQuoteProviderId: mockRankedQuotes[0]?.providerId ?? null,
     bestRawOutputProviderId: mockRankedQuotes[0]?.providerId ?? null,
     beqRecommendedProviderId: mockRankedQuotes[0]?.providerId ?? null,
     rankedQuotes: mockRankedQuotes,
     bestRawQuotes: mockRankedQuotes.slice(0, 3),
+    receipt: {
+      id: receiptId,
+      createdAt: new Date().toISOString(),
+      request,
+      bestExecutableQuoteProviderId: mockRankedQuotes[0]?.providerId ?? null,
+      bestRawOutputProviderId: mockRankedQuotes[0]?.providerId ?? null,
+      beqRecommendedProviderId: mockRankedQuotes[0]?.providerId ?? null,
+      rankedQuotes: mockRankedQuotes,
+      bestRawQuotes: mockRankedQuotes.slice(0, 3),
+      normalization: {
+        assumptions: {
+          priceModel: 'ratio_sell_buy',
+          effectivePriceScale: 18,
+          gasUsdPerTx: null,
+          feeModel: 'feeBps_on_buyAmount',
+        },
+      },
+      whyWinner: ['mock_mode'],
+      ranking: {
+        mode: request.mode ?? 'NORMAL',
+        rationale: ['mock_mode'],
+      },
+      warnings: ['mock_mode'],
+    },
   };
 }
 

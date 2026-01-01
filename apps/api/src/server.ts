@@ -388,6 +388,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         bestExecutableQuoteProviderId,
         bestRawOutputProviderId,
         beqRecommendedProviderId,
+        receipt,
       };
     },
   );

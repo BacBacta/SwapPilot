@@ -130,6 +130,9 @@ export const QuoteResponseSchema = z.object({
   beqRecommendedProviderId: z.string().nullable(),
   rankedQuotes: z.array(RankedQuoteSchema),
   bestRawQuotes: z.array(RankedQuoteSchema),
+  // Optional: embed the full receipt to avoid a follow-up fetch.
+  // This is particularly useful when the backend receipt store is ephemeral.
+  receipt: z.lazy(() => DecisionReceiptSchema).optional(),
 });
 
 export type QuoteResponse = z.infer<typeof QuoteResponseSchema>;

@@ -284,7 +284,7 @@ export function SwapClient() {
 
       const res = await postQuotes({ request: req, timeoutMs: 12_000 });
       setResponse(res);
-      setReceipt(null);
+      setReceipt(res.receipt ?? null);
       setReceiptError(null);
     } catch (e) {
       setResponse(null);
@@ -301,6 +301,14 @@ export function SwapClient() {
     if (!id) return;
 
     setReceiptOpen(true);
+
+    // If the quotes response already embedded the receipt, don't refetch.
+    if (receipt?.id === id) {
+      setReceiptLoading(false);
+      setReceiptError(null);
+      return;
+    }
+
     setReceiptLoading(true);
     setReceiptError(null);
 
