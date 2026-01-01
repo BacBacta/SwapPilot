@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
-import { AppShell } from '@/components/layout/app-shell';
-import { Web3ProviderWrapper } from '@/components/providers/web3-provider-wrapper';
+import { AppProviders } from '@/components/providers/app-providers';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SettingsProvider } from '@/components/providers/settings-provider';
 import { TokenRegistryProvider } from '@/components/providers/token-registry-provider';
-import { ToastProvider } from '@/components/ui/toast';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -41,11 +39,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <SettingsProvider>
             <TokenRegistryProvider>
-              <Web3ProviderWrapper>
-                <ToastProvider>
-                  <AppShell>{children}</AppShell>
-                </ToastProvider>
-              </Web3ProviderWrapper>
+              <AppProviders>{children}</AppProviders>
             </TokenRegistryProvider>
           </SettingsProvider>
         </ThemeProvider>
