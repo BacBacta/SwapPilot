@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { cn } from "@/lib/cn";
 import { Button, Pill } from "@/components/ui/primitives";
 
@@ -27,44 +28,53 @@ export interface Transaction {
 /* ========================================
    Local Storage Hook
    ======================================== */
-const STORAGE_KEY = "swappilot_tx_history";
+const STORAGE_KEY_PREFIX = "swappilot_tx_history";
 const MAX_TRANSACTIONS = 50;
 
-function getStoredTransactions(): Transaction[] {
+function getStorageKey(walletAddress: string | undefined): string {
+  if (!walletAddress) return `${STORAGE_KEY_PREFIX}_disconnected`;
+  return `${STORAGE_KEY_PREFIX}_${walletAddress.toLowerCase()}`;
+}
+
+function getStoredTransactions(walletAddress: string | undefined): Transaction[] {
   if (typeof window === "undefined") return [];
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey(walletAddress));
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 }
 
-function saveTransactions(transactions: Transaction[]) {
+function saveTransactions(transactions: Transaction[], walletAddress: string | undefined) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions.slice(0, MAX_TRANSACTIONS)));
+    localStorage.setItem(
+      getStorageKey(walletAddress),
+      JSON.stringify(transactions.slice(0, MAX_TRANSACTIONS))
+    );
   } catch {
     // Storage full or unavailable
   }
 }
 
 export function useTransactionHistory() {
+  const { address: walletAddress } = useAccount();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from localStorage when wallet address changes
   useEffect(() => {
-    setTransactions(getStoredTransactions());
+    setTransactions(getStoredTransactions(walletAddress));
     setIsLoaded(true);
-  }, []);
+  }, [walletAddress]);
 
   // Save to localStorage on change
   useEffect(() => {
     if (isLoaded) {
-      saveTransactions(transactions);
+      saveTransactions(transactions, walletAddress);
     }
-  }, [transactions, isLoaded]);
+  }, [transactions, isLoaded, walletAddress]);
 
   const addTransaction = useCallback((tx: Omit<Transaction, "id" | "timestamp">) => {
     const newTx: Transaction = {
