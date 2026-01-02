@@ -37,7 +37,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: "#627EEA",
     explorerName: "Etherscan",
     nativeCurrency: "ETH",
-    enabled: true,
+    enabled: false, // Coming soon
     popular: true,
   },
   {
@@ -48,7 +48,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: "#8247E5",
     explorerName: "Polygonscan",
     nativeCurrency: "MATIC",
-    enabled: true,
+    enabled: false, // Coming soon
     popular: true,
   },
   {
@@ -59,7 +59,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: "#28A0F0",
     explorerName: "Arbiscan",
     nativeCurrency: "ETH",
-    enabled: true,
+    enabled: false, // Coming soon
     popular: true,
   },
   {
@@ -70,7 +70,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: "#FF0420",
     explorerName: "Optimism Explorer",
     nativeCurrency: "ETH",
-    enabled: true,
+    enabled: false, // Coming soon
     popular: false,
   },
   {
@@ -81,7 +81,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: "#0052FF",
     explorerName: "Basescan",
     nativeCurrency: "ETH",
-    enabled: true,
+    enabled: false, // Coming soon
     popular: false,
   },
   {
