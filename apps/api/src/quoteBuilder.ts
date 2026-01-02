@@ -20,6 +20,7 @@ import type { RiskEngine } from '@swappilot/risk';
 import type { Metrics } from './obs/metrics';
 import type { QuoteCache } from './cache/quoteCache';
 import { ProviderHealthTracker } from './obs/providerHealth';
+import { getProviderConcurrencyLimiter, type ProviderConcurrencyLimiter } from './obs/providerConcurrency';
 import { assessOnchainSellability } from './risk/onchainSellability';
 import { assessTokenSecuritySellability } from './risk/tokenSecurity';
 
@@ -176,6 +177,8 @@ async function buildQuotesImpl(
         ? (async () => {
             const providerId = provider.providerId;
             const start = process.hrtime.bigint();
+            const concurrencyLimiter = getProviderConcurrencyLimiter();
+            const providerCategory = provider.category === 'dex' ? 'dex' : provider.category === 'wallet' ? 'wallet' : 'aggregator';
 
             try {
               if (quoteCache) {
@@ -208,62 +211,50 @@ async function buildQuotesImpl(
               metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'cache_miss' }).inc();
               providerHealth?.record({ providerId, status: 'cache_miss', durationMs: null });
 
-              // Small retry budget for transient provider/RPC outages.
-              const maxAttempts = 2;
-              let lastErr: unknown = null;
-              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                try {
-                  log.info({ providerId, attempt }, 'provider.quote.start');
-                  const quote = await providerAdapter.getQuote(parsed);
+              // Use concurrency limiter with built-in retry logic
+              const quote = await concurrencyLimiter.execute(
+                providerId,
+                providerCategory,
+                async () => {
+                  log.info({ providerId }, 'provider.quote.start');
+                  return providerAdapter.getQuote(parsed);
+                },
+              );
 
-                  const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
-                  const status = quote.isStub || quote.capabilities.quote === false ? 'stub' : 'success';
-                  metrics?.providerQuoteRequestsTotal.labels({ providerId, status }).inc();
-                  metrics?.providerQuoteDurationMs.labels({ providerId, status }).observe(durationMs);
-                  providerHealth?.record({ providerId, status, durationMs });
-                  log.info(
-                    {
-                      providerId,
-                      attempt,
-                      status,
-                      durationMs,
-                      buyAmount: quote.raw.buyAmount,
-                      quoteEnabled: quote.capabilities.quote,
-                      warnings: quote.warnings?.length ? quote.warnings : undefined,
-                    },
-                    'provider.quote.end',
-                  );
+              const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+              const status = quote.isStub || quote.capabilities.quote === false ? 'stub' : 'success';
+              metrics?.providerQuoteRequestsTotal.labels({ providerId, status }).inc();
+              metrics?.providerQuoteDurationMs.labels({ providerId, status }).observe(durationMs);
+              providerHealth?.record({ providerId, status, durationMs });
+              log.info(
+                {
+                  providerId,
+                  status,
+                  durationMs,
+                  buyAmount: quote.raw.buyAmount,
+                  quoteEnabled: quote.capabilities.quote,
+                  warnings: quote.warnings?.length ? quote.warnings : undefined,
+                },
+                'provider.quote.end',
+              );
 
-                  if (quoteCache && status === 'success') {
-                    await quoteCache.set(
-                      cacheKey,
-                      {
-                        providerId,
-                        cachedAt: new Date().toISOString(),
-                        raw: quote.raw,
-                        normalized: quote.normalized,
-                        capabilities: quote.capabilities,
-                        isStub: quote.isStub,
-                        warnings: quote.warnings,
-                      },
-                      quoteCacheTtlSeconds,
-                    );
-                  }
-
-                  return quote;
-                } catch (err) {
-                  lastErr = err;
-                  log.warn(
-                    { providerId, attempt, error: err instanceof Error ? err.message : String(err) },
-                    'provider.quote.error',
-                  );
-                  if (attempt < maxAttempts) {
-                    await new Promise((r) => setTimeout(r, 50 * attempt));
-                  }
-                }
+              if (quoteCache && status === 'success') {
+                await quoteCache.set(
+                  cacheKey,
+                  {
+                    providerId,
+                    cachedAt: new Date().toISOString(),
+                    raw: quote.raw,
+                    normalized: quote.normalized,
+                    capabilities: quote.capabilities,
+                    isStub: quote.isStub,
+                    warnings: quote.warnings,
+                  },
+                  quoteCacheTtlSeconds,
+                );
               }
 
-              throw lastErr;
+              return quote;
             } catch (err) {
               const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
               metrics?.providerQuoteRequestsTotal.labels({ providerId, status: 'failure' }).inc();

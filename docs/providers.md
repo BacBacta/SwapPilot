@@ -76,9 +76,28 @@ Recommended pattern for initial bring-up:
 - ✅ On-chain quoting for PancakeSwap V2 + V3, Uniswap V2, Uniswap V3
 - ✅ Pre-BEQ simulation with output mismatch detection
 - ✅ Dynamic reliability scoring via EWMA health tracking
+- ✅ Per-provider concurrency limits + retries via ProviderConcurrencyLimiter
+
+## Per-Provider Concurrency Limits
+
+Each provider has configurable limits based on upstream API characteristics:
+
+| Provider | Max Concurrency | Max Retries | Timeout (ms) |
+|----------|-----------------|-------------|--------------|
+| 0x | 3 | 2 | 4000 |
+| 1inch | 3 | 2 | 5000 |
+| Odos | 5 | 2 | 4000 |
+| KyberSwap | 5 | 2 | 4000 |
+| ParaSwap | 5 | 2 | 4000 |
+| OpenOcean | 5 | 2 | 4000 |
+| OKX DEX | 3 | 2 | 5000 |
+| PancakeSwap | 3 | 2 | 3000 |
+| Uniswap V2/V3 | 3 | 2 | 3000 |
+
+Implementation: `apps/api/src/obs/providerConcurrency.ts`
 
 ## TODOs
-- Add per-provider concurrency limits + retries based on upstream characteristics.
+- (No remaining TODOs)
 
 ## Rate limiting strategy
 - API layer: IP-based rate limiting.
