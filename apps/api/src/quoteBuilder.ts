@@ -313,7 +313,7 @@ async function buildQuotesImpl(
 
       const preflightFallback: PreflightResult = {
         ok: true,
-        pRevert: 0.5,
+        pRevert: 0.2, // Low default when we can't verify; don't assume bad
         confidence: 0,
         reasons: ['no_txRequest_available'],
       };
@@ -368,21 +368,35 @@ async function buildQuotesImpl(
           })
         : null;
 
+      // Merge sellability signals intelligently:
+      // - Onchain OK/FAIL with high confidence takes priority (real data)
+      // - Adapter signals are used as fallback
+      // - Risk engine classification provides context
       const mergedSignals = onchainSellability
         ? {
             ...riskSignals,
-            sellability:
-              onchainSellability.status === 'FAIL'
-                ? {
-                    status: 'FAIL' as const,
-                    confidence: Math.max(riskSignals.sellability.confidence, onchainSellability.confidence),
-                    reasons: [...riskSignals.sellability.reasons, ...onchainSellability.reasons],
-                  }
-                : {
-                    status: riskSignals.sellability.status,
-                    confidence: Math.max(riskSignals.sellability.confidence, onchainSellability.confidence),
-                    reasons: [...riskSignals.sellability.reasons, ...onchainSellability.reasons],
-                  },
+            sellability: (() => {
+              const reasons = [...riskSignals.sellability.reasons, ...onchainSellability.reasons];
+              const maxConfidence = Math.max(riskSignals.sellability.confidence, onchainSellability.confidence);
+
+              // Onchain FAIL with good confidence = definitive FAIL
+              if (onchainSellability.status === 'FAIL' && onchainSellability.confidence >= 0.8) {
+                return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
+              // Onchain OK with good confidence = trust it (real liquidity detected)
+              if (onchainSellability.status === 'OK' && onchainSellability.confidence >= 0.7) {
+                return { status: 'OK' as const, confidence: maxConfidence, reasons };
+              }
+
+              // Adapter says OK and onchain doesn't contradict = OK
+              if (item.baseSignals.sellability.status === 'OK' && onchainSellability.status !== 'FAIL') {
+                return { status: 'OK' as const, confidence: maxConfidence, reasons };
+              }
+
+              // Otherwise, use risk engine assessment
+              return { status: riskSignals.sellability.status, confidence: maxConfidence, reasons };
+            })(),
           }
         : riskSignals;
 
