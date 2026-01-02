@@ -165,9 +165,9 @@ function ReferralLinkBox({ referralCode }: { referralCode: string }) {
 
   return (
     <div className="rounded-2xl border border-sp-border bg-sp-surface p-6">
-      <h3 className="text-body font-semibold text-sp-text">Votre lien de parrainage</h3>
+      <h3 className="text-body font-semibold text-sp-text">Your referral link</h3>
       <p className="mt-1 text-caption text-sp-muted">
-        Partagez ce lien et gagnez 5% des frais de chaque swap effectué par vos filleuls
+        Share this link and earn 5% of fees from every swap your referrals make
       </p>
 
       <div className="mt-4 flex items-center gap-2">
@@ -186,12 +186,12 @@ function ReferralLinkBox({ referralCode }: { referralCode: string }) {
           {copied ? (
             <>
               <CheckIcon className="h-5 w-5" />
-              Copié!
+              Copied!
             </>
           ) : (
             <>
               <CopyIcon className="h-5 w-5" />
-              Copier
+              Copy
             </>
           )}
         </button>
@@ -292,7 +292,7 @@ function TierProgress({ stats }: { stats: ReferralStats }) {
               {stats.totalReferrals} / {nextTier[1].minReferrals} referrals
             </span>
             <span className="font-medium text-sp-accent">
-              Prochain: {nextTier[0].charAt(0).toUpperCase() + nextTier[0].slice(1)} ({nextTier[1].commission}%)
+              Next: {nextTier[0].charAt(0).toUpperCase() + nextTier[0].slice(1)} ({nextTier[1].commission}%)
             </span>
           </div>
           <div className="mt-2 h-3 overflow-hidden rounded-full bg-sp-surface3">
@@ -302,7 +302,7 @@ function TierProgress({ stats }: { stats: ReferralStats }) {
             />
           </div>
           <div className="mt-2 text-caption text-sp-muted">
-            Plus que {nextTier[1].minReferrals - stats.totalReferrals} referrals pour débloquer {nextTier[1].commission}% de commission!
+            {nextTier[1].minReferrals - stats.totalReferrals} more referrals to unlock {nextTier[1].commission}% commission!
           </div>
         </div>
       )}
@@ -310,8 +310,8 @@ function TierProgress({ stats }: { stats: ReferralStats }) {
       {!nextTier && (
         <div className="mt-6 rounded-xl bg-sp-accent/10 p-4 text-center">
           <div className="text-2xl">🏆</div>
-          <div className="mt-2 font-semibold text-sp-accent">Niveau maximum atteint!</div>
-          <div className="text-caption text-sp-muted">Vous gagnez {currentTier.commission}% sur tous les swaps de vos filleuls</div>
+          <div className="mt-2 font-semibold text-sp-accent">Maximum tier reached!</div>
+          <div className="text-caption text-sp-muted">You earn {currentTier.commission}% on all swaps from your referrals</div>
         </div>
       )}
     </div>
@@ -323,9 +323,9 @@ function ReferralsList({ referrals }: { referrals: ReferralUser[] }) {
     return (
       <div className="rounded-2xl border border-sp-border bg-sp-surface p-8 text-center">
         <div className="text-4xl">👥</div>
-        <h3 className="mt-4 text-body font-semibold text-sp-text">Aucun filleul pour le moment</h3>
+        <h3 className="mt-4 text-body font-semibold text-sp-text">No referrals yet</h3>
         <p className="mt-2 text-caption text-sp-muted">
-          Partagez votre lien de parrainage pour commencer à gagner des récompenses!
+          Share your referral link to start earning rewards!
         </p>
       </div>
     );
@@ -334,7 +334,7 @@ function ReferralsList({ referrals }: { referrals: ReferralUser[] }) {
   return (
     <div className="rounded-2xl border border-sp-border bg-sp-surface overflow-hidden">
       <div className="border-b border-sp-border px-6 py-4">
-        <h3 className="text-body font-semibold text-sp-text">Vos filleuls</h3>
+        <h3 className="text-body font-semibold text-sp-text">Your referrals</h3>
       </div>
       <div className="divide-y divide-sp-border">
         {referrals.map((referral, index) => (
@@ -346,7 +346,7 @@ function ReferralsList({ referrals }: { referrals: ReferralUser[] }) {
               <div>
                 <div className="font-mono text-sm text-sp-text">{referral.address}</div>
                 <div className="text-caption text-sp-muted">
-                  Rejoint le {referral.joinedAt.toLocaleDateString("fr-FR")}
+                  Joined {referral.joinedAt.toLocaleDateString("en-US")}
                 </div>
               </div>
             </div>
@@ -360,7 +360,7 @@ function ReferralsList({ referrals }: { referrals: ReferralUser[] }) {
                 ? "bg-sp-ok/10 text-sp-ok" 
                 : "bg-sp-muted/10 text-sp-muted"
             )}>
-              {referral.status === "active" ? "Actif" : "Inactif"}
+              {referral.status === "active" ? "Active" : "Inactive"}
             </div>
           </div>
         ))}
@@ -399,7 +399,7 @@ function ClaimRewardsCard() {
     <div className="rounded-2xl border border-sp-accent/30 bg-gradient-to-br from-sp-accent/10 to-sp-accent/5 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-body font-semibold text-sp-text">Récompenses à réclamer</h3>
+          <h3 className="text-body font-semibold text-sp-text">Rewards to claim</h3>
           <div className="mt-2 text-h1 font-bold text-sp-accent">
             {parseFloat(pendingRewardsFormatted).toFixed(4)} BNB
           </div>
@@ -408,7 +408,7 @@ function ClaimRewardsCard() {
           </div>
           {parseFloat(totalClaimedFormatted) > 0 && (
             <div className="mt-2 text-caption text-sp-ok">
-              Total réclamé: {parseFloat(totalClaimedFormatted).toFixed(4)} BNB
+              Total claimed: {parseFloat(totalClaimedFormatted).toFixed(4)} BNB
             </div>
           )}
         </div>
@@ -445,10 +445,10 @@ function ClaimRewardsCard() {
       {error && (
         <div className="mt-4 rounded-xl bg-sp-error/10 border border-sp-error/30 p-3 text-caption text-sp-error">
           {error.message.includes("Amount below minimum") 
-            ? "Montant inférieur au minimum requis (0.001 BNB)"
+            ? "Amount below minimum required (0.001 BNB)"
             : error.message.includes("user rejected")
-            ? "Transaction annulée"
-            : `Erreur: ${error.message}`
+            ? "Transaction cancelled"
+            : `Error: ${error.message}`
           }
         </div>
       )}
@@ -456,14 +456,14 @@ function ClaimRewardsCard() {
       {/* Success message with tx hash */}
       {isClaimSuccess && claimHash && (
         <div className="mt-4 rounded-xl bg-sp-ok/10 border border-sp-ok/30 p-3">
-          <div className="text-caption text-sp-ok font-medium">Récompenses réclamées avec succès!</div>
+          <div className="text-caption text-sp-ok font-medium">Rewards claimed successfully!</div>
           <a
             href={`https://bscscan.com/tx/${claimHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-1 text-micro text-sp-accent hover:underline"
           >
-            Voir la transaction ↗
+            View transaction ↗
           </a>
         </div>
       )}
@@ -478,7 +478,7 @@ export function ReferralsPanel() {
   return (
     <div className="rounded-2xl border border-sp-border bg-sp-surface p-12 text-center">
       <div className="text-6xl mb-6">🎁</div>
-      <h2 className="text-h1 font-bold text-sp-text">Programme de Parrainage</h2>
+      <h2 className="text-h1 font-bold text-sp-text">Referral Program</h2>
       <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-sp-accent/10 px-4 py-2 text-sp-accent font-semibold">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sp-accent opacity-75"></span>
@@ -487,8 +487,8 @@ export function ReferralsPanel() {
         Coming Soon
       </div>
       <p className="mt-6 text-body text-sp-muted max-w-lg mx-auto">
-        Bientôt, vous pourrez parrainer vos amis et gagner 5% des frais de chaque swap effectué par vos filleuls.
-        Restez à l&apos;écoute !
+        Soon, you&apos;ll be able to refer your friends and earn 5% of the fees from every swap they make.
+        Stay tuned!
       </p>
       <div className="mt-8 grid gap-4 sm:grid-cols-3 max-w-2xl mx-auto">
         <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
@@ -497,11 +497,11 @@ export function ReferralsPanel() {
         </div>
         <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
           <div className="text-h2 font-bold text-sp-text">∞</div>
-          <div className="text-caption text-sp-muted">Filleuls illimités</div>
+          <div className="text-caption text-sp-muted">Unlimited referrals</div>
         </div>
         <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
           <div className="text-h2 font-bold text-sp-text">BNB</div>
-          <div className="text-caption text-sp-muted">Paiements en BNB</div>
+          <div className="text-caption text-sp-muted">Paid in BNB</div>
         </div>
       </div>
     </div>
@@ -525,9 +525,9 @@ function ReferralsPanelContent() {
     return (
       <div className="rounded-2xl border border-sp-border bg-sp-surface p-12 text-center">
         <div className="text-5xl">🔗</div>
-        <h2 className="mt-4 text-h2 font-bold text-sp-text">Connectez votre wallet</h2>
+        <h2 className="mt-4 text-h2 font-bold text-sp-text">Connect your wallet</h2>
         <p className="mt-2 text-body text-sp-muted max-w-md mx-auto">
-          Connectez votre wallet pour accéder à votre programme de parrainage et commencer à gagner des récompenses
+          Connect your wallet to access the referral program and start earning rewards
         </p>
       </div>
     );
@@ -540,11 +540,11 @@ function ReferralsPanelContent() {
         <StatCard
           label="Total Referrals"
           value={stats.totalReferrals.toString()}
-          subValue={`${stats.activeReferrals} actifs`}
+          subValue={`${stats.activeReferrals} active`}
           icon={<UsersIcon className="h-5 w-5" />}
         />
         <StatCard
-          label="Total Gagné"
+          label="Total Earned"
           value={`${stats.totalEarnings} BNB`}
           subValue={`≈ $${(parseFloat(stats.totalEarnings) * 700).toFixed(2)}`}
           icon={<CoinIcon className="h-5 w-5" />}
@@ -557,9 +557,9 @@ function ReferralsPanelContent() {
           icon={<PercentIcon className="h-5 w-5" />}
         />
         <StatCard
-          label="En attente"
+          label="Pending"
           value={`${stats.pendingRewards} BNB`}
-          subValue="À réclamer"
+          subValue="To claim"
           icon={<ClockIcon className="h-5 w-5" />}
         />
       </div>
@@ -578,27 +578,27 @@ function ReferralsPanelContent() {
 
       {/* How it works */}
       <div className="rounded-2xl border border-sp-border bg-sp-surface p-6">
-        <h3 className="text-body font-semibold text-sp-text">Comment ça marche?</h3>
+        <h3 className="text-body font-semibold text-sp-text">How it works</h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl bg-sp-surface2 p-4">
             <div className="text-2xl">1️⃣</div>
-            <h4 className="mt-2 font-semibold text-sp-text">Partagez votre lien</h4>
+            <h4 className="mt-2 font-semibold text-sp-text">Share your link</h4>
             <p className="mt-1 text-caption text-sp-muted">
-              Copiez et partagez votre lien unique avec vos amis et votre communauté
+              Copy and share your unique link with friends and your community
             </p>
           </div>
           <div className="rounded-xl bg-sp-surface2 p-4">
             <div className="text-2xl">2️⃣</div>
-            <h4 className="mt-2 font-semibold text-sp-text">Ils font des swaps</h4>
+            <h4 className="mt-2 font-semibold text-sp-text">They swap</h4>
             <p className="mt-1 text-caption text-sp-muted">
-              Chaque fois qu&apos;un filleul effectue un swap, vous gagnez une commission
+              Every time a referral makes a swap, you earn a commission
             </p>
           </div>
           <div className="rounded-xl bg-sp-surface2 p-4">
             <div className="text-2xl">3️⃣</div>
-            <h4 className="mt-2 font-semibold text-sp-text">Réclamez vos gains</h4>
+            <h4 className="mt-2 font-semibold text-sp-text">Claim your earnings</h4>
             <p className="mt-1 text-caption text-sp-muted">
-              Réclamez vos récompenses en BNB directement sur votre wallet
+              Claim your BNB rewards directly to your wallet
             </p>
           </div>
         </div>

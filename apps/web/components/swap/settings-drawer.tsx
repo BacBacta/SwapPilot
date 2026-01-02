@@ -98,7 +98,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
           <div className="flex items-center gap-2">
             <span className="text-body font-medium text-sp-lightText">⚡ Auto-Slippage</span>
             <span className="text-caption text-sp-lightMuted">
-              Ajusté selon le risque
+              Adjusted based on risk
             </span>
           </div>
           <Toggle
@@ -110,7 +110,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
         {/* Manual slippage controls */}
         <div className={settings.autoSlippage ? "mt-4 opacity-50 pointer-events-none" : "mt-4"}>
           <div className="text-caption text-sp-lightMuted mb-2">
-            {settings.autoSlippage ? "Slippage minimum (fallback)" : "Slippage manuel"}
+            {settings.autoSlippage ? "Minimum slippage (fallback)" : "Manual slippage"}
           </div>
           <PresetButtons
             options={[
