@@ -227,6 +227,19 @@ describe('Option 1 API', () => {
         } as unknown as Response;
       }
 
+      if (url.startsWith('https://api.honeypot.is/v2/IsHoneypot')) {
+        return {
+          ok: true,
+          async json() {
+            return {
+              simulationSuccess: true,
+              honeypotResult: { isHoneypot: true },
+              simulationResult: { buyTax: 0, sellTax: 0, transferTax: 0 },
+            };
+          },
+        } as unknown as Response;
+      }
+
       throw new Error(`unexpected_fetch:${url}`);
     };
 
@@ -256,9 +269,13 @@ describe('Option 1 API', () => {
         sellability: { multicall3Address: '0xcA11bde05977b3631167028862bE2a173976CA11', baseTokensBsc: [] },
         tokenSecurity: {
           enabled: true,
+          goPlusEnabled: true,
           goPlusBaseUrl: 'https://api.gopluslabs.io',
+          honeypotIsEnabled: true,
+          honeypotIsBaseUrl: 'https://api.honeypot.is',
           timeoutMs: 800,
           cacheTtlMs: 60_000,
+          taxStrictMaxPercent: 5,
         },
       },
       preflightClient: {
@@ -286,5 +303,6 @@ describe('Option 1 API', () => {
 
     const failing = (json.rankedQuotes as any[]).find((q) => q.signals?.sellability?.status === 'FAIL');
     expect(failing.signals.sellability.reasons.join(' ')).toContain('token_security:goplus:is_honeypot');
+    expect(failing.signals.sellability.reasons.join(' ')).toContain('token_security:honeypotis:is_honeypot');
   });
 });

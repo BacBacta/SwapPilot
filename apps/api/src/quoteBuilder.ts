@@ -58,9 +58,13 @@ export function buildQuotes(
     };
     tokenSecurity?: {
       enabled: boolean;
+      goPlusEnabled: boolean;
       goPlusBaseUrl: string;
+      honeypotIsEnabled: boolean;
+      honeypotIsBaseUrl: string;
       timeoutMs: number;
       cacheTtlMs: number;
+      taxStrictMaxPercent: number;
     };
   },
 ): Promise<{
@@ -94,9 +98,13 @@ async function buildQuotesImpl(
     };
     tokenSecurity?: {
       enabled: boolean;
+      goPlusEnabled: boolean;
       goPlusBaseUrl: string;
+      honeypotIsEnabled: boolean;
+      honeypotIsBaseUrl: string;
       timeoutMs: number;
       cacheTtlMs: number;
+      taxStrictMaxPercent: number;
     };
   },
 ): Promise<{
@@ -386,19 +394,26 @@ async function buildQuotesImpl(
         ? await assessTokenSecuritySellability({
             chainId: parsed.chainId,
             token: parsed.buyToken,
+            mode: parsed.mode ?? 'NORMAL',
             config: {
               enabled: tokenSecurity.enabled,
+              goPlusEnabled: tokenSecurity.goPlusEnabled,
               goPlusBaseUrl: tokenSecurity.goPlusBaseUrl,
+              honeypotIsEnabled: tokenSecurity.honeypotIsEnabled,
+              honeypotIsBaseUrl: tokenSecurity.honeypotIsBaseUrl,
               timeoutMs: tokenSecurity.timeoutMs,
               cacheTtlMs: tokenSecurity.cacheTtlMs,
+              taxStrictMaxPercent: tokenSecurity.taxStrictMaxPercent,
             },
           })
         : null;
 
       // Merge sellability signals intelligently:
-      // - Onchain OK/FAIL with high confidence takes priority (real data)
+      // - Token security FAIL or UNCERTAIN (SAFE mode) takes priority for honeypot/tax protection
+      // - Onchain OK/FAIL with high confidence is authoritative for liquidity
       // - Adapter signals are used as fallback
       // - Risk engine classification provides context
+      const mode = parsed.mode ?? 'NORMAL';
       const mergedSignals = onchainSellability
         ? {
             ...riskSignals,
@@ -414,14 +429,30 @@ async function buildQuotesImpl(
                 tokenSecuritySellability?.confidence ?? 0,
               );
 
-              // Token security FAIL should override everything (honeypot/cannot-sell).
+              // Token security FAIL should override everything (honeypot/cannot-sell/tax).
               if (tokenSecuritySellability?.status === 'FAIL' && tokenSecuritySellability.confidence >= 0.8) {
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
+              // SAFE mode: token security UNCERTAIN also blocks OK (fail-closed policy).
+              if (mode === 'SAFE' && tokenSecuritySellability?.status === 'UNCERTAIN') {
+                return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons };
               }
 
               // Onchain FAIL with good confidence = definitive FAIL
               if (onchainSellability.status === 'FAIL' && onchainSellability.confidence >= 0.8) {
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
+              // SAFE mode: require token security OK for full OK (multi-oracle + tax check)
+              if (mode === 'SAFE') {
+                if (tokenSecuritySellability?.status === 'OK' && onchainSellability.status === 'OK') {
+                  return { status: 'OK' as const, confidence: maxConfidence, reasons };
+                }
+                // If on-chain OK but token security not OK or missing, UNCERTAIN
+                if (onchainSellability.status === 'OK') {
+                  return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons: [...reasons, 'safe_mode:missing_oracle_ok'] };
+                }
               }
 
               // Onchain OK with good confidence = trust it (real liquidity detected)

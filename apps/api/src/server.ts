@@ -361,9 +361,13 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       const tokenSecurityDeps = config.tokenSecurity
         ? {
             enabled: config.tokenSecurity.enabled,
+            goPlusEnabled: config.tokenSecurity.goPlusEnabled,
             goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
+            honeypotIsEnabled: config.tokenSecurity.honeypotIsEnabled,
+            honeypotIsBaseUrl: config.tokenSecurity.honeypotIsBaseUrl,
             timeoutMs: config.tokenSecurity.timeoutMs,
             cacheTtlMs: config.tokenSecurity.cacheTtlMs,
+            taxStrictMaxPercent: config.tokenSecurity.taxStrictMaxPercent,
           }
         : undefined;
 

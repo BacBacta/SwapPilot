@@ -88,8 +88,12 @@ export const EnvSchema = z.object({
   // Token security (BSC) - external best-effort checks (e.g., GoPlus)
   TOKEN_SECURITY_GOPLUS_ENABLED: z.coerce.boolean().default(true),
   TOKEN_SECURITY_GOPLUS_BASE_URL: z.string().default('https://api.gopluslabs.io'),
+  TOKEN_SECURITY_HONEYPOTIS_ENABLED: z.coerce.boolean().default(true),
+  TOKEN_SECURITY_HONEYPOTIS_BASE_URL: z.string().default('https://api.honeypot.is'),
   TOKEN_SECURITY_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(800),
   TOKEN_SECURITY_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(15 * 60 * 1000),
+  // Ultra-secure (SAFE) strict max tax percent (buy/sell/transfer) before failing.
+  TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT: z.coerce.number().min(0).max(100).default(5),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -137,9 +141,13 @@ export type AppConfig = {
   };
   tokenSecurity: {
     enabled: boolean;
+    goPlusEnabled: boolean;
     goPlusBaseUrl: string;
+    honeypotIsEnabled: boolean;
+    honeypotIsBaseUrl: string;
     timeoutMs: number;
     cacheTtlMs: number;
+    taxStrictMaxPercent: number;
   };
 };
 
@@ -198,10 +206,17 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       baseTokensBsc: splitCsv(env.SELLABILITY_BASE_TOKENS_BSC),
     },
     tokenSecurity: {
-      enabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_GOPLUS_ENABLED,
+      enabled:
+        env.NODE_ENV === 'test'
+          ? false
+          : Boolean(env.TOKEN_SECURITY_GOPLUS_ENABLED || env.TOKEN_SECURITY_HONEYPOTIS_ENABLED),
+      goPlusEnabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_GOPLUS_ENABLED,
       goPlusBaseUrl: env.TOKEN_SECURITY_GOPLUS_BASE_URL.trim(),
+      honeypotIsEnabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_HONEYPOTIS_ENABLED,
+      honeypotIsBaseUrl: env.TOKEN_SECURITY_HONEYPOTIS_BASE_URL.trim(),
       timeoutMs: env.TOKEN_SECURITY_TIMEOUT_MS,
       cacheTtlMs: env.TOKEN_SECURITY_CACHE_TTL_MS,
+      taxStrictMaxPercent: env.TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT,
     },
   };
 }
