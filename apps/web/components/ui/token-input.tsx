@@ -7,6 +7,7 @@ import { TokenImage, TOKEN_ICONS } from "@/components/ui/token-image";
 interface TokenInputProps {
   label: "From" | "To" | string;
   token?: string;
+  tokenLogoURI?: string | undefined;
   balance?: string | undefined;
   value?: string;
   usdValue?: string;
@@ -22,6 +23,7 @@ interface TokenInputProps {
 export function TokenInput({
   label,
   token = "ETH",
+  tokenLogoURI,
   balance,
   value = "",
   usdValue,
@@ -74,7 +76,7 @@ export function TokenInput({
           onClick={onTokenClick}
           className="flex items-center gap-3 rounded-2xl border border-sp-border bg-sp-surface3/80 px-4 py-3 min-h-[56px] transition-all duration-200 hover:border-sp-borderHover hover:bg-sp-surface3 hover:scale-[1.02] active:scale-[0.98]"
         >
-          <TokenImage symbol={token} size="lg" />
+          <TokenImage symbol={token} src={tokenLogoURI} size="lg" />
           <span className="text-h2 font-bold text-sp-text">{token}</span>
           <ChevronDown className="h-5 w-5 text-sp-muted ml-1" />
         </button>

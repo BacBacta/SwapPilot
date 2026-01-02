@@ -759,6 +759,7 @@ export function SwapInterface() {
               <TokenInput
                 label="From"
                 token={fromTokenInfo?.symbol ?? fromToken}
+                tokenLogoURI={fromTokenInfo?.logoURI}
                 balance={isConnected && fromTokenInfo ? getBalanceFormatted(fromTokenInfo) : undefined}
                 value={fromAmount}
                 usdValue={fromUsdValue > 0 ? `≈ $${fromUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ""}
@@ -811,6 +812,7 @@ export function SwapInterface() {
               <TokenInput
                 label="To"
                 token={toTokenInfo?.symbol ?? toToken}
+                tokenLogoURI={toTokenInfo?.logoURI}
                 balance={isConnected && toTokenInfo ? getBalanceFormatted(toTokenInfo) : undefined}
                 value={loading ? "" : topQuote ? formatQuoteOutput(topQuote, toTokenInfo?.decimals ?? 18) : "—"}
                 usdValue={loading ? "" : topQuote ? formatQuoteUsd(topQuote, toTokenInfo?.decimals ?? 18, getPrice(toTokenInfo?.symbol ?? "") ?? undefined) : ""}
