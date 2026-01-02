@@ -517,6 +517,8 @@ async function buildQuotesImpl(
     quotes: resolvedQuotes,
     assumptions,
     ...(parsed.scoringOptions ? { scoringOptions: parsed.scoringOptions } : {}),
+    buyTokenPriceUsd: parsed.buyTokenPriceUsd ?? null,
+    buyTokenDecimals: parsed.buyTokenDecimals ?? 18,
   });
 
   const bestRawOutputProviderId =

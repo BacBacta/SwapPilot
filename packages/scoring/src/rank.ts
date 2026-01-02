@@ -20,6 +20,10 @@ export function rankQuotes(input: {
   quotes: RankedQuote[];
   assumptions: NormalizationAssumptions;
   scoringOptions?: ScoringOptions;
+  /** Buy token price in USD for gas cost normalization */
+  buyTokenPriceUsd?: number | null;
+  /** Buy token decimals */
+  buyTokenDecimals?: number;
 }): RankResult {
   // Find the maximum buyAmount for relative scoring
   const maxBuyAmount = input.quotes.reduce((max, q) => {
@@ -44,6 +48,9 @@ export function rankQuotes(input: {
       signals: q.signals,
       mode: input.mode,
       scoringOptions: input.scoringOptions,
+      estimatedGasUsd: q.normalized.estimatedGasUsd,
+      buyTokenPriceUsd: input.buyTokenPriceUsd,
+      buyTokenDecimals: input.buyTokenDecimals ?? 18,
     });
 
     scoreDetails.set(q.providerId, score);

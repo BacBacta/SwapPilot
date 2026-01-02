@@ -8,7 +8,8 @@
  * BEQ Score = OutputScore × QualityMultiplier × RiskMultiplier
  * 
  * Where:
- * - OutputScore (0-100): How much output this quote provides relative to the best quote
+ * - OutputScore (0-100): How much NET output this quote provides relative to the best quote
+ *   - Net output = buyAmount - fees - gas cost (in token terms)
  * - QualityMultiplier (0-1): Integration reliability + sellability confidence
  * - RiskMultiplier (0-1): Risk-adjusted factor based on revert/MEV/churn signals
  * 
@@ -35,6 +36,12 @@ export type BeqV2Input = {
   signals: RiskSignals;
   mode: QuoteMode;
   scoringOptions?: ScoringOptions | undefined;
+  /** Estimated gas cost in USD (from adapter/API) */
+  estimatedGasUsd?: string | null | undefined;
+  /** Buy token price in USD (for converting gas cost to token terms) */
+  buyTokenPriceUsd?: number | null | undefined;
+  /** Buy token decimals (for gas cost conversion) */
+  buyTokenDecimals?: number | undefined;
 };
 
 export type BeqV2Components = {
@@ -73,6 +80,8 @@ export type BeqV2Output = {
     feeBps: number | null;
     integrationConfidence: number;
     netBuyAmount: string;
+    gasCostInTokens: string | null;
+    estimatedGasUsd: string | null;
   };
 };
 
@@ -85,12 +94,54 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Calculate net output after fees
+ * Convert gas cost in USD to equivalent tokens
+ * Returns the gas cost as a bigint in token units
  */
-function calculateNetOutput(buyAmount: bigint, feeBps: number | null): bigint {
-  if (!feeBps || feeBps <= 0) return buyAmount;
-  const feeMultiplier = 10_000n - BigInt(Math.min(feeBps, 10_000));
-  return (buyAmount * feeMultiplier) / 10_000n;
+function calculateGasCostInTokens(
+  estimatedGasUsd: string | null | undefined,
+  buyTokenPriceUsd: number | null | undefined,
+  buyTokenDecimals: number = 18
+): bigint {
+  if (!estimatedGasUsd || !buyTokenPriceUsd || buyTokenPriceUsd <= 0) {
+    return 0n;
+  }
+
+  const gasUsd = parseFloat(estimatedGasUsd);
+  if (isNaN(gasUsd) || gasUsd <= 0) {
+    return 0n;
+  }
+
+  // Convert USD gas cost to token amount
+  // gasCostInTokens = gasUsd / tokenPriceUsd
+  const gasInTokens = gasUsd / buyTokenPriceUsd;
+  
+  // Convert to bigint with proper decimals
+  const multiplier = 10 ** buyTokenDecimals;
+  return BigInt(Math.floor(gasInTokens * multiplier));
+}
+
+/**
+ * Calculate net output after fees and gas costs
+ */
+function calculateNetOutput(
+  buyAmount: bigint, 
+  feeBps: number | null,
+  gasCostInTokens: bigint = 0n
+): bigint {
+  let netAmount = buyAmount;
+  
+  // Apply fee deduction
+  if (feeBps && feeBps > 0) {
+    const feeMultiplier = 10_000n - BigInt(Math.min(feeBps, 10_000));
+    netAmount = (netAmount * feeMultiplier) / 10_000n;
+  }
+  
+  // Subtract gas cost (but don't go negative)
+  if (gasCostInTokens > 0n) {
+    netAmount = netAmount > gasCostInTokens ? netAmount - gasCostInTokens : 0n;
+  }
+  
+  return netAmount;
 }
 
 /**
@@ -265,18 +316,35 @@ function calculatePreflightFactor(
  * 
  * Where:
  * - OutputScore = (netBuyAmount / maxBuyAmount) × 100
+ *   - netBuyAmount = buyAmount - fees - gasCost (in token terms)
  * - QualityMultiplier = reliabilityFactor × sellabilityFactor
  * - RiskMultiplier = riskFactor × preflightFactor
  */
 export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
   const explanation: string[] = [];
 
-  // 1. Calculate net output after fees
-  const netBuyAmount = calculateNetOutput(input.buyAmount, input.feeBps);
+  // 1. Calculate gas cost in tokens
+  const gasCostInTokens = calculateGasCostInTokens(
+    input.estimatedGasUsd,
+    input.buyTokenPriceUsd,
+    input.buyTokenDecimals ?? 18
+  );
+
+  // 2. Calculate net output after fees and gas
+  const netBuyAmount = calculateNetOutput(input.buyAmount, input.feeBps, gasCostInTokens);
   
-  // 2. Calculate output score (0-100)
+  // 3. Calculate output score (0-100)
   const outputScore = calculateOutputScore(netBuyAmount, input.maxBuyAmount);
-  explanation.push(`Output: ${outputScore.toFixed(1)}% of best quote`);
+  
+  // Build explanation for output
+  if (gasCostInTokens > 0n) {
+    const gasPercent = input.buyAmount > 0n 
+      ? Number((gasCostInTokens * 10000n) / input.buyAmount) / 100 
+      : 0;
+    explanation.push(`Output: ${outputScore.toFixed(1)}% of best (gas: $${input.estimatedGasUsd}, ${gasPercent.toFixed(2)}% of output)`);
+  } else {
+    explanation.push(`Output: ${outputScore.toFixed(1)}% of best quote`);
+  }
 
   // 3. Calculate reliability factor
   const reliabilityFactor = clamp(input.integrationConfidence, 0, 1);
@@ -341,6 +409,8 @@ export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
       feeBps: input.feeBps,
       integrationConfidence: input.integrationConfidence,
       netBuyAmount: netBuyAmount.toString(),
+      gasCostInTokens: gasCostInTokens > 0n ? gasCostInTokens.toString() : null,
+      estimatedGasUsd: input.estimatedGasUsd ?? null,
     },
   };
 
