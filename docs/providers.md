@@ -73,13 +73,12 @@ Recommended pattern for initial bring-up:
 
 ## Completed
 - ✅ Real quote adapters implemented (0x, Odos, 1inch, KyberSwap, OpenOcean, ParaSwap, OKX DEX)
-- ✅ On-chain quoting for PancakeSwap V2, Uniswap V2, Uniswap V3
+- ✅ On-chain quoting for PancakeSwap V2 + V3, Uniswap V2, Uniswap V3
 - ✅ Pre-BEQ simulation with output mismatch detection
 - ✅ Dynamic reliability scoring via EWMA health tracking
 
 ## TODOs
 - Add per-provider concurrency limits + retries based on upstream characteristics.
-- Add PancakeSwap V3 quoter support.
 
 ## Rate limiting strategy
 - API layer: IP-based rate limiting.

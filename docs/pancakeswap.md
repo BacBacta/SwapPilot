@@ -32,16 +32,17 @@ Notes / limitations (current implementation):
   - `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE`
 - If config is missing/invalid or RPC reverts/errors, SwapPilot falls back to deep-link only for PancakeSwap.
 
-### v3 quoting (Quoter) ⏳ TODO
-v3 quoting is not implemented yet. The Uniswap V3 adapter pattern can be reused.
+### v3 quoting (Quoter) ✅ IMPLEMENTED
+The adapter calls `eth_call` on the Quoter function `quoteExactInputSingle` (no transactions) and tries all fee tiers (0.01%, 0.05%, 0.25%, 1%) to find the best output.
 
-Config placeholder (env):
-- `PANCAKESWAP_V3_QUOTER`: Quoter contract address (currently unused)
+Config (env):
+- `PANCAKESWAP_V3_QUOTER`: Quoter contract address (default for BSC: `0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997`)
 
-Implementation notes:
-- Use `quoteExactInputSingle` like Uniswap V3 adapter
-- Try multiple fee tiers (500, 2500, 10000 bps)
-- BSC Quoter address: `0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997`
+Implementation details:
+- Tries all 4 fee tiers in parallel, picks best output
+- Returns gas estimate from quoter
+- Falls back to V2 if no V3 liquidity found
+- V3 + V2 comparison: always uses whichever gives better output
 
 ## Deep-link
 Goal: send the user to PancakeSwap swap page with tokens + amount prefilled.
@@ -85,11 +86,12 @@ Notes:
 
 ## Completed
 - ✅ On-chain quoting for V2 via `getAmountsOut`
+- ✅ On-chain quoting for V3 via `quoteExactInputSingle` (multi-fee tier)
 - ✅ RPC allowlist configuration via `BSC_RPC_URLS`
 - ✅ Pre-BEQ simulation with output verification
+- ✅ V3 + V2 fallback: always picks best quote
 
 ## TODOs
-- Implement on-chain quoting for V3 (quoter) with multi-fee tier support.
 - Normalize gas/fees and integrate into BEQ scoring.
 
 ## RPC considerations
