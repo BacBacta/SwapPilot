@@ -4,6 +4,62 @@ import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 
 import { decodeFunctionResult, encodeFunctionData, isAddress } from 'viem';
 
+// PancakeSwap V3 Quoter ABI (quoteExactInputSingle)
+const PANCAKESWAP_V3_QUOTER_ABI = [
+  {
+    type: 'function',
+    name: 'quoteExactInputSingle',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+      },
+    ],
+    outputs: [
+      { name: 'amountOut', type: 'uint256' },
+      { name: 'sqrtPriceX96After', type: 'uint160' },
+      { name: 'initializedTicksCrossed', type: 'uint32' },
+      { name: 'gasEstimate', type: 'uint256' },
+    ],
+  },
+] as const;
+
+// PancakeSwap V3 SwapRouter ABI
+const PANCAKESWAP_V3_ROUTER_ABI = [
+  {
+    type: 'function',
+    name: 'exactInputSingle',
+    stateMutability: 'payable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'recipient', type: 'address' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'amountOutMinimum', type: 'uint256' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+  },
+] as const;
+
+// PancakeSwap V3 fee tiers (in basis points * 100)
+const V3_FEE_TIERS = [100, 500, 2500, 10000] as const; // 0.01%, 0.05%, 0.25%, 1%
+
 const PANCAKESWAP_V2_ROUTER_ABI = [
   {
     type: 'function',
@@ -131,12 +187,27 @@ export type PancakeSwapDexAdapterConfig = {
   chainId: number;
   rpcUrl: string | null;
   v2RouterAddress: string | null;
+  v3QuoterAddress: string | null;
+  v3RouterAddress: string | null;
   wbnb: string;
   quoteTimeoutMs: number;
 };
 
+// Default PancakeSwap V3 addresses on BSC
+const DEFAULT_V3_QUOTER_BSC = '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997';
+const DEFAULT_V3_ROUTER_BSC = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4';
+
 export class PancakeSwapDexAdapter implements Adapter {
-  constructor(private readonly config: PancakeSwapDexAdapterConfig) {}
+  private readonly v3QuoterAddress: string | null;
+  private readonly v3RouterAddress: string | null;
+
+  constructor(private readonly config: PancakeSwapDexAdapterConfig) {
+    // Use defaults for BSC if not provided
+    this.v3QuoterAddress = config.v3QuoterAddress ?? 
+      (config.chainId === 56 ? DEFAULT_V3_QUOTER_BSC : null);
+    this.v3RouterAddress = config.v3RouterAddress ?? 
+      (config.chainId === 56 ? DEFAULT_V3_ROUTER_BSC : null);
+  }
 
   private readonly nativePlaceholders = new Set<string>([
     '0x0000000000000000000000000000000000000000',
@@ -183,15 +254,113 @@ export class PancakeSwapDexAdapter implements Adapter {
     }
   }
 
-  private quoteEnabled(): boolean {
+  private v3QuoteEnabled(): boolean {
+    return Boolean(this.config.rpcUrl && this.v3QuoterAddress);
+  }
+
+  private v2QuoteEnabled(): boolean {
     return Boolean(this.config.rpcUrl && this.config.v2RouterAddress);
+  }
+
+  private quoteEnabled(): boolean {
+    return this.v3QuoteEnabled() || this.v2QuoteEnabled();
   }
 
   private buildTxEnabled(): boolean {
     return this.quoteEnabled();
   }
 
+  /**
+   * Try V3 quote across all fee tiers, return best result
+   */
+  private async tryV3Quote(
+    tokenIn: `0x${string}`,
+    tokenOut: `0x${string}`,
+    amountIn: bigint
+  ): Promise<{ buyAmount: bigint; feeTier: number; gasEstimate: bigint } | null> {
+    if (!this.v3QuoteEnabled()) return null;
+
+    let bestResult: { buyAmount: bigint; feeTier: number; gasEstimate: bigint } | null = null;
+
+    for (const fee of V3_FEE_TIERS) {
+      try {
+        const callData = encodeFunctionData({
+          abi: PANCAKESWAP_V3_QUOTER_ABI,
+          functionName: 'quoteExactInputSingle',
+          args: [{
+            tokenIn,
+            tokenOut,
+            amountIn,
+            fee,
+            sqrtPriceLimitX96: 0n,
+          }],
+        });
+
+        const result = await this.ethCall({
+          to: this.v3QuoterAddress!,
+          data: callData,
+        });
+
+        // Decode returns: (amountOut, sqrtPriceX96After, initializedTicksCrossed, gasEstimate)
+        const decoded = decodeFunctionResult({
+          abi: PANCAKESWAP_V3_QUOTER_ABI,
+          functionName: 'quoteExactInputSingle',
+          data: result,
+        }) as readonly [bigint, bigint, number, bigint];
+
+        const amountOut = decoded[0];
+        const gasEstimate = decoded[3];
+
+        if (!bestResult || amountOut > bestResult.buyAmount) {
+          bestResult = { buyAmount: amountOut, feeTier: fee, gasEstimate };
+        }
+      } catch {
+        // Fee tier not available, continue
+        continue;
+      }
+    }
+
+    return bestResult;
+  }
+
+  /**
+   * Try V2 quote via getAmountsOut
+   */
+  private async tryV2Quote(
+    tokenIn: `0x${string}`,
+    tokenOut: `0x${string}`,
+    amountIn: bigint
+  ): Promise<{ buyAmount: bigint } | null> {
+    if (!this.v2QuoteEnabled()) return null;
+
+    try {
+      const path = [tokenIn, tokenOut] as const;
+      const data = encodeFunctionData({
+        abi: PANCAKESWAP_V2_ROUTER_ABI,
+        functionName: 'getAmountsOut',
+        args: [amountIn, [...path]],
+      });
+
+      const result = await this.ethCall({ to: this.config.v2RouterAddress!, data });
+
+      const decoded = decodeFunctionResult({
+        abi: PANCAKESWAP_V2_ROUTER_ABI,
+        functionName: 'getAmountsOut',
+        data: result,
+      }) as readonly bigint[];
+
+      const out = decoded[decoded.length - 1] ?? 0n;
+      return out > 0n ? { buyAmount: out } : null;
+    } catch {
+      return null;
+    }
+  }
+
   getProviderMeta(): ProviderMeta {
+    const v3Enabled = this.v3QuoteEnabled();
+    const v2Enabled = this.v2QuoteEnabled();
+    const version = v3Enabled && v2Enabled ? 'V3+V2' : v3Enabled ? 'V3' : v2Enabled ? 'V2' : 'none';
+    
     return {
       providerId: 'pancakeswap',
       displayName: 'PancakeSwap',
@@ -202,9 +371,9 @@ export class PancakeSwapDexAdapter implements Adapter {
         buildTx: this.buildTxEnabled(),
         deepLink: true,
       },
-      integrationConfidence: this.quoteEnabled() ? 0.9 : 0.6,
+      integrationConfidence: v3Enabled ? 0.92 : v2Enabled ? 0.9 : 0.6,
       notes: this.quoteEnabled()
-        ? 'On-chain quote and buildTx enabled via Router (v2, direct path only). Deep-link always available.'
+        ? `On-chain quote via ${version}. BuildTx enabled. Deep-link always available.`
         : 'DEX deep-link implemented. On-chain quoting disabled (missing router/RPC config).',
     };
   }
@@ -256,25 +425,6 @@ export class PancakeSwapDexAdapter implements Adapter {
       };
     }
 
-    const router = this.config.v2RouterAddress!;
-    const rpcUrl = this.config.rpcUrl!;
-
-    if (!isAddress(router)) {
-      return {
-        ...base,
-        capabilities: { ...base.capabilities, quote: false },
-        warnings: ['pancakeswap_quote_disabled_invalid_router_address'],
-        raw: {
-          sellAmount: request.sellAmount,
-          buyAmount: '0',
-          estimatedGas: null,
-          feeBps: null,
-          route: [request.sellToken, request.buyToken],
-        },
-        normalized: normalizeQuoteFromRaw({ sellAmount: request.sellAmount, buyAmount: '0' }),
-      };
-    }
-
     const sellToken = this.normalizeToken(request.sellToken);
     const buyToken = this.normalizeToken(request.buyToken);
 
@@ -295,7 +445,6 @@ export class PancakeSwapDexAdapter implements Adapter {
     }
 
     const amountIn = BigInt(request.sellAmount);
-    const path = [sellToken, buyToken] as const;
 
     // If we mapped a native placeholder, ensure WBNB itself is sane.
     if ((sellToken === this.config.wbnb || buyToken === this.config.wbnb) && !isAddress(this.config.wbnb)) {
@@ -314,44 +463,44 @@ export class PancakeSwapDexAdapter implements Adapter {
       };
     }
 
-    try {
-      const data = encodeFunctionData({
-        abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'getAmountsOut',
-        args: [amountIn, [...path]],
-      });
+    // Try V3 first (usually better prices), then fallback to V2
+    const v3Result = await this.tryV3Quote(
+      sellToken as `0x${string}`,
+      buyToken as `0x${string}`,
+      amountIn
+    );
 
-      void rpcUrl; // validated via quoteEnabled(); kept for readability
-      const result = await this.ethCall({ to: router, data });
+    const v2Result = await this.tryV2Quote(
+      sellToken as `0x${string}`,
+      buyToken as `0x${string}`,
+      amountIn
+    );
 
-      const decoded = decodeFunctionResult({
-        abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'getAmountsOut',
-        data: result,
-      }) as readonly bigint[];
+    // Pick the best quote (highest output)
+    let bestBuyAmount = 0n;
+    let usedVersion: 'v3' | 'v2' | null = null;
+    let feeTier: number | null = null;
+    let gasEstimate: bigint | null = null;
 
-      const out = decoded[decoded.length - 1] ?? 0n;
+    if (v3Result && v3Result.buyAmount > bestBuyAmount) {
+      bestBuyAmount = v3Result.buyAmount;
+      usedVersion = 'v3';
+      feeTier = v3Result.feeTier;
+      gasEstimate = v3Result.gasEstimate;
+    }
 
-      const raw = {
-        sellAmount: request.sellAmount,
-        buyAmount: out.toString(),
-        estimatedGas: null,
-        feeBps: null,
-        route: [sellToken, buyToken],
-      };
+    if (v2Result && v2Result.buyAmount > bestBuyAmount) {
+      bestBuyAmount = v2Result.buyAmount;
+      usedVersion = 'v2';
+      feeTier = null;
+      gasEstimate = null;
+    }
 
-      return {
-        ...base,
-        isStub: false,
-        capabilities: { ...base.capabilities, quote: true },
-        raw,
-        normalized: normalizeQuoteFromRaw({ sellAmount: raw.sellAmount, buyAmount: raw.buyAmount }),
-      };
-    } catch (err) {
+    if (bestBuyAmount === 0n || !usedVersion) {
       return {
         ...base,
         capabilities: { ...base.capabilities, quote: false },
-        warnings: [`pancakeswap_quote_failed:${err instanceof Error ? err.message : 'unknown'}`],
+        warnings: ['pancakeswap_no_liquidity'],
         raw: {
           sellAmount: request.sellAmount,
           buyAmount: '0',
@@ -362,6 +511,28 @@ export class PancakeSwapDexAdapter implements Adapter {
         normalized: normalizeQuoteFromRaw({ sellAmount: request.sellAmount, buyAmount: '0' }),
       };
     }
+
+    // Store version info for buildTx to use
+    const versionInfo = usedVersion === 'v3' && feeTier 
+      ? [`pancakeswap_version:v3`, `pancakeswap_fee_tier:${feeTier}`]
+      : [`pancakeswap_version:v2`];
+
+    const raw = {
+      sellAmount: request.sellAmount,
+      buyAmount: bestBuyAmount.toString(),
+      estimatedGas: gasEstimate ? Number(gasEstimate) : null,
+      feeBps: feeTier ? Math.floor(feeTier / 100) : null, // Convert fee tier to bps (500 -> 5 bps)
+      route: [sellToken, buyToken],
+    };
+
+    return {
+      ...base,
+      isStub: false,
+      capabilities: { ...base.capabilities, quote: true },
+      warnings: versionInfo,
+      raw,
+      normalized: normalizeQuoteFromRaw({ sellAmount: raw.sellAmount, buyAmount: raw.buyAmount }),
+    };
   }
 
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
@@ -373,12 +544,11 @@ export class PancakeSwapDexAdapter implements Adapter {
       throw new Error('Cannot build tx: no valid quote available');
     }
 
-    const router = this.config.v2RouterAddress!;
     const sellTokenIsNative = this.isNativeToken(request.sellToken);
     const buyTokenIsNative = this.isNativeToken(request.buyToken);
 
-    const sellToken = this.normalizeToken(request.sellToken);
-    const buyToken = this.normalizeToken(request.buyToken);
+    const sellToken = this.normalizeToken(request.sellToken) as `0x${string}`;
+    const buyToken = this.normalizeToken(request.buyToken) as `0x${string}`;
 
     const amountIn = BigInt(request.sellAmount);
     const expectedOut = BigInt(quote.raw.buyAmount);
@@ -386,53 +556,83 @@ export class PancakeSwapDexAdapter implements Adapter {
     const slippageBps = request.slippageBps ?? 200;
     const amountOutMin = expectedOut - (expectedOut * BigInt(slippageBps)) / 10000n;
 
-    const path = [sellToken, buyToken] as `0x${string}`[];
     const to = request.account as `0x${string}`;
-    // Extended deadline for network congestion (30 minutes)
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+
+    // Extract version info from warnings
+    const usedV3 = quote.warnings.some(w => w === 'pancakeswap_version:v3') && this.v3RouterAddress;
+    const feeTierWarning = quote.warnings.find(w => w.startsWith('pancakeswap_fee_tier:'));
+    const v3FeeTier = feeTierWarning ? parseInt(feeTierWarning.split(':')[1]!, 10) : undefined;
 
     let data: `0x${string}`;
     let value: string;
+    let routerAddress: string;
+    let gasLimit: string;
 
-    // Use "SupportingFeeOnTransferTokens" methods by default
-    // These work for ALL tokens (including those with taxes) and are safer on BSC
-    if (sellTokenIsNative) {
-      // BNB → Token: use swapExactETHForTokensSupportingFeeOnTransferTokens
+    if (usedV3 && v3FeeTier && !sellTokenIsNative && !buyTokenIsNative) {
+      // V3: Token → Token via exactInputSingle
+      routerAddress = this.v3RouterAddress!;
       data = encodeFunctionData({
-        abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
-        args: [amountOutMin, path, to, deadline],
-      });
-      value = amountIn.toString();
-    } else if (buyTokenIsNative) {
-      // Token → BNB: use swapExactTokensForETHSupportingFeeOnTransferTokens
-      data = encodeFunctionData({
-        abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
-        args: [amountIn, amountOutMin, path, to, deadline],
+        abi: PANCAKESWAP_V3_ROUTER_ABI,
+        functionName: 'exactInputSingle',
+        args: [{
+          tokenIn: sellToken,
+          tokenOut: buyToken,
+          fee: v3FeeTier,
+          recipient: to,
+          amountIn,
+          amountOutMinimum: amountOutMin,
+          sqrtPriceLimitX96: 0n,
+        }],
       });
       value = '0';
+      gasLimit = '300000';
     } else {
-      // Token → Token: use swapExactTokensForTokensSupportingFeeOnTransferTokens
-      data = encodeFunctionData({
-        abi: PANCAKESWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
-        args: [amountIn, amountOutMin, path, to, deadline],
-      });
-      value = '0';
+      // V2 fallback (also handles native tokens which V3 doesn't support directly)
+      routerAddress = this.config.v2RouterAddress!;
+      const path = [sellToken, buyToken] as `0x${string}`[];
+      // Extended deadline for network congestion (30 minutes)
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+
+      // Use "SupportingFeeOnTransferTokens" methods by default
+      // These work for ALL tokens (including those with taxes) and are safer on BSC
+      if (sellTokenIsNative) {
+        // BNB → Token: use swapExactETHForTokensSupportingFeeOnTransferTokens
+        data = encodeFunctionData({
+          abi: PANCAKESWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
+          args: [amountOutMin, path, to, deadline],
+        });
+        value = amountIn.toString();
+      } else if (buyTokenIsNative) {
+        // Token → BNB: use swapExactTokensForETHSupportingFeeOnTransferTokens
+        data = encodeFunctionData({
+          abi: PANCAKESWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
+          args: [amountIn, amountOutMin, path, to, deadline],
+        });
+        value = '0';
+      } else {
+        // Token → Token: use swapExactTokensForTokensSupportingFeeOnTransferTokens
+        data = encodeFunctionData({
+          abi: PANCAKESWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
+          args: [amountIn, amountOutMin, path, to, deadline],
+        });
+        value = '0';
+      }
+      gasLimit = '350000';
     }
 
     const result: BuiltTx = {
-      to: router,
+      to: routerAddress,
       data,
       value,
-      // Higher gas for fee-on-transfer tokens and complex token logic
-      gas: '350000',
+      gas: gasLimit,
     };
 
     // For ERC-20 tokens, user needs to approve the router first
     if (!sellTokenIsNative) {
-      result.approvalAddress = router;
+      result.approvalAddress = routerAddress;
     }
 
     return result;

@@ -230,6 +230,8 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       chainId: 56,
       rpcUrl: config.rpc.bscUrls[0] ?? null,
       v2RouterAddress: config.pancakeswap.v2Router,
+      v3QuoterAddress: config.pancakeswap.v3Quoter,
+      v3RouterAddress: null, // Uses default for BSC if null
       wbnb: config.pancakeswap.wbnb,
       quoteTimeoutMs: config.pancakeswap.quoteTimeoutMs,
     });
