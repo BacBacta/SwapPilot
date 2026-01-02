@@ -76,6 +76,10 @@ export const PreflightResultSchema = z.object({
   // Confidence in the estimate based on consistency across RPCs.
   confidence: z.number().min(0).max(1),
   reasons: z.array(z.string()),
+  // Simulated output amount (when available from eth_call decode)
+  simulatedOutput: z.string().optional(),
+  // Mismatch ratio between promised and simulated output (1.0 = match, <1 = less than promised)
+  outputMismatchRatio: z.number().optional(),
 });
 
 export type PreflightResult = z.infer<typeof PreflightResultSchema>;

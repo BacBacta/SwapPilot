@@ -322,16 +322,38 @@ async function buildQuotesImpl(
                   : 'stub_quote_integration_not_implemented',
             });
 
-      // Mock txRequest path: provide a minimal txRequest for at least one provider.
-      // This is used to exercise the preflight + risk pipeline without executing anything.
-      const txRequest: TxRequest | null = item.provider.providerId === '1inch'
-        ? {
+      // Try to build a real txRequest for preflight simulation when the adapter supports it
+      let txRequest: TxRequest | null = null;
+      const adapter = deps.adapters?.get(item.provider.providerId);
+      
+      if (adapter?.buildTx && capabilities.buildTx && adapterQuote && !adapterQuote.isStub && parsed.account) {
+        try {
+          const builtTx = await adapter.buildTx(parsed, adapterQuote);
+          txRequest = {
+            from: parsed.account,
+            to: builtTx.to,
+            data: builtTx.data as `0x${string}`,
+            value: builtTx.value ? (`0x${BigInt(builtTx.value).toString(16)}` as `0x${string}`) : '0x0',
+            // Pass expected output for simulation comparison
+            expectedBuyAmount: raw.buyAmount,
+            buyToken: parsed.buyToken,
+          };
+        } catch (err) {
+          log.debug({ providerId: item.provider.providerId, error: (err as Error).message }, 'buildTx for preflight failed');
+        }
+      }
+      
+      // Fallback: minimal txRequest for providers without buildTx
+      if (!txRequest && item.provider.providerId === '1inch') {
+        txRequest = {
             from: parsed.account ?? ZERO_ADDRESS,
             to: parsed.buyToken,
             data: '0x',
             value: '0x0',
-          }
-        : null;
+            expectedBuyAmount: raw.buyAmount,
+            buyToken: parsed.buyToken,
+          };
+      }
 
       const preflightFallback: PreflightResult = {
         ok: true,

@@ -209,11 +209,47 @@ function calculatePreflightFactor(
 
   // Preflight OK: factor based on revert probability
   const pRevert = clamp(preflight.pRevert, 0, 1);
-  const factor = 1 - (pRevert * 0.8); // pRevert of 1.0 → factor of 0.2
-  const reason = pRevert < 0.1 
-    ? 'Preflight OK, low revert probability'
-    : `Preflight OK, ${(pRevert * 100).toFixed(0)}% revert probability`;
+  let factor = 1 - (pRevert * 0.8); // pRevert of 1.0 → factor of 0.2
+  const reasons: string[] = [];
   
+  if (pRevert < 0.1) {
+    reasons.push('low revert probability');
+  } else {
+    reasons.push(`${(pRevert * 100).toFixed(0)}% revert probability`);
+  }
+  
+  // Apply output mismatch penalty if available
+  const mismatchRatio = preflight.outputMismatchRatio;
+  if (mismatchRatio !== undefined) {
+    if (mismatchRatio < 0.90) {
+      // Severe mismatch: simulated output is <90% of promised
+      // This often indicates hidden taxes or slippage issues
+      const mismatchPenalty = mode === 'SAFE' ? 0.4 : mode === 'NORMAL' ? 0.6 : 0.8;
+      factor *= mismatchPenalty;
+      reasons.push(`output mismatch ${((1 - mismatchRatio) * 100).toFixed(1)}% less than promised`);
+      
+      // In SAFE mode, severe mismatch (>20%) disqualifies
+      if (mode === 'SAFE' && mismatchRatio < 0.80) {
+        return { 
+          factor: 0, 
+          disqualified: true, 
+          reason: `Output mismatch too high (${((1 - mismatchRatio) * 100).toFixed(1)}% less) - disqualified in SAFE mode` 
+        };
+      }
+    } else if (mismatchRatio < 0.95) {
+      // Moderate mismatch: 5-10% less than promised
+      factor *= 0.9;
+      reasons.push(`minor output variance ${((1 - mismatchRatio) * 100).toFixed(1)}%`);
+    } else if (mismatchRatio >= 0.95 && mismatchRatio <= 1.05) {
+      // Good match: within 5%
+      reasons.push('simulated output matches quote');
+    } else if (mismatchRatio > 1.05) {
+      // Higher than expected (rare but possible with positive slippage)
+      reasons.push(`simulated output ${((mismatchRatio - 1) * 100).toFixed(1)}% better than quoted`);
+    }
+  }
+  
+  const reason = `Preflight OK: ${reasons.join(', ')}`;
   return { factor: clamp(factor, 0.2, 1), disqualified: false, reason };
 }
 

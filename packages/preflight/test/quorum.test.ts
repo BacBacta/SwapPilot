@@ -30,4 +30,57 @@ describe('mergeQuorumResults', () => {
     expect(out.ok).toBe(true);
     expect(out.confidence).toBeCloseTo(2 / 3);
   });
+
+  it('calculates output mismatch ratio when simulated output is available', () => {
+    const out = mergeQuorumResults(
+      [
+        { 
+          rpcUrl: 'a', 
+          ok: true, 
+          methodsTried: ['eth_call'], 
+          reasons: [], 
+          simulatedOutput: '950000000000000000', // 0.95 ETH
+        },
+      ],
+      '1000000000000000000', // Expected: 1 ETH
+    );
+    
+    expect(out.ok).toBe(true);
+    expect(out.simulatedOutput).toBe('950000000000000000');
+    expect(out.outputMismatchRatio).toBeCloseTo(0.95, 2);
+    expect(out.reasons).toContain('output_match:within_5%');
+  });
+
+  it('detects severe output mismatch (>10% difference)', () => {
+    const out = mergeQuorumResults(
+      [
+        { 
+          rpcUrl: 'a', 
+          ok: true, 
+          methodsTried: ['eth_call'], 
+          reasons: [], 
+          simulatedOutput: '800000000000000000', // 0.8 ETH (20% less)
+        },
+      ],
+      '1000000000000000000', // Expected: 1 ETH
+    );
+    
+    expect(out.outputMismatchRatio).toBeCloseTo(0.8, 2);
+    expect(out.reasons.some(r => r.includes('output_mismatch'))).toBe(true);
+  });
+
+  it('uses median simulated output when multiple RPCs report', () => {
+    const out = mergeQuorumResults(
+      [
+        { rpcUrl: 'a', ok: true, methodsTried: ['eth_call'], reasons: [], simulatedOutput: '900' },
+        { rpcUrl: 'b', ok: true, methodsTried: ['eth_call'], reasons: [], simulatedOutput: '1000' },
+        { rpcUrl: 'c', ok: true, methodsTried: ['eth_call'], reasons: [], simulatedOutput: '950' },
+      ],
+      '1000',
+    );
+    
+    // Median of [900, 950, 1000] = 950
+    expect(out.simulatedOutput).toBe('950');
+    expect(out.outputMismatchRatio).toBeCloseTo(0.95, 2);
+  });
 });
