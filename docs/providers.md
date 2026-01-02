@@ -28,25 +28,29 @@ Current state:
 - A **mock txRequest path** is enabled for at least one provider (currently `1inch`) to populate receipts with preflight + risk signals.
 - Real `buildTx` integrations remain a future step (Option 2).
 
-### Registry table (Top 6 + PancakeSwap)
+### Registry table (Top 10 Providers)
 
 | Provider | providerId | Category | quote | buildTx | deepLink | Integration confidence | Approach |
 |---------|------------|----------|-------|---------|----------|------------------------|----------|
-| Binance Wallet | `binance-wallet` | wallet | ✅ (stub) | ❌ | ✅ | 0.20 | Deep-link now; official API later |
-| OKX DEX | `okx-dex` | aggregator | ✅ (stub) | ❌ | ✅ | 0.20 | Deep-link now; official API later |
-| 1inch | `1inch` | aggregator | ✅ (stub) | ❌ | ✅ | 0.25 | Deep-link now; official API later |
-| LiquidMesh | `liquidmesh` | aggregator | ✅ (stub) | ❌ | ✅ | 0.10 | Deep-link generic; integration TBD |
-| KyberSwap | `kyberswap` | aggregator | ✅ (stub) | ❌ | ✅ | 0.25 | Deep-link now; official API later |
-| MetaMask | `metamask` | wallet | ✅ (stub) | ❌ | ✅ | 0.15 | Deep-link now; MetaMask-managed routing |
-| PancakeSwap | `pancakeswap` | dex | ❌ | ❌ | ✅ | 0.60 | Deep-link now; on-chain quote later |
+| 0x | `0x` | aggregator | ✅ | ✅ | ✅ | 0.95 | API v1 with API key |
+| Odos | `odos` | aggregator | ✅ | ✅ | ✅ | 0.90 | API v2 (BSC) |
+| KyberSwap | `kyberswap` | aggregator | ✅ | ✅ | ✅ | 0.85 | Free API |
+| OpenOcean | `openocean` | aggregator | ✅ | ✅ | ✅ | 0.85 | Free API |
+| ParaSwap | `paraswap` | aggregator | ✅ | ✅ | ✅ | 0.85 | Prices API v5 (free) |
+| 1inch | `1inch` | aggregator | ✅ | ✅ | ✅ | 0.90 | API v6 with API key |
+| OKX DEX | `okx-dex` | aggregator | ✅ | ✅ | ✅ | 0.85 | API with HMAC-SHA256 |
+| PancakeSwap V2 | `pancakeswap` | dex | ✅ | ✅ | ✅ | 0.90 | On-chain `getAmountsOut` |
+| Uniswap V2 | `uniswap-v2` | dex | ✅ | ✅ | ✅ | 0.80 | On-chain `getAmountsOut` |
+| Uniswap V3 | `uniswap-v3` | dex | ✅ | ✅ | ✅ | 0.75 | On-chain `quoteExactInputSingle` |
 
 ### PancakeSwap (DEX)
 - `providerId`: `pancakeswap`
 - `type`: `dex`
-- Current capabilities: `quote=false`, `buildTx=false`, `deepLink=true`
+- Current capabilities: `quote=true`, `buildTx=true`, `deepLink=true`
 - Integration:
-  - Deep-link to PancakeSwap swap UI (implemented)
-  - Quote via on-chain calls later (v2 router `getAmountsOut`, v3 quoter if available)
+  - ✅ Deep-link to PancakeSwap swap UI (implemented)
+  - ✅ Quote via on-chain V2 router `getAmountsOut` (implemented)
+  - ⏳ V3 quoter (not yet implemented)
 - Rate limits: N/A (on-chain calls limited by RPC)
 - Deep-link: see `docs/pancakeswap.md`
 
@@ -64,13 +68,18 @@ Recommended pattern for initial bring-up:
 
 ## Known constraints (current)
 - No scraping, no browser automation. Only structured deep-links or official APIs.
-- Today, provider quotes are **stubbed** (except that PancakeSwap is deep-link only with `quote=false`).
-- `/v1/quotes` returns provider entries with `capabilities` so the UI can label “deep-link only”.
+- Provider quotes are **real** for configured providers (API keys or RPC URLs required for some).
+- `/v1/quotes` returns provider entries with `capabilities` so the UI can display integration status.
+
+## Completed
+- ✅ Real quote adapters implemented (0x, Odos, 1inch, KyberSwap, OpenOcean, ParaSwap, OKX DEX)
+- ✅ On-chain quoting for PancakeSwap V2, Uniswap V2, Uniswap V3
+- ✅ Pre-BEQ simulation with output mismatch detection
+- ✅ Dynamic reliability scoring via EWMA health tracking
 
 ## TODOs
-- Implement real quote adapters behind allowlisted domains + timeouts.
 - Add per-provider concurrency limits + retries based on upstream characteristics.
-- Add on-chain quoting for PancakeSwap per `docs/pancakeswap.md`.
+- Add PancakeSwap V3 quoter support.
 
 ## Rate limiting strategy
 - API layer: IP-based rate limiting.

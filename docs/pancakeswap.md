@@ -8,14 +8,15 @@
 
 ## Current status
 - Registry entry exists as providerId `pancakeswap` (category: DEX).
-- Capabilities by default: `quote=false`, `buildTx=false`, `deepLink=true`.
-- Deep-link builder is implemented in `packages/deeplinks`.
+- Capabilities: `quote=true`, `buildTx=true`, `deepLink=true`.
+- ✅ Deep-link builder is implemented in `packages/deeplinks`.
+- ✅ V2 on-chain quoting via `getAmountsOut` is implemented.
 
 ## Enabling on-chain quotes (BNB Chain)
 SwapPilot can turn PancakeSwap into a real quote source (not deep-link only) when you configure known contract addresses.
 
-### v2 quoting (Router.getAmountsOut)
-When enabled, the adapter calls `eth_call` on the Router function `getAmountsOut(amountIn, path)` (no transactions) and returns the last element of the `amounts[]` array as `buyAmount`.
+### v2 quoting (Router.getAmountsOut) ✅ IMPLEMENTED
+The adapter calls `eth_call` on the Router function `getAmountsOut(amountIn, path)` (no transactions) and returns the last element of the `amounts[]` array as `buyAmount`.
 
 Config (env):
 - `BSC_RPC_URLS`: comma-separated allowlist of RPC endpoints (SwapPilot uses the first URL for PancakeSwap quoting)
@@ -31,11 +32,16 @@ Notes / limitations (current implementation):
   - `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE`
 - If config is missing/invalid or RPC reverts/errors, SwapPilot falls back to deep-link only for PancakeSwap.
 
-### v3 quoting (Quoter)
-v3 quoting is not implemented yet.
+### v3 quoting (Quoter) ⏳ TODO
+v3 quoting is not implemented yet. The Uniswap V3 adapter pattern can be reused.
 
 Config placeholder (env):
 - `PANCAKESWAP_V3_QUOTER`: Quoter contract address (currently unused)
+
+Implementation notes:
+- Use `quoteExactInputSingle` like Uniswap V3 adapter
+- Try multiple fee tiers (500, 2500, 10000 bps)
+- BSC Quoter address: `0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997`
 
 ## Deep-link
 Goal: send the user to PancakeSwap swap page with tokens + amount prefilled.
@@ -77,8 +83,13 @@ Notes:
   - mark sellability as `UNCERTAIN` with explicit reasons
 - Expose MEV exposure and revert risk conservatively.
 
+## Completed
+- ✅ On-chain quoting for V2 via `getAmountsOut`
+- ✅ RPC allowlist configuration via `BSC_RPC_URLS`
+- ✅ Pre-BEQ simulation with output verification
+
 ## TODOs
-- Implement on-chain quoting for v2 (router `getAmountsOut`) and/or v3 (quoter) with RPC allowlist.
+- Implement on-chain quoting for V3 (quoter) with multi-fee tier support.
 - Normalize gas/fees and integrate into BEQ scoring.
 
 ## RPC considerations
