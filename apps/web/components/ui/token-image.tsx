@@ -33,7 +33,7 @@ export const TOKEN_ICONS: Record<string, string> = {
    ======================================== */
 interface TokenImageProps {
   symbol: string;
-  src?: string;
+  src?: string | undefined;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
   fallbackClassName?: string;
@@ -81,7 +81,7 @@ export function TokenImage({
       height={pixelSize}
       className={cn("rounded-full", className)}
       onError={() => setHasError(true)}
-      unoptimized={imageUrl.includes("walletconnect")} // Skip optimization for dynamic URLs
+      unoptimized={imageUrl.includes("walletconnect") || imageUrl.includes("trustwallet")} // Skip optimization for dynamic URLs
     />
   );
 }

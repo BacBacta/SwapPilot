@@ -34,6 +34,11 @@ const nextConfig: NextConfig = {
         hostname: '*.walletconnect.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'assets-cdn.trustwallet.com',
+        pathname: '/blockchains/**',
+      },
     ],
   },
   // Allow API calls to Fly.io deployed API

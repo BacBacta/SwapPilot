@@ -62,6 +62,12 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
   const { getPrice, formatUsd } = useTokenPrices();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
+  // Try to get token logo from Trust Wallet assets
+  const getTrustWalletLogoUrl = useCallback((address: string): string => {
+    // Trust Wallet uses checksummed addresses
+    return `https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/${address}/logo.png`;
+  }, []);
+
   // Fetch token info from blockchain when address is entered
   const fetchTokenByAddress = useCallback(async (address: string) => {
     setIsLoadingToken(true);
@@ -77,11 +83,16 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
 
       // Resolve via backend (RPC-based)
       const meta = await resolveTokenMetadata({ address: address as `0x${string}` });
+      
+      // Try to get logo from Trust Wallet assets
+      const logoURI = getTrustWalletLogoUrl(meta.address);
+      
       const newToken: TokenInfo = {
         symbol: (meta.symbol ?? address.slice(0, 6) + "...").toUpperCase(),
         name: meta.name ?? "Unknown Token",
         address: meta.address,
         decimals: meta.decimals ?? 18,
+        logoURI, // Add logo URL for custom tokens
         isCustom: true,
       };
 
@@ -93,7 +104,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
       setTokenError("Failed to fetch token info. Check your connection.");
       return null;
     }
-  }, [registryTokens, upsertCustomToken]);
+  }, [registryTokens, upsertCustomToken, getTrustWalletLogoUrl]);
 
   // Handle address search
   useEffect(() => {
@@ -213,7 +224,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                     : "border-sp-lightBorder bg-sp-lightSurface hover:border-sp-lightBorderHover hover:bg-sp-lightSurface2"
                 )}
               >
-                <TokenImage symbol={symbol} size="sm" />
+                <TokenImage symbol={symbol} src={token.logoURI} size="sm" />
                 <span className="text-caption font-semibold text-sp-lightText">{symbol}</span>
               </button>
             );
@@ -243,7 +254,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                       : "border-sp-accent/30 bg-sp-accent/5 hover:border-sp-accent hover:bg-sp-accent/10"
                   )}
                 >
-                  <TokenImage symbol={symbol} size="sm" />
+                  <TokenImage symbol={symbol} src={token.logoURI} size="sm" />
                   <span className="text-caption font-semibold text-sp-lightText">{symbol}</span>
                 </button>
               );
@@ -290,7 +301,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
                 onClick={() => onSelect(token.isCustom ? token.address : token.symbol)}
                 className="flex flex-1 items-center gap-3"
               >
-                <TokenImage symbol={token.symbol} size="xl" />
+                <TokenImage symbol={token.symbol} src={token.logoURI} size="xl" />
                 <div className="text-left">
                   <div className="flex items-center gap-2">
                     <span className="text-body font-semibold text-sp-lightText">{token.symbol}</span>
