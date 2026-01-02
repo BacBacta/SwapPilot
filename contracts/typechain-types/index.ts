@@ -36,3 +36,5 @@ export type { IPancakeRouter } from "./src/FeeCollector.sol/IPancakeRouter";
 export { IPancakeRouter__factory } from "./factories/src/FeeCollector.sol/IPancakeRouter__factory";
 export type { PILOTToken } from "./src/PILOTToken";
 export { PILOTToken__factory } from "./factories/src/PILOTToken__factory";
+export type { ReferralPool } from "./src/ReferralPool";
+export { ReferralPool__factory } from "./factories/src/ReferralPool__factory";

@@ -4,3 +4,4 @@
 import type * as feeCollectorSol from "./FeeCollector.sol";
 export type { feeCollectorSol };
 export type { PILOTToken } from "./PILOTToken";
+export type { ReferralPool } from "./ReferralPool";

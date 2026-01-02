@@ -73,6 +73,10 @@ declare module "hardhat/types/runtime" {
       name: "PILOTToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.PILOTToken__factory>;
+    getContractFactory(
+      name: "ReferralPool",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ReferralPool__factory>;
 
     getContractAt(
       name: "Ownable",
@@ -149,6 +153,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.PILOTToken>;
+    getContractAt(
+      name: "ReferralPool",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ReferralPool>;
 
     deployContract(
       name: "Ownable",
@@ -210,6 +219,10 @@ declare module "hardhat/types/runtime" {
       name: "PILOTToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.PILOTToken>;
+    deployContract(
+      name: "ReferralPool",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReferralPool>;
 
     deployContract(
       name: "Ownable",
@@ -286,6 +299,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.PILOTToken>;
+    deployContract(
+      name: "ReferralPool",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReferralPool>;
 
     // default types
     getContractFactory(

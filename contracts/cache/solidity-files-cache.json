@@ -570,6 +570,45 @@
       "artifacts": [
         "PILOTToken"
       ]
+    },
+    "/workspaces/SwapPilot/contracts/src/ReferralPool.sol": {
+      "lastModificationDate": 1767376261597,
+      "contentHash": "26087008b9990129d1407e2a3781282b",
+      "sourceName": "src/ReferralPool.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ReferralPool"
+      ]
     }
   }
 }

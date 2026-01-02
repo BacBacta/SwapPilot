@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/cn";
+import { useReferralClaim } from "@/lib/hooks/use-referral-claim";
 
 /* ========================================
    TYPES
@@ -32,8 +33,6 @@ const REFERRAL_TIERS = {
   gold: { minReferrals: 20, commission: 10, color: "from-yellow-400 to-yellow-500" },
   platinum: { minReferrals: 50, commission: 15, color: "from-purple-400 to-purple-500" },
 };
-
-const REFERRAL_POOL_ADDRESS = "0xe810e4cfa68620cb51cd68618642ee1d44382f45";
 
 /* ========================================
    MOCK DATA (will be replaced with real API)
@@ -370,42 +369,68 @@ function ReferralsList({ referrals }: { referrals: ReferralUser[] }) {
   );
 }
 
-function ClaimRewardsCard({ pendingRewards }: { pendingRewards: string }) {
-  const [claiming, setClaiming] = useState(false);
+function ClaimRewardsCard() {
+  const {
+    pendingRewardsFormatted,
+    totalClaimedFormatted,
+    isClaiming,
+    isClaimSuccess,
+    canClaim,
+    claim,
+    claimHash,
+    error,
+    resetClaimState,
+  } = useReferralClaim();
 
-  const handleClaim = async () => {
-    setClaiming(true);
-    // TODO: Implement actual claim logic
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setClaiming(false);
-  };
+  const pendingFloat = parseFloat(pendingRewardsFormatted);
+  const hasPending = pendingFloat > 0;
 
-  const hasPending = parseFloat(pendingRewards) > 0;
+  // Show success message briefly then reset
+  useEffect(() => {
+    if (isClaimSuccess) {
+      const timer = setTimeout(() => {
+        resetClaimState();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isClaimSuccess, resetClaimState]);
 
   return (
     <div className="rounded-2xl border border-sp-accent/30 bg-gradient-to-br from-sp-accent/10 to-sp-accent/5 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-body font-semibold text-sp-text">Récompenses à réclamer</h3>
-          <div className="mt-2 text-h1 font-bold text-sp-accent">{pendingRewards} BNB</div>
-          <div className="mt-1 text-caption text-sp-muted">
-            ≈ ${(parseFloat(pendingRewards) * 700).toFixed(2)} USD
+          <div className="mt-2 text-h1 font-bold text-sp-accent">
+            {parseFloat(pendingRewardsFormatted).toFixed(4)} BNB
           </div>
+          <div className="mt-1 text-caption text-sp-muted">
+            ≈ ${(pendingFloat * 700).toFixed(2)} USD
+          </div>
+          {parseFloat(totalClaimedFormatted) > 0 && (
+            <div className="mt-2 text-caption text-sp-ok">
+              Total réclamé: {parseFloat(totalClaimedFormatted).toFixed(4)} BNB
+            </div>
+          )}
         </div>
         <button
-          onClick={handleClaim}
-          disabled={!hasPending || claiming}
+          onClick={claim}
+          disabled={!canClaim || isClaiming}
           className={cn(
             "flex items-center gap-2 rounded-xl px-6 py-3 font-semibold transition-all",
-            hasPending
+            canClaim && !isClaiming
               ? "bg-sp-accent text-black hover:bg-sp-accent/90"
               : "bg-sp-surface3 text-sp-muted cursor-not-allowed"
           )}
         >
-          {claiming ? (
+          {isClaiming ? (
             <>
               <SpinnerIcon className="h-5 w-5 animate-spin" />
               Claiming...
+            </>
+          ) : isClaimSuccess ? (
+            <>
+              <CheckIcon className="h-5 w-5" />
+              Claimed!
             </>
           ) : (
             <>
@@ -415,6 +440,33 @@ function ClaimRewardsCard({ pendingRewards }: { pendingRewards: string }) {
           )}
         </button>
       </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="mt-4 rounded-xl bg-sp-error/10 border border-sp-error/30 p-3 text-caption text-sp-error">
+          {error.message.includes("Amount below minimum") 
+            ? "Montant inférieur au minimum requis (0.001 BNB)"
+            : error.message.includes("user rejected")
+            ? "Transaction annulée"
+            : `Erreur: ${error.message}`
+          }
+        </div>
+      )}
+      
+      {/* Success message with tx hash */}
+      {isClaimSuccess && claimHash && (
+        <div className="mt-4 rounded-xl bg-sp-ok/10 border border-sp-ok/30 p-3">
+          <div className="text-caption text-sp-ok font-medium">Récompenses réclamées avec succès!</div>
+          <a
+            href={`https://bscscan.com/tx/${claimHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 text-micro text-sp-accent hover:underline"
+          >
+            Voir la transaction ↗
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -499,7 +551,7 @@ function ReferralsPanelContent() {
       </div>
 
       {/* Claim Rewards */}
-      <ClaimRewardsCard pendingRewards={stats.pendingRewards} />
+      <ClaimRewardsCard />
 
       {/* Referral Link */}
       <ReferralLinkBox referralCode={referralCode} />

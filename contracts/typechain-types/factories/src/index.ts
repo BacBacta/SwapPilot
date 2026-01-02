@@ -3,3 +3,4 @@
 /* eslint-disable */
 export * as feeCollectorSol from "./FeeCollector.sol";
 export { PILOTToken__factory } from "./PILOTToken__factory";
+export { ReferralPool__factory } from "./ReferralPool__factory";
