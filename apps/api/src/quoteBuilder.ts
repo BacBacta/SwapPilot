@@ -283,16 +283,22 @@ async function buildQuotesImpl(
 
       const normalized = adapterQuote?.normalized ?? normalizeQuote({ raw, assumptions });
 
-      const baseSignals = defaultPlaceholderSignals({
-        mode: parsed.mode ?? 'NORMAL',
-        quoteIsAvailable: capabilities.quote,
-        isDeepLinkOnly,
-        reason: isDeepLinkOnly
-          ? 'deep_link_only_quote_not_available'
-          : adapterQuote && adapterQuote.isStub === false
-            ? `${item.provider.providerId}_live_quote`
-            : 'stub_quote_integration_not_implemented',
-      });
+      // Use adapter-provided signals if available, otherwise use placeholder signals.
+      // Adapter signals are based on actual quote data; placeholders are used when
+      // the adapter couldn't fetch a real quote (e.g., missing API key).
+      const baseSignals =
+        adapterQuote && adapterQuote.isStub === false && adapterQuote.signals
+          ? adapterQuote.signals
+          : defaultPlaceholderSignals({
+              mode: parsed.mode ?? 'NORMAL',
+              quoteIsAvailable: capabilities.quote,
+              isDeepLinkOnly,
+              reason: isDeepLinkOnly
+                ? 'deep_link_only_quote_not_available'
+                : adapterQuote && adapterQuote.isStub === false
+                  ? `${item.provider.providerId}_live_quote`
+                  : 'stub_quote_integration_not_implemented',
+            });
 
       // Mock txRequest path: provide a minimal txRequest for at least one provider.
       // This is used to exercise the preflight + risk pipeline without executing anything.
