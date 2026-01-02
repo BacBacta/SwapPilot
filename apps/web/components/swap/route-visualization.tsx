@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
+import { useTokenRegistry } from "@/lib/use-token-registry";
 import type { RankedQuote } from "@swappilot/shared";
 
 /* ========================================
@@ -112,12 +113,23 @@ export function RouteVisualization({
   toToken: string;
   className?: string;
 }) {
+  const { resolveToken } = useTokenRegistry();
+
+  // Resolve token address to symbol
+  const getTokenSymbol = (tokenOrAddress: string): string => {
+    const resolved = resolveToken(tokenOrAddress);
+    return resolved?.symbol ?? tokenOrAddress.slice(0, 6);
+  };
+
+  const fromSymbol = getTokenSymbol(fromToken);
+  const toSymbol = getTokenSymbol(toToken);
+
   // Parse route from quote if available
   const routeData = useMemo(() => {
     if (!quote) {
       // Default single hop route
       return {
-        steps: [fromToken, toToken],
+        steps: [fromSymbol, toSymbol],
         protocols: ["Direct"],
         percentages: [100],
       };
@@ -127,9 +139,10 @@ export function RouteVisualization({
     const routeSteps = quote.raw.route;
 
     if (routeSteps && routeSteps.length > 2) {
-      // Multi-hop route
+      // Multi-hop route - resolve all token addresses to symbols
+      const resolvedSteps = routeSteps.map((step) => getTokenSymbol(step));
       return {
-        steps: routeSteps,
+        steps: resolvedSteps,
         protocols: [quote.providerId],
         percentages: [100],
       };
@@ -137,11 +150,11 @@ export function RouteVisualization({
 
     // Single route through provider
     return {
-      steps: [fromToken, toToken],
+      steps: [fromSymbol, toSymbol],
       protocols: [quote.providerId],
       percentages: [100],
     };
-  }, [quote, fromToken, toToken]);
+  }, [quote, fromSymbol, toSymbol]);
 
   const hasMultiplePaths = routeData.protocols.length > 1;
 
@@ -166,22 +179,22 @@ export function RouteVisualization({
         <div className="space-y-2">
           {routeData.protocols.map((protocol, idx) => (
             <div key={protocol} className="flex items-center gap-2">
-              <RouteStep token={fromToken} isFirst />
+              <RouteStep token={fromSymbol} isFirst />
               <RouteArrow percentage={routeData.percentages[idx]} />
               <ProtocolBadge name={protocol} />
               <RouteArrow />
-              <RouteStep token={toToken} isLast />
+              <RouteStep token={toSymbol} isLast />
             </div>
           ))}
         </div>
       ) : (
         // Single path visualization
         <div className="flex items-center justify-between gap-2">
-          <RouteStep token={fromToken} isFirst />
+          <RouteStep token={fromSymbol} isFirst />
           <RouteArrow />
           <ProtocolBadge name={routeData.protocols[0] ?? "Direct"} share={100} />
           <RouteArrow />
-          <RouteStep token={toToken} isLast />
+          <RouteStep token={toSymbol} isLast />
         </div>
       )}
 
