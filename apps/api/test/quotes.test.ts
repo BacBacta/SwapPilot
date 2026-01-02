@@ -201,4 +201,90 @@ describe('Option 1 API', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/html');
   });
+
+  it('token security (honeypot) forces sellability FAIL', async () => {
+    const fetchMock = async (url: string) => {
+      if (url.startsWith('https://api.gopluslabs.io/api/v1/token_security/56')) {
+        const addr = '0x00000000000000000000000000000000000000aa';
+        return {
+          ok: true,
+          async json() {
+            return {
+              code: 1,
+              message: 'OK',
+              result: {
+                [addr.toLowerCase()]: {
+                  is_honeypot: '1',
+                  cannot_sell_all: '1',
+                  is_blacklisted: '0',
+                  is_scam: '0',
+                  buy_tax: '0',
+                  sell_tax: '0',
+                },
+              },
+            };
+          },
+        } as unknown as Response;
+      }
+
+      throw new Error(`unexpected_fetch:${url}`);
+    };
+
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const app = createServer({
+      logger: false,
+      config: {
+        nodeEnv: 'test',
+        host: '0.0.0.0',
+        port: 3001,
+        receiptStore: { type: 'memory', path: '' },
+        redis: { url: null, quoteCacheTtlSeconds: 10 },
+        rateLimit: { max: 1000, windowMs: 60_000 },
+        metrics: { enabled: false },
+        // Disable RPC/onchain sellability to keep this test focused and deterministic.
+        rpc: { bscUrls: [], quorum: 2, timeoutMs: 2500, enableTrace: false },
+        risk: { knownTokens: [], memeTokens: [] },
+        pancakeswap: {
+          v2Router: null,
+          v3Quoter: null,
+          v2Factory: '0x0000000000000000000000000000000000000000',
+          v3Factory: '0x0000000000000000000000000000000000000000',
+          wbnb: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+          quoteTimeoutMs: 2000,
+        },
+        sellability: { multicall3Address: '0xcA11bde05977b3631167028862bE2a173976CA11', baseTokensBsc: [] },
+        tokenSecurity: {
+          enabled: true,
+          goPlusBaseUrl: 'https://api.gopluslabs.io',
+          timeoutMs: 800,
+          cacheTtlMs: 60_000,
+        },
+      },
+      preflightClient: {
+        async verify() {
+          return { ok: true, pRevert: 0, confidence: 1, reasons: ['mock_ok'] };
+        },
+      },
+    });
+
+    const body = {
+      chainId: 56,
+      sellToken: '0x0000000000000000000000000000000000000001',
+      buyToken: '0x00000000000000000000000000000000000000aa',
+      sellAmount: '1000',
+      slippageBps: 100,
+      mode: 'NORMAL',
+    };
+
+    const res = await app.inject({ method: 'POST', url: '/v1/quotes', payload: body });
+    expect(res.statusCode).toBe(200);
+    const json = res.json() as any;
+
+    const anyFail = (json.rankedQuotes as any[]).some((q) => q.signals?.sellability?.status === 'FAIL');
+    expect(anyFail).toBe(true);
+
+    const failing = (json.rankedQuotes as any[]).find((q) => q.signals?.sellability?.status === 'FAIL');
+    expect(failing.signals.sellability.reasons.join(' ')).toContain('token_security:goplus:is_honeypot');
+  });
 });

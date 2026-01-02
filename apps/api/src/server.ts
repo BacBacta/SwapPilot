@@ -358,6 +358,15 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           }
         : undefined;
 
+      const tokenSecurityDeps = config.tokenSecurity
+        ? {
+            enabled: config.tokenSecurity.enabled,
+            goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
+            timeoutMs: config.tokenSecurity.timeoutMs,
+            cacheTtlMs: config.tokenSecurity.cacheTtlMs,
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -377,6 +386,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         providerHealth,
         rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
         ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
+        ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
       });
 
       await receiptStore.put(receipt);

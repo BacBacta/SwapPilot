@@ -84,6 +84,12 @@ export const EnvSchema = z.object({
         '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
       ].join(','),
     ),
+
+  // Token security (BSC) - external best-effort checks (e.g., GoPlus)
+  TOKEN_SECURITY_GOPLUS_ENABLED: z.coerce.boolean().default(true),
+  TOKEN_SECURITY_GOPLUS_BASE_URL: z.string().default('https://api.gopluslabs.io'),
+  TOKEN_SECURITY_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(800),
+  TOKEN_SECURITY_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(15 * 60 * 1000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -128,6 +134,12 @@ export type AppConfig = {
   sellability: {
     multicall3Address: string;
     baseTokensBsc: string[];
+  };
+  tokenSecurity: {
+    enabled: boolean;
+    goPlusBaseUrl: string;
+    timeoutMs: number;
+    cacheTtlMs: number;
   };
 };
 
@@ -184,6 +196,12 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     sellability: {
       multicall3Address: env.SELLABILITY_MULTICALL3_ADDRESS.trim(),
       baseTokensBsc: splitCsv(env.SELLABILITY_BASE_TOKENS_BSC),
+    },
+    tokenSecurity: {
+      enabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_GOPLUS_ENABLED,
+      goPlusBaseUrl: env.TOKEN_SECURITY_GOPLUS_BASE_URL.trim(),
+      timeoutMs: env.TOKEN_SECURITY_TIMEOUT_MS,
+      cacheTtlMs: env.TOKEN_SECURITY_CACHE_TTL_MS,
     },
   };
 }

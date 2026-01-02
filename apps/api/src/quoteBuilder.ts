@@ -21,6 +21,7 @@ import type { Metrics } from './obs/metrics';
 import type { QuoteCache } from './cache/quoteCache';
 import { ProviderHealthTracker } from './obs/providerHealth';
 import { assessOnchainSellability } from './risk/onchainSellability';
+import { assessTokenSecuritySellability } from './risk/tokenSecurity';
 
 type Logger = {
   info(obj: unknown, msg?: string): void;
@@ -55,6 +56,12 @@ export function buildQuotes(
       baseTokensBsc: string[];
       pancake: { v2Factory: string; v3Factory: string; wbnb: string };
     };
+    tokenSecurity?: {
+      enabled: boolean;
+      goPlusBaseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -85,6 +92,12 @@ async function buildQuotesImpl(
       baseTokensBsc: string[];
       pancake: { v2Factory: string; v3Factory: string; wbnb: string };
     };
+    tokenSecurity?: {
+      enabled: boolean;
+      goPlusBaseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -104,6 +117,7 @@ async function buildQuotesImpl(
   const providerHealth = deps.providerHealth;
   const rpc = deps.rpc;
   const sellability = deps.sellability;
+  const tokenSecurity = deps.tokenSecurity;
   const quoteCache = deps.quoteCache;
   const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
@@ -368,6 +382,19 @@ async function buildQuotesImpl(
           })
         : null;
 
+      const tokenSecuritySellability = tokenSecurity
+        ? await assessTokenSecuritySellability({
+            chainId: parsed.chainId,
+            token: parsed.buyToken,
+            config: {
+              enabled: tokenSecurity.enabled,
+              goPlusBaseUrl: tokenSecurity.goPlusBaseUrl,
+              timeoutMs: tokenSecurity.timeoutMs,
+              cacheTtlMs: tokenSecurity.cacheTtlMs,
+            },
+          })
+        : null;
+
       // Merge sellability signals intelligently:
       // - Onchain OK/FAIL with high confidence takes priority (real data)
       // - Adapter signals are used as fallback
@@ -376,8 +403,21 @@ async function buildQuotesImpl(
         ? {
             ...riskSignals,
             sellability: (() => {
-              const reasons = [...riskSignals.sellability.reasons, ...onchainSellability.reasons];
-              const maxConfidence = Math.max(riskSignals.sellability.confidence, onchainSellability.confidence);
+              const reasons = [
+                ...riskSignals.sellability.reasons,
+                ...onchainSellability.reasons,
+                ...(tokenSecuritySellability?.reasons ?? []),
+              ];
+              const maxConfidence = Math.max(
+                riskSignals.sellability.confidence,
+                onchainSellability.confidence,
+                tokenSecuritySellability?.confidence ?? 0,
+              );
+
+              // Token security FAIL should override everything (honeypot/cannot-sell).
+              if (tokenSecuritySellability?.status === 'FAIL' && tokenSecuritySellability.confidence >= 0.8) {
+                return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
 
               // Onchain FAIL with good confidence = definitive FAIL
               if (onchainSellability.status === 'FAIL' && onchainSellability.confidence >= 0.8) {
@@ -386,6 +426,11 @@ async function buildQuotesImpl(
 
               // Onchain OK with good confidence = trust it (real liquidity detected)
               if (onchainSellability.status === 'OK' && onchainSellability.confidence >= 0.7) {
+                return { status: 'OK' as const, confidence: maxConfidence, reasons };
+              }
+
+              // Token security OK is supporting evidence when onchain doesn't contradict.
+              if (tokenSecuritySellability?.status === 'OK' && onchainSellability.status !== 'FAIL') {
                 return { status: 'OK' as const, confidence: maxConfidence, reasons };
               }
 
