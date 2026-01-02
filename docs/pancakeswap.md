@@ -90,9 +90,10 @@ Notes:
 - ✅ RPC allowlist configuration via `BSC_RPC_URLS`
 - ✅ Pre-BEQ simulation with output verification
 - ✅ V3 + V2 fallback: always picks best quote
+- ✅ Gas cost normalization in BEQ scoring
 
 ## TODOs
-- Normalize gas/fees and integrate into BEQ scoring.
+- (No remaining TODOs)
 
 ## RPC considerations
 - RPC endpoints must be env-configurable.
