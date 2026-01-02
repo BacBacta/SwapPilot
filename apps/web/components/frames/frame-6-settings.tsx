@@ -13,7 +13,7 @@ export function FrameSettingsPanel() {
     <CardLight className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-sp-lightBorder bg-sp-lightSurface px-4 py-3">
         <div className="text-xs font-semibold text-sp-lightText">Settings</div>
-        <div className="text-[11px] text-sp-lightMuted">Paramètres de scoring</div>
+        <div className="text-[11px] text-sp-lightMuted">Scoring parameters</div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -23,7 +23,7 @@ export function FrameSettingsPanel() {
             <div>
               <div className="text-[11px] font-semibold text-sp-lightText">Slippage Tolerance</div>
               <div className="text-[10px] text-sp-lightMuted mt-0.5">
-                Tolérance maximale de glissement de prix
+                Maximum price slippage tolerance
               </div>
             </div>
             <div className="text-sm font-bold text-sp-lightText">
@@ -40,7 +40,7 @@ export function FrameSettingsPanel() {
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold text-sp-lightText">⚡ Auto-Slippage</span>
               <span className="text-[10px] text-sp-lightMuted">
-                Ajusté selon le risque du token
+                Adjusted based on token risk
               </span>
             </div>
             <Toggle
@@ -52,7 +52,7 @@ export function FrameSettingsPanel() {
           {/* Manual slippage controls - shown when auto is off or as fallback */}
           <div className={`mt-3 ${settings.autoSlippage ? 'opacity-50' : ''}`}>
             <div className="text-[10px] text-sp-lightMuted mb-2">
-              {settings.autoSlippage ? 'Slippage minimum (fallback)' : 'Slippage manuel'}
+              {settings.autoSlippage ? 'Minimum slippage (fallback)' : 'Manual slippage'}
             </div>
             <div className="flex gap-2">
               {SLIPPAGE_PRESETS.map((bps) => (
@@ -83,9 +83,9 @@ export function FrameSettingsPanel() {
 
         {/* Mode Selector */}
         <div className="rounded-lg border border-sp-lightBorder bg-sp-lightSurface p-3">
-          <div className="text-[11px] font-semibold text-sp-lightText">Mode de scoring</div>
+          <div className="text-[11px] font-semibold text-sp-lightText">Scoring Mode</div>
           <div className="text-[10px] text-sp-lightMuted mt-0.5 mb-3">
-            Ajuste la pondération risque/rendement
+            Adjusts risk/reward weighting
           </div>
           <div className="flex gap-2">
             {(['SAFE', 'NORMAL', 'DEGEN'] as const).map((mode) => (
@@ -107,9 +107,9 @@ export function FrameSettingsPanel() {
             ))}
           </div>
           <div className="mt-2 text-[10px] text-sp-lightMuted">
-            {settings.mode === 'SAFE' && '🛡️ Exclut les quotes à risque élevé. Privilégie la sécurité.'}
-            {settings.mode === 'NORMAL' && '⚖️ Équilibre entre rendement et risque.'}
-            {settings.mode === 'DEGEN' && '🔥 Maximise le rendement brut. Affiche les risques.'}
+            {settings.mode === 'SAFE' && '🛡️ Excludes high-risk quotes. Prioritizes safety.'}
+            {settings.mode === 'NORMAL' && '⚖️ Balance between return and risk.'}
+            {settings.mode === 'DEGEN' && '🔥 Maximizes raw output. Shows risks.'}
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export function FrameSettingsPanel() {
             <div>
               <div className="text-[11px] font-semibold text-sp-lightText">Sellability Check</div>
               <div className="text-[10px] text-sp-lightMuted">
-                Vérifie si le token peut être revendu
+                Checks if the token can be sold
               </div>
             </div>
             <Toggle
@@ -132,7 +132,7 @@ export function FrameSettingsPanel() {
             <div>
               <div className="text-[11px] font-semibold text-sp-lightText">MEV-Aware Scoring</div>
               <div className="text-[10px] text-sp-lightMuted">
-                Pénalise les routes exposées au MEV
+                Penalizes routes exposed to MEV
               </div>
             </div>
             <Toggle
@@ -145,7 +145,7 @@ export function FrameSettingsPanel() {
             <div>
               <div className="text-[11px] font-semibold text-sp-lightText">Canonical Pools Only</div>
               <div className="text-[10px] text-sp-lightMuted">
-                Limite aux pools vérifiées et stables
+                Limits to verified and stable pools
               </div>
             </div>
             <Toggle
@@ -167,7 +167,7 @@ export function FrameSettingsPanel() {
 
         {/* Status indicator */}
         <div className="text-[10px] text-sp-lightMuted text-center pt-2 border-t border-sp-lightBorder">
-          ✓ Settings sauvegardés automatiquement
+          ✓ Settings saved automatically
         </div>
       </div>
     </CardLight>
