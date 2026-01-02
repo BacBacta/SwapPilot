@@ -152,7 +152,7 @@ export function SwapInterface() {
   // State
   const [fromToken, setFromToken] = useState("BNB");
   const [toToken, setToToken] = useState("ETH");
-  const [fromAmount, setFromAmount] = useState("1");
+  const [fromAmount, setFromAmount] = useState("");
   const [fromAmountRawWei, setFromAmountRawWei] = useState<string | null>(null); // Exact wei amount when Max is clicked
   const [showMore, setShowMore] = useState(false);
   
