@@ -124,8 +124,12 @@ test.describe('Swap Interface', () => {
     await fromAmount.click();
     await fromAmount.pressSequentially('1', { delay: 100 });
     
-    // Wait for BEQ score to appear (mock mode)
-    await expect(page.locator('#beqContainer')).toBeVisible({ timeout: 30000 });
+    // Wait for the swap button to change from "Analyzing..." to something else
+    // This indicates the API call has completed (success or failure)
+    await expect(page.locator('#swapBtn')).not.toHaveText(/Analyzing/i, { timeout: 30000 });
+    
+    // Wait for BEQ score to appear (only shows on successful quote fetch)
+    await expect(page.locator('#beqContainer')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#beqScore')).toBeVisible();
   });
 

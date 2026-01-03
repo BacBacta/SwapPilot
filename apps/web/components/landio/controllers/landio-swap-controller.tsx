@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
-import { type Address } from "viem";
+import { type Address, erc20Abi, maxUint256 } from "viem";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { bsc } from "viem/chains";
 import { postQuotes } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
@@ -10,9 +12,14 @@ import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
+import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
+import { useToast } from "@/components/ui/toast";
 import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
+
+// Debounce delay for quote fetching (ms)
+const QUOTE_DEBOUNCE_MS = 500;
 
 // Universal Router address (used as spender for approvals)
 const UNIVERSAL_ROUTER_ADDRESS: Address = "0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897";
@@ -262,9 +269,21 @@ export function LandioSwapController() {
   const { address, isConnected } = useAccount();
 
   const lastRequestIdRef = useRef(0);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Ref to store current values for debounced callback (avoids stale closures)
+  const currentParamsRef = useRef<{
+    fromTokenInfo: TokenInfo | null;
+    toTokenInfo: TokenInfo | null;
+    effectiveSlippageBps: number;
+    settings: typeof settings;
+  }>({ fromTokenInfo: null, toTokenInfo: null, effectiveSlippageBps: 50, settings });
+  
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
   const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
+  
+  // Toast notifications
+  const toast = useToast();
 
   // Execute swap hook for providers with buildTx capability
   const {
@@ -366,11 +385,33 @@ export function LandioSwapController() {
     isApproved,
     approve,
     allowance,
+    refetchAllowance,
   } = useTokenApproval({
     tokenAddress: isFromNative ? undefined : (fromTokenInfo?.address as Address | undefined),
     spenderAddress: UNIVERSAL_ROUTER_ADDRESS,
     amount: approvalAmount,
   });
+
+  // Dynamic slippage based on quote signals
+  const dynamicSlippage = useDynamicSlippage({
+    quote: selected,
+    userSlippageBps: settings.slippageBps,
+    autoSlippageEnabled: settings.autoSlippage ?? true,
+    tokenSymbol: toTokenInfo?.symbol ?? "TOKEN",
+  });
+
+  // Effective slippage to use (dynamic when auto-enabled)
+  const effectiveSlippageBps = dynamicSlippage.slippageBps;
+
+  // Keep refs up to date for debounced callbacks
+  useEffect(() => {
+    currentParamsRef.current = {
+      fromTokenInfo: fromTokenInfo ?? null,
+      toTokenInfo: toTokenInfo ?? null,
+      effectiveSlippageBps,
+      settings,
+    };
+  }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings]);
 
   // Check if balance is insufficient
   const hasInsufficientBalance = useMemo(() => {
@@ -519,7 +560,7 @@ export function LandioSwapController() {
 
     detailsToggle?.addEventListener("click", onToggleDetails);
 
-    const onInput = async () => {
+    const onInput = () => {
       const rawValue = amountInput?.value ?? "";
       const valueNum = parseNumber(rawValue);
 
@@ -572,28 +613,43 @@ export function LandioSwapController() {
       setSwapBtnText("Analyzing...");
       setDisabled("swapBtn", true);
 
-      const requestId = ++lastRequestIdRef.current;
+      // Cancel previous debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
 
-      try {
-        const sellAmountWei = toWei(rawValue, fromTokenInfo.decimals);
-        const res = await postQuotes({
-          request: {
-            chainId: 56,
-            sellToken: fromTokenInfo.address,
-            buyToken: toTokenInfo.address,
-            sellAmount: sellAmountWei,
-            slippageBps: settings.slippageBps,
-            mode: settings.mode,
-            scoringOptions: {
-              sellabilityCheck: settings.sellabilityCheck,
-              mevAwareScoring: settings.mevAwareScoring,
-              canonicalPoolsOnly: settings.canonicalPoolsOnly,
+      // Capture current values in local variables for the debounced callback
+      const capturedFromTokenInfo = fromTokenInfo;
+      const capturedToTokenInfo = toTokenInfo;
+
+      // Debounce the API call by 500ms
+      debounceTimerRef.current = setTimeout(async () => {
+        const requestId = ++lastRequestIdRef.current;
+        
+        // Use captured values and ref for slippage (which may have changed)
+        const currentSlippageBps = currentParamsRef.current.effectiveSlippageBps;
+        const currentSettings = currentParamsRef.current.settings;
+
+        try {
+          const sellAmountWei = toWei(rawValue, capturedFromTokenInfo.decimals);
+          const res = await postQuotes({
+            request: {
+              chainId: 56,
+              sellToken: capturedFromTokenInfo.address,
+              buyToken: capturedToTokenInfo.address,
+              sellAmount: sellAmountWei,
+              slippageBps: currentSlippageBps, // Use current slippage from ref
+              mode: currentSettings.mode,
+              scoringOptions: {
+                sellabilityCheck: currentSettings.sellabilityCheck,
+                mevAwareScoring: currentSettings.mevAwareScoring,
+                canonicalPoolsOnly: currentSettings.canonicalPoolsOnly,
+              },
+              sellTokenDecimals: capturedFromTokenInfo.decimals,
+              buyTokenDecimals: capturedToTokenInfo.decimals,
             },
-            sellTokenDecimals: fromTokenInfo.decimals,
-            buyTokenDecimals: toTokenInfo.decimals,
-          },
-          timeoutMs: 12_000,
-        });
+            timeoutMs: 12_000,
+          });
 
         if (requestId !== lastRequestIdRef.current) return;
 
@@ -707,10 +763,10 @@ export function LandioSwapController() {
 
         // Details accordion rows
         const detailsRows = Array.from(document.querySelectorAll<HTMLElement>("#detailsContent .detail-row"));
-        const slippagePct = settings.slippageBps / 100;
+        const slippagePct = effectiveSlippageBps / 100;
         const outHuman = bestBuy !== null ? Number(bestBuy) / 10 ** toTokenInfo.decimals : null;
         const rate = outHuman !== null && valueNum > 0 ? outHuman / valueNum : null;
-        const minReceived = outHuman !== null ? outHuman * (1 - settings.slippageBps / 10_000) : null;
+        const minReceived = outHuman !== null ? outHuman * (1 - effectiveSlippageBps / 10_000) : null;
 
         for (const row of detailsRows) {
           const cells = row.querySelectorAll("span");
@@ -722,7 +778,9 @@ export function LandioSwapController() {
           if (label === "Rate") {
             valueEl.textContent = rate !== null ? `1 ${fromTokenSymbol} = ${rate.toFixed(rate >= 1 ? 4 : 6)} ${toTokenSymbol}` : "—";
           } else if (label === "Slippage Tolerance") {
-            valueEl.textContent = `${slippagePct.toFixed(slippagePct % 1 === 0 ? 0 : 2)}%`;
+            const autoIndicator = dynamicSlippage.isAuto ? "⚡ " : "";
+            valueEl.textContent = `${autoIndicator}${slippagePct.toFixed(slippagePct % 1 === 0 ? 0 : 2)}%`;
+            valueEl.title = dynamicSlippage.reason;
           } else if (label === "Minimum Received") {
             valueEl.textContent = minReceived !== null ? `${minReceived.toFixed(minReceived >= 1 ? 4 : 6)} ${toTokenSymbol}` : "—";
           } else if (label === "Network Fee") {
@@ -741,14 +799,16 @@ export function LandioSwapController() {
         if (res.receipt) {
           setReceipt(res.receipt);
         }
-      } catch {
-        if (requestId !== lastRequestIdRef.current) return;
-        setSwapBtnText("Failed to fetch quotes");
-        setDisabled("swapBtn", true);
-      } finally {
-        const swapContainer = document.querySelector<HTMLElement>(".swap-container");
-        swapContainer?.classList.remove("analyzing-state");
-      }
+        } catch {
+          if (requestId !== lastRequestIdRef.current) return;
+          toast.error("Failed to fetch quotes", "Please try again");
+          setSwapBtnText("Failed to fetch quotes");
+          setDisabled("swapBtn", true);
+        } finally {
+          const swapContainer = document.querySelector<HTMLElement>(".swap-container");
+          swapContainer?.classList.remove("analyzing-state");
+        }
+      }, QUOTE_DEBOUNCE_MS); // End of debounce setTimeout
     };
 
     amountInput?.addEventListener("input", onInput);
@@ -756,38 +816,193 @@ export function LandioSwapController() {
     // Swap button action - use buildTx for capable providers, fallback to deepLink
     const swapBtn = document.getElementById("swapBtn") as HTMLButtonElement | null;
     const onSwap = async () => {
-      if (!selected || !fromTokenInfo || !toTokenInfo) return;
+      if (!selected || !fromTokenInfo || !toTokenInfo || !address) return;
 
       const hasBuildTx = selected.capabilities?.buildTx === true;
 
-      if (hasBuildTx && isConnected) {
-        // Use buildTransaction + executeSwap for providers with buildTx
+      if (!hasBuildTx) {
+        // Fallback to deepLink for providers without buildTx
+        if (selected.deepLink) {
+          window.open(selected.deepLink, "_blank", "noopener,noreferrer");
+          toast.info("Opening external swap", `Redirecting to ${selected.providerId}`);
+        } else {
+          toast.error("No execution method", `${selected.providerId} doesn't support direct swaps`);
+        }
+        return;
+      }
+
+      if (!isConnected) {
+        toast.error("Wallet not connected", "Please connect your wallet to swap");
+        return;
+      }
+
+      // Add transaction to history optimistically (pending state)
+      const txId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const fromAmountInputEl = document.getElementById("fromAmount") as HTMLInputElement | null;
+      const toAmountInputEl = document.getElementById("toAmount") as HTMLInputElement | null;
+      const pendingTx: StoredTransaction = {
+        id: txId,
+        timestamp: Date.now(),
+        fromToken: fromTokenSymbol,
+        toToken: toTokenSymbol,
+        fromAmount: fromAmountInputEl?.value || "0",
+        toAmount: toAmountInputEl?.value || "0",
+        status: "pending",
+        providerId: selected.providerId,
+      };
+      setTxHistory((prev) => {
+        const updated = [pendingTx, ...prev].slice(0, 50);
+        localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+        return updated;
+      });
+
+      const loadingToastId = toast.loading("Building transaction...", `Preparing swap via ${selected.providerId}`);
+
+      try {
         setSwapBtnText("Building...");
         setDisabled("swapBtn", true);
 
-        const amountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
-        const sellAmountWei = toWei(amountInput?.value ?? "0", fromTokenInfo.decimals);
+        const sellAmountWei = toWei(fromAmountInputEl?.value ?? "0", fromTokenInfo.decimals);
 
+        // Step 1: Build the transaction
         const tx = await buildTransaction({
           providerId: selected.providerId,
           sellToken: fromTokenInfo.address,
           buyToken: toTokenInfo.address,
           sellAmount: sellAmountWei,
-          slippageBps: settings.slippageBps,
+          slippageBps: effectiveSlippageBps, // Use dynamic slippage
           quoteRaw: selected.raw,
           quoteNormalized: selected.normalized,
         });
 
-        if (tx) {
-          setSwapBtnText("Confirm in wallet...");
-          executeSwap(tx);
-        } else {
-          setSwapBtnText("Swap");
-          setDisabled("swapBtn", false);
+        if (!tx) {
+          throw new Error("Failed to build transaction");
         }
-      } else if (selected.deepLink) {
-        // Fallback to deepLink for providers without buildTx (binance-wallet, liquidmesh, metamask)
-        window.open(selected.deepLink, "_blank", "noopener,noreferrer");
+
+        // Step 2: Check if approval is needed (for non-native tokens)
+        const isNativeToken = fromTokenInfo.isNative ||
+          fromTokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
+          fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
+
+        if (!isNativeToken && tx.approvalAddress) {
+          // Read current allowance directly
+          const publicClient = createPublicClient({
+            chain: bsc,
+            transport: http(),
+          });
+
+          let currentAllowance = 0n;
+          try {
+            currentAllowance = await publicClient.readContract({
+              address: fromTokenInfo.address as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "allowance",
+              args: [address as `0x${string}`, tx.approvalAddress as `0x${string}`],
+            });
+          } catch (e) {
+            console.warn("[landio][swap] failed to read allowance", e);
+          }
+
+          const sellAmountBigInt = BigInt(sellAmountWei);
+          if (currentAllowance < sellAmountBigInt) {
+            toast.updateToast(loadingToastId, {
+              type: "info",
+              title: "Approval required",
+              message: `Please approve ${fromTokenSymbol} spending in your wallet`,
+            });
+
+            setSwapBtnText("Approving...");
+
+            try {
+              // Create wallet client from window.ethereum
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const ethereum = (window as any).ethereum;
+              if (!ethereum) {
+                throw new Error("No wallet provider found");
+              }
+              const walletClient = createWalletClient({
+                chain: bsc,
+                transport: custom(ethereum),
+              });
+
+              // Send approval transaction
+              const approvalHash = await walletClient.writeContract({
+                address: fromTokenInfo.address as `0x${string}`,
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [tx.approvalAddress as `0x${string}`, maxUint256],
+                account: address as `0x${string}`,
+              });
+
+              toast.updateToast(loadingToastId, {
+                type: "info",
+                title: "Waiting for approval...",
+                message: "Confirming on blockchain",
+              });
+
+              // Wait for approval to be confirmed
+              await publicClient.waitForTransactionReceipt({
+                hash: approvalHash,
+                confirmations: 1,
+              });
+
+              toast.updateToast(loadingToastId, {
+                type: "success",
+                title: "Approval confirmed!",
+                message: "Now executing swap...",
+              });
+
+              // Small delay to let the chain state propagate
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              refetchAllowance();
+
+            } catch (approvalError) {
+              const msg = approvalError instanceof Error ? approvalError.message : "Approval failed";
+              toast.updateToast(loadingToastId, {
+                type: "error",
+                title: "Approval failed",
+                message: msg.includes("User rejected") ? "User rejected the request" : msg,
+              });
+              // Update tx history to failed
+              setTxHistory((prev) => {
+                const updated = prev.map((t) => t.id === txId ? { ...t, status: "failed" as const } : t);
+                localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+                return updated;
+              });
+              setSwapBtnText("Swap");
+              setDisabled("swapBtn", false);
+              return;
+            }
+          }
+        }
+
+        // Step 3: Execute the swap
+        toast.updateToast(loadingToastId, {
+          type: "info",
+          title: "Confirm in wallet",
+          message: "Please confirm the transaction in your wallet",
+        });
+
+        setSwapBtnText("Confirm in wallet...");
+        executeSwap(tx);
+
+        // The rest is handled by useEffect watching txHash and swapStatus
+
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        toast.updateToast(loadingToastId, {
+          type: "error",
+          title: "Swap failed",
+          message,
+        });
+        // Update tx history to failed
+        setTxHistory((prev) => {
+          const updated = prev.map((t) => t.id === txId ? { ...t, status: "failed" as const } : t);
+          localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+          return updated;
+        });
+        setSwapBtnText("Swap");
+        setDisabled("swapBtn", false);
       }
     };
     swapBtn?.addEventListener("click", onSwap);
@@ -796,21 +1011,21 @@ export function LandioSwapController() {
       amountInput?.removeEventListener("input", onInput);
       detailsToggle?.removeEventListener("click", onToggleDetails);
       swapBtn?.removeEventListener("click", onSwap);
+      // NOTE: Don't cleanup debounce timer here - it's managed by the timer itself
     };
   }, [
+    address,
     buildTransaction,
     executeSwap,
     fromTokenInfo,
     fromTokenSymbol,
+    getPrice,
     isConnected,
+    refetchAllowance,
     toTokenSymbol,
     resolveToken,
     selected,
-    settings.canonicalPoolsOnly,
-    settings.mevAwareScoring,
-    settings.mode,
-    settings.sellabilityCheck,
-    settings.slippageBps,
+    toast,
     toTokenInfo,
   ]);
 
@@ -823,29 +1038,34 @@ export function LandioSwapController() {
       setSwapBtnText("Success!");
       setDisabled("swapBtn", true);
       
-      // Save transaction to history
-      if (selected && fromTokenInfo && toTokenInfo) {
-        const fromAmountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
-        const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
-        
-        const newTx: StoredTransaction = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          timestamp: Date.now(),
-          fromToken: fromTokenSymbol,
-          toToken: toTokenSymbol,
-          fromAmount: fromAmountInput?.value || "0",
-          toAmount: toAmountInput?.value || "0",
-          txHash: txHash ?? undefined,
-          status: "success",
-          providerId: selected.providerId,
-        };
-        
-        setTxHistory((prev) => {
-          const updated = [newTx, ...prev].slice(0, 50); // Keep last 50
+      // Show success toast
+      toast.success("Swap successful!", `Transaction: ${txHash?.slice(0, 10)}...`);
+      
+      // Update the most recent pending transaction to success
+      setTxHistory((prev) => {
+        const pendingTx = prev.find((t) => t.status === "pending");
+        if (pendingTx) {
+          const updated = prev.map((t) => 
+            t.id === pendingTx.id 
+              ? { ...t, status: "success" as const, txHash: txHash ?? undefined } 
+              : t
+          );
           localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
           return updated;
-        });
-      }
+        }
+        return prev;
+      });
+      
+      // Refresh balances and quotes after successful swap
+      refetchAllowance();
+      
+      // Re-fetch quotes after a delay to let the chain state propagate
+      const refreshTimeout = setTimeout(() => {
+        const fromAmountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
+        if (fromAmountInput && fromAmountInput.value) {
+          fromAmountInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }, 2000);
       
       // Reset after 3 seconds
       const timeout = setTimeout(() => {
@@ -853,8 +1073,29 @@ export function LandioSwapController() {
         setDisabled("swapBtn", false);
         resetSwap();
       }, 3000);
-      return () => clearTimeout(timeout);
+      return () => {
+        clearTimeout(timeout);
+        clearTimeout(refreshTimeout);
+      };
     } else if (swapStatus === "error") {
+      // Show error toast
+      toast.error("Transaction failed", swapError ?? "Unknown error");
+      
+      // Update the most recent pending transaction to failed
+      setTxHistory((prev) => {
+        const pendingTx = prev.find((t) => t.status === "pending");
+        if (pendingTx) {
+          const updated = prev.map((t) => 
+            t.id === pendingTx.id 
+              ? { ...t, status: "failed" as const } 
+              : t
+          );
+          localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+      
       setSwapBtnText(swapError ? `Error: ${swapError.slice(0, 20)}...` : "Swap Failed");
       setDisabled("swapBtn", false);
       // Reset after 3 seconds
@@ -864,7 +1105,7 @@ export function LandioSwapController() {
       }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [swapStatus, swapError, resetSwap, selected, fromTokenInfo, toTokenInfo, fromTokenSymbol, toTokenSymbol, txHash]);
+  }, [swapStatus, swapError, resetSwap, toast, refetchAllowance, txHash]);
 
   // Display receipt info (whyWinner) when available
   useEffect(() => {
@@ -1293,13 +1534,14 @@ export function LandioSwapController() {
       margin-bottom: 16px;
     `;
 
-    const slippagePct = settings.slippageBps / 100;
-    const slippageRisk = slippagePct >= 1 ? "high" : slippagePct >= 0.5 ? "medium" : "low";
+    const slippagePct = effectiveSlippageBps / 100;
+    const slippageRisk = dynamicSlippage.riskLevel;
     const slippageColor = slippageRisk === "high" ? "var(--error, #ff6b6b)" : slippageRisk === "medium" ? "var(--warning, #f0b90b)" : "var(--ok, #00ff88)";
+    const autoIndicator = dynamicSlippage.isAuto ? "⚡" : "";
 
     const stats = [
       { label: "Network", value: "BSC", icon: "🔗" },
-      { label: "Slippage", value: `${slippagePct}%`, icon: "⚡", color: slippageColor },
+      { label: "Slippage", value: `${autoIndicator}${slippagePct}%`, icon: "⚡", color: slippageColor, title: dynamicSlippage.reason },
       { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "0.1%", icon: "💰" },
     ];
 
@@ -1314,14 +1556,14 @@ export function LandioSwapController() {
       card.innerHTML = `
         <div style="font-size: 16px; margin-bottom: 4px;">${stat.icon}</div>
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">${stat.label}</div>
-        <div style="font-size: 14px; font-weight: 600; color: ${stat.color || 'var(--text-primary)'};">${stat.value}</div>
+        <div style="font-size: 14px; font-weight: 600; color: ${stat.color || 'var(--text-primary)'};" title="${stat.title || ''}">${stat.value}</div>
       `;
       statCardsContainer.appendChild(card);
     });
 
     // Insert before the BEQ container content
     beqContainer.insertBefore(statCardsContainer, beqContainer.firstChild);
-  }, [response, settings.slippageBps, feeInfo]);
+  }, [response, effectiveSlippageBps, dynamicSlippage, feeInfo]);
 
   // Add PILOT Tier Badge
   useEffect(() => {
