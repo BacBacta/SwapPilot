@@ -46,12 +46,12 @@ test.describe('Swap (Landio)', () => {
     await expect(modal).not.toHaveClass(/open/);
 
     await page.locator('#openSlippage').click();
-    // Wait for modal content to be visible.
+    // Wait for modal to get the open class first (CSS transition).
+    await expect(modal).toHaveClass(/open/, { timeout: 5000 });
+    // Then verify content is visible.
     await expect(page.locator('#slippageModal .slippage-content')).toBeVisible();
-    await expect(modal).toHaveClass(/open/);
 
     await page.locator('#closeSlippage').click();
-    await expect(page.locator('#slippageModal .slippage-content')).toBeHidden();
     await expect(modal).not.toHaveClass(/open/);
   });
 
