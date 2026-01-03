@@ -10,11 +10,28 @@ import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
+import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
 
 // Universal Router address (used as spender for approvals)
 const UNIVERSAL_ROUTER_ADDRESS: Address = "0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897";
+
+// Transaction history storage key
+const TX_HISTORY_KEY = "swappilot_tx_history";
+
+// Transaction type for history
+type StoredTransaction = {
+  id: string;
+  timestamp: number;
+  fromToken: string;
+  toToken: string;
+  fromAmount: string;
+  toAmount: string;
+  txHash?: string | undefined;
+  status: "pending" | "success" | "failed";
+  providerId: string;
+};
 
 function parseNumber(input: string): number {
   const n = parseFloat(String(input).replace(/,/g, ""));
@@ -170,6 +187,11 @@ function renderProviders(
     const mevLevel = q.signals?.mevExposure?.level;
     const mevFlag = mevLevel === "LOW" ? "✓ MEV" : mevLevel === "HIGH" ? "⚠️ MEV" : "";
 
+    // Confidence score (using reliabilityFactor from v2Details as proxy)
+    const reliabilityFactor = q.score?.v2Details?.components?.reliabilityFactor;
+    const confidence = typeof reliabilityFactor === "number" ? Math.round(reliabilityFactor * 100) : null;
+    const confidenceText = confidence !== null ? `${confidence}%` : "";
+
     // Rank badge
     const rankBadge = idx < 3 ? RANK_BADGES[idx] : `#${idx + 1}`;
 
@@ -185,7 +207,7 @@ function renderProviders(
         <div class="provider-logo">${rankBadge}</div>
         <div>
           <div class="provider-name">${q.providerId}</div>
-          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${mevFlag ? ` • ${mevFlag}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
+          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${mevFlag ? ` • ${mevFlag}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
         </div>
       </div>
       <div class="provider-right">
@@ -276,8 +298,37 @@ export function LandioSwapController() {
   // Track current input amount in wei for approval check
   const [fromAmountWei, setFromAmountWei] = useState("0");
 
+  // BEQ/RAW scoring mode state
+  const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
+
+  // Transaction history drawer state
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [txHistory, setTxHistory] = useState<StoredTransaction[]>([]);
+
+  // Swap value in USD for fee calculation
+  const [swapValueUsd, setSwapValueUsd] = useState(0);
+
   const fromTokenInfo = useMemo(() => resolveToken(fromTokenSymbol), [resolveToken, fromTokenSymbol]);
   const toTokenInfo = useMemo(() => resolveToken(toTokenSymbol), [resolveToken, toTokenSymbol]);
+
+  // PILOT tier hook
+  const { data: pilotTierInfo, isLoading: isPilotTierLoading } = usePilotTier();
+
+  // Fee calculation hook
+  const { data: feeInfo, isLoading: isFeeLoading } = useFeeCalculation(swapValueUsd);
+
+  // Load transaction history from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(TX_HISTORY_KEY);
+      if (stored) {
+        setTxHistory(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
 
   // Get wallet balances for BNB and ETH
   const balanceTokens = useMemo(() => {
@@ -478,8 +529,14 @@ export function LandioSwapController() {
       // Update fromAmountWei for approval check
       if (fromTokenInfo && valueNum > 0) {
         setFromAmountWei(toWei(rawValue, fromTokenInfo.decimals));
+        // Update swap value in USD for fee calculation
+        const price = getPrice(fromTokenInfo.address);
+        if (price) {
+          setSwapValueUsd(valueNum * price);
+        }
       } else {
         setFromAmountWei("0");
+        setSwapValueUsd(0);
       }
 
       // Reset refresh countdown
@@ -765,6 +822,31 @@ export function LandioSwapController() {
     } else if (swapStatus === "success") {
       setSwapBtnText("Success!");
       setDisabled("swapBtn", true);
+      
+      // Save transaction to history
+      if (selected && fromTokenInfo && toTokenInfo) {
+        const fromAmountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
+        const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
+        
+        const newTx: StoredTransaction = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          timestamp: Date.now(),
+          fromToken: fromTokenSymbol,
+          toToken: toTokenSymbol,
+          fromAmount: fromAmountInput?.value || "0",
+          toAmount: toAmountInput?.value || "0",
+          txHash: txHash ?? undefined,
+          status: "success",
+          providerId: selected.providerId,
+        };
+        
+        setTxHistory((prev) => {
+          const updated = [newTx, ...prev].slice(0, 50); // Keep last 50
+          localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+          return updated;
+        });
+      }
+      
       // Reset after 3 seconds
       const timeout = setTimeout(() => {
         setSwapBtnText("Swap");
@@ -782,7 +864,7 @@ export function LandioSwapController() {
       }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [swapStatus, swapError, resetSwap]);
+  }, [swapStatus, swapError, resetSwap, selected, fromTokenInfo, toTokenInfo, fromTokenSymbol, toTokenSymbol, txHash]);
 
   // Display receipt info (whyWinner) when available
   useEffect(() => {
@@ -1123,6 +1205,333 @@ export function LandioSwapController() {
     });
   }, [settings.slippageBps]);
 
+  // Add BEQ/RAW mode tabs
+  useEffect(() => {
+    const swapHeader = document.querySelector('.swap-header');
+    if (!swapHeader) return;
+
+    // Remove existing tabs if any
+    const existingTabs = document.querySelector('.scoring-mode-tabs');
+    if (existingTabs) existingTabs.remove();
+
+    // Create tabs container - insert before the presets
+    const tabsContainer = document.createElement("div");
+    tabsContainer.className = "scoring-mode-tabs";
+    tabsContainer.style.cssText = `
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-card-inner);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    `;
+
+    const modes: Array<{ key: "BEQ" | "RAW"; label: string; description: string }> = [
+      { key: "BEQ", label: "BEQ Mode", description: "Best Execution Quality - optimized for overall value" },
+      { key: "RAW", label: "RAW Mode", description: "Raw quotes - sorted by output amount only" },
+    ];
+
+    modes.forEach((mode) => {
+      const tab = document.createElement("button");
+      tab.className = `mode-tab${scoringMode === mode.key ? ' active' : ''}`;
+      tab.title = mode.description;
+      tab.textContent = mode.label;
+      tab.style.cssText = `
+        flex: 1;
+        padding: 10px 16px;
+        background: ${scoringMode === mode.key ? 'var(--bg-card)' : 'transparent'};
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: ${scoringMode === mode.key ? 'var(--accent)' : 'var(--text-muted)'};
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: ${scoringMode === mode.key ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'};
+      `;
+      tab.onclick = () => {
+        setScoringMode(mode.key);
+        // Update settings mode for API
+        updateSettings({ mode: mode.key === "RAW" ? "DEGEN" : "NORMAL" });
+        // Trigger re-quote
+        const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+        if (fromAmountInput && fromAmountInput.value) {
+          setTimeout(() => {
+            fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }, 100);
+        }
+      };
+      tabsContainer.appendChild(tab);
+    });
+
+    // Insert after header
+    swapHeader.after(tabsContainer);
+
+    return () => {
+      tabsContainer.remove();
+    };
+  }, [scoringMode, updateSettings]);
+
+  // Add StatCard grid (Network/Slippage/Platform Fee)
+  useEffect(() => {
+    const beqContainer = document.getElementById('beqContainer');
+    if (!beqContainer) return;
+
+    // Remove existing stat cards if any
+    const existingStatCards = document.querySelector('.stat-cards-grid');
+    if (existingStatCards) existingStatCards.remove();
+
+    // Only show when we have quotes
+    if (!response?.rankedQuotes?.length) return;
+
+    const statCardsContainer = document.createElement("div");
+    statCardsContainer.className = "stat-cards-grid";
+    statCardsContainer.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    `;
+
+    const slippagePct = settings.slippageBps / 100;
+    const slippageRisk = slippagePct >= 1 ? "high" : slippagePct >= 0.5 ? "medium" : "low";
+    const slippageColor = slippageRisk === "high" ? "var(--error, #ff6b6b)" : slippageRisk === "medium" ? "var(--warning, #f0b90b)" : "var(--ok, #00ff88)";
+
+    const stats = [
+      { label: "Network", value: "BSC", icon: "🔗" },
+      { label: "Slippage", value: `${slippagePct}%`, icon: "⚡", color: slippageColor },
+      { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "0.1%", icon: "💰" },
+    ];
+
+    stats.forEach((stat) => {
+      const card = document.createElement("div");
+      card.style.cssText = `
+        background: var(--bg-card-inner);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+      `;
+      card.innerHTML = `
+        <div style="font-size: 16px; margin-bottom: 4px;">${stat.icon}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">${stat.label}</div>
+        <div style="font-size: 14px; font-weight: 600; color: ${stat.color || 'var(--text-primary)'};">${stat.value}</div>
+      `;
+      statCardsContainer.appendChild(card);
+    });
+
+    // Insert before the BEQ container content
+    beqContainer.insertBefore(statCardsContainer, beqContainer.firstChild);
+  }, [response, settings.slippageBps, feeInfo]);
+
+  // Add PILOT Tier Badge
+  useEffect(() => {
+    const swapHeader = document.querySelector('.swap-header');
+    if (!swapHeader) return;
+
+    // Remove existing badge if any
+    const existingBadge = document.querySelector('.pilot-tier-badge');
+    if (existingBadge) existingBadge.remove();
+
+    if (!isConnected || !pilotTierInfo || pilotTierInfo.tier === "none") return;
+
+    const tierDisplay = getTierDisplay(pilotTierInfo.tier);
+    const badge = document.createElement("div");
+    badge.className = "pilot-tier-badge";
+    badge.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+    `;
+    badge.innerHTML = `
+      <span>${tierDisplay.emoji}</span>
+      <span style="color: var(--text-secondary);">${tierDisplay.name}</span>
+      <span style="color: var(--ok);">-${pilotTierInfo.discountPercent}%</span>
+    `;
+    badge.title = `PILOT Balance: ${pilotTierInfo.balanceFormatted} PILOT`;
+
+    // Insert in the header area
+    const settingsBtn = swapHeader.querySelector('.swap-settings-btn');
+    if (settingsBtn) {
+      swapHeader.insertBefore(badge, settingsBtn);
+    }
+  }, [isConnected, pilotTierInfo]);
+
+  // Add Mobile Sticky CTA
+  useEffect(() => {
+    // Remove existing sticky if any
+    const existingSticky = document.querySelector('.mobile-sticky-cta');
+    if (existingSticky) existingSticky.remove();
+
+    // Only show on mobile (check viewport width)
+    const checkMobile = () => window.innerWidth <= 768;
+    if (!checkMobile()) return;
+
+    const stickyContainer = document.createElement("div");
+    stickyContainer.className = "mobile-sticky-cta";
+    stickyContainer.style.cssText = `
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px;
+      background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+      z-index: 100;
+      display: none;
+    `;
+
+    const stickyBtn = document.createElement("button");
+    stickyBtn.id = "mobileSwapBtn";
+    stickyBtn.style.cssText = `
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      cursor: pointer;
+      font-family: inherit;
+    `;
+    stickyBtn.textContent = "Swap";
+    stickyBtn.onclick = () => {
+      document.getElementById("swapBtn")?.click();
+    };
+
+    stickyContainer.appendChild(stickyBtn);
+    document.body.appendChild(stickyContainer);
+
+    // Show/hide based on scroll position
+    const handleScroll = () => {
+      const mainSwapBtn = document.getElementById("swapBtn") as HTMLButtonElement | null;
+      if (!mainSwapBtn) return;
+      
+      const rect = mainSwapBtn.getBoundingClientRect();
+      const isMainBtnVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      stickyContainer.style.display = isMainBtnVisible ? "none" : "block";
+      
+      // Sync button text
+      stickyBtn.textContent = mainSwapBtn.textContent || "Swap";
+      stickyBtn.disabled = mainSwapBtn.disabled;
+      if (mainSwapBtn.disabled) {
+        stickyBtn.style.background = "var(--bg-card-inner)";
+        stickyBtn.style.color = "var(--text-muted)";
+        stickyBtn.style.cursor = "not-allowed";
+      } else {
+        stickyBtn.style.background = "var(--accent)";
+        stickyBtn.style.color = "#000";
+        stickyBtn.style.cursor = "pointer";
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      stickyContainer.remove();
+    };
+  }, []);
+
+  // Add Fee Breakdown in details
+  useEffect(() => {
+    if (!feeInfo) return;
+
+    const detailsContent = document.getElementById("detailsContent");
+    if (!detailsContent) return;
+
+    // Remove existing fee breakdown if any
+    const existingFeeBreakdown = detailsContent.querySelector('.fee-breakdown-section');
+    if (existingFeeBreakdown) existingFeeBreakdown.remove();
+
+    // Create fee breakdown section
+    const feeSection = document.createElement("div");
+    feeSection.className = "fee-breakdown-section";
+    feeSection.style.cssText = `
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    `;
+    feeSection.innerHTML = `
+      <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Fee Breakdown</div>
+      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
+        <span style="color: var(--text-muted);">Base Fee</span>
+        <span>${formatFee(feeInfo.baseFeesBps)}</span>
+      </div>
+      ${feeInfo.discountPercent > 0 ? `
+      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
+        <span style="color: var(--text-muted);">PILOT Discount</span>
+        <span style="color: var(--ok);">-${feeInfo.discountPercent}%</span>
+      </div>
+      ` : ''}
+      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
+        <span style="color: var(--text-muted);">Final Fee</span>
+        <span style="font-weight: 600; color: var(--accent);">${formatFee(feeInfo.finalFeeBps)}</span>
+      </div>
+      ${feeInfo.feeAmountUsd > 0 ? `
+      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
+        <span style="color: var(--text-muted);">Fee Amount</span>
+        <span>~$${feeInfo.feeAmountUsd.toFixed(2)}</span>
+      </div>
+      ` : ''}
+    `;
+
+    detailsContent.appendChild(feeSection);
+  }, [feeInfo]);
+
+  // Add Transaction History button and drawer
+  useEffect(() => {
+    const swapHeader = document.querySelector('.swap-header');
+    if (!swapHeader) return;
+
+    // Remove existing history button if any
+    const existingHistoryBtn = document.querySelector('.history-btn');
+    if (existingHistoryBtn) existingHistoryBtn.remove();
+
+    if (!isConnected) return;
+
+    const historyBtn = document.createElement("button");
+    historyBtn.className = "history-btn";
+    historyBtn.style.cssText = `
+      width: 40px;
+      height: 40px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 18px;
+      margin-right: 8px;
+    `;
+    historyBtn.innerHTML = "📜";
+    historyBtn.title = "Transaction History";
+    historyBtn.onclick = () => setHistoryOpen(true);
+    historyBtn.onmouseover = () => {
+      historyBtn.style.borderColor = "var(--accent)";
+    };
+    historyBtn.onmouseout = () => {
+      historyBtn.style.borderColor = "var(--border)";
+    };
+
+    // Insert before settings button
+    const settingsBtn = swapHeader.querySelector('.swap-settings-btn');
+    if (settingsBtn) {
+      swapHeader.insertBefore(historyBtn, settingsBtn);
+    }
+  }, [isConnected]);
+
+  // Update confidence score display in renderProviders
+  // (Already handled in the enhanced renderProviders function)
+
   // Ensure the template starts hidden like in the HTML
   useEffect(() => {
     setDisplay("beqContainer", "none");
@@ -1280,6 +1689,7 @@ export function LandioSwapController() {
 
   // Always render the token picker modal (hidden when not open)
   return (
+    <>
     <div 
       className="token-picker-overlay"
       onClick={(e) => {
@@ -1400,5 +1810,161 @@ export function LandioSwapController() {
         </div>
       </div>
     </div>
+
+    {/* Transaction History Drawer */}
+    {historyOpen && (
+      <div
+        className="history-drawer-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setHistoryOpen(false);
+        }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          zIndex: 9999,
+        }}
+      >
+        <div
+          className="history-drawer"
+          style={{
+            background: 'var(--bg-card, #1a1a2e)',
+            width: '100%',
+            maxWidth: '420px',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            borderLeft: '1px solid var(--border, #333)',
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px 24px',
+            borderBottom: '1px solid var(--border, #333)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>📜</span>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Transaction History</h3>
+              {txHistory.length > 0 && (
+                <span style={{
+                  background: 'var(--bg-card-inner)',
+                  padding: '2px 8px',
+                  borderRadius: '100px',
+                  fontSize: '12px',
+                  color: 'var(--text-muted)',
+                }}>
+                  {txHistory.length}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {txHistory.length > 0 && (
+                <button
+                  onClick={() => {
+                    setTxHistory([]);
+                    localStorage.removeItem(TX_HISTORY_KEY);
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '12px',
+                    color: 'var(--error, #ff6b6b)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear all
+                </button>
+              )}
+              <button
+                onClick={() => setHistoryOpen(false)}
+                style={{
+                  background: 'var(--bg-card-inner)',
+                  border: 'none',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            {txHistory.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 24px',
+                color: 'var(--text-muted)',
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+                <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>No transactions yet</div>
+                <div style={{ fontSize: '14px' }}>Your swap history will appear here</div>
+              </div>
+            ) : (
+              txHistory.map((tx) => (
+                <div
+                  key={tx.id}
+                  style={{
+                    background: 'var(--bg-card-inner)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontWeight: 600 }}>{tx.fromToken} → {tx.toToken}</div>
+                    <div style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      background: tx.status === 'success' ? 'rgba(0,255,136,0.1)' : tx.status === 'failed' ? 'rgba(255,107,107,0.1)' : 'rgba(240,185,11,0.1)',
+                      color: tx.status === 'success' ? 'var(--ok)' : tx.status === 'failed' ? 'var(--error)' : 'var(--warning)',
+                    }}>
+                      {tx.status.toUpperCase()}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    {tx.fromAmount} {tx.fromToken} → {tx.toAmount} {tx.toToken}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <span>{new Date(tx.timestamp).toLocaleString()}</span>
+                    <span>{tx.providerId}</span>
+                  </div>
+                  {tx.txHash && (
+                    <a
+                      href={`https://bscscan.com/tx/${tx.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'block',
+                        marginTop: '8px',
+                        fontSize: '12px',
+                        color: 'var(--accent)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      View on BscScan →
+                    </a>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
