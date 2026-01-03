@@ -86,6 +86,32 @@ function formatSignedAmount(amount: bigint, decimals: number, symbol: string): s
   return formatted === "—" ? "—" : `${sign}${formatted} ${symbol}`;
 }
 
+// Convert human-readable amount to wei (atomic units)
+function toWei(amount: string, decimals: number): string {
+  try {
+    const cleanAmount = amount.replace(/,/g, "");
+    // Handle decimal amounts
+    const parts = cleanAmount.split(".");
+    const wholePart = parts[0] || "0";
+    let decimalPart = parts[1] || "";
+    
+    // Pad or truncate decimal part to match decimals
+    if (decimalPart.length < decimals) {
+      decimalPart = decimalPart.padEnd(decimals, "0");
+    } else if (decimalPart.length > decimals) {
+      decimalPart = decimalPart.slice(0, decimals);
+    }
+    
+    // Combine and convert to BigInt
+    const combined = wholePart + decimalPart;
+    // Remove leading zeros but keep at least one digit
+    const result = combined.replace(/^0+/, "") || "0";
+    return result;
+  } catch {
+    return "0";
+  }
+}
+
 export function LandioSwapController() {
   const { settings, updateSettings } = useSettings();
   const { resolveToken, tokens: allTokens } = useTokenRegistry();
@@ -299,13 +325,13 @@ export function LandioSwapController() {
       const requestId = ++lastRequestIdRef.current;
 
       try {
-        const sellAmountRaw = rawValue.replace(/,/g, "");
+        const sellAmountWei = toWei(rawValue, fromTokenInfo.decimals);
         const res = await postQuotes({
           request: {
             chainId: 56,
             sellToken: fromTokenInfo.address,
             buyToken: toTokenInfo.address,
-            sellAmount: sellAmountRaw,
+            sellAmount: sellAmountWei,
             slippageBps: settings.slippageBps,
             mode: settings.mode,
             scoringOptions: {
