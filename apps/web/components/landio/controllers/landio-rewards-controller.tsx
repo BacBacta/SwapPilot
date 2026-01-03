@@ -15,7 +15,88 @@ function shortAddress(address: string): string {
 
 export function LandioRewardsController() {
   const { address, isConnected } = useAccount();
-  const { pendingRewardsFormatted, canClaim, claim, isClaiming } = useReferralClaim();
+  const { 
+    pendingRewardsFormatted, 
+    totalClaimedFormatted,
+    canClaim, 
+    claim, 
+    isClaiming 
+  } = useReferralClaim();
+
+  // Neutralize hardcoded stats in the overview section
+  useEffect(() => {
+    // Stats overview cards - replace with real or placeholder values
+    const statsCards = document.querySelectorAll<HTMLElement>(".rewards-stat-card");
+    
+    statsCards.forEach((card) => {
+      const title = card.querySelector<HTMLElement>(".stat-label, .stat-title");
+      const value = card.querySelector<HTMLElement>(".stat-value");
+      
+      if (!title || !value) return;
+      const label = title.textContent?.toLowerCase() ?? "";
+      
+      if (label.includes("earned") || label.includes("total")) {
+        // Total claimed from smart contract
+        value.textContent = isConnected ? `${totalClaimedFormatted} BNB` : "—";
+      } else if (label.includes("apy")) {
+        // APY is not available from smart contract yet
+        value.textContent = "—";
+      } else if (label.includes("referral")) {
+        // Referral count not tracked yet
+        value.textContent = "—";
+      } else if (label.includes("tier")) {
+        // Tier system not implemented yet
+        value.textContent = "—";
+      }
+    });
+
+    // Staking section - show placeholder
+    const stakingBalance = document.querySelector<HTMLElement>(".staking-balance-value");
+    const stakingUsd = document.querySelector<HTMLElement>(".staking-balance-usd");
+    if (stakingBalance) stakingBalance.textContent = isConnected ? "0 PILOT" : "—";
+    if (stakingUsd) stakingUsd.textContent = "";
+
+    // APY badge
+    const apyBadge = document.querySelector<HTMLElement>(".apy-badge");
+    if (apyBadge) apyBadge.textContent = "APY —";
+
+    // Tier progress
+    const tierProgress = document.querySelector<HTMLElement>(".tier-progress-label");
+    const tierBar = document.querySelector<HTMLElement>(".tier-progress-fill");
+    if (tierProgress) tierProgress.textContent = "Tier system coming soon";
+    if (tierBar) tierBar.style.width = "0%";
+
+    // Rewards breakdown - show real claimable, placeholder for others
+    const breakdownItems = document.querySelectorAll<HTMLElement>(".breakdown-item");
+    breakdownItems.forEach((item) => {
+      const label = item.querySelector<HTMLElement>(".breakdown-label");
+      const value = item.querySelector<HTMLElement>(".breakdown-value");
+      if (!label || !value) return;
+      
+      const labelText = label.textContent?.toLowerCase() ?? "";
+      if (labelText.includes("referral")) {
+        value.textContent = isConnected ? `${pendingRewardsFormatted} BNB` : "—";
+      } else {
+        value.textContent = "—";
+      }
+    });
+
+    // Referral stats
+    const referralStats = document.querySelectorAll<HTMLElement>(".referral-stat-value");
+    referralStats.forEach((stat) => {
+      stat.textContent = "—";
+    });
+
+    // History section - clear and show placeholder
+    const historyList = document.querySelector<HTMLElement>(".rewards-history-list");
+    if (historyList) {
+      historyList.innerHTML = `
+        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+          <p>Transaction history will appear here once you claim rewards.</p>
+        </div>
+      `;
+    }
+  }, [isConnected, totalClaimedFormatted, pendingRewardsFormatted]);
 
   useEffect(() => {
     // Claim card values

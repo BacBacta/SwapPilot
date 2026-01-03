@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { postQuotes } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
+import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { BASE_TOKENS } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote } from "@swappilot/shared";
 
@@ -109,6 +110,42 @@ export function LandioSwapController() {
   }, [fromTokenInfo, toTokenInfo]);
 
   const { getBalanceFormatted, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
+
+  // Get token prices for USD conversion
+  const priceTokenAddresses = useMemo(() => {
+    const addresses: string[] = [];
+    if (fromTokenInfo) addresses.push(fromTokenInfo.address);
+    if (toTokenInfo) addresses.push(toTokenInfo.address);
+    return addresses;
+  }, [fromTokenInfo, toTokenInfo]);
+
+  const { formatUsd, getPrice } = useTokenPrices(priceTokenAddresses);
+
+  // Track current input values for USD calculation
+  const [fromAmountValue, setFromAmountValue] = useState(0);
+  const [toAmountValue, setToAmountValue] = useState(0);
+
+  // Update USD values when amounts or prices change
+  useEffect(() => {
+    const fromUsdEl = document.querySelector('.token-input-box:first-of-type .usd-value');
+    const toUsdEl = document.querySelector('.token-input-box:nth-of-type(2) .usd-value, .token-input-box:last-of-type .usd-value');
+
+    if (fromUsdEl && fromTokenInfo) {
+      if (fromAmountValue > 0) {
+        fromUsdEl.textContent = `≈ ${formatUsd(fromTokenInfo.address, fromAmountValue)}`;
+      } else {
+        fromUsdEl.textContent = "≈ $0.00";
+      }
+    }
+
+    if (toUsdEl && toTokenInfo) {
+      if (toAmountValue > 0) {
+        toUsdEl.textContent = `≈ ${formatUsd(toTokenInfo.address, toAmountValue)}`;
+      } else {
+        toUsdEl.textContent = "≈ $0.00";
+      }
+    }
+  }, [fromAmountValue, toAmountValue, fromTokenInfo, toTokenInfo, formatUsd]);
 
   // Update balance displays when wallet connects/disconnects
   useEffect(() => {
@@ -222,10 +259,15 @@ export function LandioSwapController() {
       const rawValue = amountInput?.value ?? "";
       const valueNum = parseNumber(rawValue);
 
+      // Update fromAmount for USD calculation
+      setFromAmountValue(valueNum);
+
       setResponse(null);
       setSelected(null);
 
       if (!amountInput || !toAmountInput || valueNum <= 0) {
+        setFromAmountValue(0);
+        setToAmountValue(0);
         setDisplay("beqContainer", "none");
         setDisplay("routeContainer", "none");
         setDisplay("providersContainer", "none");
@@ -286,6 +328,18 @@ export function LandioSwapController() {
         const buyAmount = best?.normalized.buyAmount ?? best?.raw.buyAmount;
         const formatted = buyAmount ? formatAmount(buyAmount, toTokenInfo.decimals) : "—";
         toAmountInput.value = formatted === "—" ? "" : formatted;
+
+        // Update toAmount for USD calculation
+        if (buyAmount) {
+          try {
+            const toNum = Number(BigInt(buyAmount)) / 10 ** toTokenInfo.decimals;
+            setToAmountValue(toNum);
+          } catch {
+            setToAmountValue(0);
+          }
+        } else {
+          setToAmountValue(0);
+        }
 
         const score = best?.score?.beqScore;
         if (typeof score === "number") {

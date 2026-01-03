@@ -258,3 +258,77 @@ export async function resolveTokenMetadata(params: {
 
   return json as TokenMetadata;
 }
+
+// ============================================================================
+// Provider Status API
+// ============================================================================
+export type ProviderStatus = {
+  providerId: string;
+  displayName: string;
+  category: string;
+  capabilities: { quote: boolean; buildTx: boolean; deepLink: boolean };
+  successRate: number;
+  latencyMs: number;
+  observations: number;
+  status: 'ok' | 'degraded' | 'down' | 'unknown';
+};
+
+export type ProviderStatusResponse = {
+  providers: ProviderStatus[];
+  timestamp: number;
+};
+
+export async function getProvidersStatus(params: {
+  timeoutMs?: number;
+} = {}): Promise<ProviderStatusResponse> {
+  const timeoutMs = params.timeoutMs ?? 10_000;
+  const baseUrl = getApiBaseUrl();
+
+  const { res, json } = await fetchJsonWithTimeout(`${baseUrl}/v1/providers/status`, {
+    method: 'GET',
+    timeoutMs,
+    headers: {},
+  });
+
+  if (!res.ok) {
+    throw { kind: 'http', message: `HTTP ${res.status}`, status: res.status } satisfies ApiError;
+  }
+
+  return json as ProviderStatusResponse;
+}
+
+// ============================================================================
+// Health Check API
+// ============================================================================
+export type HealthResponse = {
+  status: 'ok' | 'degraded' | 'down';
+  uptime?: number;
+  version?: string;
+};
+
+export async function getHealth(params: {
+  timeoutMs?: number;
+} = {}): Promise<{ health: HealthResponse; latencyMs: number }> {
+  const timeoutMs = params.timeoutMs ?? 5_000;
+  const baseUrl = getApiBaseUrl();
+  const start = performance.now();
+
+  const { res, json } = await fetchJsonWithTimeout(`${baseUrl}/health`, {
+    method: 'GET',
+    timeoutMs,
+    headers: {},
+  });
+
+  const latencyMs = performance.now() - start;
+
+  if (!res.ok) {
+    throw { kind: 'http', message: `HTTP ${res.status}`, status: res.status } satisfies ApiError;
+  }
+
+  return { health: json as HealthResponse, latencyMs };
+}
+
+// ============================================================================
+// API Base URL (exported for external use)
+// ============================================================================
+export { getApiBaseUrl };
