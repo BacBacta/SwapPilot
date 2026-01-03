@@ -239,6 +239,7 @@ export class OneInchAdapter implements Adapter {
       url.searchParams.set('slippage', (slippageBps / 100).toString());
       url.searchParams.set('disableEstimate', 'true'); // Skip on-chain simulation
       url.searchParams.set('allowPartialFill', 'false');
+      url.searchParams.set('usePermit2', 'false'); // Use standard ERC-20 approval instead of permit
 
       const res = await fetch(url.toString(), {
         method: 'GET',

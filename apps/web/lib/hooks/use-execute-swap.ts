@@ -318,6 +318,10 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       if (errMsg.includes("0x064a4ec6") || errMsg.includes("ReturnAmountIsNotEnough")) {
         userMessage = "Price moved too much since quote. Increase slippage or refresh the quote.";
       }
+      // 1inch AccessDenied / BadSignature / SwapFailed (0xf4059071) - usually allowance or stale quote
+      else if (errMsg.includes("0xf4059071")) {
+        userMessage = "Swap failed: Token approval may be insufficient or quote is stale. Please refresh and try again.";
+      }
       // Generic slippage errors
       else if (errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT") || errMsg.includes("Too little received")) {
         userMessage = "Slippage too low. Try increasing slippage tolerance.";
