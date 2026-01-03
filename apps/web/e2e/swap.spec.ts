@@ -82,15 +82,23 @@ test.describe('Swap Interface', () => {
   });
 
   test('should close token picker on backdrop click', async ({ page }) => {
-    // Token picker modal is not implemented in Landio UI yet
-    // Verify slippage modal closes on backdrop (similar pattern)
-    const modal = page.locator('#slippageModal');
-    await page.locator('#openSlippage').click();
-    await expect(modal).toHaveClass(/open/, { timeout: 5000 });
+    // Wait for the page to be fully hydrated and handlers attached
+    await page.waitForTimeout(500);
     
-    // Click on modal backdrop (outside content)
-    await modal.click({ position: { x: 10, y: 10 } });
-    await expect(modal).not.toHaveClass(/open/);
+    // Click on token selector to open the token picker
+    const tokenSelector = page.locator('.token-input-box').first().locator('.token-selector');
+    await expect(tokenSelector).toBeVisible();
+    await tokenSelector.click();
+    
+    // Wait for token picker overlay to appear
+    const overlay = page.locator('.token-picker-overlay');
+    await expect(overlay).toBeVisible({ timeout: 5000 });
+    
+    // Click on overlay backdrop (outside modal content)
+    await overlay.click({ position: { x: 10, y: 10 } });
+    
+    // Token picker should close
+    await expect(overlay).not.toBeVisible({ timeout: 5000 });
   });
 
   test('should swap token direction', async ({ page }) => {

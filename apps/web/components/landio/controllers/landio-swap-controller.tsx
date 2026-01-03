@@ -7,7 +7,7 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/hooks/use-token-prices";
-import { BASE_TOKENS } from "@/lib/tokens";
+import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote } from "@swappilot/shared";
 
 function parseNumber(input: string): number {
@@ -88,18 +88,24 @@ function formatSignedAmount(amount: bigint, decimals: number, symbol: string): s
 
 export function LandioSwapController() {
   const { settings, updateSettings } = useSettings();
-  const { resolveToken } = useTokenRegistry();
+  const { resolveToken, tokens: allTokens } = useTokenRegistry();
   const { address, isConnected } = useAccount();
 
   const lastRequestIdRef = useRef(0);
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
 
-  const fromToken = "BNB";
-  const toToken = "ETH";
+  // Dynamic token selection state
+  const [fromTokenSymbol, setFromTokenSymbol] = useState("BNB");
+  const [toTokenSymbol, setToTokenSymbol] = useState("ETH");
+  
+  // Token picker modal state
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const fromTokenInfo = useMemo(() => resolveToken(fromToken), [resolveToken, fromToken]);
-  const toTokenInfo = useMemo(() => resolveToken(toToken), [resolveToken, toToken]);
+  const fromTokenInfo = useMemo(() => resolveToken(fromTokenSymbol), [resolveToken, fromTokenSymbol]);
+  const toTokenInfo = useMemo(() => resolveToken(toTokenSymbol), [resolveToken, toTokenSymbol]);
 
   // Get wallet balances for BNB and ETH
   const balanceTokens = useMemo(() => {
@@ -155,11 +161,11 @@ export function LandioSwapController() {
     if (fromBalanceLabel && fromTokenInfo) {
       if (isConnected && !isLoadingBalances) {
         const balance = getBalanceFormatted(fromTokenInfo);
-        fromBalanceLabel.innerHTML = `Balance: ${balance} ${fromToken} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: ${balance} ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
       } else if (isConnected && isLoadingBalances) {
-        fromBalanceLabel.innerHTML = `Balance: ... ${fromToken} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: ... ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
       } else {
-        fromBalanceLabel.innerHTML = `Balance: — ${fromToken} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: — ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
       }
     }
 
@@ -171,11 +177,11 @@ export function LandioSwapController() {
       if (toLabel) {
         if (isConnected && !isLoadingBalances) {
           const balance = getBalanceFormatted(toTokenInfo);
-          toLabel.textContent = `Balance: ${balance} ${toToken}`;
+          toLabel.textContent = `Balance: ${balance} ${toTokenSymbol}`;
         } else if (isConnected && isLoadingBalances) {
-          toLabel.textContent = `Balance: ... ${toToken}`;
+          toLabel.textContent = `Balance: ... ${toTokenSymbol}`;
         } else {
-          toLabel.textContent = `Balance: — ${toToken}`;
+          toLabel.textContent = `Balance: — ${toTokenSymbol}`;
         }
       }
     }
@@ -195,7 +201,7 @@ export function LandioSwapController() {
     return () => {
       maxBtn?.removeEventListener('click', handleMax);
     };
-  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo, fromToken, toToken]);
+  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo, fromTokenSymbol, toTokenSymbol]);
 
   useEffect(() => {
     // Hook up settings modal buttons in the template.
@@ -373,7 +379,7 @@ export function LandioSwapController() {
             const rightSavingsEl = el.querySelector<HTMLElement>(".provider-savings") ?? rateEls[1] ?? null;
 
             if (nameEl) nameEl.textContent = q.providerId;
-            if (outputEl) outputEl.textContent = `${out} ${toToken}`;
+            if (outputEl) outputEl.textContent = `${out} ${toTokenSymbol}`;
 
             const beq = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : null;
             if (leftRateEl) leftRateEl.textContent = beq !== null ? (idx === 0 ? `Best • BEQ ${beq}` : `BEQ ${beq}`) : idx === 0 ? "Best" : "";
@@ -382,7 +388,7 @@ export function LandioSwapController() {
               const buy = toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount);
               if (avgBuyAmount !== null && buy !== null) {
                 const diff = buy - avgBuyAmount;
-                rightSavingsEl.textContent = `${formatSignedAmount(diff, toTokenInfo.decimals, toToken)} vs avg`;
+                rightSavingsEl.textContent = `${formatSignedAmount(diff, toTokenInfo.decimals, toTokenSymbol)} vs avg`;
               } else {
                 rightSavingsEl.textContent = "—";
               }
@@ -434,7 +440,7 @@ export function LandioSwapController() {
           return sum / BigInt(buys.length);
         })();
         if (bestBuy !== null && avgBuy !== null) {
-          setText("netOutput", formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toToken));
+          setText("netOutput", formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toTokenSymbol));
         } else {
           setText("netOutput", "—");
         }
@@ -481,17 +487,17 @@ export function LandioSwapController() {
           const label = (labelEl.textContent ?? "").trim();
 
           if (label === "Rate") {
-            valueEl.textContent = rate !== null ? `1 ${fromToken} = ${rate.toFixed(rate >= 1 ? 4 : 6)} ${toToken}` : "—";
+            valueEl.textContent = rate !== null ? `1 ${fromTokenSymbol} = ${rate.toFixed(rate >= 1 ? 4 : 6)} ${toTokenSymbol}` : "—";
           } else if (label === "Slippage Tolerance") {
             valueEl.textContent = `${slippagePct.toFixed(slippagePct % 1 === 0 ? 0 : 2)}%`;
           } else if (label === "Minimum Received") {
-            valueEl.textContent = minReceived !== null ? `${minReceived.toFixed(minReceived >= 1 ? 4 : 6)} ${toToken}` : "—";
+            valueEl.textContent = minReceived !== null ? `${minReceived.toFixed(minReceived >= 1 ? 4 : 6)} ${toTokenSymbol}` : "—";
           } else if (label === "Network Fee") {
             valueEl.textContent = best?.normalized.estimatedGasUsd ? `~$${best.normalized.estimatedGasUsd}` : "—";
           } else if (label === "Platform Fee") {
             valueEl.textContent = "—";
           } else if (label === "You Save") {
-            valueEl.textContent = bestBuy !== null && avgBuy !== null ? formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toToken) : "—";
+            valueEl.textContent = bestBuy !== null && avgBuy !== null ? formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toTokenSymbol) : "—";
           }
         }
 
@@ -526,6 +532,8 @@ export function LandioSwapController() {
     };
   }, [
     fromTokenInfo,
+    fromTokenSymbol,
+    toTokenSymbol,
     resolveToken,
     selected,
     settings.canonicalPoolsOnly,
@@ -545,5 +553,273 @@ export function LandioSwapController() {
     setDisabled("swapBtn", true);
   }, []);
 
-  return null;
+  // Update token selector displays when tokens change
+  useEffect(() => {
+    const tokenInputBoxes = document.querySelectorAll('.token-input-box');
+    
+    // From token selector (first box)
+    if (tokenInputBoxes[0]) {
+      const selector = tokenInputBoxes[0].querySelector('.token-selector');
+      const icon = selector?.querySelector('.token-icon');
+      const name = selector?.querySelector('.token-name');
+      if (icon) {
+        icon.className = `token-icon ${fromTokenSymbol.toLowerCase()}`;
+        icon.textContent = fromTokenSymbol.slice(0, 3);
+      }
+      if (name) {
+        name.textContent = fromTokenSymbol;
+      }
+    }
+
+    // To token selector (second box)
+    if (tokenInputBoxes[1]) {
+      const selector = tokenInputBoxes[1].querySelector('.token-selector');
+      const icon = selector?.querySelector('.token-icon');
+      const name = selector?.querySelector('.token-name');
+      if (icon) {
+        icon.className = `token-icon ${toTokenSymbol.toLowerCase()}`;
+        icon.textContent = toTokenSymbol.slice(0, 3);
+      }
+      if (name) {
+        name.textContent = toTokenSymbol;
+      }
+    }
+  }, [fromTokenSymbol, toTokenSymbol]);
+
+  // Handle token selector clicks and swap direction
+  useEffect(() => {
+    // Small delay to ensure DOM is ready after hydration
+    const timer = setTimeout(() => {
+      const tokenInputBoxes = document.querySelectorAll('.token-input-box');
+      const fromSelector = tokenInputBoxes[0]?.querySelector('.token-selector') as HTMLElement | null;
+      const toSelector = tokenInputBoxes[1]?.querySelector('.token-selector') as HTMLElement | null;
+      const swapArrowBtn = document.querySelector('.swap-arrow-btn') as HTMLElement | null;
+
+      const openFromPicker = (e: Event) => {
+        e.stopPropagation();
+        setPickerTarget("from");
+        setSearchQuery("");
+        setPickerOpen(true);
+      };
+
+      const openToPicker = (e: Event) => {
+        e.stopPropagation();
+        setPickerTarget("to");
+        setSearchQuery("");
+        setPickerOpen(true);
+      };
+
+      const swapTokens = () => {
+        const tempFrom = fromTokenSymbol;
+        setFromTokenSymbol(toTokenSymbol);
+        setToTokenSymbol(tempFrom);
+        
+        // Clear amounts and reset UI
+        const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+        const toAmountInput = document.getElementById('toAmount') as HTMLInputElement | null;
+        if (fromAmountInput) fromAmountInput.value = "";
+        if (toAmountInput) toAmountInput.value = "";
+        setFromAmountValue(0);
+        setToAmountValue(0);
+        setResponse(null);
+        setSelected(null);
+        setDisplay("beqContainer", "none");
+        setDisplay("routeContainer", "none");
+        setDisplay("providersContainer", "none");
+        setDisplay("detailsToggle", "none");
+        setDisabled("swapBtn", true);
+        setSwapBtnText("Enter an amount");
+      };
+
+      // Add cursor pointer to make selectors clearly clickable
+      if (fromSelector) fromSelector.style.cursor = 'pointer';
+      if (toSelector) toSelector.style.cursor = 'pointer';
+
+      fromSelector?.addEventListener('click', openFromPicker);
+      toSelector?.addEventListener('click', openToPicker);
+      swapArrowBtn?.addEventListener('click', swapTokens);
+
+      // Store cleanup refs
+      (window as any).__swapPilotCleanup = () => {
+        fromSelector?.removeEventListener('click', openFromPicker);
+        toSelector?.removeEventListener('click', openToPicker);
+        swapArrowBtn?.removeEventListener('click', swapTokens);
+      };
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      (window as any).__swapPilotCleanup?.();
+    };
+  }, [fromTokenSymbol, toTokenSymbol]);
+
+  // Token picker modal handler
+  const selectToken = useCallback((token: TokenInfo) => {
+    if (pickerTarget === "from") {
+      if (token.symbol === toTokenSymbol) {
+        // Swap if selecting same token
+        setToTokenSymbol(fromTokenSymbol);
+      }
+      setFromTokenSymbol(token.symbol);
+    } else {
+      if (token.symbol === fromTokenSymbol) {
+        // Swap if selecting same token
+        setFromTokenSymbol(toTokenSymbol);
+      }
+      setToTokenSymbol(token.symbol);
+    }
+    setPickerOpen(false);
+    
+    // Clear amounts and reset
+    const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+    const toAmountInput = document.getElementById('toAmount') as HTMLInputElement | null;
+    if (fromAmountInput) fromAmountInput.value = "";
+    if (toAmountInput) toAmountInput.value = "";
+    setFromAmountValue(0);
+    setToAmountValue(0);
+    setResponse(null);
+    setSelected(null);
+    setDisplay("beqContainer", "none");
+    setDisplay("routeContainer", "none");
+    setDisplay("providersContainer", "none");
+    setDisplay("detailsToggle", "none");
+    setDisabled("swapBtn", true);
+    setSwapBtnText("Enter an amount");
+  }, [pickerTarget, fromTokenSymbol, toTokenSymbol]);
+
+  // Filter tokens for picker
+  const filteredTokens = useMemo(() => {
+    const tokens = allTokens.length > 0 ? allTokens : BASE_TOKENS;
+    if (!searchQuery.trim()) return tokens;
+    const q = searchQuery.toLowerCase();
+    return tokens.filter(t => 
+      t.symbol.toLowerCase().includes(q) || 
+      t.name.toLowerCase().includes(q) ||
+      t.address.toLowerCase().includes(q)
+    );
+  }, [allTokens, searchQuery]);
+
+  // Always render the token picker modal (hidden when not open)
+  return (
+    <div 
+      className="token-picker-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setPickerOpen(false);
+      }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        display: pickerOpen ? 'flex' : 'none',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+      }}
+    >
+      <div 
+        className="token-picker-modal"
+        style={{
+          background: 'var(--bg-card, #1a1a2e)',
+          borderRadius: '16px',
+          padding: '24px',
+          width: '90%',
+          maxWidth: '420px',
+          maxHeight: '70vh',
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid var(--border, #333)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+            Select {pickerTarget === "from" ? "From" : "To"} Token
+          </h3>
+          <button 
+            onClick={() => setPickerOpen(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: 'var(--text-muted, #888)',
+            }}
+          >
+            ×
+          </button>
+        </div>
+        
+        <input
+          type="text"
+          placeholder="Search by name or address..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          autoFocus
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            background: 'var(--bg-card-inner, #252540)',
+            border: '1px solid var(--border, #333)',
+            borderRadius: '12px',
+            color: 'var(--text-primary, #fff)',
+            fontSize: '14px',
+            marginBottom: '16px',
+            outline: 'none',
+          }}
+        />
+
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {filteredTokens.map((token) => (
+            <div
+              key={token.address}
+              onClick={() => selectToken(token)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                background: (pickerTarget === "from" ? fromTokenSymbol : toTokenSymbol) === token.symbol 
+                  ? 'var(--accent-dim, rgba(0,255,136,0.1))' 
+                  : 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-card-inner, #252540)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = (pickerTarget === "from" ? fromTokenSymbol : toTokenSymbol) === token.symbol 
+                  ? 'var(--accent-dim, rgba(0,255,136,0.1))' 
+                  : 'transparent';
+              }}
+            >
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'var(--accent, #00ff88)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '12px',
+                color: '#000',
+              }}>
+                {token.symbol.slice(0, 3)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: '15px' }}>{token.symbol}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted, #888)' }}>{token.name}</div>
+              </div>
+            </div>
+          ))}
+          {filteredTokens.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted, #888)' }}>
+              No tokens found
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
