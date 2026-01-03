@@ -915,14 +915,13 @@ export function LandioSwapController() {
 
             try {
               // Create wallet client from window.ethereum
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const ethereum = (window as any).ethereum;
+              const ethereum = window.ethereum;
               if (!ethereum) {
                 throw new Error("No wallet provider found");
               }
               const walletClient = createWalletClient({
                 chain: bsc,
-                transport: custom(ethereum),
+                transport: custom(ethereum as Parameters<typeof custom>[0]),
               });
 
               // Send approval transaction
@@ -1016,6 +1015,9 @@ export function LandioSwapController() {
   }, [
     address,
     buildTransaction,
+    dynamicSlippage.isAuto,
+    dynamicSlippage.reason,
+    effectiveSlippageBps,
     executeSwap,
     fromTokenInfo,
     fromTokenSymbol,
