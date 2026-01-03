@@ -238,6 +238,7 @@ export class OkxDexAdapter implements Adapter {
    * Calls OKX DEX Aggregator swap endpoint which returns calldata.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    void quote;
     if (!this.buildTxEnabled()) {
       throw new Error('OKX API credentials not configured');
     }

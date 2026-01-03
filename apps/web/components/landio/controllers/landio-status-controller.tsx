@@ -18,6 +18,12 @@ type ProviderStatusResponse = {
   timestamp: number;
 };
 
+type HealthResponse = {
+  status: "ok" | "degraded" | "down";
+  uptime?: number;
+  version?: string;
+};
+
 function getApiBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ??
@@ -56,6 +62,38 @@ export function LandioStatusController() {
 
   useEffect(() => {
     const baseUrl = getApiBaseUrl();
+    let lastHealthStatus: HealthResponse["status"] | null = null;
+
+    const updateApiCard = (health: HealthResponse, latency: number) => {
+      lastHealthStatus = health.status;
+      const apiCard = Array.from(document.querySelectorAll<HTMLElement>(".status-card")).find((c) =>
+        c.textContent?.includes("API Services")
+      );
+      if (!apiCard) return;
+
+      const indicator = apiCard.querySelector<HTMLElement>(".status-indicator");
+      if (indicator) {
+        indicator.classList.remove("operational", "degraded", "down");
+        indicator.classList.add(health.status === "ok" ? "operational" : health.status === "degraded" ? "degraded" : "down");
+        const dot = indicator.querySelector<HTMLElement>(".status-dot");
+        indicator.textContent = health.status === "ok" ? "Operational" : health.status === "degraded" ? "Degraded" : "Down";
+        if (dot) {
+          indicator.prepend(dot);
+          indicator.insertBefore(document.createTextNode(" "), dot.nextSibling);
+        }
+      }
+
+      const metrics = apiCard.querySelectorAll<HTMLElement>(".status-metric-value");
+      if (metrics[0]) {
+        metrics[0].textContent = `${Math.round(latency)}ms`;
+        metrics[0].classList.remove("ok", "bad");
+        metrics[0].classList.add(latency < 200 ? "ok" : "");
+      }
+
+      // The other two metrics (uptime/requests) are placeholders in the template; replace them with neutral values.
+      if (metrics[1]) metrics[1].textContent = "—";
+      if (metrics[2]) metrics[2].textContent = "—";
+    };
 
     const apply = (data: ProviderStatusResponse) => {
       const lastUpdated = document.querySelector<HTMLElement>(".last-updated");
@@ -66,12 +104,30 @@ export function LandioStatusController() {
 
       const providers = Array.isArray(data.providers) ? data.providers : [];
 
+      // Overall banner: derive from health + providers
+      const overall = document.querySelector<HTMLElement>(".overall-status");
+      if (overall) {
+        const iconEl = overall.querySelector<HTMLElement>(".overall-status-icon");
+        const titleEl = overall.querySelector<HTMLElement>("h2");
+        const anyDown = providers.some((p) => p.status === "down") || lastHealthStatus === "down";
+        const anyDegraded = providers.some((p) => p.status === "degraded") || lastHealthStatus === "degraded";
+
+        if (iconEl) iconEl.textContent = anyDown ? "!" : anyDegraded ? "~" : "✓";
+        if (titleEl) titleEl.textContent = anyDown ? "Some Systems Down" : anyDegraded ? "Degraded Performance" : "All Systems Operational";
+      }
+
       // Update provider count in the Quote Engine card (2nd metric inside that card).
       const quoteEngineCard = Array.from(document.querySelectorAll<HTMLElement>(".status-card")).find((c) =>
         c.textContent?.includes("Quote Engine")
       );
       if (quoteEngineCard) {
         const metrics = quoteEngineCard.querySelectorAll<HTMLElement>(".status-metric-value");
+        // Metric 0: avg quote time -> approximate using avg provider latency
+        const avgLatency =
+          providers.length > 0
+            ? providers.reduce((acc, p) => acc + (Number.isFinite(p.latencyMs) ? p.latencyMs : 0), 0) / providers.length
+            : null;
+        if (metrics[0]) metrics[0].textContent = avgLatency !== null ? `${Math.round(avgLatency)}ms` : "—";
         if (metrics[1]) metrics[1].textContent = String(providers.length);
         const avgSuccess =
           providers.length > 0
@@ -79,6 +135,16 @@ export function LandioStatusController() {
             : null;
         if (metrics[2] && avgSuccess !== null) metrics[2].textContent = `${Math.round(avgSuccess)}%`;
       }
+
+      // Other cards in the template contain demo numbers; neutralize them.
+      const neutralizeCardByTitle = (title: string) => {
+        const card = Array.from(document.querySelectorAll<HTMLElement>(".status-card")).find((c) => c.textContent?.includes(title));
+        if (!card) return;
+        const metrics = card.querySelectorAll<HTMLElement>(".status-metric-value");
+        metrics.forEach((m) => (m.textContent = "—"));
+      };
+      neutralizeCardByTitle("BNB Chain RPC");
+      neutralizeCardByTitle("MEV Protection");
 
       const providersSection = document.querySelector<HTMLElement>(".providers-section");
       if (!providersSection) return;
@@ -134,7 +200,7 @@ export function LandioStatusController() {
         if (logoEl) {
           const initial = (p.displayName || p.providerId || "?").trim().slice(0, 2).toUpperCase();
           logoEl.textContent = initial;
-          // Keep existing inline background for the first template row; don’t invent new colors.
+          // Keep template styling (no new colors introduced)
         }
 
         const latencyFill = row.querySelector<HTMLElement>(".latency-fill");
@@ -174,16 +240,50 @@ export function LandioStatusController() {
       } else {
         providersSection.appendChild(frag);
       }
+
+      // Uptime & incidents sections are demo-only in the template; replace with honest placeholders.
+      const uptime = document.querySelector<HTMLElement>(".uptime-section");
+      if (uptime) {
+        const valueEl = uptime.querySelector<HTMLElement>(".uptime-value");
+        if (valueEl) valueEl.textContent = "—";
+        const chart = uptime.querySelector<HTMLElement>(".uptime-chart");
+        if (chart) {
+          chart.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; padding: 8px 0;">Uptime history not connected</div>';
+        }
+      }
+
+      const incidents = document.querySelector<HTMLElement>(".incidents-section");
+      if (incidents) {
+        const header = incidents.querySelector<HTMLElement>(".incidents-header");
+        incidents.innerHTML = "";
+        if (header) incidents.appendChild(header);
+        const empty = document.createElement("div");
+        empty.className = "no-incidents";
+        empty.innerHTML = '<div class="no-incidents-icon">i</div><h4>No incident feed connected</h4><p>Live incident history is not available yet.</p>';
+        incidents.appendChild(empty);
+      }
     };
 
     const load = async () => {
       try {
+        // Fetch health endpoint with latency measurement
+        const healthStart = performance.now();
+        const healthRes = await fetch(`${baseUrl}/health`, { cache: "no-store" });
+        const healthLatency = performance.now() - healthStart;
+        
+        if (healthRes.ok) {
+          const healthJson = (await healthRes.json()) as HealthResponse;
+          updateApiCard(healthJson, healthLatency);
+        }
+
+        // Fetch providers status
         const res = await fetch(`${baseUrl}/v1/providers/status`, { cache: "no-store" });
         if (!res.ok) return;
         const json = (await res.json()) as ProviderStatusResponse;
         apply(json);
       } catch {
-        // ignore; keep the template placeholders
+        // Update API card to show error state
+        updateApiCard({ status: "down" }, 0);
       }
     };
 

@@ -1,0 +1,69 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - navigation [ref=e13]:
+      - generic [ref=e14]:
+        - link "SP SwapPilot" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e16]: SP
+          - text: SwapPilot
+        - list [ref=e17]:
+          - listitem [ref=e18]:
+            - link "Swap" [ref=e19] [cursor=pointer]:
+              - /url: /swap
+          - listitem [ref=e20]:
+            - link "Rewards" [ref=e21] [cursor=pointer]:
+              - /url: /rewards
+          - listitem [ref=e22]:
+            - link "Status" [ref=e23] [cursor=pointer]:
+              - /url: /status
+          - listitem [ref=e24]:
+            - link "Settings" [ref=e25] [cursor=pointer]:
+              - /url: /settings
+        - button "Connect Wallet" [ref=e28] [cursor=pointer]
+    - main [ref=e29]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - heading "Swap" [level=2] [ref=e36]
+            - button "⚙️" [active] [ref=e37] [cursor=pointer]
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]: You pay
+              - generic [ref=e41]:
+                - text: "Balance: 2.5 BNB"
+                - button "MAX" [ref=e42] [cursor=pointer]
+            - generic [ref=e43]:
+              - textbox "0" [ref=e44]
+              - generic [ref=e45] [cursor=pointer]:
+                - generic [ref=e46]: BNB
+                - generic [ref=e47]: BNB
+                - generic [ref=e48]: ▼
+            - generic [ref=e49]: ≈ $0.00
+          - button "↓" [ref=e51] [cursor=pointer]
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: You receive
+              - generic [ref=e55]: "Balance: — ETH"
+            - generic [ref=e56]:
+              - textbox "0" [ref=e57]
+              - generic [ref=e58] [cursor=pointer]:
+                - generic [ref=e59]: ETH
+                - generic [ref=e60]: ETH
+                - generic [ref=e61]: ▼
+            - generic [ref=e62]: ≈ $0.00
+        - button "Enter an amount" [disabled] [ref=e63]
+    - contentinfo [ref=e64]:
+      - generic [ref=e66]:
+        - generic [ref=e67]: © 2026 SwapPilot. All rights reserved.
+        - generic [ref=e68]:
+          - link "Privacy" [ref=e69] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=e70] [cursor=pointer]:
+            - /url: /terms
+```

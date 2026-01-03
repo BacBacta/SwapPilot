@@ -177,8 +177,8 @@ export async function assessOnchainSellability(params: {
   }
 
   const multicall3Raw = (params.multicall3Address ?? '').trim();
-  const v2FactoryRaw = ((params.pancake as any)?.v2Factory ?? '').trim();
-  const v3FactoryRaw = ((params.pancake as any)?.v3Factory ?? '').trim();
+  const v2FactoryRaw = (params.pancake?.v2Factory ?? '').trim();
+  const v3FactoryRaw = (params.pancake?.v3Factory ?? '').trim();
 
   const multicall3Address = (multicall3Raw.length > 0 ? multicall3Raw : MULTICALL3_DEFAULT) as `0x${string}`;
   const v2Factory = (v2FactoryRaw.length > 0 ? v2FactoryRaw : PCS_V2_FACTORY_BSC) as `0x${string}`;

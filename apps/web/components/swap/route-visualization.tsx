@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { cn } from "@/lib/cn";
 import { useTokenRegistry } from "@/lib/use-token-registry";
 import type { RankedQuote } from "@swappilot/shared";
@@ -116,10 +116,10 @@ export function RouteVisualization({
   const { resolveToken } = useTokenRegistry();
 
   // Resolve token address to symbol
-  const getTokenSymbol = (tokenOrAddress: string): string => {
+  const getTokenSymbol = useCallback((tokenOrAddress: string): string => {
     const resolved = resolveToken(tokenOrAddress);
     return resolved?.symbol ?? tokenOrAddress.slice(0, 6);
-  };
+  }, [resolveToken]);
 
   const fromSymbol = getTokenSymbol(fromToken);
   const toSymbol = getTokenSymbol(toToken);
@@ -154,7 +154,7 @@ export function RouteVisualization({
       protocols: [quote.providerId],
       percentages: [100],
     };
-  }, [quote, fromSymbol, toSymbol]);
+  }, [quote, fromSymbol, toSymbol, getTokenSymbol]);
 
   const hasMultiplePaths = routeData.protocols.length > 1;
 

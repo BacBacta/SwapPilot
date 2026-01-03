@@ -236,6 +236,7 @@ export class KyberSwapAdapter implements Adapter {
    * - POST /route/build with routeSummary + sender/recipient
    */
   async buildTx(request: QuoteRequest, _quote: AdapterQuote): Promise<BuiltTx> {
+    void _quote;
     if (!this.isSupported()) {
       throw new Error(`Chain ${this.chainId} not supported by KyberSwap`);
     }

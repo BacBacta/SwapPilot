@@ -209,6 +209,7 @@ export class OdosAdapter implements Adapter {
    * Requires the pathId from the quote response.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    void quote;
     if (!this.isChainSupported()) {
       throw new Error(`Chain ${this.chainId} not supported by Odos`);
     }

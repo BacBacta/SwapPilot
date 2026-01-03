@@ -1,124 +1,123 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SwapPilot Homepage', () => {
-  test('should redirect to swap page', async ({ page }) => {
+test.describe('Landing (/) ', () => {
+  test('should render landing page and launch CTA', async ({ page }) => {
     await page.goto('/');
-    
-    // Should redirect to /swap
-    await expect(page).toHaveURL('/swap');
-  });
+    await expect(page).toHaveURL('/');
 
-  test('should display swap interface', async ({ page }) => {
-    await page.goto('/swap');
-    
-    // Check main heading
-    await expect(page.getByText('SwapPilot')).toBeVisible();
-    
-    // Check swap card is present
-    await expect(page.getByText('Smart execution')).toBeVisible();
+    // Scope to the main nav to avoid strict-mode collisions with footer links.
+    await expect(page.locator('nav.nav').getByRole('link', { name: /SwapPilot/i })).toBeVisible();
+    await expect(page.locator('nav.nav').getByRole('link', { name: /Launch App/i })).toBeVisible();
   });
 });
 
-test.describe('Swap Interface', () => {
+test.describe('Swap (Landio)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/swap');
+    // Wait for the controller to mount and initialize the swap button.
+    await expect(page.locator('#swapBtn')).toHaveText(/Enter an amount/i, { timeout: 10000 });
   });
 
-  test('should display From and To token inputs', async ({ page }) => {
-    await expect(page.getByText('From')).toBeVisible();
-    await expect(page.getByText('To')).toBeVisible();
+  test('should render swap inputs and disabled CTA initially', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Swap' })).toBeVisible();
+
+    const fromAmount = page.locator('#fromAmount');
+    const toAmount = page.locator('#toAmount');
+    const swapBtn = page.locator('#swapBtn');
+
+    await expect(fromAmount).toBeVisible();
+    await expect(toAmount).toBeVisible();
+    await expect(toAmount).toHaveAttribute('readonly', '');
+
+    await expect(swapBtn).toBeVisible();
+    await expect(swapBtn).toBeDisabled();
+    await expect(swapBtn).toHaveText(/Enter an amount/i);
+
+    // These sections are template-driven and should start hidden.
+    await expect(page.locator('#beqContainer')).toBeHidden();
+    await expect(page.locator('#routeContainer')).toBeHidden();
+    await expect(page.locator('#providersContainer')).toBeHidden();
+    await expect(page.locator('#detailsToggle')).toBeHidden();
   });
 
-  test('should have BNB and ETH as default tokens', async ({ page }) => {
-    // Default tokens should be BNB → ETH
-    await expect(page.getByRole('button', { name: /BNB/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /ETH/i }).first()).toBeVisible();
+  test('should open and close slippage settings modal', async ({ page }) => {
+    const modal = page.locator('#slippageModal');
+    // Modal starts without the open class (hidden visually).
+    await expect(modal).not.toHaveClass(/open/);
+
+    await page.locator('#openSlippage').click();
+    // Wait for modal content to be visible.
+    await expect(page.locator('#slippageModal .slippage-content')).toBeVisible();
+    await expect(modal).toHaveClass(/open/);
+
+    await page.locator('#closeSlippage').click();
+    await expect(page.locator('#slippageModal .slippage-content')).toBeHidden();
+    await expect(modal).not.toHaveClass(/open/);
   });
 
-  test('should allow changing input amount', async ({ page }) => {
-    const input = page.locator('input[type="text"]').first();
-    
-    await input.fill('10');
-    await expect(input).toHaveValue('10');
+  test('should fetch mock quotes and reveal details panels', async ({ page }) => {
+    // Enable console logging to catch errors
+    page.on('console', msg => console.log('BROWSER:', msg.type(), msg.text()));
+
+    const fromAmount = page.locator('#fromAmount');
+    const swapBtn = page.locator('#swapBtn');
+
+    // Ensure swap button shows initial state (controller is mounted).
+    await expect(swapBtn).toHaveText(/Enter an amount/i);
+
+    // Wait a tick for React hydration to attach event listeners.
+    await page.waitForTimeout(500);
+
+    // Type value to simulate user input (triggers native input events).
+    await fromAmount.click();
+    await fromAmount.fill('');
+    await fromAmount.pressSequentially('1', { delay: 100 });
+    await expect(fromAmount).toHaveValue('1');
+
+    // Wait for controller to process and swap button to change.
+    await expect(swapBtn).toHaveText(/Swap/i, { timeout: 30000 });
+    await expect(swapBtn).toBeEnabled();
+
+    await expect(page.locator('#beqContainer')).toBeVisible();
+    await expect(page.locator('#routeContainer')).toBeVisible();
+    await expect(page.locator('#providersContainer')).toBeVisible();
+    await expect(page.locator('#detailsToggle')).toBeVisible();
   });
 
-  test('should open token picker modal when clicking token button', async ({ page }) => {
-    // Click on the first token button (From)
-    await page.getByRole('button', { name: /BNB/i }).first().click();
-    
-    // Modal should open
-    await expect(page.getByText('Select Token')).toBeVisible();
-    await expect(page.getByPlaceholder('Search by name or symbol')).toBeVisible();
+  test('should allow selecting a different provider row', async ({ page }) => {
+    const fromAmount = page.locator('#fromAmount');
+    const swapBtn = page.locator('#swapBtn');
+
+    await page.waitForTimeout(500);
+    await fromAmount.click();
+    await fromAmount.pressSequentially('1', { delay: 100 });
+    await expect(swapBtn).toHaveText(/Swap/i, { timeout: 30000 });
+    await expect(page.locator('#providersContainer')).toBeVisible();
+
+    const items = page.locator('#providersContainer .provider-item');
+    await expect(items).toHaveCount(3);
+
+    await expect(items.nth(0)).toHaveClass(/selected/);
+    await items.nth(1).click();
+    await expect(items.nth(1)).toHaveClass(/selected/);
   });
 
-  test('should search tokens in picker', async ({ page }) => {
-    // Open token picker
-    await page.getByRole('button', { name: /BNB/i }).first().click();
-    
-    // Search for USDT
-    await page.getByPlaceholder('Search by name or symbol').fill('USDT');
-    
-    // USDT should be visible
-    await expect(page.getByText('Tether USD')).toBeVisible();
-  });
+  test('should toggle transaction details accordion', async ({ page }) => {
+    const fromAmount = page.locator('#fromAmount');
+    const swapBtn = page.locator('#swapBtn');
 
-  test('should close token picker on backdrop click', async ({ page }) => {
-    // Open token picker
-    await page.getByRole('button', { name: /BNB/i }).first().click();
-    
-    // Click backdrop
-    await page.locator('.fixed.inset-0').first().click({ force: true });
-    
-    // Modal should close
-    await expect(page.getByText('Select Token')).not.toBeVisible();
-  });
+    await page.waitForTimeout(500);
+    await fromAmount.click();
+    await fromAmount.pressSequentially('1', { delay: 100 });
 
-  test('should swap token direction', async ({ page }) => {
-    // Find swap direction button (has rotate icon)
-    const swapButton = page.locator('button:has(svg)').filter({ hasText: '' }).first();
-    
-    // Initial state: BNB → ETH
-    const fromButton = page.getByRole('button', { name: /BNB/i }).first();
-    await expect(fromButton).toBeVisible();
-    
-    // Click swap - this might need adjustment based on actual button structure
-    await page.locator('[class*="rotate"]').click();
-    
-    // After swap: ETH → BNB (tokens should be reversed)
-    // Note: This depends on the actual implementation
-  });
+    // Wait for quotes to load before checking details toggle.
+    await expect(swapBtn).toHaveText(/Swap/i, { timeout: 30000 });
+    await expect(page.locator('#detailsToggle')).toBeVisible();
 
-  test('should toggle between BEQ and RAW modes', async ({ page }) => {
-    // BEQ should be active by default
-    await expect(page.getByRole('tab', { name: 'Best Exec' })).toHaveAttribute('aria-selected', 'true');
-    
-    // Click RAW tab
-    await page.getByRole('tab', { name: 'Raw Output' }).click();
-    
-    // RAW should now be active
-    await expect(page.getByRole('tab', { name: 'Raw Output' })).toHaveAttribute('aria-selected', 'true');
-  });
-
-  test('should have execution mode presets', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Safe' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Balanced' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Turbo' })).toBeVisible();
-  });
-
-  test('should display execute button', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /Execute Best Quote/i })).toBeVisible();
-  });
-});
-
-test.describe('Settings', () => {
-  test('should open settings drawer', async ({ page }) => {
-    await page.goto('/swap');
-    
-    // Click settings button (gear icon)
-    await page.locator('button:has(svg path[d*="M10.325"])').click();
-    
-    // Settings drawer should open
-    await expect(page.getByText('Settings')).toBeVisible();
+    const detailsContent = page.locator('#detailsContent');
+    await expect(detailsContent).not.toHaveClass(/active/);
+    await page.locator('#detailsToggle').click();
+    await expect(detailsContent).toHaveClass(/active/);
   });
 });
 
@@ -127,12 +126,16 @@ test.describe('Navigation', () => {
     await page.goto('/status');
     
     await expect(page).toHaveURL('/status');
+    await expect(page.locator('.overall-status')).toBeVisible();
   });
 
   test('should navigate to settings page', async ({ page }) => {
     await page.goto('/settings');
     
     await expect(page).toHaveURL('/settings');
+    // Landio settings page header is "Customize SwapPilot" with a Settings badge.
+    await expect(page.locator('.page-header .section-badge')).toHaveText(/Settings/i);
+    await expect(page.getByRole('heading', { name: /Customize/i })).toBeVisible();
   });
 });
 
@@ -141,51 +144,18 @@ test.describe('Wallet Connection', () => {
     await page.goto('/swap');
     
     // Connect button should be visible
-    await expect(page.getByRole('button', { name: /Connect/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Connect Wallet/i })).toBeVisible();
   });
 
   test('should open wallet modal on connect click', async ({ page }) => {
     await page.goto('/swap');
     
     // Click connect button
-    await page.getByRole('button', { name: /Connect/i }).click();
+    await page.getByRole('button', { name: /Connect Wallet/i }).click();
     
-    // RainbowKit modal should open
-    await expect(page.getByText(/Connect a Wallet|Connect Wallet/i)).toBeVisible();
+    // RainbowKit renders a modal with multiple wallet options.
+    // Check that the modal portal appears and contains wallet options.
+    await expect(page.locator('[data-rk]').locator('text=Wallet').first()).toBeVisible({ timeout: 8000 });
   });
 });
 
-test.describe('Transaction History', () => {
-  test('should open history drawer', async ({ page }) => {
-    await page.goto('/swap');
-    
-    // Click history button
-    await page.getByRole('button', { name: /History/i }).click();
-    
-    // History drawer should open
-    await expect(page.getByText('Transaction History')).toBeVisible();
-  });
-
-  test('should display empty state when no transactions', async ({ page }) => {
-    await page.goto('/swap');
-    
-    // Open history
-    await page.getByRole('button', { name: /History/i }).click();
-    
-    // Should show empty state
-    await expect(page.getByText('No transactions yet')).toBeVisible();
-  });
-});
-
-test.describe('Responsive Design', () => {
-  test('should work on mobile viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/swap');
-    
-    // Swap interface should be visible
-    await expect(page.getByText('SwapPilot')).toBeVisible();
-    
-    // Mobile navigation should work
-    await expect(page.locator('[class*="fixed bottom"]')).toBeVisible();
-  });
-});

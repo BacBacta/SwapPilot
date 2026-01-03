@@ -41,17 +41,6 @@ export type OneInchAdapterConfig = {
   timeoutMs?: number;
 };
 
-// Chain ID mapping for 1inch API
-const CHAIN_NAMES: Record<number, string> = {
-  1: 'ethereum',
-  56: 'bsc',
-  137: 'polygon',
-  42161: 'arbitrum',
-  10: 'optimism',
-  8453: 'base',
-  43114: 'avalanche',
-};
-
 export class OneInchAdapter implements Adapter {
   private readonly apiKey: string | null;
   private readonly chainId: number;
@@ -224,6 +213,7 @@ export class OneInchAdapter implements Adapter {
    * Calls 1inch Swap API which returns calldata for on-chain execution.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    void quote;
     if (!this.quoteEnabled()) {
       throw new Error('1inch API key not configured');
     }
@@ -239,10 +229,7 @@ export class OneInchAdapter implements Adapter {
       const sellToken = this.normalizeNativeToken(request.sellToken);
       const buyToken = this.normalizeNativeToken(request.buyToken);
 
-      // Calculate minReturn with slippage
       const slippageBps = request.slippageBps ?? 100; // Default 1%
-      const buyAmount = BigInt(quote.raw.buyAmount);
-      const minReturn = (buyAmount * BigInt(10000 - slippageBps)) / 10000n;
 
       const url = new URL(`${this.apiBaseUrl}/swap/v6.0/${this.chainId}/swap`);
       url.searchParams.set('src', sellToken);

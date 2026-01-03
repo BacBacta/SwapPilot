@@ -3,52 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-function triggerRainbowKitConnect() {
-  document.querySelector<HTMLButtonElement>("[data-testid='rk-connect-button']")?.click();
-}
-
 export function LandioNav() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [walletState, setWalletState] = useState<{ address?: string; isConnected: boolean }>({
-    isConnected: false,
-  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Only use wagmi hooks after mounting (client-side)
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Dynamic import wagmi to avoid SSR issues
-    import("wagmi").then(({ useAccount }) => {
-      // This won't work as hooks can't be called conditionally
-      // Instead, we'll listen to wagmi state changes via a different approach
-    }).catch(() => {});
-
-    // Check for wallet state periodically or via custom event
-    const checkWallet = () => {
-      // Look for RainbowKit connect button state
-      const btn = document.querySelector("[data-testid='rk-account-button']");
-      if (btn) {
-        const text = btn.textContent || "";
-        if (text.includes("0x")) {
-          setWalletState({ address: text, isConnected: true });
-        }
-      }
-    };
-
-    checkWallet();
-    const interval = setInterval(checkWallet, 1000);
-    return () => clearInterval(interval);
-  }, [mounted]);
 
   const isLanding = pathname === "/";
 
@@ -91,16 +58,58 @@ export function LandioNav() {
             <Link href="/swap" className="btn btn-primary">
               Launch App
             </Link>
+          ) : mounted ? (
+            <ConnectButton.Custom>
+              {({
+                account,
+                chain,
+                openAccountModal,
+                openChainModal,
+                openConnectModal,
+                mounted: rkMounted,
+              }) => {
+                const connected = rkMounted && account && chain;
+
+                return (
+                  <div
+                    {...(!rkMounted && {
+                      "aria-hidden": true,
+                      style: {
+                        opacity: 0,
+                        pointerEvents: "none",
+                        userSelect: "none",
+                      },
+                    })}
+                  >
+                    {(() => {
+                      if (!connected) {
+                        return (
+                          <button onClick={openConnectModal} className="btn btn-secondary">
+                            Connect Wallet
+                          </button>
+                        );
+                      }
+
+                      if (chain.unsupported) {
+                        return (
+                          <button onClick={openChainModal} className="btn btn-secondary" style={{ color: "var(--bad)" }}>
+                            Wrong network
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button onClick={openAccountModal} className="btn btn-secondary">
+                          {shortAddress(account.address)}
+                        </button>
+                      );
+                    })()}
+                  </div>
+                );
+              }}
+            </ConnectButton.Custom>
           ) : (
-            <button 
-              className="btn btn-secondary" 
-              onClick={triggerRainbowKitConnect}
-              suppressHydrationWarning
-            >
-              {mounted && walletState.isConnected && walletState.address
-                ? shortAddress(walletState.address)
-                : "Connect Wallet"}
-            </button>
+            <button className="btn btn-secondary">Connect Wallet</button>
           )}
         </div>
       </div>

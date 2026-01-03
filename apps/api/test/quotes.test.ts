@@ -306,13 +306,15 @@ describe('Option 1 API', () => {
 
     const res = await app.inject({ method: 'POST', url: '/v1/quotes', payload: body });
     expect(res.statusCode).toBe(200);
-    const json = res.json() as any;
+    const json = res.json() as unknown as {
+      rankedQuotes: Array<{ signals?: { sellability?: { status?: string; reasons?: string[] } } }>;
+    };
 
-    const anyFail = (json.rankedQuotes as any[]).some((q) => q.signals?.sellability?.status === 'FAIL');
+    const anyFail = json.rankedQuotes.some((q) => q.signals?.sellability?.status === 'FAIL');
     expect(anyFail).toBe(true);
 
-    const failing = (json.rankedQuotes as any[]).find((q) => q.signals?.sellability?.status === 'FAIL');
-    expect(failing.signals.sellability.reasons.join(' ')).toContain('token_security:goplus:is_honeypot');
-    expect(failing.signals.sellability.reasons.join(' ')).toContain('token_security:honeypotis:is_honeypot');
+    const failing = json.rankedQuotes.find((q) => q.signals?.sellability?.status === 'FAIL');
+    expect(failing?.signals?.sellability?.reasons?.join(' ') ?? '').toContain('token_security:goplus:is_honeypot');
+    expect(failing?.signals?.sellability?.reasons?.join(' ') ?? '').toContain('token_security:honeypotis:is_honeypot');
   });
 });

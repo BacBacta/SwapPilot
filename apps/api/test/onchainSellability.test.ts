@@ -4,6 +4,9 @@ import { encodeFunctionData, encodeFunctionResult, decodeFunctionData, type Hex 
 
 import { assessOnchainSellability } from '../src/risk/onchainSellability';
 
+// Type for multicall3 aggregate3 result tuples.
+type Result3 = { success: boolean; returnData: Hex };
+
 const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
 const PCS_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73' as const;
 const PCS_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' as const;
@@ -126,7 +129,7 @@ describe('assessOnchainSellability (PCS V2/V3, multicall)', () => {
 
       if (body.method !== 'eth_call') throw new Error('unexpected_rpc_method');
 
-      const params = (body.params ?? []) as any[];
+      const params = (body.params ?? []) as unknown[];
       const tx = params[0] as { to?: string; data?: string };
       const to = String(tx.to ?? '').toLowerCase();
       const data = String(tx.data ?? '0x') as Hex;
@@ -142,7 +145,7 @@ describe('assessOnchainSellability (PCS V2/V3, multicall)', () => {
         const decoded = decodeFunctionData({ abi: MULTICALL3_ABI, data });
         const calls = (decoded.args?.[0] ?? []) as Array<{ target: string; allowFailure: boolean; callData: Hex }>;
 
-        const results = calls.map((c) => {
+        const results: Result3[] = calls.map((c) => {
           const target = c.target.toLowerCase();
           const cd = c.callData;
 
@@ -221,7 +224,7 @@ describe('assessOnchainSellability (PCS V2/V3, multicall)', () => {
         const aggregateData = encodeFunctionResult({
           abi: MULTICALL3_ABI,
           functionName: 'aggregate3',
-          result: results as any,
+          result: results,
         });
 
         return jsonRpcResult(aggregateData);

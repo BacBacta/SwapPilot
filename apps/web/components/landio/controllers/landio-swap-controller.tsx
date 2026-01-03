@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAccount } from "wagmi";
 import { postQuotes } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
+import { useTokenBalances } from "@/lib/use-token-balances";
+import { BASE_TOKENS } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote } from "@swappilot/shared";
 
 function parseNumber(input: string): number {
@@ -15,6 +18,12 @@ function setText(id: string, text: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = text;
+}
+
+function setHtml(selector: string, html: string) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  el.innerHTML = html;
 }
 
 function setDisplay(id: string, display: string) {
@@ -50,9 +59,36 @@ function formatAmount(amount: string, decimals: number): string {
   }
 }
 
+function toBigIntSafe(value: unknown): bigint | null {
+  if (typeof value !== "string" || !value.length) return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function formatPercent(value: number, fractionDigits = 2): string {
+  if (!Number.isFinite(value)) return "—";
+  const v = Math.abs(value) < 0.0005 ? 0 : value;
+  return `${v.toFixed(fractionDigits)}%`;
+}
+
+function formatSignedAmount(amount: bigint, decimals: number, symbol: string): string {
+  const sign = amount === 0n ? "" : amount > 0n ? "+" : "-";
+  const abs = amount < 0n ? -amount : amount;
+  const formatted = formatAmount(abs.toString(), decimals);
+  return formatted === "—" ? "—" : `${sign}${formatted} ${symbol}`;
+}
+
 export function LandioSwapController() {
   const { settings, updateSettings } = useSettings();
   const { resolveToken } = useTokenRegistry();
+  const { address, isConnected } = useAccount();
 
   const lastRequestIdRef = useRef(0);
   const [response, setResponse] = useState<QuoteResponse | null>(null);
@@ -64,6 +100,66 @@ export function LandioSwapController() {
   const fromTokenInfo = useMemo(() => resolveToken(fromToken), [resolveToken, fromToken]);
   const toTokenInfo = useMemo(() => resolveToken(toToken), [resolveToken, toToken]);
 
+  // Get wallet balances for BNB and ETH
+  const balanceTokens = useMemo(() => {
+    const tokens = [];
+    if (fromTokenInfo) tokens.push(fromTokenInfo);
+    if (toTokenInfo) tokens.push(toTokenInfo);
+    return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
+  }, [fromTokenInfo, toTokenInfo]);
+
+  const { getBalanceFormatted, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
+
+  // Update balance displays when wallet connects/disconnects
+  useEffect(() => {
+    const fromBalanceLabel = document.querySelector('.token-input-box:first-of-type .token-input-label span:last-child');
+    const toBalanceLabel = document.querySelector('.token-input-box:last-of-type .token-input-label span:first-child + span, .token-input-box:nth-of-type(2) .token-input-label span:last-child');
+
+    if (fromBalanceLabel && fromTokenInfo) {
+      if (isConnected && !isLoadingBalances) {
+        const balance = getBalanceFormatted(fromTokenInfo);
+        fromBalanceLabel.innerHTML = `Balance: ${balance} ${fromToken} <button class="max-btn">MAX</button>`;
+      } else if (isConnected && isLoadingBalances) {
+        fromBalanceLabel.innerHTML = `Balance: ... ${fromToken} <button class="max-btn">MAX</button>`;
+      } else {
+        fromBalanceLabel.innerHTML = `Balance: — ${fromToken} <button class="max-btn">MAX</button>`;
+      }
+    }
+
+    // Find the "to" token balance label (second token-input-box)
+    const tokenInputBoxes = document.querySelectorAll('.token-input-box');
+    if (tokenInputBoxes.length >= 2 && toTokenInfo) {
+      const toBox = tokenInputBoxes[1];
+      const toLabel = toBox?.querySelector('.token-input-label span:last-child');
+      if (toLabel) {
+        if (isConnected && !isLoadingBalances) {
+          const balance = getBalanceFormatted(toTokenInfo);
+          toLabel.textContent = `Balance: ${balance} ${toToken}`;
+        } else if (isConnected && isLoadingBalances) {
+          toLabel.textContent = `Balance: ... ${toToken}`;
+        } else {
+          toLabel.textContent = `Balance: — ${toToken}`;
+        }
+      }
+    }
+
+    // Hook up MAX button
+    const maxBtn = document.querySelector('.max-btn');
+    const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+    const handleMax = () => {
+      if (fromAmountInput && fromTokenInfo && isConnected) {
+        const balance = getBalanceFormatted(fromTokenInfo);
+        fromAmountInput.value = balance;
+        fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    };
+    maxBtn?.addEventListener('click', handleMax);
+
+    return () => {
+      maxBtn?.removeEventListener('click', handleMax);
+    };
+  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo, fromToken, toToken]);
+
   useEffect(() => {
     // Hook up settings modal buttons in the template.
     const openBtn = document.getElementById("openSlippage");
@@ -71,11 +167,12 @@ export function LandioSwapController() {
     const modal = document.getElementById("slippageModal") as HTMLElement | null;
 
     const open = () => {
-      if (modal) modal.classList.add("active");
+      // Landio template uses `.slippage-modal.open` for visibility.
+      if (modal) modal.classList.add("open");
     };
 
     const close = () => {
-      if (modal) modal.classList.remove("active");
+      if (modal) modal.classList.remove("open");
     };
 
     openBtn?.addEventListener("click", open);
@@ -201,14 +298,42 @@ export function LandioSwapController() {
         if (container) {
           const items = Array.from(container.querySelectorAll<HTMLElement>(".provider-item"));
           const top3 = (res.rankedQuotes ?? []).slice(0, 3);
+
+          const avgBuyAmount = (() => {
+            const buys = top3
+              .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+              .filter((x): x is bigint => x !== null);
+            if (!buys.length) return null;
+            const sum = buys.reduce((a, b) => a + b, 0n);
+            return sum / BigInt(buys.length);
+          })();
+
           items.forEach((el, idx) => {
             const q = top3[idx];
             if (!q) return;
             const out = formatAmount(q.normalized.buyAmount ?? q.raw.buyAmount, toTokenInfo.decimals);
             const nameEl = el.querySelector<HTMLElement>(".provider-name");
             const outputEl = el.querySelector<HTMLElement>(".provider-output");
+            const rateEls = el.querySelectorAll<HTMLElement>(".provider-rate");
+            const leftRateEl = rateEls[0] ?? null;
+            const rightSavingsEl = el.querySelector<HTMLElement>(".provider-savings") ?? rateEls[1] ?? null;
+
             if (nameEl) nameEl.textContent = q.providerId;
             if (outputEl) outputEl.textContent = `${out} ${toToken}`;
+
+            const beq = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : null;
+            if (leftRateEl) leftRateEl.textContent = beq !== null ? (idx === 0 ? `Best • BEQ ${beq}` : `BEQ ${beq}`) : idx === 0 ? "Best" : "";
+
+            if (rightSavingsEl) {
+              const buy = toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount);
+              if (avgBuyAmount !== null && buy !== null) {
+                const diff = buy - avgBuyAmount;
+                rightSavingsEl.textContent = `${formatSignedAmount(diff, toTokenInfo.decimals, toToken)} vs avg`;
+              } else {
+                rightSavingsEl.textContent = "—";
+              }
+            }
+
             el.classList.toggle("selected", idx === 0);
             el.onclick = () => {
               items.forEach((x) => x.classList.remove("selected"));
@@ -218,9 +343,103 @@ export function LandioSwapController() {
           });
         }
 
-        // Details
+        // BEQ details + route + transaction details
+        const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
+        const maxBuy = (() => {
+          const buys = (res.rankedQuotes ?? [])
+            .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+            .filter((x): x is bigint => x !== null);
+          if (!buys.length) return null;
+          return buys.reduce((a, b) => (b > a ? b : a), buys[0]!);
+        })();
+
+        // Price Impact: use a quote-relative proxy (best vs best-raw)
+        if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
+          const ratio = Number(bestBuy) / Number(maxBuy);
+          const pct = (1 - ratio) * 100;
+          setText("priceImpact", `-${formatPercent(clamp(pct, 0, 99.99), 2)}`);
+        } else {
+          setText("priceImpact", "—");
+        }
+
+        // Gas & MEV
         setText("gasCost", best?.normalized.estimatedGasUsd ? `$${best.normalized.estimatedGasUsd}` : "$—");
-        setText("mevRisk", best?.signals?.mevExposure?.level ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") : "—");
+        setText(
+          "mevRisk",
+          best?.signals?.mevExposure?.level ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") : "—",
+        );
+
+        // Net Output: show delta vs avg of top-3 (token units)
+        const top3ForNet = (res.rankedQuotes ?? []).slice(0, 3);
+        const avgBuy = (() => {
+          const buys = top3ForNet
+            .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+            .filter((x): x is bigint => x !== null);
+          if (!buys.length) return null;
+          const sum = buys.reduce((a, b) => a + b, 0n);
+          return sum / BigInt(buys.length);
+        })();
+        if (bestBuy !== null && avgBuy !== null) {
+          setText("netOutput", formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toToken));
+        } else {
+          setText("netOutput", "—");
+        }
+
+        // Route: derive from quote route addresses when present
+        const routeAddrs = Array.isArray(best?.raw?.route) ? best!.raw!.route : [];
+        const routeSymbols = routeAddrs
+          .map((addr) => resolveToken(String(addr)))
+          .filter((t): t is NonNullable<ReturnType<typeof resolveToken>> => Boolean(t))
+          .map((t) => t.symbol);
+
+        const fromSym = fromTokenInfo.symbol;
+        const toSym = toTokenInfo.symbol;
+        const mid = routeSymbols.filter((s) => s !== fromSym && s !== toSym);
+        const compactMid = mid.length > 0 ? "…" : null;
+        const path = [fromSym, compactMid, toSym].filter((x): x is string => Boolean(x));
+
+        const p0 = path[0] ?? "—";
+        const p1 = path[1] ?? "—";
+        const p2 = path[2] ?? "—";
+        const routeHtml =
+          `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p0.slice(0, 1)}</div><span class="route-token-name">${p0}</span></div></div>` +
+          `<span class="route-arrow">→</span>` +
+          `<span class="route-dex">${best?.providerId ?? "—"}</span>` +
+          `<span class="route-arrow">→</span>` +
+          (path.length === 3
+            ? `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1}</div><span class="route-token-name">${p1}</span></div></div><span class="route-arrow">→</span>` +
+              `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p2.slice(0, 1)}</div><span class="route-token-name">${p2}</span></div></div>`
+            : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
+        setHtml("#routeContainer .route-path", routeHtml);
+
+        // Details accordion rows
+        const detailsRows = Array.from(document.querySelectorAll<HTMLElement>("#detailsContent .detail-row"));
+        const slippagePct = settings.slippageBps / 100;
+        const outHuman = bestBuy !== null ? Number(bestBuy) / 10 ** toTokenInfo.decimals : null;
+        const rate = outHuman !== null && valueNum > 0 ? outHuman / valueNum : null;
+        const minReceived = outHuman !== null ? outHuman * (1 - settings.slippageBps / 10_000) : null;
+
+        for (const row of detailsRows) {
+          const cells = row.querySelectorAll("span");
+          const labelEl = cells[0] as HTMLElement | undefined;
+          const valueEl = cells[1] as HTMLElement | undefined;
+          if (!labelEl || !valueEl) continue;
+          const label = (labelEl.textContent ?? "").trim();
+
+          if (label === "Rate") {
+            valueEl.textContent = rate !== null ? `1 ${fromToken} = ${rate.toFixed(rate >= 1 ? 4 : 6)} ${toToken}` : "—";
+          } else if (label === "Slippage Tolerance") {
+            valueEl.textContent = `${slippagePct.toFixed(slippagePct % 1 === 0 ? 0 : 2)}%`;
+          } else if (label === "Minimum Received") {
+            valueEl.textContent = minReceived !== null ? `${minReceived.toFixed(minReceived >= 1 ? 4 : 6)} ${toToken}` : "—";
+          } else if (label === "Network Fee") {
+            valueEl.textContent = best?.normalized.estimatedGasUsd ? `~$${best.normalized.estimatedGasUsd}` : "—";
+          } else if (label === "Platform Fee") {
+            valueEl.textContent = "—";
+          } else if (label === "You Save") {
+            valueEl.textContent = bestBuy !== null && avgBuy !== null ? formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toToken) : "—";
+          }
+        }
 
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
@@ -253,6 +472,7 @@ export function LandioSwapController() {
     };
   }, [
     fromTokenInfo,
+    resolveToken,
     selected,
     settings.canonicalPoolsOnly,
     settings.mevAwareScoring,

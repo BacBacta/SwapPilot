@@ -20,6 +20,10 @@ type CacheEntry = { expiresAt: number; value: RiskSignals['sellability'] };
 
 const cache = new Map<string, CacheEntry>();
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 function clamp01(x: number): number {
   if (x < 0) return 0;
   if (x > 1) return 1;
@@ -83,10 +87,10 @@ async function assessGoPlus(params: {
   const address = normalizeAddress(token);
   const base = baseUrl.replace(/\/$/, '');
   const url = `${base}/api/v1/token_security/${chainId}?contract_addresses=${address}`;
-  const json = (await fetchJsonWithTimeout(url, timeoutMs)) as any;
+  const json = await fetchJsonWithTimeout(url, timeoutMs);
 
-  const tokenResult = json?.result?.[address];
-  if (!tokenResult || typeof tokenResult !== 'object') {
+  const tokenResult = isRecord(json) && isRecord(json.result) ? json.result[address] : undefined;
+  if (!isRecord(tokenResult)) {
     return {
       sellability: { status: 'UNCERTAIN', confidence: 0.25, reasons: ['token_security:goplus:no_result'] },
       maxTaxPercent: null,
@@ -95,13 +99,13 @@ async function assessGoPlus(params: {
 
   const reasons: string[] = ['token_security:goplus:ok'];
 
-  const isHoneypot = tokenResult.is_honeypot === '1';
-  const cannotSellAll = tokenResult.cannot_sell_all === '1';
-  const isBlacklisted = tokenResult.is_blacklisted === '1';
-  const isScam = tokenResult.is_scam === '1';
+  const isHoneypot = tokenResult['is_honeypot'] === '1';
+  const cannotSellAll = tokenResult['cannot_sell_all'] === '1';
+  const isBlacklisted = tokenResult['is_blacklisted'] === '1';
+  const isScam = tokenResult['is_scam'] === '1';
 
-  const buyTax = parseMaybeNumber(tokenResult.buy_tax);
-  const sellTax = parseMaybeNumber(tokenResult.sell_tax);
+  const buyTax = parseMaybeNumber(tokenResult['buy_tax']);
+  const sellTax = parseMaybeNumber(tokenResult['sell_tax']);
 
   if (isHoneypot) reasons.push('token_security:goplus:is_honeypot');
   if (cannotSellAll) reasons.push('token_security:goplus:cannot_sell_all');
@@ -152,20 +156,24 @@ async function assessHoneypotIs(params: {
   const address = normalizeAddress(token);
   const base = baseUrl.replace(/\/$/, '');
   const url = `${base}/v2/IsHoneypot?address=${address}&chain=${chain}`;
-  const json = (await fetchJsonWithTimeout(url, timeoutMs)) as any;
+  const json = await fetchJsonWithTimeout(url, timeoutMs);
 
   const reasons: string[] = ['token_security:honeypotis:ok'];
 
-  const simulationSuccess = json?.simulationSuccess;
-  const isHoneypot = Boolean(json?.honeypotResult?.isHoneypot);
+  const simulationSuccessRaw = isRecord(json) ? json['simulationSuccess'] : undefined;
+  const simulationSuccess = typeof simulationSuccessRaw === 'boolean' ? simulationSuccessRaw : undefined;
+  const honeypotResult = isRecord(json) ? json['honeypotResult'] : undefined;
+  const isHoneypot = isRecord(honeypotResult) ? Boolean(honeypotResult['isHoneypot']) : false;
 
-  const buyTax = parseMaybeNumber(json?.simulationResult?.buyTax);
-  const sellTax = parseMaybeNumber(json?.simulationResult?.sellTax);
-  const transferTax = parseMaybeNumber(json?.simulationResult?.transferTax);
+  const simulationResult = isRecord(json) ? json['simulationResult'] : undefined;
+  const buyTax = parseMaybeNumber(isRecord(simulationResult) ? simulationResult['buyTax'] : undefined);
+  const sellTax = parseMaybeNumber(isRecord(simulationResult) ? simulationResult['sellTax'] : undefined);
+  const transferTax = parseMaybeNumber(isRecord(simulationResult) ? simulationResult['transferTax'] : undefined);
 
   // holderAnalysis contains real-world observed taxes from actual holder sells
-  const holderAvgTax = parseMaybeNumber(json?.holderAnalysis?.averageTax);
-  const holderHighestTax = parseMaybeNumber(json?.holderAnalysis?.highestTax);
+  const holderAnalysis = isRecord(json) ? json['holderAnalysis'] : undefined;
+  const holderAvgTax = parseMaybeNumber(isRecord(holderAnalysis) ? holderAnalysis['averageTax'] : undefined);
+  const holderHighestTax = parseMaybeNumber(isRecord(holderAnalysis) ? holderAnalysis['highestTax'] : undefined);
 
   if (typeof simulationSuccess === 'boolean') {
     reasons.push(`token_security:honeypotis:simulation_success:${simulationSuccess ? 1 : 0}`);

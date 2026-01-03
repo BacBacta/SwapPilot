@@ -28,7 +28,7 @@ function toRpcTx(tx: TxRequest): Record<string, string> {
  * Decode swap output from router return data.
  * Most swap functions return amounts[] array where the last element is the output.
  */
-function decodeSwapOutput(returnData: HexString, routerType: string): string | null {
+function decodeSwapOutput(returnData: HexString): string | null {
   try {
     // Remove 0x prefix
     const data = returnData.slice(2);
@@ -113,7 +113,7 @@ async function simulateOnce(params: {
     const routerType = KNOWN_ROUTERS[routerAddress];
     
     if (routerType && callReturnData && callReturnData !== '0x') {
-      const decoded = decodeSwapOutput(callReturnData, routerType);
+      const decoded = decodeSwapOutput(callReturnData);
       if (decoded) {
         simulatedOutput = decoded;
         reasons.push(`decoded_output:${decoded}`);

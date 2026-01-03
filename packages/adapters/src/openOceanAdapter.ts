@@ -335,6 +335,7 @@ export class OpenOceanAdapter implements Adapter {
    * Build a ready-to-sign transaction using OpenOcean's swap API.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    void quote;
     if (!this.isChainSupported()) {
       throw new Error(`Chain ${this.chainId} not supported by OpenOcean`);
     }

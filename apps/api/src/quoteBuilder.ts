@@ -20,7 +20,7 @@ import type { RiskEngine } from '@swappilot/risk';
 import type { Metrics } from './obs/metrics';
 import type { QuoteCache } from './cache/quoteCache';
 import { ProviderHealthTracker } from './obs/providerHealth';
-import { getProviderConcurrencyLimiter, type ProviderConcurrencyLimiter } from './obs/providerConcurrency';
+import { getProviderConcurrencyLimiter } from './obs/providerConcurrency';
 import { assessOnchainSellability } from './risk/onchainSellability';
 import { assessTokenSecuritySellability } from './risk/tokenSecurity';
 

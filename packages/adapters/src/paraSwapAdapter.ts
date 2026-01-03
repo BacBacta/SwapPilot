@@ -274,6 +274,7 @@ export class ParaSwapAdapter implements Adapter {
    * First gets price route, then builds transaction.
    */
   async buildTx(request: QuoteRequest, quote: AdapterQuote): Promise<BuiltTx> {
+    void quote;
     if (!this.isSupported()) {
       throw new Error(`Chain ${this.chainId} not supported by ParaSwap`);
     }

@@ -165,7 +165,7 @@ export function useDynamicSlippage({
       riskLevel,
       suggestedMinBps: baseBps,
     };
-  }, [quote, userSlippageBps, autoSlippageEnabled, tokenSymbol]);
+  }, [quote, userSlippageBps, autoSlippageEnabled]);
 }
 
 /**

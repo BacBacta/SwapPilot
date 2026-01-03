@@ -40,7 +40,7 @@ describe('GET /v1/tokens/resolve', () => {
       };
 
       if (body.method !== 'eth_call') throw new Error('unexpected_rpc_method');
-      const params = (body.params ?? []) as any[];
+      const params = (body.params ?? []) as unknown[];
       const tx = params[0] as { to?: string; data?: string };
       const data = String(tx.data ?? '0x');
 
@@ -69,7 +69,13 @@ describe('GET /v1/tokens/resolve', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    const json = res.json() as any;
+    const json = res.json() as unknown as {
+      address: string;
+      decimals: number;
+      symbol: string;
+      name: string;
+      isNative: boolean;
+    };
     expect(json.address).toBe('0x1111111111111111111111111111111111111111');
     expect(json.decimals).toBe(18);
     expect(json.symbol).toBe('TKN');
@@ -85,7 +91,11 @@ describe('GET /v1/tokens/resolve', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    const json = res.json() as any;
+    const json = res.json() as unknown as {
+      symbol: string;
+      decimals: number;
+      isNative: boolean;
+    };
     expect(json.symbol).toBe('BNB');
     expect(json.decimals).toBe(18);
     expect(json.isNative).toBe(true);
