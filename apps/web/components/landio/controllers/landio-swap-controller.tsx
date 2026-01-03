@@ -264,10 +264,38 @@ function renderProviders(
 }
 
 export function LandioSwapController() {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 1: GLOBAL SETTINGS & CONTEXT PROVIDERS
+  // ═══════════════════════════════════════════════════════════════════════════
   const { settings, updateSettings } = useSettings();
   const { resolveToken, tokens: allTokens } = useTokenRegistry();
   const { address, isConnected } = useAccount();
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 2: TOKEN STATE
+  // ═══════════════════════════════════════════════════════════════════════════
+  const [fromTokenSymbol, setFromTokenSymbol] = useState("BNB");
+  const [toTokenSymbol, setToTokenSymbol] = useState("ETH");
+  const [fromAmountWei, setFromAmountWei] = useState("0");
+  const [fromAmountValue, setFromAmountValue] = useState(0);
+  const [toAmountValue, setToAmountValue] = useState(0);
+  const [swapValueUsd, setSwapValueUsd] = useState(0);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 3: UI CONTROL STATE (Modals, Drawers, Toggles)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAllProviders, setShowAllProviders] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
+  const [refreshCountdown, setRefreshCountdown] = useState(12);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 4: INTERNAL REFS (Debounce, Request Tracking)
+  // ═══════════════════════════════════════════════════════════════════════════
   const lastRequestIdRef = useRef(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   // Ref to store current values for debounced callback (avoids stale closures)
@@ -278,14 +306,56 @@ export function LandioSwapController() {
     settings: typeof settings;
   }>({ fromTokenInfo: null, toTokenInfo: null, effectiveSlippageBps: 50, settings });
   
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 5: API RESPONSE STATE (Quotes)
+  // ═══════════════════════════════════════════════════════════════════════════
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
   const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
   
-  // Toast notifications
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 6: TRANSACTION HISTORY STATE
+  // ═══════════════════════════════════════════════════════════════════════════
+  const [txHistory, setTxHistory] = useState<StoredTransaction[]>([]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 7: TOAST NOTIFICATIONS
+  // ═══════════════════════════════════════════════════════════════════════════
   const toast = useToast();
 
-  // Execute swap hook for providers with buildTx capability
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 8: TOKEN REGISTRY & RESOLUTION (useMemo)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const fromTokenInfo = useMemo(() => resolveToken(fromTokenSymbol), [resolveToken, fromTokenSymbol]);
+  const toTokenInfo = useMemo(() => resolveToken(toTokenSymbol), [resolveToken, toTokenSymbol]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 9: PRICES HOOK
+  // ═══════════════════════════════════════════════════════════════════════════
+  const priceTokenAddresses = useMemo(() => {
+    const addresses: string[] = [];
+    if (fromTokenInfo) addresses.push(fromTokenInfo.address);
+    if (toTokenInfo) addresses.push(toTokenInfo.address);
+    return addresses;
+  }, [fromTokenInfo, toTokenInfo]);
+
+  const { formatUsd, getPrice } = useTokenPrices(priceTokenAddresses);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 10: BALANCES HOOK
+  // ═══════════════════════════════════════════════════════════════════════════
+  const balanceTokens = useMemo(() => {
+    const tokens = [];
+    if (fromTokenInfo) tokens.push(fromTokenInfo);
+    if (toTokenInfo) tokens.push(toTokenInfo);
+    return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
+  }, [fromTokenInfo, toTokenInfo]);
+
+  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 11: SWAP EXECUTION HOOK
+  // ═══════════════════════════════════════════════════════════════════════════
   const {
     status: swapStatus,
     error: swapError,
@@ -298,78 +368,9 @@ export function LandioSwapController() {
     isSuccess,
   } = useExecuteSwap();
 
-  // Dynamic token selection state
-  const [fromTokenSymbol, setFromTokenSymbol] = useState("BNB");
-  const [toTokenSymbol, setToTokenSymbol] = useState("ETH");
-  
-  // Token picker modal state
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Show all providers toggle state
-  const [showAllProviders, setShowAllProviders] = useState(false);
-
-  // Auto-refresh state
-  const [refreshCountdown, setRefreshCountdown] = useState(12);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Track current input amount in wei for approval check
-  const [fromAmountWei, setFromAmountWei] = useState("0");
-
-  // BEQ/RAW scoring mode state
-  const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
-
-  // Transaction history drawer state
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [txHistory, setTxHistory] = useState<StoredTransaction[]>([]);
-
-  // Swap value in USD for fee calculation
-  const [swapValueUsd, setSwapValueUsd] = useState(0);
-
-  const fromTokenInfo = useMemo(() => resolveToken(fromTokenSymbol), [resolveToken, fromTokenSymbol]);
-  const toTokenInfo = useMemo(() => resolveToken(toTokenSymbol), [resolveToken, toTokenSymbol]);
-
-  // PILOT tier hook
-  const { data: pilotTierInfo, isLoading: isPilotTierLoading } = usePilotTier();
-
-  // Fee calculation hook
-  const { data: feeInfo, isLoading: isFeeLoading } = useFeeCalculation(swapValueUsd);
-
-  // Load transaction history from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(TX_HISTORY_KEY);
-      if (stored) {
-        setTxHistory(JSON.parse(stored));
-      }
-    } catch {
-      // Ignore parse errors
-    }
-  }, []);
-
-  // Get wallet balances for BNB and ETH
-  const balanceTokens = useMemo(() => {
-    const tokens = [];
-    if (fromTokenInfo) tokens.push(fromTokenInfo);
-    if (toTokenInfo) tokens.push(toTokenInfo);
-    return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
-  }, [fromTokenInfo, toTokenInfo]);
-
-  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
-
-  // Get token prices for USD conversion
-  const priceTokenAddresses = useMemo(() => {
-    const addresses: string[] = [];
-    if (fromTokenInfo) addresses.push(fromTokenInfo.address);
-    if (toTokenInfo) addresses.push(toTokenInfo.address);
-    return addresses;
-  }, [fromTokenInfo, toTokenInfo]);
-
-  const { formatUsd, getPrice } = useTokenPrices(priceTokenAddresses);
-
-  // Token approval hook - skip for native tokens (BNB)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 12: TOKEN APPROVAL HOOK
+  // ═══════════════════════════════════════════════════════════════════════════
   const isFromNative = fromTokenInfo?.isNative ?? false;
   const approvalAmount = useMemo(() => {
     try {
@@ -392,7 +393,9 @@ export function LandioSwapController() {
     amount: approvalAmount,
   });
 
-  // Dynamic slippage based on quote signals
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 13: DYNAMIC SLIPPAGE
+  // ═══════════════════════════════════════════════════════════════════════════
   const dynamicSlippage = useDynamicSlippage({
     quote: selected,
     userSlippageBps: settings.slippageBps,
@@ -403,16 +406,15 @@ export function LandioSwapController() {
   // Effective slippage to use (dynamic when auto-enabled)
   const effectiveSlippageBps = dynamicSlippage.slippageBps;
 
-  // Keep refs up to date for debounced callbacks
-  useEffect(() => {
-    currentParamsRef.current = {
-      fromTokenInfo: fromTokenInfo ?? null,
-      toTokenInfo: toTokenInfo ?? null,
-      effectiveSlippageBps,
-      settings,
-    };
-  }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings]);
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 14: PILOT TIER & FEES
+  // ═══════════════════════════════════════════════════════════════════════════
+  const { data: pilotTierInfo, isLoading: isPilotTierLoading } = usePilotTier();
+  const { data: feeInfo, isLoading: isFeeLoading } = useFeeCalculation(swapValueUsd);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 15: DERIVED STATE (useMemo)
+  // ═══════════════════════════════════════════════════════════════════════════
   // Check if balance is insufficient
   const hasInsufficientBalance = useMemo(() => {
     if (!fromTokenInfo || !isConnected) return false;
@@ -426,10 +428,96 @@ export function LandioSwapController() {
     }
   }, [fromTokenInfo, isConnected, getBalance, fromAmountWei]);
 
-  // Track current input values for USD calculation
-  const [fromAmountValue, setFromAmountValue] = useState(0);
-  const [toAmountValue, setToAmountValue] = useState(0);
+  // Filter tokens for picker
+  const filteredTokens = useMemo(() => {
+    const tokens = allTokens.length > 0 ? allTokens : BASE_TOKENS;
+    if (!searchQuery.trim()) return tokens;
+    const q = searchQuery.toLowerCase();
+    return tokens.filter(t => 
+      t.symbol.toLowerCase().includes(q) || 
+      t.name.toLowerCase().includes(q) ||
+      t.address.toLowerCase().includes(q)
+    );
+  }, [allTokens, searchQuery]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 16: HANDLERS (useCallback)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Token picker modal handler
+  const selectToken = useCallback((token: TokenInfo) => {
+    if (pickerTarget === "from") {
+      if (token.symbol === toTokenSymbol) {
+        // Swap if selecting same token
+        setToTokenSymbol(fromTokenSymbol);
+      }
+      setFromTokenSymbol(token.symbol);
+    } else {
+      if (token.symbol === fromTokenSymbol) {
+        // Swap if selecting same token
+        setFromTokenSymbol(toTokenSymbol);
+      }
+      setToTokenSymbol(token.symbol);
+    }
+    setPickerOpen(false);
+    
+    // Clear amounts and reset
+    const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+    const toAmountInput = document.getElementById('toAmount') as HTMLInputElement | null;
+    if (fromAmountInput) fromAmountInput.value = "";
+    if (toAmountInput) toAmountInput.value = "";
+    setFromAmountValue(0);
+    setToAmountValue(0);
+    setResponse(null);
+    setSelected(null);
+    setDisplay("beqContainer", "none");
+    setDisplay("routeContainer", "none");
+    setDisplay("providersContainer", "none");
+    setDisplay("detailsToggle", "none");
+    setDisabled("swapBtn", true);
+    setSwapBtnText("Enter an amount");
+  }, [pickerTarget, fromTokenSymbol, toTokenSymbol]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 17: REF SYNC EFFECTS
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Keep refs up to date for debounced callbacks
+  useEffect(() => {
+    currentParamsRef.current = {
+      fromTokenInfo: fromTokenInfo ?? null,
+      toTokenInfo: toTokenInfo ?? null,
+      effectiveSlippageBps,
+      settings,
+    };
+  }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 18: INITIALIZATION EFFECTS
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Load transaction history from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(TX_HISTORY_KEY);
+      if (stored) {
+        setTxHistory(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
+  // Ensure the template starts hidden like in the HTML
+  useEffect(() => {
+    setDisplay("beqContainer", "none");
+    setDisplay("routeContainer", "none");
+    setDisplay("providersContainer", "none");
+    setDisplay("detailsToggle", "none");
+    setDisabled("swapBtn", true);
+  }, []);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 19: DOM SYNC EFFECTS - Balance & USD Display
+  // ═══════════════════════════════════════════════════════════════════════════
   // Update USD values when amounts or prices change
   useEffect(() => {
     const fromUsdEl = document.querySelector('.token-input-box:first-of-type .usd-value');
@@ -502,6 +590,9 @@ export function LandioSwapController() {
     };
   }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo, fromTokenSymbol, toTokenSymbol]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 20: DOM SYNC EFFECTS - Settings Modal
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     // Hook up settings modal buttons in the template.
     const openBtn = document.getElementById("openSlippage");
@@ -544,6 +635,9 @@ export function LandioSwapController() {
     };
   }, [updateSettings]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 21: MAIN QUOTE FETCH & SWAP LOGIC (Core Business Logic)
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     const amountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
     const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
@@ -1031,6 +1125,9 @@ export function LandioSwapController() {
     toTokenInfo,
   ]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 22: SWAP STATUS EFFECTS (Success/Error Handling)
+  // ═══════════════════════════════════════════════════════════════════════════
   // Handle swap status changes
   useEffect(() => {
     if (swapStatus === "pending") {
@@ -1109,6 +1206,9 @@ export function LandioSwapController() {
     }
   }, [swapStatus, swapError, resetSwap, toast, refetchAllowance, txHash]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 23: DOM SYNC EFFECTS - Providers & Details Display
+  // ═══════════════════════════════════════════════════════════════════════════
   // Display receipt info (whyWinner) when available
   useEffect(() => {
     if (!receipt) return;
@@ -1201,6 +1301,9 @@ export function LandioSwapController() {
     }
   }, [selected, fromTokenInfo, isConnected, hasInsufficientBalance, needsApproval, isApproving, isFromNative, fromTokenSymbol, approve, swapStatus]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 24: DOM SYNC EFFECTS - Validation & Quick Actions
+  // ═══════════════════════════════════════════════════════════════════════════
   // Add insufficient balance warning element
   useEffect(() => {
     const fromTokenBox = document.querySelector('.token-input-box:first-of-type');
@@ -1301,6 +1404,9 @@ export function LandioSwapController() {
     }
   }, [isConnected, fromTokenInfo, getBalance]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 25: DOM SYNC EFFECTS - UI Enhancements (Presets, Tabs, StatCards)
+  // ═══════════════════════════════════════════════════════════════════════════
   // Auto-refresh countdown and timer
   useEffect(() => {
     if (!response || !selected) {
@@ -1885,52 +1991,9 @@ export function LandioSwapController() {
     };
   }, [fromTokenSymbol, toTokenSymbol]);
 
-  // Token picker modal handler
-  const selectToken = useCallback((token: TokenInfo) => {
-    if (pickerTarget === "from") {
-      if (token.symbol === toTokenSymbol) {
-        // Swap if selecting same token
-        setToTokenSymbol(fromTokenSymbol);
-      }
-      setFromTokenSymbol(token.symbol);
-    } else {
-      if (token.symbol === fromTokenSymbol) {
-        // Swap if selecting same token
-        setFromTokenSymbol(toTokenSymbol);
-      }
-      setToTokenSymbol(token.symbol);
-    }
-    setPickerOpen(false);
-    
-    // Clear amounts and reset
-    const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
-    const toAmountInput = document.getElementById('toAmount') as HTMLInputElement | null;
-    if (fromAmountInput) fromAmountInput.value = "";
-    if (toAmountInput) toAmountInput.value = "";
-    setFromAmountValue(0);
-    setToAmountValue(0);
-    setResponse(null);
-    setSelected(null);
-    setDisplay("beqContainer", "none");
-    setDisplay("routeContainer", "none");
-    setDisplay("providersContainer", "none");
-    setDisplay("detailsToggle", "none");
-    setDisabled("swapBtn", true);
-    setSwapBtnText("Enter an amount");
-  }, [pickerTarget, fromTokenSymbol, toTokenSymbol]);
-
-  // Filter tokens for picker
-  const filteredTokens = useMemo(() => {
-    const tokens = allTokens.length > 0 ? allTokens : BASE_TOKENS;
-    if (!searchQuery.trim()) return tokens;
-    const q = searchQuery.toLowerCase();
-    return tokens.filter(t => 
-      t.symbol.toLowerCase().includes(q) || 
-      t.name.toLowerCase().includes(q) ||
-      t.address.toLowerCase().includes(q)
-    );
-  }, [allTokens, searchQuery]);
-
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 26: JSX RETURN (Token Picker Modal + History Drawer)
+  // ═══════════════════════════════════════════════════════════════════════════
   // Always render the token picker modal (hidden when not open)
   return (
     <>
