@@ -7,8 +7,9 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/hooks/use-token-prices";
+import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
-import type { QuoteResponse, RankedQuote } from "@swappilot/shared";
+import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
 
 function parseNumber(input: string): number {
   const n = parseFloat(String(input).replace(/,/g, ""));
@@ -120,6 +121,20 @@ export function LandioSwapController() {
   const lastRequestIdRef = useRef(0);
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
+  const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
+
+  // Execute swap hook for providers with buildTx capability
+  const {
+    status: swapStatus,
+    error: swapError,
+    txHash,
+    buildTransaction,
+    executeSwap,
+    reset: resetSwap,
+    isBuilding,
+    isPending,
+    isSuccess,
+  } = useExecuteSwap();
 
   // Dynamic token selection state
   const [fromTokenSymbol, setFromTokenSymbol] = useState("BNB");
@@ -529,6 +544,11 @@ export function LandioSwapController() {
 
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
+
+        // Store the receipt if available
+        if (res.receipt) {
+          setReceipt(res.receipt);
+        }
       } catch {
         if (requestId !== lastRequestIdRef.current) return;
         setSwapBtnText("Failed to fetch quotes");
@@ -541,11 +561,40 @@ export function LandioSwapController() {
 
     amountInput?.addEventListener("input", onInput);
 
-    // Swap button action (phase 1: open deepLink when available)
+    // Swap button action - use buildTx for capable providers, fallback to deepLink
     const swapBtn = document.getElementById("swapBtn") as HTMLButtonElement | null;
-    const onSwap = () => {
-      if (!selected) return;
-      if (selected.deepLink) {
+    const onSwap = async () => {
+      if (!selected || !fromTokenInfo || !toTokenInfo) return;
+
+      const hasBuildTx = selected.capabilities?.buildTx === true;
+
+      if (hasBuildTx && isConnected) {
+        // Use buildTransaction + executeSwap for providers with buildTx
+        setSwapBtnText("Building...");
+        setDisabled("swapBtn", true);
+
+        const amountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
+        const sellAmountWei = toWei(amountInput?.value ?? "0", fromTokenInfo.decimals);
+
+        const tx = await buildTransaction({
+          providerId: selected.providerId,
+          sellToken: fromTokenInfo.address,
+          buyToken: toTokenInfo.address,
+          sellAmount: sellAmountWei,
+          slippageBps: settings.slippageBps,
+          quoteRaw: selected.raw,
+          quoteNormalized: selected.normalized,
+        });
+
+        if (tx) {
+          setSwapBtnText("Confirm in wallet...");
+          executeSwap(tx);
+        } else {
+          setSwapBtnText("Swap");
+          setDisabled("swapBtn", false);
+        }
+      } else if (selected.deepLink) {
+        // Fallback to deepLink for providers without buildTx (binance-wallet, liquidmesh, metamask)
         window.open(selected.deepLink, "_blank", "noopener,noreferrer");
       }
     };
@@ -557,8 +606,11 @@ export function LandioSwapController() {
       swapBtn?.removeEventListener("click", onSwap);
     };
   }, [
+    buildTransaction,
+    executeSwap,
     fromTokenInfo,
     fromTokenSymbol,
+    isConnected,
     toTokenSymbol,
     resolveToken,
     selected,
@@ -569,6 +621,63 @@ export function LandioSwapController() {
     settings.slippageBps,
     toTokenInfo,
   ]);
+
+  // Handle swap status changes
+  useEffect(() => {
+    if (swapStatus === "pending") {
+      setSwapBtnText("Pending...");
+      setDisabled("swapBtn", true);
+    } else if (swapStatus === "success") {
+      setSwapBtnText("Success!");
+      setDisabled("swapBtn", true);
+      // Reset after 3 seconds
+      const timeout = setTimeout(() => {
+        setSwapBtnText("Swap");
+        setDisabled("swapBtn", false);
+        resetSwap();
+      }, 3000);
+      return () => clearTimeout(timeout);
+    } else if (swapStatus === "error") {
+      setSwapBtnText(swapError ? `Error: ${swapError.slice(0, 20)}...` : "Swap Failed");
+      setDisabled("swapBtn", false);
+      // Reset after 3 seconds
+      const timeout = setTimeout(() => {
+        setSwapBtnText("Swap");
+        resetSwap();
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [swapStatus, swapError, resetSwap]);
+
+  // Display receipt info (whyWinner) when available
+  useEffect(() => {
+    if (!receipt) return;
+
+    // Find or create receipt info row in details
+    const detailsContent = document.getElementById("detailsContent");
+    if (!detailsContent) return;
+
+    // Check if receipt row already exists
+    let receiptRow = detailsContent.querySelector<HTMLElement>(".detail-row.receipt-info");
+    if (!receiptRow) {
+      // Create receipt info row
+      receiptRow = document.createElement("div");
+      receiptRow.className = "detail-row receipt-info";
+      receiptRow.innerHTML = `<span>Why Recommended</span><span class="receipt-reason"></span>`;
+      detailsContent.appendChild(receiptRow);
+    }
+
+    // Update receipt info
+    const reasonEl = receiptRow.querySelector<HTMLElement>(".receipt-reason");
+    if (reasonEl && receipt.whyWinner && receipt.whyWinner.length > 0) {
+      // Show first 2 reasons, formatted nicely
+      const reasons = receipt.whyWinner
+        .slice(0, 2)
+        .map((r) => r.replace(/_/g, " ").replace(/^ranked_by_/, ""))
+        .join(", ");
+      reasonEl.textContent = reasons || "—";
+    }
+  }, [receipt]);
 
   // Ensure the template starts hidden like in the HTML
   useEffect(() => {
