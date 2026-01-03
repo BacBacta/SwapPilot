@@ -124,10 +124,12 @@ export function rankQuotesV2(input: {
     // Compare to runner-up if exists
     if (rankedQuotes.length > 1) {
       const runnerUp = rankedQuotes[1];
-      const runnerUpScore = scoreDetails.get(runnerUp.providerId);
-      if (runnerUpScore) {
-        const diff = winnerScore.beqScore - runnerUpScore.beqScore;
-        winnerExplanation.push(`Beats ${runnerUp.providerId} by ${diff.toFixed(1)} points`);
+      if (runnerUp) {
+        const runnerUpScore = scoreDetails.get(runnerUp.providerId);
+        if (runnerUpScore) {
+          const diff = winnerScore.beqScore - runnerUpScore.beqScore;
+          winnerExplanation.push(`Beats ${runnerUp.providerId} by ${diff.toFixed(1)} points`);
+        }
       }
     }
   } else {

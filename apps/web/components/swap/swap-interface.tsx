@@ -72,22 +72,22 @@ function ProviderRowAPI({
   return (
     <button
       onClick={onSelect}
-      className={`group flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-200 ${
+      className={`group flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-300 ${
         isWinner
-          ? "border-sp-accent/40 bg-sp-accent/10 shadow-glow animate-glow"
-          : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover hover:bg-sp-surface3"
+          ? "border-sp-accent/40 bg-sp-accent/10 shadow-accentGlow"
+          : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover hover:bg-sp-surface3 hover:translate-y-[-2px]"
       }`}
     >
       <div className="flex items-center gap-3">
         <div
-          className={`grid h-7 w-7 place-items-center rounded-lg text-micro font-bold ${
+          className={`grid h-7 w-7 place-items-center rounded-full text-micro font-bold ${
             isWinner ? "bg-sp-accent text-black" : "bg-sp-surface3 text-sp-muted"
           }`}
         >
           {rank}
         </div>
 
-        <div className="grid h-10 w-10 place-items-center rounded-xl border border-sp-border bg-sp-surface text-caption font-bold text-sp-text">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl border border-sp-border bg-sp-surface text-caption font-bold text-sp-text">
           {quote.providerId.slice(0, 2).toUpperCase()}
         </div>
 
@@ -124,12 +124,12 @@ function ProviderRowAPI({
 }
 
 /* ========================================
-   STAT CARD
+   STAT CARD - Landio Style
    ======================================== */
 function StatCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
-    <div className="rounded-xl border border-sp-border bg-sp-surface2 p-3 sm:p-4 text-center transition hover:border-sp-borderHover min-h-[72px] flex flex-col justify-center">
-      <div className="text-[10px] sm:text-micro text-sp-muted uppercase tracking-wide">{label}</div>
+    <div className="rounded-2xl border border-sp-border bg-sp-surface2 p-3 sm:p-4 text-center transition-all duration-300 hover:border-sp-borderHover hover:translate-y-[-2px] min-h-[72px] flex flex-col justify-center">
+      <div className="text-[10px] sm:text-micro text-sp-muted uppercase tracking-wider">{label}</div>
       <div className="mt-1 text-body sm:text-h2 font-bold text-sp-text">{value}</div>
       {subValue && <div className="mt-0.5 text-[10px] sm:text-micro text-sp-muted2">{subValue}</div>}
     </div>

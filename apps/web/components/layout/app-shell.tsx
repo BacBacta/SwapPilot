@@ -9,7 +9,7 @@ import { ChainSelector } from "@/components/swap/chain-selector";
 import { InstallBanner, OfflineIndicator, UpdatePrompt } from "@/lib/use-pwa";
 
 /* ========================================
-   MOBILE BOTTOM NAVIGATION - Floating Island Style
+   MOBILE BOTTOM NAVIGATION - Landio Floating Island Style
    ======================================== */
 const NAV_ITEMS = [
   { href: "/swap", label: "Swap", icon: SwapIcon },
@@ -22,10 +22,10 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-2 md:hidden safe-bottom">
-      {/* Floating Island Container */}
-      <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-sp-surface/90 shadow-2xl backdrop-blur-xl">
-        <div className="flex h-[72px] items-center justify-around px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-3 md:hidden safe-bottom">
+      {/* Floating Island Container - Landio style */}
+      <div className="mx-auto max-w-md rounded-full border border-sp-border bg-sp-surface/95 shadow-2xl backdrop-blur-xl">
+        <div className="flex h-[68px] items-center justify-around px-3">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
@@ -34,33 +34,30 @@ export function MobileNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex min-h-[56px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-300",
+                  "relative flex min-h-[52px] min-w-[60px] flex-col items-center justify-center gap-1 rounded-full px-3 py-2 transition-all duration-300",
                   isActive
-                    ? "bg-sp-accent/15 text-sp-accent scale-105"
+                    ? "bg-sp-accent/15 text-sp-accent"
                     : "text-sp-muted active:scale-95 active:bg-white/5"
                 )}
               >
                 <div className={cn(
                   "relative transition-transform duration-300",
-                  isActive && "animate-bounce-subtle"
+                  isActive && "scale-110"
                 )}>
                   <Icon className={cn(
-                    "h-6 w-6 transition-all duration-300",
-                    isActive && "drop-shadow-[0_0_8px_rgba(247,201,72,0.5)]"
+                    "h-5 w-5 transition-all duration-300",
+                    isActive && "drop-shadow-[0_0_8px_rgba(200,255,0,0.6)]"
                   )} />
                   {isActive && (
-                    <div className="absolute -inset-1 rounded-full bg-sp-accent/20 blur-md -z-10" />
+                    <div className="absolute -inset-2 rounded-full bg-sp-accent/20 blur-lg -z-10" />
                   )}
                 </div>
                 <span className={cn(
-                  "text-[10px] font-semibold tracking-wide transition-all duration-300",
-                  isActive ? "opacity-100" : "opacity-70"
+                  "text-[10px] font-medium tracking-wide transition-all duration-300",
+                  isActive ? "opacity-100" : "opacity-60"
                 )}>
                   {item.label}
                 </span>
-                {isActive && (
-                  <div className="absolute -bottom-0.5 h-1 w-6 rounded-full bg-sp-accent shadow-[0_0_12px_rgba(247,201,72,0.6)]" />
-                )}
               </Link>
             );
           })}
@@ -71,23 +68,23 @@ export function MobileNav() {
 }
 
 /* ========================================
-   DESKTOP SIDEBAR
+   DESKTOP SIDEBAR - Landio Style
    ======================================== */
 export function DesktopSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden h-screen w-64 shrink-0 border-r border-sp-border bg-sp-surface/50 md:block">
+    <aside className="hidden h-screen w-64 shrink-0 border-r border-sp-border bg-sp-surface md:block">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex items-center justify-between border-b border-sp-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-sp-border px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sp-accent font-bold text-black shadow-glow">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sp-accent font-bold text-black shadow-accentGlow">
               SP
             </div>
             <div>
               <div className="text-body font-semibold text-sp-text">SwapPilot</div>
-              <div className="text-micro text-sp-muted">Multi-Chain</div>
+              <div className="text-micro text-sp-muted">BNB Chain</div>
             </div>
           </div>
           <ThemeToggle />
@@ -104,16 +101,16 @@ export function DesktopSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-body font-medium transition-all duration-200",
+                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-body font-medium transition-all duration-300",
                     isActive
-                      ? "bg-sp-accent/10 text-sp-accent"
+                      ? "bg-sp-accent/10 text-sp-accent shadow-[inset_0_0_0_1px_rgba(200,255,0,0.2)]"
                       : "text-sp-muted hover:bg-sp-surface2 hover:text-sp-text"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className={cn("h-5 w-5", isActive && "drop-shadow-[0_0_8px_rgba(200,255,0,0.5)]")} />
                   {item.label}
                   {isActive && (
-                    <div className="ml-auto h-2 w-2 rounded-full bg-sp-accent" />
+                    <div className="ml-auto h-2 w-2 rounded-full bg-sp-accent shadow-[0_0_8px_rgba(200,255,0,0.6)]" />
                   )}
                 </Link>
               );
@@ -124,7 +121,7 @@ export function DesktopSidebar() {
         {/* Footer */}
         <div className="border-t border-sp-border p-4 space-y-3">
           {/* Chain Selector */}
-          <div className="rounded-xl border border-sp-border bg-sp-surface2 p-3">
+          <div className="rounded-2xl border border-sp-border bg-sp-surface2 p-3">
             <div className="mb-2 text-micro font-medium text-sp-muted">Network</div>
             <ChainSelector showLabel={true} />
           </div>
@@ -138,17 +135,16 @@ export function DesktopSidebar() {
 }
 
 /* ========================================
-   HEADER (Mobile) - Premium Style
+   HEADER (Mobile) - Landio Style
    ======================================== */
 export function MobileHeader() {
   return (
-    <header className="sticky top-0 z-40 bg-sp-bg/80 backdrop-blur-xl md:hidden">
+    <header className="sticky top-0 z-40 bg-sp-bg/95 backdrop-blur-xl md:hidden">
       <div className="flex h-16 items-center justify-between px-5">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-sp-accent to-sp-accent/70 font-bold text-black text-sm shadow-glow">
+          <div className="relative grid h-10 w-10 place-items-center rounded-2xl bg-sp-accent font-bold text-black text-sm shadow-accentGlow">
             SP
-            <div className="absolute -inset-0.5 rounded-xl bg-sp-accent/30 blur-md -z-10" />
           </div>
           <div>
             <span className="text-body font-bold text-sp-text">SwapPilot</span>
@@ -166,8 +162,8 @@ export function MobileHeader() {
           <WalletButton showBalance={false} showChainStatus={false} />
         </div>
       </div>
-      {/* Subtle bottom gradient */}
-      <div className="h-px bg-gradient-to-r from-transparent via-sp-border to-transparent" />
+      {/* Subtle bottom border */}
+      <div className="h-px bg-sp-border" />
     </header>
   );
 }

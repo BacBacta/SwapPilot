@@ -95,11 +95,13 @@ describe('rankQuotes', () => {
     const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
     
     // ParaSwap should be #1 because it has the highest buyAmount
-    expect(out.rankedQuotes[0].providerId).toBe('paraswap');
+    expect(out.rankedQuotes.length).toBeGreaterThan(0);
+    expect(out.rankedQuotes[0]!.providerId).toBe('paraswap');
     expect(out.beqRecommendedProviderId).toBe('paraswap');
     
     // Odos should be last because it has the lowest buyAmount
-    expect(out.rankedQuotes[out.rankedQuotes.length - 1].providerId).toBe('odos');
+    expect(out.rankedQuotes.length).toBeGreaterThan(0);
+    expect(out.rankedQuotes[out.rankedQuotes.length - 1]!.providerId).toBe('odos');
   });
 
   it('does not catastrophically penalize missing provider meta', () => {
@@ -115,7 +117,8 @@ describe('rankQuotes', () => {
     ]);
 
     const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
-    expect(out.rankedQuotes[0].providerId).toBe('okx-dex');
+    expect(out.rankedQuotes.length).toBeGreaterThan(0);
+    expect(out.rankedQuotes[0]!.providerId).toBe('okx-dex');
     expect(out.beqRecommendedProviderId).toBe('okx-dex');
   });
 
@@ -148,16 +151,17 @@ describe('rankQuotes', () => {
     }
     
     // Best should have highest score (100 output × factors)
-    expect(out.rankedQuotes[0].providerId).toBe('best');
+    expect(out.rankedQuotes.length).toBeGreaterThanOrEqual(3);
+    expect(out.rankedQuotes[0]!.providerId).toBe('best');
     // Score is 100 * quality * risk, so may be slightly less than 100
-    expect(out.rankedQuotes[0].score.beqScore).toBeGreaterThan(90);
+    expect(out.rankedQuotes[0]!.score.beqScore).toBeGreaterThan(90);
     
     // Medium should have ~80% output score
-    expect(out.rankedQuotes[1].providerId).toBe('medium');
-    expect(out.rankedQuotes[1].score.v2Details?.components.outputScore).toBeCloseTo(80, 0);
+    expect(out.rankedQuotes[1]!.providerId).toBe('medium');
+    expect(out.rankedQuotes[1]!.score.v2Details?.components.outputScore).toBeCloseTo(80, 0);
     
     // Worst should have ~50% output score
-    expect(out.rankedQuotes[2].providerId).toBe('worst');
-    expect(out.rankedQuotes[2].score.v2Details?.components.outputScore).toBeCloseTo(50, 0);
+    expect(out.rankedQuotes[2]!.providerId).toBe('worst');
+    expect(out.rankedQuotes[2]!.score.v2Details?.components.outputScore).toBeCloseTo(50, 0);
   });
 });

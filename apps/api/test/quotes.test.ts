@@ -167,6 +167,16 @@ describe('Option 1 API', () => {
         risk: { knownTokens: [], memeTokens: [] },
         pancakeswap: { v2Router: router, v3Quoter: null, v2Factory: '0x0000000000000000000000000000000000000000', v3Factory: '0x0000000000000000000000000000000000000000', wbnb: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', quoteTimeoutMs: 2000 },
         sellability: { multicall3Address: '0xcA11bde05977b3631167028862bE2a173976CA11', baseTokensBsc: [] },
+        tokenSecurity: {
+          enabled: false,
+          goPlusEnabled: false,
+          goPlusBaseUrl: 'https://api.gopluslabs.io/api/v1/token_security',
+          honeypotIsEnabled: false,
+          honeypotIsBaseUrl: 'https://api.honeypot.is/v2',
+          timeoutMs: 1500,
+          cacheTtlMs: 60_000,
+          taxStrictMaxPercent: 20,
+        },
       },
       preflightClient: {
         async verify() {

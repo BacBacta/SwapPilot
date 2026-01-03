@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwapPilot - DEX Aggregator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== LANDIO ANIMATIONS ===== */
+    
+    /* Fade In Up Animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Fade In Down Animation */
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Fade In Left Animation */
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Fade In Right Animation */
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Scale In Animation */
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Blur In Animation */
+    @keyframes blurIn {
+      from {
+        opacity: 0;
+        filter: blur(10px);
+      }
+      to {
+        opacity: 1;
+        filter: blur(0);
+      }
+    }
+
+    /* Float Animation */
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    /* Pulse Glow */
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(200, 255, 0, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 30px 10px rgba(200, 255, 0, 0.15);
+      }
+    }
+
+    /* Shimmer Effect */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    /* Rotate In */
+    @keyframes rotateIn {
+      from {
+        opacity: 0;
+        transform: rotate(-10deg) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+      }
+    }
+
+    /* Bounce In */
+    @keyframes bounceIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      70% {
+        transform: scale(0.9);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Text Reveal Character by Character */
+    @keyframes typeReveal {
+      from {
+        width: 0;
+      }
+      to {
+        width: 100%;
+      }
+    }
+
+    /* Gradient Shift */
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* ===== REVEAL ON SCROLL ===== */
+    .reveal {
+      opacity: 0;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+    }
+
+    .reveal-up {
+      transform: translateY(60px);
+    }
+
+    .reveal-up.active {
+      transform: translateY(0);
+    }
+
+    .reveal-down {
+      transform: translateY(-60px);
+    }
+
+    .reveal-down.active {
+      transform: translateY(0);
+    }
+
+    .reveal-left {
+      transform: translateX(-60px);
+    }
+
+    .reveal-left.active {
+      transform: translateX(0);
+    }
+
+    .reveal-right {
+      transform: translateX(60px);
+    }
+
+    .reveal-right.active {
+      transform: translateX(0);
+    }
+
+    .reveal-scale {
+      transform: scale(0.85);
+    }
+
+    .reveal-scale.active {
+      transform: scale(1);
+    }
+
+    .reveal-blur {
+      filter: blur(10px);
+    }
+
+    .reveal-blur.active {
+      filter: blur(0);
+    }
+
+    /* Stagger children */
+    .stagger-children > * {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .stagger-children.active > *:nth-child(1) { transition-delay: 0.1s; }
+    .stagger-children.active > *:nth-child(2) { transition-delay: 0.2s; }
+    .stagger-children.active > *:nth-child(3) { transition-delay: 0.3s; }
+    .stagger-children.active > *:nth-child(4) { transition-delay: 0.4s; }
+    .stagger-children.active > *:nth-child(5) { transition-delay: 0.5s; }
+    .stagger-children.active > *:nth-child(6) { transition-delay: 0.6s; }
+
+    .stagger-children.active > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== HERO ANIMATIONS ===== */
+    .hero-badge {
+      animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    .hero h1 {
+      animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+    }
+
+    .hero h1 .accent {
+      display: inline-block;
+      animation: blurIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+    }
+
+    .hero-subtitle {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+    }
+
+    .hero-buttons {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+    }
+
+    .hero-visual {
+      animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
+    }
+
+    .hero-card {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+    }
+
+    .hero-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-card-main {
+      animation: fadeInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
+    }
+
+    .hero-card:not(.hero-card-main) {
+      animation: fadeInRight 1s cubic-bezier(0.16, 1, 0.3, 1) 1.4s both;
+    }
+
+    /* ===== NAVIGATION ANIMATIONS ===== */
+    .nav {
+      animation: fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .nav-links a {
+      position: relative;
+      transition: color 0.3s;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* ===== CARD HOVER ANIMATIONS ===== */
+    .benefit-card,
+    .feature-card,
+    .bento-card,
+    .pricing-card,
+    .testimonial-card,
+    .story-card {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .benefit-card:hover,
+    .feature-card:hover,
+    .bento-card:hover,
+    .testimonial-card:hover,
+    .story-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--border-light);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-12px) scale(1.02);
+    }
+
+    .pricing-card.featured {
+      animation: pulseGlow 3s infinite;
+    }
+
+    /* ===== ICON ANIMATIONS ===== */
+    .benefit-icon,
+    .feature-icon {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .benefit-card:hover .benefit-icon,
+    .feature-card:hover .feature-icon {
+      transform: scale(1.15) rotate(5deg);
+      background: var(--accent);
+      color: #000;
+    }
+
+    /* ===== BUTTON ANIMATIONS ===== */
+    .btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(200, 255, 0, 0.3);
+    }
+
+    /* ===== FLOATING ELEMENTS ===== */
+    .swap-mock {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .hero-badge-dot {
+      animation: pulse 2s infinite;
+    }
+
+    /* ===== COUNTER ANIMATION ===== */
+    .count-up {
+      display: inline-block;
+    }
+
+    /* ===== PROCESS TAB TRANSITIONS ===== */
+    .process-tab {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .process-tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .process-content {
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .process-content.hidden {
+      opacity: 0;
+      transform: translateX(-20px);
+      position: absolute;
+      pointer-events: none;
+    }
+
+    /* ===== FAQ ACCORDION ANIMATION ===== */
+    .faq-item {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .faq-item:hover {
+      border-color: var(--border-light);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0 24px;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 200px;
+      padding: 0 24px 20px;
+    }
+
+    .faq-icon {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+      color: var(--accent);
+    }
+
+    /* ===== INTEGRATION LOGOS ===== */
+    .integration-logo {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .integration-logo:hover {
+      transform: translateY(-4px) scale(1.05);
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* ===== TEAM CARDS ===== */
+    .team-card {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .team-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .team-card:hover .team-image img {
+      transform: scale(1.1);
+    }
+
+    .team-image {
+      overflow: hidden;
+    }
+
+    .team-image img {
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ===== COMPARISON ANIMATION ===== */
+    .comparison-column {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .comparison-column:hover {
+      transform: translateY(-8px);
+    }
+
+    .comparison-list li {
+      transition: all 0.3s;
+    }
+
+    .comparison-list li:hover {
+      padding-left: 8px;
+    }
+
+    /* ===== CTA ANIMATION ===== */
+    .cta-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(200, 255, 0, 0.1) 0%, transparent 50%);
+      animation: gradientShift 8s ease infinite;
+      background-size: 200% 200%;
+    }
+
+    /* ===== TESTIMONIAL AVATAR ===== */
+    .testimonial-avatar {
+      transition: transform 0.3s;
+    }
+
+    .testimonial-card:hover .testimonial-avatar {
+      transform: scale(1.1);
+    }
+
+    /* ===== SCROLL INDICATOR ===== */
+    .scroll-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: var(--accent);
+      z-index: 1000;
+      transition: width 0.1s;
+    }
+
+    /* ===== TYPING TEXT EFFECT ===== */
+    .typing-text {
+      overflow: hidden;
+      border-right: 2px solid var(--accent);
+      white-space: nowrap;
+      animation: typeReveal 2s steps(40) 1s forwards, blink 0.75s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { border-color: transparent; }
+    }
+
+    /* ===== LOADING SHIMMER ===== */
+    .shimmer {
+      background: linear-gradient(90deg, var(--bg-card-inner) 25%, var(--bg-card) 50%, var(--bg-card-inner) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    /* ===== PARALLAX EFFECT (via JS) ===== */
+    .parallax {
+      transition: transform 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <!-- Scroll Progress Indicator -->
+  <div class="scroll-indicator" id="scrollIndicator"></div>
+
+  <!-- NAVIGATION -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </a>
+      <ul class="nav-links">
+        <li><a href="swap.html">Swap</a></li>
+        <li><a href="rewards.html">Rewards</a></li>
+        <li><a href="status.html">Status</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><a href="blog.html">Blog</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="nav-right">
+        <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
+        <a href="swap.html" class="btn btn-primary">Launch App</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge hero-animate" style="--delay: 0s;">
+      <span class="hero-badge-dot"></span>
+      NEW GEN DEX AGGREGATOR
+    </div>
+    
+    <h1 class="hero-animate" style="--delay: 0.1s;">Swap Smarter. <span class="accent">Save More.</span> With BEQ.</h1>
+    
+    <p class="hero-subtitle hero-animate" style="--delay: 0.2s;">AI-Powered DEX Aggregation Made Simple</p>
+    
+    <div class="hero-buttons hero-animate" style="--delay: 0.3s;">
+      <a href="/swap" class="btn btn-primary btn-lg">Launch App</a>
+      <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
+      <a href="https://instagram.com" class="btn btn-icon">📷</a>
+      <a href="https://facebook.com" class="btn btn-icon">📘</a>
+    </div>
+
+    <div class="hero-visual hero-animate" style="--delay: 0.4s;">
+      <div class="hero-card hero-card-main float-animation">
+        <div class="hero-card-header">
+          <span class="hero-card-badge">WE ANALYZE YOUR TRADES</span>
+        </div>
+        <p class="hero-card-quote">
+          " We <span class="highlight">find the best routes</span>, compare <span class="highlight">15+ aggregators</span> & optimize your <span class="highlight">swap execution</span>. Best part is we also calculate <span class="highlight">real costs</span> including gas. "
+        </p>
+        <div class="hero-card-author">
+          <div class="hero-card-avatar">
+            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="hero-card-author-info">
+            <div class="hero-card-author-name">SwapPilot Team</div>
+            <div class="hero-card-author-role">BEQ Scoring Engine</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card float-animation" style="animation-delay: 0.5s;">
+        <div class="swap-mock">
+          <div class="swap-row">
+            <div class="swap-token">
+              <div class="swap-token-icon bnb">BNB</div>
+              <div>
+                <div class="swap-token-name">BNB</div>
+                <div class="swap-token-label">From</div>
+              </div>
+            </div>
+            <div class="swap-amount">
+              <div class="swap-amount-value">1.0</div>
+              <div class="swap-amount-usd">≈ $580</div>
+            </div>
+          </div>
+          <div class="swap-arrow">↓</div>
+          <div class="swap-row">
+            <div class="swap-token">
+              <div class="swap-token-icon eth">ETH</div>
+              <div>
+                <div class="swap-token-name">ETH</div>
+                <div class="swap-token-label">To</div>
+              </div>
+            </div>
+            <div class="swap-amount">
+              <div class="swap-amount-value accent">0.2847</div>
+              <div class="swap-amount-usd">≈ $579</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section id="benefits" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">BENEFITS</span>
+        <h2 class="section-title">Why Choose Us?</h2>
+        <p class="section-subtitle">Everything you need to trade smarter on DeFi</p>
+      </div>
+
+      <div class="benefits-grid stagger-children reveal">
+        <div class="benefit-card">
+          <div class="benefit-icon">⚡</div>
+          <h3>Real-Time Intelligence</h3>
+          <p>Access accurate, real-time quotes from 15+ aggregators to find the best rates instantly</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📊</div>
+          <h3>Measurable Impact</h3>
+          <p>Track savings, compare routes, and achieve data-backed trading decisions</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🔗</div>
+          <h3>Seamless Integration</h3>
+          <p>Connect to 1inch, 0x, PancakeSwap V3 and more with unified smart routing</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">SERVICES</span>
+        <h2 class="section-title">Smarter Trading, Built with BEQ™</h2>
+        <p class="section-subtitle">Everything you need to optimize swaps and boost returns</p>
+      </div>
+
+      <div class="services-bento stagger-children reveal">
+        <div class="bento-card">
+          <div class="bento-tags">
+            <span class="bento-tag">Quote Aggregation</span>
+            <span class="bento-tag">Real-time</span>
+            <span class="bento-tag">15+ Sources</span>
+          </div>
+          <h3>Multi-Aggregator Comparison</h3>
+          <p>We query all major DEX aggregators simultaneously and rank results using our proprietary scoring system</p>
+          <div class="bento-visual">
+            <div class="provider-list">
+              <div class="provider-row featured">
+                <div class="provider-info">
+                  <div class="provider-icon">1"</div>
+                  <span class="provider-name">1inch</span>
+                </div>
+                <div class="provider-score">
+                  <span class="score-value accent">0.2847 ETH</span>
+                  <span class="score-label">BEQ: 94</span>
+                </div>
+              </div>
+              <div class="provider-row">
+                <div class="provider-info">
+                  <div class="provider-icon">0x</div>
+                  <span class="provider-name">0x Protocol</span>
+                </div>
+                <div class="provider-score">
+                  <span class="score-value">0.2841 ETH</span>
+                  <span class="score-label">BEQ: 89</span>
+                </div>
+              </div>
+              <div class="provider-row">
+                <div class="provider-info">
+                  <div class="provider-icon">🥞</div>
+                  <span class="provider-name">PancakeSwap</span>
+                </div>
+                <div class="provider-score">
+                  <span class="score-value">0.2838 ETH</span>
+                  <span class="score-label">BEQ: 87</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-tags">
+            <span class="bento-tag">BEQ™ Score</span>
+            <span class="bento-tag">AI-Powered</span>
+          </div>
+          <h3>Best Execution Quality</h3>
+          <p>Not just price. We evaluate gas costs, MEV risk, slippage tolerance, and execution probability</p>
+          <div class="bento-visual">
+            <div class="beq-score-card">
+              <div class="beq-header">
+                <span class="beq-label">BEQ Score</span>
+                <span class="beq-value accent">94/100</span>
+              </div>
+              <div class="beq-bar">
+                <div class="beq-bar-fill" style="width: 94%"></div>
+              </div>
+              <div class="beq-metrics">
+                <div class="beq-metric">
+                  <span class="metric-label">Net Output</span>
+                  <span class="metric-value accent">+0.15%</span>
+                </div>
+                <div class="beq-metric">
+                  <span class="metric-label">Gas Cost</span>
+                  <span class="metric-value">$0.36</span>
+                </div>
+                <div class="beq-metric">
+                  <span class="metric-label">MEV Risk</span>
+                  <span class="metric-value ok">Low</span>
+                </div>
+                <div class="beq-metric">
+                  <span class="metric-label">Slippage</span>
+                  <span class="metric-value">0.5%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card large">
+          <div class="bento-tags">
+            <span class="bento-tag">Smart Contracts</span>
+            <span class="bento-tag">On-Chain</span>
+            <span class="bento-tag">Secure</span>
+          </div>
+          <h3>Custom Protocol Development</h3>
+          <p>We develop smart routing logic that integrates seamlessly with your preferred DEXes</p>
+          <div class="bento-visual">
+            <div class="code-block">
+              <div class="code-line"><span class="code-number">1</span><span class="code-keyword">class</span> <span class="code-class">SwapEngine</span>:</div>
+              <div class="code-line"><span class="code-number">2</span>    <span class="code-keyword">def</span> <span class="code-function">__init__</span>(self, providers):</div>
+              <div class="code-line"><span class="code-number">3</span>        self.providers = providers</div>
+              <div class="code-line"><span class="code-number">4</span>        self.beq_scorer = <span class="code-class">BEQScorer</span>()</div>
+              <div class="code-line"><span class="code-number">5</span></div>
+              <div class="code-line"><span class="code-number">6</span>    <span class="code-keyword">async def</span> <span class="code-function">find_best_route</span>(self, params):</div>
+              <div class="code-line"><span class="code-number">7</span>        quotes = <span class="code-keyword">await</span> self.<span class="code-function">fetch_all_quotes</span>(params)</div>
+              <div class="code-line"><span class="code-number">8</span>        ranked = self.beq_scorer.<span class="code-function">rank</span>(quotes)</div>
+              <div class="code-line"><span class="code-number">9</span>        <span class="code-keyword">return</span> ranked[<span class="code-number-lit">0</span>]  <span class="code-comment"># Best execution</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-tags">
+            <span class="bento-tag">MEV Protection</span>
+          </div>
+          <h3>Anti-Sandwich Guard</h3>
+          <p>Automatic detection of MEV-vulnerable routes. Trade with confidence knowing your transaction is protected.</p>
+          <div class="bento-visual">
+            <div class="mev-shield">
+              <div class="shield-icon">🛡️</div>
+              <div class="shield-text">
+                <span class="shield-status ok">Protected</span>
+                <span class="shield-desc">No sandwich attack risk detected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-tags">
+            <span class="bento-tag">Gas Optimization</span>
+          </div>
+          <h3>True Cost Comparison</h3>
+          <p>All quotes normalized to include gas costs in USD. Compare true costs, not just token amounts.</p>
+          <div class="bento-visual">
+            <div class="gas-comparison">
+              <div class="gas-row">
+                <span>Token Output</span>
+                <span>0.2847 ETH</span>
+              </div>
+              <div class="gas-row">
+                <span>Gas Cost</span>
+                <span class="negative">-$0.36</span>
+              </div>
+              <div class="gas-row total">
+                <span>Net Value</span>
+                <span class="accent">$578.64</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">FEATURES</span>
+        <h2 class="section-title">All features in one place</h2>
+        <p class="section-subtitle">Everything you need to trade smarter</p>
+      </div>
+
+      <div class="features-grid stagger-children reveal">
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Workflow Automation</h3>
+          <p>Automate complex trading processes to boost speed, clarity, and efficiency.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Custom BEQ Solutions</h3>
+          <p>Build tailored scoring systems that align with your trading goals.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>AI Assistant</h3>
+          <p>Deploy intelligent virtual agents to streamline your trades.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h3>Analytics Dashboard</h3>
+          <p>Leverage data to optimize strategies and personalize your approach.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📉</div>
+          <h3>Performance Tracking</h3>
+          <p>Track swap results in real time to improve and scale your trading.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3>Seamless Integrations</h3>
+          <p>Connect your tools and wallets for smooth, unified workflows.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">PROCESS</span>
+        <h2 class="section-title">Our Simple & Smart Process</h2>
+        <p class="section-subtitle">Everything you need to trade, optimize, and save—all in one place</p>
+      </div>
+
+      <div class="process-tabs reveal reveal-up" style="--delay: 0.2s;">
+        <button class="process-tab active" data-step="1">STEP 1</button>
+        <button class="process-tab" data-step="2">STEP 2</button>
+        <button class="process-tab" data-step="3">STEP 3</button>
+      </div>
+
+      <div class="process-content reveal reveal-up" id="process-1" style="--delay: 0.3s;">
+        <div class="process-step">
+          <div class="process-step-number">01</div>
+          <h3>Enter <span class="muted">&</span> Analyze</h3>
+          <p>Select your tokens and enter the amount you want to swap. We instantly query 15+ aggregators and analyze each route for optimal execution. Every quote is mapped for clarity.</p>
+        </div>
+        <div class="process-visual">
+          <div class="swap-mock">
+            <div class="swap-row">
+              <div class="swap-token">
+                <div class="swap-token-icon bnb">BNB</div>
+                <div>
+                  <div class="swap-token-name">BNB</div>
+                  <div class="swap-token-label">You Pay</div>
+                </div>
+              </div>
+              <div class="swap-amount">
+                <div class="swap-amount-value">10.0</div>
+              </div>
+            </div>
+            <div class="analyzing">
+              <div class="analyzing-dot"></div>
+              <span>Analyzing 15+ providers...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="process-content hidden" id="process-2">
+        <div class="process-step">
+          <div class="process-step-number">02</div>
+          <h3>Compare <span class="muted">&</span> Select</h3>
+          <p>Review ranked quotes with transparent BEQ scores. See exactly why each route is scored the way it is—gas costs, slippage, MEV risk, and more.</p>
+        </div>
+        <div class="process-visual">
+          <div class="provider-list">
+            <div class="provider-row featured">
+              <div class="provider-info">
+                <div class="provider-icon">1"</div>
+                <span class="provider-name">1inch</span>
+                <span class="badge-best">BEST</span>
+              </div>
+              <div class="provider-score">
+                <span class="score-value accent">2.847 ETH</span>
+                <span class="score-label">BEQ: 94</span>
+              </div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-info">
+                <div class="provider-icon">0x</div>
+                <span class="provider-name">0x Protocol</span>
+              </div>
+              <div class="provider-score">
+                <span class="score-value">2.841 ETH</span>
+                <span class="score-label">BEQ: 89</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="process-content hidden" id="process-3">
+        <div class="process-step">
+          <div class="process-step-number">03</div>
+          <h3>Execute <span class="muted">&</span> Save</h3>
+          <p>One-click execution with the best route. Track your savings over time and see exactly how much you've saved compared to using a single DEX.</p>
+        </div>
+        <div class="process-visual">
+          <div class="success-card">
+            <div class="success-icon">✓</div>
+            <div class="success-title">Swap Successful!</div>
+            <div class="success-details">
+              <div class="success-row">
+                <span>You received</span>
+                <span class="accent">2.847 ETH</span>
+              </div>
+              <div class="success-row">
+                <span>Savings vs average</span>
+                <span class="ok">+$12.45</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUCCESS STORIES -->
+  <section id="stories" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">OUR CLIENTS</span>
+        <h2 class="section-title">Success Stories to Inspire</h2>
+        <p class="section-subtitle">Discover how traders achieve results</p>
+      </div>
+
+      <div class="stories-grid stagger-children reveal">
+        <div class="story-card">
+          <h3>DeFi Fund's Revolution</h3>
+          <p>A crypto fund implemented SwapPilot for all their trades. This move slashed operational costs by 50% and boosted trade efficiency by 75%, empowering the team to scale faster.</p>
+          <div class="story-stats">
+            <div class="story-stat">
+              <span class="stat-value">50%</span>
+              <span class="stat-label">reduction in costs</span>
+            </div>
+            <div class="story-stat">
+              <span class="stat-value">75%</span>
+              <span class="stat-label">boost in efficiency</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card">
+          <h3>Whale Trader's Success</h3>
+          <p>A high-volume trader transformed their execution using BEQ scoring. This shift resulted in a 60% increase in savings and a 45% improvement in fill rates.</p>
+          <div class="story-stats">
+            <div class="story-stat">
+              <span class="stat-value">60%</span>
+              <span class="stat-label">growth in savings</span>
+            </div>
+            <div class="story-stat">
+              <span class="stat-value">45%</span>
+              <span class="stat-label">rise in fill rates</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card">
+          <h3>Yield Farmer's Breakthrough</h3>
+          <p>A yield farming protocol used SwapPilot to optimize rebalancing. The insights led to a 40% increase in yield and a 30% reduction in gas costs.</p>
+          <div class="story-stats">
+            <div class="story-stat">
+              <span class="stat-value">40%</span>
+              <span class="stat-label">gain in yield</span>
+            </div>
+            <div class="story-stat">
+              <span class="stat-value">30%</span>
+              <span class="stat-label">gas savings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section id="integrations" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">INTEGRATIONS</span>
+        <h2 class="section-title">Seamless Integrations</h2>
+        <p class="section-subtitle">Interact with all your favorite protocols without unnecessary fuss</p>
+      </div>
+
+      <div class="integrations-showcase reveal reveal-scale">
+        <div class="integration-logos">
+          <div class="integration-logo">1inch</div>
+          <div class="integration-logo">0x</div>
+          <div class="integration-logo">🥞</div>
+          <div class="integration-logo">OKX</div>
+          <div class="integration-logo">KyberSwap</div>
+          <div class="integration-logo">OpenOcean</div>
+          <div class="integration-logo">ParaSwap</div>
+          <div class="integration-logo">DODO</div>
+        </div>
+        <p class="integration-quote">"Our BEQ engine plugs into your favorite DEXes to create a unified, intelligent trading experience"</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section id="testimonials" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">REVIEWS</span>
+        <h2 class="section-title">Trusted by Visionaries</h2>
+        <p class="section-subtitle">Hear from real users who achieved success</p>
+      </div>
+
+      <div class="testimonials-grid stagger-children reveal">
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Daniel Kim</div>
+          <div class="testimonial-role">DeFi Trader at Flowbyte</div>
+          <p class="testimonial-text">"Truly impressive. The BEQ scoring is fast, accurate, and blends into our daily trading without friction."</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Priya Mehra</div>
+          <div class="testimonial-role">CTO at Brightstack Labs</div>
+          <p class="testimonial-text">"Game-changer. MEV protection works flawlessly. Our team now focuses only on what really matters."</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Elena Rodriguez</div>
+          <div class="testimonial-role">Product Manager at Nexora</div>
+          <p class="testimonial-text">"Smooth setup. Their system replaced three tools. We saw improvements in just the first week."</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Marcus Thompson</div>
+          <div class="testimonial-role">Trading Director at OrbitShift</div>
+          <p class="testimonial-text">"Surprisingly simple. The scoring adapts quickly. Our trades are now running 2x more efficiently."</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Sarah Wong</div>
+          <div class="testimonial-role">Analytics Manager at Corelink</div>
+          <p class="testimonial-text">"Huge time-saver. Data is better organized. The insights we get now are actionable and fast."</p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-avatar">
+            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+          </div>
+          <div class="testimonial-name">Ravi Shah</div>
+          <div class="testimonial-role">COO at PixelNest</div>
+          <p class="testimonial-text">"Very intuitive. No fluff, just performance. Our trading processes finally feel under control."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">PRICING</span>
+        <h2 class="section-title">Flexible Plans for Everyone</h2>
+        <p class="section-subtitle">Choose a plan that fits your goals and scale as you grow</p>
+      </div>
+
+      <div class="pricing-toggle reveal reveal-up" style="--delay: 0.1s;">
+        <button class="active">Monthly</button>
+        <button>Yearly <span class="save-badge">Save 20%</span></button>
+      </div>
+
+      <div class="pricing-grid stagger-children reveal">
+        <div class="pricing-card">
+          <div class="pricing-tier">Starter</div>
+          <div class="pricing-price">$0</div>
+          <div class="pricing-period">Swaps under $1,000</div>
+          <a href="/swap" class="btn btn-secondary pricing-cta">Get Started</a>
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> No fees on small trades</li>
+            <li><span class="check">✓</span> Full BEQ™ scoring access</li>
+            <li><span class="check">✓</span> All 15+ aggregators</li>
+            <li><span class="check">✓</span> Basic analytics</li>
+            <li><span class="check">✓</span> Community support</li>
+          </ul>
+        </div>
+
+        <div class="pricing-card featured">
+          <span class="popular-badge">Popular</span>
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-price">0.05%</div>
+          <div class="pricing-period">per swap</div>
+          <a href="/swap" class="btn btn-primary pricing-cta">Get Started</a>
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> 50% fee discount with PILOT</li>
+            <li><span class="check">✓</span> Priority execution</li>
+            <li><span class="check">✓</span> Advanced analytics</li>
+            <li><span class="check">✓</span> API access</li>
+            <li><span class="check">✓</span> Priority support</li>
+          </ul>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-tier">Enterprise</div>
+          <div class="pricing-price">Custom</div>
+          <div class="pricing-period">contact us</div>
+          <a href="contact.html" class="btn btn-secondary pricing-cta">Get Started</a>
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> Unlimited custom workflows</li>
+            <li><span class="check">✓</span> Dedicated account manager</li>
+            <li><span class="check">✓</span> Private integrations</li>
+            <li><span class="check">✓</span> Real-time dashboards</li>
+            <li><span class="check">✓</span> 24/7 Premium support + SLA</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="pricing-note">We donate 2% of platform fees to DeFi education initiatives</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">FAQ'S</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle">Find quick answers to the most common questions</p>
+      </div>
+
+      <div class="faq-container reveal reveal-up" style="--delay: 0.2s;">
+        <div class="faq-sidebar">
+          <h4>Still Have Questions?</h4>
+          <p>Feel free to get in touch with us today!</p>
+          <a href="contact.html" class="btn btn-primary">Ask A Question</a>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question">
+              What types of trades can you optimize?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>SwapPilot can optimize any token swap on BNB Chain. We support all major tokens and can find routes through multiple DEXes to get you the best execution.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              Do I need technical knowledge to use SwapPilot?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Not at all! Our interface is designed to be intuitive. Just connect your wallet, enter your trade, and we handle all the complexity behind the scenes.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              How does the BEQ scoring work?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>BEQ (Best Execution Quality) considers multiple factors: net output after gas, slippage risk, MEV vulnerability, liquidity depth, and provider reliability. Each quote gets a score from 0-100.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              What are the benefits of holding PILOT tokens?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>PILOT holders get up to 80% discount on fees, priority execution, referral rewards (5% commission), exclusive airdrops, and early access to new features.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              Is my wallet and funds secure?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Absolutely. We never have custody of your funds. All swaps are executed directly from your wallet through audited smart contracts. We only request approval for the exact amount you're trading.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section id="comparison" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">COMPARISON</span>
+        <h2 class="section-title">Why Choose Us Over Others</h2>
+        <p class="section-subtitle">See how we compare in performance and value</p>
+      </div>
+
+      <div class="comparison-grid stagger-children reveal">
+        <div class="comparison-column featured">
+          <div class="comparison-header">
+            <div class="comparison-logo">SP</div>
+            <span class="comparison-name">SwapPilot</span>
+          </div>
+          <ul class="comparison-list">
+            <li><span class="icon ok">✓</span> Fast setup with 15+ aggregators</li>
+            <li><span class="icon ok">✓</span> Built to scale with your volume</li>
+            <li><span class="icon ok">✓</span> Real-time BEQ analytics</li>
+            <li><span class="icon ok">✓</span> MEV protection included</li>
+            <li><span class="icon ok">✓</span> Expert support + documentation</li>
+          </ul>
+        </div>
+        <div class="comparison-column">
+          <div class="comparison-header">
+            <div class="comparison-logo other">?</div>
+            <span class="comparison-name">Others</span>
+          </div>
+          <ul class="comparison-list">
+            <li><span class="icon bad">✕</span> Single aggregator only</li>
+            <li><span class="icon bad">✕</span> Requires manual optimization</li>
+            <li><span class="icon bad">✕</span> Limited or delayed reporting</li>
+            <li><span class="icon bad">✕</span> No MEV consideration</li>
+            <li><span class="icon bad">✕</span> Generic support or none</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section id="team" class="section">
+    <div class="container">
+      <div class="section-header reveal reveal-up">
+        <span class="section-badge">OUR AMAZING TEAM</span>
+        <h2 class="section-title">Get to Know Us</h2>
+        <p class="section-subtitle">Everything you need to collaborate, create, and scale</p>
+      </div>
+
+      <div class="team-grid stagger-children reveal">
+        <div class="team-card">
+          <div class="team-image">
+            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=500&fit=crop" alt="Team member">
+          </div>
+          <div class="team-info">
+            <div class="team-name">Alex Chen</div>
+            <div class="team-role">Founder / Lead Developer</div>
+            <div class="team-social">
+              <a href="#">𝕏</a>
+              <a href="#">📷</a>
+              <a href="#">💼</a>
+            </div>
+          </div>
+        </div>
+        <div class="team-card">
+          <div class="team-image">
+            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=500&fit=crop" alt="Team member">
+          </div>
+          <div class="team-info">
+            <div class="team-name">Sarah Mitchell</div>
+            <div class="team-role">BEQ Strategist</div>
+            <div class="team-social">
+              <a href="#">𝕏</a>
+              <a href="#">📷</a>
+              <a href="#">💼</a>
+            </div>
+          </div>
+        </div>
+        <div class="team-card">
+          <div class="team-image">
+            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=500&fit=crop" alt="Team member">
+          </div>
+          <div class="team-info">
+            <div class="team-name">James Wilson</div>
+            <div class="team-role">Smart Contract Engineer</div>
+            <div class="team-social">
+              <a href="#">𝕏</a>
+              <a href="#">📷</a>
+              <a href="#">💼</a>
+            </div>
+          </div>
+        </div>
+        <div class="team-card">
+          <div class="team-image">
+            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop" alt="Team member">
+          </div>
+          <div class="team-info">
+            <div class="team-name">Emma Davis</div>
+            <div class="team-role">Community Manager</div>
+            <div class="team-social">
+              <a href="#">𝕏</a>
+              <a href="#">📷</a>
+              <a href="#">💼</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta" class="section">
+    <div class="container">
+      <div class="cta-card reveal reveal-scale">
+        <h2>Ready to Swap Smarter? Let's Trade Together</h2>
+        <p>Schedule a call or start trading now</p>
+        <div class="cta-buttons">
+          <a href="/swap" class="btn btn-primary btn-lg">Launch App</a>
+          <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
+          <a href="https://instagram.com" class="btn btn-icon">📷</a>
+          <a href="https://facebook.com" class="btn btn-icon">📘</a>
+        </div>
+        <div class="cta-email">support@swappilot.io</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo">
+            <div class="logo-icon">SP</div>
+            SwapPilot
+          </a>
+          <p>The smartest DEX aggregator on BNB Chain. Compare, score, and execute trades with confidence.</p>
+          <div class="footer-social">
+            <a href="#">𝕏</a>
+            <a href="#">📘</a>
+            <a href="#">📷</a>
+            <a href="#">💬</a>
+          </div>
+        </div>
+        <div class="footer-column">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="blog.html">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="blog.html">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy</a></li>
+            <li><a href="terms.html">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-bottom-left">
+          <span>© 2026 SwapPilot Template</span>
+          <span>Made by <a href="#">SwapPilot Team</a></span>
+        </div>
+        <div class="footer-bottom-right">
+          <span>support@swappilot.io</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Process tabs
+    document.querySelectorAll('.process-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.process-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        document.querySelectorAll('.process-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById('process-' + tab.dataset.step).classList.remove('hidden');
+      });
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        item.classList.toggle('open');
+      });
+    });
+
+    // Pricing toggle
+    document.querySelectorAll('.pricing-toggle button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pricing-toggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // ===== SCROLL REVEAL ANIMATION =====
+    const revealElements = document.querySelectorAll('.reveal, .stagger-children');
+    
+    const revealOnScroll = () => {
+      const windowHeight = window.innerHeight;
+      const revealPoint = 100;
+
+      revealElements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        
+        if (elementTop < windowHeight - revealPoint) {
+          element.classList.add('active');
+        }
+      });
+    };
+
+    window.addEventListener('scroll', revealOnScroll);
+    revealOnScroll(); // Initial check
+
+    // ===== SCROLL PROGRESS INDICATOR =====
+    const scrollIndicator = document.getElementById('scrollIndicator');
+    
+    const updateScrollProgress = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+      scrollIndicator.style.width = scrollPercent + '%';
+    };
+
+    window.addEventListener('scroll', updateScrollProgress);
+
+    // ===== COUNTER ANIMATION =====
+    const animateCounters = () => {
+      const counters = document.querySelectorAll('.count-up');
+      
+      counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const duration = 2000;
+        const step = target / (duration / 16);
+        let current = 0;
+
+        const updateCounter = () => {
+          current += step;
+          if (current < target) {
+            counter.textContent = Math.floor(current);
+            requestAnimationFrame(updateCounter);
+          } else {
+            counter.textContent = target;
+          }
+        };
+
+        // Start animation when element is in view
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              updateCounter();
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.5 });
+
+        observer.observe(counter);
+      });
+    };
+
+    animateCounters();
+
+    // ===== PARALLAX EFFECT =====
+    const parallaxElements = document.querySelectorAll('.parallax');
+    
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      
+      parallaxElements.forEach(element => {
+        const speed = element.getAttribute('data-speed') || 0.5;
+        element.style.transform = `translateY(${scrollY * speed}px)`;
+      });
+    });
+
+    // ===== SMOOTH SCROLL FOR ANCHOR LINKS =====
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // ===== MAGNETIC BUTTON EFFECT =====
+    document.querySelectorAll('.btn-primary').forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        btn.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'translate(0, 0)';
+      });
+    });
+
+    // ===== TILT EFFECT ON CARDS =====
+    document.querySelectorAll('.hero-card, .bento-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = (y - centerY) / 20;
+        const rotateY = (centerX - x) / 20;
+        
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+      });
+    });
+
+    // ===== NAVBAR SCROLL EFFECT =====
+    const nav = document.querySelector('.nav');
+    let lastScroll = 0;
+
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.scrollY;
+      
+      if (currentScroll > 100) {
+        nav.style.background = 'rgba(5, 5, 5, 0.95)';
+        nav.style.backdropFilter = 'blur(20px)';
+      } else {
+        nav.style.background = 'transparent';
+        nav.style.backdropFilter = 'none';
+      }
+      
+      lastScroll = currentScroll;
+    });
+  </script>
+</body>
+</html>

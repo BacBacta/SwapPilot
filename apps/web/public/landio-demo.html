@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwapPilot - Landio Style</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Landio exact colors - lime/yellow-green accent on pure black */
+      --bg-primary: #050505;
+      --bg-secondary: #0a0a0a;
+      --bg-card: #0d0d0d;
+      --bg-card-inner: #111111;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-light: rgba(255, 255, 255, 0.12);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.65);
+      --text-muted: rgba(255, 255, 255, 0.4);
+      --accent: #c8ff00;
+      --accent-dim: rgba(200, 255, 0, 0.08);
+      --accent-medium: rgba(200, 255, 0, 0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-2xl: 32px;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== NAVIGATION ===== */
+    .nav {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      width: calc(100% - 32px);
+      max-width: 1000px;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 12px 20px;
+      background: rgba(15, 15, 15, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-muted);
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text-secondary);
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 8px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(200, 255, 0, 0.2);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 32px;
+    }
+
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      max-width: 900px;
+    }
+
+    .hero h1 .accent {
+      color: var(--accent);
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 64px;
+    }
+
+    .hero-buttons .btn {
+      padding: 14px 28px;
+      font-size: 15px;
+    }
+
+    .hero-social {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 80px;
+    }
+
+    /* Hero visual cards */
+    .hero-visual {
+      display: flex;
+      gap: 24px;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    .hero-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      text-align: left;
+    }
+
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .hero-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--accent-dim);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .hero-card-quote {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-style: italic;
+    }
+
+    .hero-card-quote .highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .hero-card-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .hero-card-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #333, #555);
+      border-radius: 50%;
+    }
+
+    .hero-card-author-info {
+      font-size: 13px;
+    }
+
+    .hero-card-author-name {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .hero-card-author-role {
+      color: var(--text-muted);
+    }
+
+    /* ===== SECTION STYLES ===== */
+    section {
+      padding: 100px 24px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(200, 255, 0, 0.15);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ===== BENEFITS ===== */
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .benefit-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      transition: all 0.3s;
+    }
+
+    .benefit-card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-4px);
+    }
+
+    .benefit-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(200, 255, 0, 0.15);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .benefit-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .benefit-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ===== SERVICES / FEATURES BENTO ===== */
+    .services-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card.large {
+      grid-column: span 2;
+    }
+
+    .bento-card.tall {
+      grid-row: span 2;
+    }
+
+    .bento-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .bento-tag {
+      padding: 6px 12px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .bento-card h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .bento-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .bento-visual {
+      margin-top: 24px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    /* Swap UI Mock */
+    .swap-mock {
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .swap-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+    }
+
+    .swap-token {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .swap-token-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #f0b90b, #d4a00a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      color: #000;
+    }
+
+    .swap-token-icon.eth {
+      background: linear-gradient(135deg, #627eea, #4a5fc1);
+      color: #fff;
+    }
+
+    .swap-token-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .swap-token-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .swap-amount {
+      text-align: right;
+    }
+
+    .swap-amount-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .swap-amount-usd {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .swap-arrow {
+      text-align: center;
+      padding: 8px 0;
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    /* Code block */
+    .code-block {
+      background: var(--bg-primary);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow-x: auto;
+    }
+
+    .code-line {
+      display: flex;
+      gap: 16px;
+    }
+
+    .code-number {
+      color: var(--text-muted);
+      user-select: none;
+      min-width: 24px;
+    }
+
+    .code-keyword {
+      color: #c678dd;
+    }
+
+    .code-function {
+      color: #61afef;
+    }
+
+    .code-string {
+      color: #98c379;
+    }
+
+    .code-comment {
+      color: #5c6370;
+    }
+
+    /* ===== PROCESS ===== */
+    .process-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 48px;
+    }
+
+    .process-tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .process-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .process-content {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 48px;
+      align-items: center;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .process-step-number {
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--accent);
+      opacity: 0.3;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .process-step h3 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .process-step h3 .muted {
+      color: var(--text-muted);
+    }
+
+    .process-step p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .process-visual {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+    }
+
+    /* ===== TESTIMONIALS ===== */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .testimonial-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .testimonial-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #444, #666);
+      border-radius: 50%;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-name {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .testimonial-role {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .testimonial-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ===== PRICING ===== */
+    .pricing-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      margin: 0 auto 48px;
+      width: fit-content;
+    }
+
+    .pricing-toggle button {
+      padding: 10px 24px;
+      background: transparent;
+      border: none;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pricing-toggle button.active {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .pricing-toggle .save-badge {
+      background: var(--accent-medium);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 100px;
+      margin-left: 8px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 60px rgba(200, 255, 0, 0.1);
+    }
+
+    .pricing-card.featured::before {
+      content: 'Popular';
+      position: absolute;
+      top: -10px;
+      right: 20px;
+      padding: 4px 12px;
+      background: var(--accent);
+      color: #000;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+    }
+
+    .pricing-tier {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .pricing-price {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pricing-period {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .pricing-features li:last-child {
+      border-bottom: none;
+    }
+
+    .pricing-features .check {
+      color: var(--accent);
+    }
+
+    .pricing-cta {
+      width: 100%;
+      padding: 14px;
+    }
+
+    /* ===== COMPARISON ===== */
+    .comparison {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .comparison-column {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+    }
+
+    .comparison-column.featured {
+      border-color: var(--accent);
+    }
+
+    .comparison-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-logo {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .comparison-column:not(.featured) .comparison-logo {
+      background: var(--bg-card-inner);
+      color: var(--text-muted);
+    }
+
+    .comparison-name {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .comparison-list {
+      list-style: none;
+    }
+
+    .comparison-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .comparison-list .icon {
+      font-size: 14px;
+    }
+
+    .comparison-column.featured .icon {
+      color: var(--accent);
+    }
+
+    .comparison-column:not(.featured) .icon {
+      color: var(--text-muted);
+    }
+
+    /* ===== CTA ===== */
+    .cta {
+      text-align: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-2xl);
+      padding: 80px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 64px 24px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr repeat(3, 1fr);
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand .logo {
+      margin-bottom: 16px;
+    }
+
+    .footer-brand p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    .footer-column h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .footer-column ul {
+      list-style: none;
+    }
+
+    .footer-column li {
+      margin-bottom: 12px;
+    }
+
+    .footer-column a {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-column a:hover {
+      color: var(--accent);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-bottom-left {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 12px;
+    }
+
+    .footer-social a {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .footer-social a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .benefits-grid, .testimonials-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .services-bento { grid-template-columns: 1fr; }
+      .bento-card.large { grid-column: span 1; }
+      .process-content { grid-template-columns: 1fr; }
+      .comparison-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .hero-visual { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </a>
+      <ul class="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#process">Process</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <div class="nav-right">
+        <button class="btn btn-icon">𝕏</button>
+        <a href="#" class="btn btn-primary">Launch App</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      DEX AGGREGATOR ON BNB CHAIN
+    </div>
+    
+    <h1>Swap Smarter. <span class="accent">Save More.</span> With BEQ.</h1>
+    
+    <p class="hero-subtitle">AI-Powered DEX Aggregation Made Simple</p>
+    
+    <div class="hero-buttons">
+      <a href="#" class="btn btn-primary">Launch App</a>
+      <button class="btn btn-icon">𝕏</button>
+      <button class="btn btn-icon">📱</button>
+      <button class="btn btn-icon">💬</button>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-card" style="flex: 1.2;">
+        <div class="hero-card-header">
+          <span class="hero-card-badge">WE ANALYZE YOUR DATA</span>
+        </div>
+        <p class="hero-card-quote">
+          " We <span class="highlight">find the best routes</span>, compare <span class="highlight">15+ aggregators</span> & optimize your <span class="highlight">swap execution</span>. Best part is we also calculate <span class="highlight">real costs</span> including gas. "
+        </p>
+        <div class="hero-card-author">
+          <div class="hero-card-avatar"></div>
+          <div class="hero-card-author-info">
+            <div class="hero-card-author-name">SwapPilot AI</div>
+            <div class="hero-card-author-role">BEQ Scoring Engine</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="swap-mock">
+          <div class="swap-row">
+            <div class="swap-token">
+              <div class="swap-token-icon">BNB</div>
+              <div>
+                <div class="swap-token-name">BNB</div>
+                <div class="swap-token-label">From</div>
+              </div>
+            </div>
+            <div class="swap-amount">
+              <div class="swap-amount-value">1.0</div>
+              <div class="swap-amount-usd">≈ $580</div>
+            </div>
+          </div>
+          <div class="swap-arrow">↓</div>
+          <div class="swap-row">
+            <div class="swap-token">
+              <div class="swap-token-icon eth">ETH</div>
+              <div>
+                <div class="swap-token-name">ETH</div>
+                <div class="swap-token-label">To</div>
+              </div>
+            </div>
+            <div class="swap-amount">
+              <div class="swap-amount-value" style="color: var(--accent);">0.2847</div>
+              <div class="swap-amount-usd">≈ $579</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section id="benefits">
+    <div class="section-header">
+      <span class="section-badge">BENEFITS</span>
+      <h2 class="section-title">Why Choose SwapPilot?</h2>
+      <p class="section-subtitle">Everything you need to trade smarter on DeFi</p>
+    </div>
+
+    <div class="benefits-grid">
+      <div class="benefit-card">
+        <div class="benefit-icon">⚡</div>
+        <h3>Real-Time Intelligence</h3>
+        <p>Access accurate, real-time quotes from 15+ aggregators to find the best rates instantly</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">📊</div>
+        <h3>Measurable Impact</h3>
+        <p>Track savings, compare routes, and achieve data-backed trading decisions</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🔗</div>
+        <h3>Seamless Integration</h3>
+        <p>Connect to 1inch, 0x, PancakeSwap V3 and more with unified smart routing</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="section-header">
+      <span class="section-badge">SERVICES</span>
+      <h2 class="section-title">Smarter Trading, Built with BEQ™</h2>
+      <p class="section-subtitle">Everything you need to optimize swaps and boost returns</p>
+    </div>
+
+    <div class="services-bento">
+      <div class="bento-card">
+        <div class="bento-tags">
+          <span class="bento-tag">Quote Aggregation</span>
+          <span class="bento-tag">Real-time</span>
+          <span class="bento-tag">15+ Sources</span>
+        </div>
+        <h3>Multi-Aggregator Comparison</h3>
+        <p>We query all major DEX aggregators simultaneously and rank results using our proprietary scoring system</p>
+        <div class="bento-visual">
+          <div class="swap-mock">
+            <div class="swap-row">
+              <div class="swap-token">
+                <div class="swap-token-icon">1"</div>
+                <div class="swap-token-name">1inch</div>
+              </div>
+              <div class="swap-amount">
+                <div class="swap-amount-value" style="color: var(--accent);">0.2847</div>
+                <div class="swap-amount-usd">BEQ: 94</div>
+              </div>
+            </div>
+            <div class="swap-row" style="opacity: 0.7;">
+              <div class="swap-token">
+                <div class="swap-token-icon">0x</div>
+                <div class="swap-token-name">0x Protocol</div>
+              </div>
+              <div class="swap-amount">
+                <div class="swap-amount-value">0.2841</div>
+                <div class="swap-amount-usd">BEQ: 89</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-tags">
+          <span class="bento-tag">BEQ™ Score</span>
+          <span class="bento-tag">AI-Powered</span>
+        </div>
+        <h3>Best Execution Quality</h3>
+        <p>Not just price. We evaluate gas costs, MEV risk, slippage tolerance, and execution probability</p>
+        <div class="bento-visual">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span style="color: var(--text-muted);">BEQ Score</span>
+            <span style="color: var(--accent); font-weight: 700;">94/100</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden;">
+            <div style="width: 94%; height: 100%; background: var(--accent); border-radius: 4px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bento-card large">
+        <div class="bento-tags">
+          <span class="bento-tag">Smart Contracts</span>
+          <span class="bento-tag">On-Chain</span>
+        </div>
+        <h3>Custom Protocol Development</h3>
+        <p>We develop smart routing logic that integrates seamlessly with your preferred DEXes</p>
+        <div class="bento-visual">
+          <div class="code-block">
+            <div class="code-line"><span class="code-number">1</span><span class="code-keyword">const</span> quotes = <span class="code-keyword">await</span> <span class="code-function">fetchAllQuotes</span>(params);</div>
+            <div class="code-line"><span class="code-number">2</span><span class="code-keyword">const</span> ranked = <span class="code-function">rankByBEQ</span>(quotes);</div>
+            <div class="code-line"><span class="code-number">3</span><span class="code-keyword">const</span> best = ranked[<span class="code-string">0</span>];</div>
+            <div class="code-line"><span class="code-number">4</span><span class="code-comment">// Execute with confidence</span></div>
+            <div class="code-line"><span class="code-number">5</span><span class="code-keyword">return</span> <span class="code-function">executeSwap</span>(best);</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process">
+    <div class="section-header">
+      <span class="section-badge">PROCESS</span>
+      <h2 class="section-title">Our Simple & Smart Process</h2>
+      <p class="section-subtitle">Everything you need to trade, optimize, and save—all in one place</p>
+    </div>
+
+    <div class="process-tabs">
+      <button class="process-tab active">STEP 1</button>
+      <button class="process-tab">STEP 2</button>
+      <button class="process-tab">STEP 3</button>
+    </div>
+
+    <div class="process-content">
+      <div class="process-step">
+        <div class="process-step-number">01</div>
+        <h3>Enter <span class="muted">&</span> Analyze</h3>
+        <p>Select your tokens and enter the amount you want to swap. We instantly query 15+ aggregators and analyze each route for optimal execution.</p>
+      </div>
+      <div class="process-visual">
+        <div class="swap-mock">
+          <div class="swap-row">
+            <div class="swap-token">
+              <div class="swap-token-icon">BNB</div>
+              <div>
+                <div class="swap-token-name">BNB</div>
+                <div class="swap-token-label">You Pay</div>
+              </div>
+            </div>
+            <div class="swap-amount">
+              <div class="swap-amount-value">10.0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section>
+    <div class="section-header">
+      <span class="section-badge">REVIEWS</span>
+      <h2 class="section-title">Trusted by DeFi Traders</h2>
+      <p class="section-subtitle">Hear from real users who trade smarter with SwapPilot</p>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-avatar"></div>
+        <div class="testimonial-name">DegenKing.eth</div>
+        <div class="testimonial-role">DeFi Trader</div>
+        <p class="testimonial-text">"Truly impressive. The BEQ scoring is fast, accurate, and shows me the real cost of each swap."</p>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar"></div>
+        <div class="testimonial-name">WhaleMode</div>
+        <div class="testimonial-role">Crypto Fund Manager</div>
+        <p class="testimonial-text">"Game-changer. MEV protection works flawlessly. Our team now trades with confidence."</p>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar"></div>
+        <div class="testimonial-name">BscHunter</div>
+        <div class="testimonial-role">Yield Farmer</div>
+        <p class="testimonial-text">"Smooth setup. PILOT discounts are amazing. Best aggregator on BSC, hands down."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="section-header">
+      <span class="section-badge">PRICING</span>
+      <h2 class="section-title">Flexible Plans for Everyone</h2>
+      <p class="section-subtitle">Choose a plan that fits your trading style</p>
+    </div>
+
+    <div class="pricing-toggle">
+      <button class="active">Monthly</button>
+      <button>Yearly <span class="save-badge">Save 20%</span></button>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-tier">Free Tier</div>
+        <div class="pricing-price">$0</div>
+        <div class="pricing-period">Swaps under $1,000</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> No fees on small trades</li>
+          <li><span class="check">✓</span> Full BEQ™ scoring access</li>
+          <li><span class="check">✓</span> All 15+ aggregators</li>
+          <li><span class="check">✓</span> Community support</li>
+        </ul>
+        <button class="btn btn-secondary pricing-cta">Get Started</button>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-tier">PILOT Holder</div>
+        <div class="pricing-price">0.02%</div>
+        <div class="pricing-period">per swap (80% discount)</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> Up to 80% fee discount</li>
+          <li><span class="check">✓</span> Priority execution</li>
+          <li><span class="check">✓</span> Referral rewards (5%)</li>
+          <li><span class="check">✓</span> Exclusive airdrops</li>
+          <li><span class="check">✓</span> Premium support</li>
+        </ul>
+        <button class="btn btn-primary pricing-cta">Buy $PILOT</button>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Standard</div>
+        <div class="pricing-price">0.1%</div>
+        <div class="pricing-period">per swap</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> All aggregators</li>
+          <li><span class="check">✓</span> BEQ™ scoring</li>
+          <li><span class="check">✓</span> Real-time quotes</li>
+          <li><span class="check">✓</span> Basic analytics</li>
+        </ul>
+        <button class="btn btn-secondary pricing-cta">Get Started</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section>
+    <div class="section-header">
+      <span class="section-badge">COMPARISON</span>
+      <h2 class="section-title">Why Choose Us Over Others</h2>
+      <p class="section-subtitle">See how we compare in performance and value</p>
+    </div>
+
+    <div class="comparison">
+      <div class="comparison-grid">
+        <div class="comparison-column featured">
+          <div class="comparison-header">
+            <div class="comparison-logo">SP</div>
+            <span class="comparison-name">SwapPilot</span>
+          </div>
+          <ul class="comparison-list">
+            <li><span class="icon">✓</span> 15+ aggregators in one query</li>
+            <li><span class="icon">✓</span> BEQ™ scoring for best execution</li>
+            <li><span class="icon">✓</span> Real-time gas cost normalization</li>
+            <li><span class="icon">✓</span> MEV protection built-in</li>
+            <li><span class="icon">✓</span> PILOT token discounts up to 80%</li>
+          </ul>
+        </div>
+        <div class="comparison-column">
+          <div class="comparison-header">
+            <div class="comparison-logo">?</div>
+            <span class="comparison-name">Others</span>
+          </div>
+          <ul class="comparison-list">
+            <li><span class="icon">✕</span> Single aggregator only</li>
+            <li><span class="icon">✕</span> Price-only comparison</li>
+            <li><span class="icon">✕</span> Gas shown separately</li>
+            <li><span class="icon">✕</span> No MEV consideration</li>
+            <li><span class="icon">✕</span> Fixed fees, no discounts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="cta">
+      <h2>Ready to Swap Smarter? Let's Trade Together</h2>
+      <p>Join thousands of traders who save on every swap with SwapPilot</p>
+      <div class="cta-buttons">
+        <a href="#" class="btn btn-primary">Launch App</a>
+        <button class="btn btn-icon">𝕏</button>
+        <button class="btn btn-icon">📱</button>
+        <button class="btn btn-icon">💬</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <div class="logo-icon">SP</div>
+          SwapPilot
+        </a>
+        <p>The smartest DEX aggregator on BNB Chain. Compare, score, and execute trades with confidence.</p>
+      </div>
+      <div class="footer-column">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Swap</a></li>
+          <li><a href="#">Portfolio</a></li>
+          <li><a href="#">Analytics</a></li>
+          <li><a href="#">Referrals</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Blog</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-bottom-left">
+        © 2026 SwapPilot. Made with 💚
+      </div>
+      <div class="footer-social">
+        <a href="#">𝕏</a>
+        <a href="#">📱</a>
+        <a href="#">💬</a>
+        <a href="#">🐙</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

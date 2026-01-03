@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | SwapPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .settings-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Settings Nav */
+    .settings-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .settings-nav-item {
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .settings-nav-item:hover {
+      border-color: var(--border-light);
+    }
+
+    .settings-nav-item.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    /* Settings Section */
+    .settings-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .settings-section-header {
+      margin-bottom: 24px;
+    }
+
+    .settings-section-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .settings-section-header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* Settings Row */
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-info {
+      flex: 1;
+    }
+
+    .settings-label {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .settings-description {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+
+    .toggle-switch.active::after {
+      left: 27px;
+      background: #000;
+    }
+
+    /* Select Dropdown */
+    .settings-select {
+      padding: 10px 36px 10px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .settings-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Input Field */
+    .settings-input {
+      padding: 10px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      width: 120px;
+      text-align: right;
+    }
+
+    .settings-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Slippage Options */
+    .slippage-options {
+      display: flex;
+      gap: 8px;
+    }
+
+    .slippage-option {
+      padding: 10px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .slippage-option:hover {
+      border-color: var(--border-light);
+    }
+
+    .slippage-option.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Wallet Section */
+    .wallet-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 16px;
+    }
+
+    .wallet-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #f6851b, #e2761b);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .wallet-info {
+      flex: 1;
+    }
+
+    .wallet-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .wallet-address {
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    .wallet-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .wallet-btn {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .wallet-btn:hover {
+      border-color: var(--border-light);
+      color: var(--text-primary);
+    }
+
+    .wallet-btn.disconnect {
+      color: var(--bad);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .wallet-btn.disconnect:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--bad);
+    }
+
+    /* Theme Selector */
+    .theme-options {
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-option {
+      width: 80px;
+      padding: 16px;
+      background: var(--bg-card-inner);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .theme-option:hover {
+      border-color: var(--border-light);
+    }
+
+    .theme-option.active {
+      border-color: var(--accent);
+    }
+
+    .theme-preview {
+      width: 48px;
+      height: 32px;
+      border-radius: 8px;
+      margin: 0 auto 8px;
+      border: 1px solid var(--border);
+    }
+
+    .theme-preview.dark {
+      background: linear-gradient(135deg, #0a0a0a 50%, #1a1a1a 50%);
+    }
+
+    .theme-preview.light {
+      background: linear-gradient(135deg, #f5f5f5 50%, #ffffff 50%);
+    }
+
+    .theme-preview.system {
+      background: linear-gradient(135deg, #0a0a0a 50%, #f5f5f5 50%);
+    }
+
+    .theme-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Language Selector */
+    .language-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .language-option {
+      padding: 16px;
+      background: var(--bg-card-inner);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .language-option:hover {
+      border-color: var(--border-light);
+    }
+
+    .language-option.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .language-flag {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .language-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Danger Zone */
+    .danger-section {
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .danger-section .settings-section-header h3 {
+      color: var(--bad);
+    }
+
+    .danger-btn {
+      padding: 12px 24px;
+      background: transparent;
+      border: 1px solid var(--bad);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--bad);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .danger-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Save Button */
+    .save-section {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .settings-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .slippage-options {
+        flex-wrap: wrap;
+      }
+
+      .language-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .theme-options {
+        flex-wrap: wrap;
+      }
+
+      .wallet-card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .wallet-actions {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </a>
+      <ul class="nav-links">
+        <li><a href="swap.html">Swap</a></li>
+        <li><a href="rewards.html">Rewards</a></li>
+        <li><a href="status.html">Status</a></li>
+        <li><a href="settings.html" style="color: var(--accent);">Settings</a></li>
+      </ul>
+      <div class="nav-right">
+        <button class="btn btn-secondary">0x1234...5678</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header" style="padding-bottom: 40px;">
+    <span class="section-badge">Settings</span>
+    <h1>Customize <span class="accent">SwapPilot</span></h1>
+    <p>Configure your trading preferences and account settings</p>
+  </header>
+
+  <!-- Main Content -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <div class="settings-container">
+        <!-- Settings Navigation -->
+        <div class="settings-nav">
+          <button class="settings-nav-item active" data-section="general">General</button>
+          <button class="settings-nav-item" data-section="trading">Trading</button>
+          <button class="settings-nav-item" data-section="notifications">Notifications</button>
+          <button class="settings-nav-item" data-section="security">Security</button>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <h3>Connected Wallet</h3>
+            <p>Manage your wallet connection</p>
+          </div>
+          <div class="wallet-card">
+            <div class="wallet-icon">🦊</div>
+            <div class="wallet-info">
+              <div class="wallet-label">MetaMask</div>
+              <div class="wallet-address">0x1234567890abcdef1234567890abcdef12345678</div>
+            </div>
+            <div class="wallet-actions">
+              <button class="wallet-btn" onclick="navigator.clipboard.writeText('0x1234567890abcdef1234567890abcdef12345678')">Copy</button>
+              <button class="wallet-btn disconnect">Disconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trading Settings -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <h3>Trading Preferences</h3>
+            <p>Configure your default trading settings</p>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Default Slippage Tolerance</div>
+              <div class="settings-description">Maximum price movement you're willing to accept</div>
+            </div>
+            <div class="slippage-options">
+              <button class="slippage-option">0.1%</button>
+              <button class="slippage-option active">0.5%</button>
+              <button class="slippage-option">1.0%</button>
+              <input type="text" class="settings-input" placeholder="Custom" style="width: 80px;">
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Transaction Deadline</div>
+              <div class="settings-description">Time before transaction expires</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" class="settings-input" value="20" style="width: 70px;">
+              <span style="color: var(--text-muted);">minutes</span>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">MEV Protection</div>
+              <div class="settings-description">Shield transactions from front-running and sandwich attacks</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Auto Route Optimization</div>
+              <div class="settings-description">Automatically select the best route across DEXs</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Gas Price Strategy</div>
+              <div class="settings-description">Choose how aggressive your gas pricing should be</div>
+            </div>
+            <select class="settings-select">
+              <option>Standard</option>
+              <option selected>Fast</option>
+              <option>Instant</option>
+              <option>Custom</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Quote Refresh Interval</div>
+              <div class="settings-description">How often to refresh price quotes</div>
+            </div>
+            <select class="settings-select">
+              <option>5 seconds</option>
+              <option selected>10 seconds</option>
+              <option>15 seconds</option>
+              <option>30 seconds</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Appearance Settings -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <h3>Appearance</h3>
+            <p>Customize the look and feel of SwapPilot</p>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Theme</div>
+              <div class="settings-description">Choose your preferred color scheme</div>
+            </div>
+            <div class="theme-options">
+              <div class="theme-option active">
+                <div class="theme-preview dark"></div>
+                <div class="theme-label">Dark</div>
+              </div>
+              <div class="theme-option">
+                <div class="theme-preview light"></div>
+                <div class="theme-label">Light</div>
+              </div>
+              <div class="theme-option">
+                <div class="theme-preview system"></div>
+                <div class="theme-label">System</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-row" style="border-bottom: none; padding-bottom: 0;">
+            <div class="settings-info">
+              <div class="settings-label">Language</div>
+              <div class="settings-description">Select your preferred language</div>
+            </div>
+          </div>
+          <div class="language-grid" style="margin-top: 16px;">
+            <div class="language-option active">
+              <div class="language-flag">🇬🇧</div>
+              <div class="language-name">English</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇫🇷</div>
+              <div class="language-name">Français</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇪🇸</div>
+              <div class="language-name">Español</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇩🇪</div>
+              <div class="language-name">Deutsch</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇨🇳</div>
+              <div class="language-name">中文</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇯🇵</div>
+              <div class="language-name">日本語</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇰🇷</div>
+              <div class="language-name">한국어</div>
+            </div>
+            <div class="language-option">
+              <div class="language-flag">🇷🇺</div>
+              <div class="language-name">Русский</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <h3>Notifications</h3>
+            <p>Control how you receive updates</p>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Transaction Confirmations</div>
+              <div class="settings-description">Notify when transactions are confirmed</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Price Alerts</div>
+              <div class="settings-description">Notify when tokens reach target prices</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Reward Notifications</div>
+              <div class="settings-description">Notify when rewards are available to claim</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Email Updates</div>
+              <div class="settings-description">Receive weekly digest and important updates</div>
+            </div>
+            <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Browser Notifications</div>
+              <div class="settings-description">Show desktop notifications</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <h3>Security</h3>
+            <p>Protect your account and transactions</p>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Require Confirmation</div>
+              <div class="settings-description">Always confirm before executing swaps</div>
+            </div>
+            <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Spending Limit</div>
+              <div class="settings-description">Maximum single transaction value (USD)</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--text-muted);">$</span>
+              <input type="number" class="settings-input" value="10000">
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Token Approvals</div>
+              <div class="settings-description">Review and revoke token spending approvals</div>
+            </div>
+            <button class="btn btn-secondary" style="padding: 10px 20px;">Manage Approvals</button>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Session Timeout</div>
+              <div class="settings-description">Auto-disconnect after inactivity</div>
+            </div>
+            <select class="settings-select">
+              <option>Never</option>
+              <option>15 minutes</option>
+              <option selected>1 hour</option>
+              <option>4 hours</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="settings-section danger-section">
+          <div class="settings-section-header">
+            <h3>⚠️ Danger Zone</h3>
+            <p>Irreversible actions that affect your account</p>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Reset All Settings</div>
+              <div class="settings-description">Restore all settings to default values</div>
+            </div>
+            <button class="danger-btn">Reset Settings</button>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-info">
+              <div class="settings-label">Clear Local Data</div>
+              <div class="settings-description">Remove all cached data and preferences</div>
+            </div>
+            <button class="danger-btn">Clear Data</button>
+          </div>
+        </div>
+
+        <!-- Save Changes -->
+        <div class="save-section">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary btn-lg">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <div>© 2024 SwapPilot. All rights reserved.</div>
+        <div>
+          <a href="privacy.html" style="color: var(--text-muted); margin-right: 16px;">Privacy</a>
+          <a href="terms.html" style="color: var(--text-muted);">Terms</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Settings Navigation
+    document.querySelectorAll('.settings-nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Slippage Options
+    document.querySelectorAll('.slippage-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.slippage-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Theme Options
+    document.querySelectorAll('.theme-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Language Options
+    document.querySelectorAll('.language-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.language-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

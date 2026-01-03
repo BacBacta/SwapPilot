@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
-import { AppProviders } from '@/components/providers/app-providers';
-import { ThemeProvider } from '@/components/providers/theme-provider';
-import { SettingsProvider } from '@/components/providers/settings-provider';
-import { TokenRegistryProvider } from '@/components/providers/token-registry-provider';
+import { DM_Sans } from 'next/font/google';
+import { ClientLayoutWrapper } from '@/components/providers/client-layout-wrapper';
 import './globals.css';
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'SwapPilot - Smart Token Swaps',
@@ -26,23 +30,19 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0B0F17' },
-    { media: '(prefers-color-scheme: light)', color: '#F6F7FB' },
-  ],
+  themeColor: '#050505',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body className="min-h-screen bg-sp-bg text-sp-text">
-        <ThemeProvider>
-          <SettingsProvider>
-            <TokenRegistryProvider>
-              <AppProviders>{children}</AppProviders>
-            </TokenRegistryProvider>
-          </SettingsProvider>
-        </ThemeProvider>
+    <html lang="fr" suppressHydrationWarning className={dmSans.variable}>
+      <head>
+        <link rel="stylesheet" href="/landio/styles.css" />
+      </head>
+      <body className={dmSans.className} suppressHydrationWarning>
+        <ClientLayoutWrapper>
+          {children}
+        </ClientLayoutWrapper>
       </body>
     </html>
   );

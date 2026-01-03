@@ -1,13 +1,8 @@
-import { FrameStatusDashboard } from "@/components/frames/frame-8-status";
+import { LandioTemplate } from "@/components/landio";
+import { loadLandioTemplate } from "@/lib/landio/templates";
+import { DynamicStatusController } from "@/components/landio/controllers/client-controllers";
 
-export default function Page() {
-  return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-h1 font-bold text-sp-text">Status</h1>
-      <p className="mt-1 text-caption text-sp-muted">Monitor your swaps and system health</p>
-      <div className="mt-6">
-        <FrameStatusDashboard />
-      </div>
-    </div>
-  );
+export default async function Page() {
+  const tpl = await loadLandioTemplate("status.html");
+  return <LandioTemplate {...tpl} after={<DynamicStatusController />} />;
 }

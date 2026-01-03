@@ -9,7 +9,7 @@ import {
 } from '@swappilot/shared';
 
 import { getEnabledProviders } from '@swappilot/adapters';
-import type { Adapter } from '@swappilot/adapters';
+import type { Adapter, AdapterQuote } from '@swappilot/adapters';
 import { deepLinkBuilder } from '@swappilot/deeplinks';
 
 import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuotes } from '@swappilot/scoring';
@@ -189,9 +189,10 @@ async function buildQuotesImpl(
                   metrics?.providerQuoteDurationMs.labels({ providerId, status: 'cache_hit' }).observe(durationMs);
                   providerHealth?.record({ providerId, status: 'cache_hit', durationMs });
                   log.info({ providerId, cache: 'hit', durationMs }, 'provider.quote');
-                  return {
+                  const sourceType: AdapterQuote['sourceType'] = provider.category === 'dex' ? 'dex' : 'aggregator';
+                  const cachedQuote: AdapterQuote = {
                     providerId,
-                    sourceType: 'dex',
+                    sourceType,
                     capabilities: cached.capabilities,
                     raw: cached.raw,
                     normalized: cached.normalized,
@@ -205,6 +206,7 @@ async function buildQuotesImpl(
                     warnings: [...cached.warnings, 'cache_hit'],
                     isStub: cached.isStub,
                   };
+                  return cachedQuote;
                 }
               }
 

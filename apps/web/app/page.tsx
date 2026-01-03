@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
+import { loadLandioTemplate } from "@/lib/landio/templates";
+import { LandioTemplate } from "@/components/landio";
 
-export default function HomePage() {
-  redirect('/swap');
+export default async function HomePage() {
+  const tpl = await loadLandioTemplate("index.html");
+  return <LandioTemplate inlineCss={tpl.inlineCss} bodyHtml={tpl.bodyHtml} />;
 }

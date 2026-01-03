@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Status | SwapPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .status-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Overall Status */
+    .overall-status {
+      background: var(--bg-card);
+      border: 1px solid var(--ok);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overall-status::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, rgba(34, 197, 94, 0.1), transparent 70%);
+    }
+
+    .overall-status-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 40px;
+      position: relative;
+    }
+
+    .overall-status h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .overall-status p {
+      color: var(--text-secondary);
+      position: relative;
+    }
+
+    .last-updated {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    /* Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .status-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .status-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-card-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .status-card-title h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-indicator.operational {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--ok);
+    }
+
+    .status-indicator.degraded {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+
+    .status-indicator.down {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--bad);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .status-metric {
+      padding: 16px;
+      background: var(--bg-card-inner);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .status-metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .status-metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Provider Status */
+    .providers-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .providers-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .providers-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .provider-status-row {
+      display: grid;
+      grid-template-columns: 200px 1fr 100px 120px;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 20px;
+    }
+
+    .provider-status-row:last-child {
+      border-bottom: none;
+    }
+
+    .provider-status-row.header {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-bottom: 12px;
+    }
+
+    .provider-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .provider-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .provider-name {
+      font-weight: 600;
+    }
+
+    .provider-type {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Latency Bar */
+    .latency-bar {
+      height: 8px;
+      background: var(--bg-card-inner);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .latency-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .latency-fill.fast {
+      background: var(--ok);
+    }
+
+    .latency-fill.medium {
+      background: #f59e0b;
+    }
+
+    .latency-fill.slow {
+      background: var(--bad);
+    }
+
+    .latency-value {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Uptime History */
+    .uptime-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .uptime-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .uptime-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .uptime-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ok);
+    }
+
+    .uptime-chart {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 12px;
+    }
+
+    .uptime-bar {
+      flex: 1;
+      height: 32px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .uptime-bar:hover {
+      transform: scaleY(1.2);
+    }
+
+    .uptime-bar.ok {
+      background: var(--ok);
+    }
+
+    .uptime-bar.partial {
+      background: #f59e0b;
+    }
+
+    .uptime-bar.down {
+      background: var(--bad);
+    }
+
+    .uptime-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Incidents */
+    .incidents-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .incidents-header {
+      margin-bottom: 24px;
+    }
+
+    .incidents-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .incidents-header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .incident-item {
+      padding: 20px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+
+    .incident-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .incident-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .incident-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .incident-date {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .incident-status {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .incident-status.resolved {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--ok);
+    }
+
+    .incident-status.investigating {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+
+    .incident-timeline {
+      padding-left: 20px;
+      border-left: 2px solid var(--border);
+    }
+
+    .incident-update {
+      padding: 12px 0;
+      position: relative;
+    }
+
+    .incident-update::before {
+      content: '';
+      position: absolute;
+      left: -25px;
+      top: 18px;
+      width: 10px;
+      height: 10px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 50%;
+    }
+
+    .incident-update.resolved::before {
+      border-color: var(--ok);
+      background: var(--ok);
+    }
+
+    .incident-update-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .incident-update-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* No Incidents */
+    .no-incidents {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .no-incidents-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .no-incidents h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .no-incidents p {
+      color: var(--text-secondary);
+    }
+
+    /* Subscribe */
+    .subscribe-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      text-align: center;
+    }
+
+    .subscribe-section h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subscribe-section p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .subscribe-form {
+      display: flex;
+      gap: 12px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .subscribe-form input {
+      flex: 1;
+      padding: 14px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .subscribe-form input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .provider-status-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .provider-status-row.header {
+        display: none;
+      }
+
+      .status-metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </a>
+      <ul class="nav-links">
+        <li><a href="swap.html">Swap</a></li>
+        <li><a href="rewards.html">Rewards</a></li>
+        <li><a href="status.html" style="color: var(--accent);">Status</a></li>
+        <li><a href="settings.html">Settings</a></li>
+      </ul>
+      <div class="nav-right">
+        <button class="btn btn-secondary">Connect Wallet</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header" style="padding-bottom: 40px;">
+    <span class="section-badge">System Status</span>
+    <h1>Service <span class="accent">Health</span></h1>
+    <p>Real-time status of all SwapPilot services and integrations</p>
+  </header>
+
+  <!-- Main Content -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <div class="status-container">
+        <!-- Overall Status -->
+        <div class="overall-status">
+          <div class="overall-status-icon">✓</div>
+          <h2>All Systems Operational</h2>
+          <p>SwapPilot is running smoothly with no active incidents</p>
+          <div class="last-updated">Last updated: Just now • Auto-refreshes every 30 seconds</div>
+        </div>
+
+        <!-- Status Grid -->
+        <div class="status-grid">
+          <!-- API Status -->
+          <div class="status-card">
+            <div class="status-card-header">
+              <div class="status-card-title">
+                <div class="status-card-icon">🔌</div>
+                <h3>API Services</h3>
+              </div>
+              <div class="status-indicator operational">
+                <span class="status-dot"></span>
+                Operational
+              </div>
+            </div>
+            <div class="status-metrics">
+              <div class="status-metric">
+                <div class="status-metric-value ok">23ms</div>
+                <div class="status-metric-label">Latency</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">99.99%</div>
+                <div class="status-metric-label">Uptime</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">1.2K/s</div>
+                <div class="status-metric-label">Requests</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quote Engine -->
+          <div class="status-card">
+            <div class="status-card-header">
+              <div class="status-card-title">
+                <div class="status-card-icon">⚡</div>
+                <h3>Quote Engine</h3>
+              </div>
+              <div class="status-indicator operational">
+                <span class="status-dot"></span>
+                Operational
+              </div>
+            </div>
+            <div class="status-metrics">
+              <div class="status-metric">
+                <div class="status-metric-value ok">156ms</div>
+                <div class="status-metric-label">Avg Quote Time</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">8</div>
+                <div class="status-metric-label">Providers</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">100%</div>
+                <div class="status-metric-label">Success Rate</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Blockchain RPC -->
+          <div class="status-card">
+            <div class="status-card-header">
+              <div class="status-card-title">
+                <div class="status-card-icon">⛓️</div>
+                <h3>BNB Chain RPC</h3>
+              </div>
+              <div class="status-indicator operational">
+                <span class="status-dot"></span>
+                Operational
+              </div>
+            </div>
+            <div class="status-metrics">
+              <div class="status-metric">
+                <div class="status-metric-value ok">45ms</div>
+                <div class="status-metric-label">Block Time</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">42,156,789</div>
+                <div class="status-metric-label">Latest Block</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value ok">Low</div>
+                <div class="status-metric-label">Gas</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MEV Protection -->
+          <div class="status-card">
+            <div class="status-card-header">
+              <div class="status-card-title">
+                <div class="status-card-icon">🛡️</div>
+                <h3>MEV Protection</h3>
+              </div>
+              <div class="status-indicator operational">
+                <span class="status-dot"></span>
+                Active
+              </div>
+            </div>
+            <div class="status-metrics">
+              <div class="status-metric">
+                <div class="status-metric-value">247</div>
+                <div class="status-metric-label">Attacks Blocked (24h)</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value ok">$12.4K</div>
+                <div class="status-metric-label">Value Protected</div>
+              </div>
+              <div class="status-metric">
+                <div class="status-metric-value">100%</div>
+                <div class="status-metric-label">Coverage</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider Status -->
+        <div class="providers-section">
+          <div class="providers-header">
+            <h3>DEX Provider Status</h3>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              All Providers Online
+            </div>
+          </div>
+
+          <div class="provider-status-row header">
+            <span>Provider</span>
+            <span>Latency</span>
+            <span>Response</span>
+            <span>Status</span>
+          </div>
+
+          <div class="provider-status-row">
+            <div class="provider-info">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #1fc7d4, #0098a1);">🥞</div>
+              <div>
+                <div class="provider-name">PancakeSwap V3</div>
+                <div class="provider-type">AMM</div>
+              </div>
+            </div>
+            <div class="latency-bar">
+              <div class="latency-fill fast" style="width: 20%;"></div>
+            </div>
+            <div class="latency-value">42ms</div>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              Online
+            </div>
+          </div>
+
+          <div class="provider-status-row">
+            <div class="provider-info">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #2b6def, #1e4bc8);">1</div>
+              <div>
+                <div class="provider-name">1inch</div>
+                <div class="provider-type">Aggregator</div>
+              </div>
+            </div>
+            <div class="latency-bar">
+              <div class="latency-fill fast" style="width: 35%;"></div>
+            </div>
+            <div class="latency-value">78ms</div>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              Online
+            </div>
+          </div>
+
+          <div class="provider-status-row">
+            <div class="provider-info">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #7b3fe4, #5e2fb8);">P</div>
+              <div>
+                <div class="provider-name">ParaSwap</div>
+                <div class="provider-type">Aggregator</div>
+              </div>
+            </div>
+            <div class="latency-bar">
+              <div class="latency-fill fast" style="width: 45%;"></div>
+            </div>
+            <div class="latency-value">98ms</div>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              Online
+            </div>
+          </div>
+
+          <div class="provider-status-row">
+            <div class="provider-info">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #ff6b35, #f54e00);">0x</div>
+              <div>
+                <div class="provider-name">0x Protocol</div>
+                <div class="provider-type">DEX</div>
+              </div>
+            </div>
+            <div class="latency-bar">
+              <div class="latency-fill medium" style="width: 60%;"></div>
+            </div>
+            <div class="latency-value">134ms</div>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              Online
+            </div>
+          </div>
+
+          <div class="provider-status-row">
+            <div class="provider-info">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #00d395, #00a878);">K</div>
+              <div>
+                <div class="provider-name">Kyber Network</div>
+                <div class="provider-type">Aggregator</div>
+              </div>
+            </div>
+            <div class="latency-bar">
+              <div class="latency-fill fast" style="width: 30%;"></div>
+            </div>
+            <div class="latency-value">65ms</div>
+            <div class="status-indicator operational">
+              <span class="status-dot"></span>
+              Online
+            </div>
+          </div>
+        </div>
+
+        <!-- Uptime History -->
+        <div class="uptime-section">
+          <div class="uptime-header">
+            <h3>90-Day Uptime</h3>
+            <div class="uptime-value">99.98%</div>
+          </div>
+          <div class="uptime-chart">
+            <!-- Generate 90 bars for uptime visualization -->
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar partial"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+            <div class="uptime-bar ok"></div>
+          </div>
+          <div class="uptime-labels">
+            <span>90 days ago</span>
+            <span>Today</span>
+          </div>
+        </div>
+
+        <!-- Recent Incidents -->
+        <div class="incidents-section">
+          <div class="incidents-header">
+            <h3>Recent Incidents</h3>
+            <p>History of service disruptions and maintenance</p>
+          </div>
+
+          <div class="incident-item">
+            <div class="incident-header">
+              <div>
+                <div class="incident-title">Elevated Quote Latency</div>
+                <div class="incident-date">December 15, 2024</div>
+              </div>
+              <span class="incident-status resolved">Resolved</span>
+            </div>
+            <div class="incident-timeline">
+              <div class="incident-update resolved">
+                <div class="incident-update-time">15:45 UTC</div>
+                <div class="incident-update-text">Issue resolved. All systems back to normal operation.</div>
+              </div>
+              <div class="incident-update">
+                <div class="incident-update-time">15:20 UTC</div>
+                <div class="incident-update-text">Identified the root cause as increased traffic from 1inch provider. Implementing rate limiting.</div>
+              </div>
+              <div class="incident-update">
+                <div class="incident-update-time">15:00 UTC</div>
+                <div class="incident-update-text">Investigating increased latency in quote responses. Some users may experience slower quotes.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="incident-item">
+            <div class="incident-header">
+              <div>
+                <div class="incident-title">Scheduled Maintenance</div>
+                <div class="incident-date">December 10, 2024</div>
+              </div>
+              <span class="incident-status resolved">Completed</span>
+            </div>
+            <div class="incident-timeline">
+              <div class="incident-update resolved">
+                <div class="incident-update-time">04:00 UTC</div>
+                <div class="incident-update-text">Maintenance completed successfully. All services restored.</div>
+              </div>
+              <div class="incident-update">
+                <div class="incident-update-time">02:00 UTC</div>
+                <div class="incident-update-text">Scheduled maintenance window. Quote service temporarily unavailable.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscribe to Updates -->
+        <div class="subscribe-section">
+          <h3>Stay Informed</h3>
+          <p>Get notified about service status changes and scheduled maintenance</p>
+          <div class="subscribe-form">
+            <input type="email" placeholder="Enter your email">
+            <button class="btn btn-primary">Subscribe</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <div>© 2024 SwapPilot. All rights reserved.</div>
+        <div>
+          <a href="privacy.html" style="color: var(--text-muted); margin-right: 16px;">Privacy</a>
+          <a href="terms.html" style="color: var(--text-muted);">Terms</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

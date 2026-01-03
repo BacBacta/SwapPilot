@@ -2,6 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Allow dev origins for VS Code Simple Browser and localhost variants
+  allowedDevOrigins: [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+    'http://127.0.0.1',
+    'http://localhost',
+  ],
   // Handle optional dependencies that may not be available (WalletConnect, MetaMask SDK)
   webpack: (config) => {
     config.resolve.fallback = {

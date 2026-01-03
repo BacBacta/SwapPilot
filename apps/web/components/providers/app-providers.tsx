@@ -1,58 +1,50 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
-import dynamic from "next/dynamic";
+import { type ReactNode, useState, useEffect } from "react";
+import { ToastProvider } from "@/components/ui/toast";
+import { AppShell } from "@/components/layout/app-shell";
 
 interface AppProvidersProps {
   children: ReactNode;
+  /**
+   * When true (default), wraps the app with the legacy AppShell.
+   * Set to false to render pages without the legacy chrome (e.g. Landio-only UI).
+   */
+  useLegacyShell?: boolean;
 }
 
-// Loading fallback component
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-sp-bg">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-2 border-sp-accent border-t-transparent rounded-full animate-spin" />
-        <span className="text-sp-text-muted text-sm">Loading SwapPilot...</span>
-      </div>
-    </div>
-  );
+// Wrapper that maintains consistent DOM structure for hydration
+function Web3Wrapper({ children, provider: Provider }: { children: ReactNode; provider: React.ComponentType<{children: ReactNode}> | null }) {
+  // Always render a consistent wrapper div to avoid hydration mismatch
+  // The Provider is only used after hydration is complete
+  if (!Provider) {
+    return <>{children}</>;
+  }
+  return <Provider>{children}</Provider>;
 }
 
-// Dynamic imports with ssr: false to prevent any wagmi code from running on server
-const AppShell = dynamic(
-  () => import("@/components/layout/app-shell").then((mod) => mod.AppShell),
-  { ssr: false }
-);
-
-const ToastProvider = dynamic(
-  () => import("@/components/ui/toast").then((mod) => mod.ToastProvider),
-  { ssr: false }
-);
-
-export function AppProviders({ children }: AppProvidersProps) {
-  const [Web3Provider, setWeb3Provider] = useState<React.ComponentType<{ children: ReactNode }> | null>(null);
-  const [isClient, setIsClient] = useState(false);
+export function AppProviders({ children, useLegacyShell = true }: AppProvidersProps) {
+  const [Web3Provider, setWeb3Provider] = useState<React.ComponentType<{children: ReactNode}> | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    // Dynamic import of Web3Provider only on client side
-    import("@/components/providers/web3-provider")
-      .then((mod) => setWeb3Provider(() => mod.Web3Provider))
-      .catch(console.error);
+    setMounted(true);
+    // Dynamically import Web3Provider only on client to avoid indexedDB SSR errors
+    import("@/components/providers/web3-provider").then((mod) => {
+      setWeb3Provider(() => mod.Web3Provider);
+    });
   }, []);
 
-  // During SSR or initial client render, show loading
-  if (!isClient || !Web3Provider) {
-    return <LoadingFallback />;
-  }
+  const content = useLegacyShell ? <AppShell>{children}</AppShell> : children;
 
-  // Once provider is loaded, render the full app
+  // Use suppressHydrationWarning on the wrapper to handle the provider change gracefully
   return (
-    <Web3Provider>
-      <ToastProvider>
-        <AppShell>{children}</AppShell>
-      </ToastProvider>
-    </Web3Provider>
+    <div suppressHydrationWarning>
+      <Web3Wrapper provider={mounted ? Web3Provider : null}>
+        <ToastProvider>
+          {content}
+        </ToastProvider>
+      </Web3Wrapper>
+    </div>
   );
 }

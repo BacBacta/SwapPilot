@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swap | SwapPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .swap-app {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .swap-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .swap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .swap-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .swap-settings-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .swap-settings-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .token-input-box {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .token-input-box:focus-within {
+      border-color: var(--accent);
+    }
+
+    .token-input-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .token-input-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .token-amount-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .token-amount-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .token-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 8px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .token-selector:hover {
+      border-color: var(--border-light);
+    }
+
+    .token-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 10px;
+    }
+
+    .token-icon.bnb {
+      background: linear-gradient(135deg, #f0b90b, #d4a00a);
+      color: #000;
+    }
+
+    .token-icon.eth {
+      background: linear-gradient(135deg, #627eea, #4a5fc1);
+      color: #fff;
+    }
+
+    .token-icon.usdt {
+      background: linear-gradient(135deg, #26a17b, #1a8a65);
+      color: #fff;
+    }
+
+    .token-icon.pilot {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .token-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .token-dropdown-icon {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
+    .swap-arrow-container {
+      display: flex;
+      justify-content: center;
+      margin: -4px 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .swap-arrow-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-card);
+      border: 4px solid var(--bg-primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+    }
+
+    .swap-arrow-btn:hover {
+      background: var(--accent);
+      color: #000;
+      transform: rotate(180deg);
+    }
+
+    .usd-value {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .max-btn {
+      padding: 4px 10px;
+      background: var(--accent-dim);
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .max-btn:hover {
+      background: var(--accent-medium);
+    }
+
+    /* BEQ Score Card */
+    .beq-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .beq-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .beq-title span {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .beq-score-display {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .beq-progress {
+      height: 8px;
+      background: var(--bg-card-inner);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .beq-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #9fff00);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .beq-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .beq-detail-item {
+      background: var(--bg-card-inner);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .beq-detail-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .beq-detail-value {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* Route Preview */
+    .route-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .route-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .route-header span {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .route-best-badge {
+      padding: 4px 10px;
+      background: var(--accent);
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 100px;
+    }
+
+    .route-path {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      background: var(--bg-card-inner);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .route-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .route-token {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 6px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+
+    .route-token-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .route-token-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .route-arrow {
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    .route-dex {
+      padding: 4px 8px;
+      background: var(--accent-dim);
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Provider List */
+    .providers-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .providers-header {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .provider-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .provider-item:hover {
+      border-color: var(--border-light);
+    }
+
+    .provider-item.selected {
+      border-color: var(--accent);
+      background: rgba(200, 255, 0, 0.03);
+    }
+
+    .provider-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .provider-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .provider-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-card);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .provider-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .provider-rate {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .provider-right {
+      text-align: right;
+    }
+
+    .provider-output {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .provider-savings {
+      font-size: 12px;
+      color: var(--ok);
+    }
+
+    /* Swap Button */
+    .swap-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .swap-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+
+    .swap-btn:disabled {
+      background: var(--bg-card-inner);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Details Accordion */
+    .details-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.2s;
+    }
+
+    .details-toggle:hover {
+      border-color: var(--border-light);
+    }
+
+    .details-toggle span {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .details-toggle-icon {
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+
+    .details-toggle.open .details-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .details-content {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      padding: 20px;
+      margin-top: -1px;
+    }
+
+    .details-content.open {
+      display: block;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      font-size: 14px;
+    }
+
+    .detail-row span:first-child {
+      color: var(--text-muted);
+    }
+
+    .detail-row.savings span:last-child {
+      color: var(--ok);
+    }
+
+    /* Slippage Modal */
+    .slippage-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+
+    .slippage-modal.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .slippage-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      transform: translateY(20px);
+      transition: transform 0.2s;
+    }
+
+    .slippage-modal.open .slippage-content {
+      transform: translateY(0);
+    }
+
+    .slippage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .slippage-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .slippage-close {
+      width: 32px;
+      height: 32px;
+      background: var(--bg-card-inner);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slippage-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .slippage-option {
+      flex: 1;
+      padding: 12px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .slippage-option.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .slippage-custom {
+      display: flex;
+      gap: 8px;
+    }
+
+    .slippage-custom input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .slippage-custom input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .slippage-custom span {
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    /* Animations */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .analyzing-state {
+      background: linear-gradient(90deg, var(--bg-card-inner) 25%, var(--bg-card) 50%, var(--bg-card-inner) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 255, 0, 0.4); }
+      50% { box-shadow: 0 0 20px 5px rgba(200, 255, 0, 0.2); }
+    }
+
+    .swap-btn:not(:disabled) {
+      animation: pulse-glow 2s infinite;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </a>
+      <ul class="nav-links">
+        <li><a href="swap.html" style="color: var(--accent);">Swap</a></li>
+        <li><a href="rewards.html">Rewards</a></li>
+        <li><a href="status.html">Status</a></li>
+        <li><a href="settings.html">Settings</a></li>
+      </ul>
+      <div class="nav-right">
+        <button class="btn btn-secondary" id="connectWallet">Connect Wallet</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Swap Interface -->
+  <section class="section" style="padding-top: 140px;">
+    <div class="container">
+      <div class="swap-app">
+        <!-- Main Swap Card -->
+        <div class="swap-container">
+          <div class="swap-header">
+            <h2>Swap</h2>
+            <button class="swap-settings-btn" id="openSlippage">⚙️</button>
+          </div>
+
+          <!-- From Token -->
+          <div class="token-input-box">
+            <div class="token-input-label">
+              <span>You pay</span>
+              <span>Balance: 2.5 BNB <button class="max-btn">MAX</button></span>
+            </div>
+            <div class="token-input-row">
+              <input type="text" class="token-amount-input" placeholder="0" id="fromAmount">
+              <div class="token-selector">
+                <div class="token-icon bnb">BNB</div>
+                <span class="token-name">BNB</span>
+                <span class="token-dropdown-icon">▼</span>
+              </div>
+            </div>
+            <div class="usd-value">≈ $0.00</div>
+          </div>
+
+          <!-- Swap Arrow -->
+          <div class="swap-arrow-container">
+            <button class="swap-arrow-btn">↓</button>
+          </div>
+
+          <!-- To Token -->
+          <div class="token-input-box">
+            <div class="token-input-label">
+              <span>You receive</span>
+              <span>Balance: 0 ETH</span>
+            </div>
+            <div class="token-input-row">
+              <input type="text" class="token-amount-input" placeholder="0" id="toAmount" readonly>
+              <div class="token-selector">
+                <div class="token-icon eth">ETH</div>
+                <span class="token-name">ETH</span>
+                <span class="token-dropdown-icon">▼</span>
+              </div>
+            </div>
+            <div class="usd-value">≈ $0.00</div>
+          </div>
+        </div>
+
+        <!-- BEQ Score -->
+        <div class="beq-container" id="beqContainer" style="display: none;">
+          <div class="beq-title">
+            <span>Best Execution Quality</span>
+            <span class="beq-score-display" id="beqScore">87/100</span>
+          </div>
+          <div class="beq-progress">
+            <div class="beq-progress-fill" id="beqProgress" style="width: 87%;"></div>
+          </div>
+          <div class="beq-details">
+            <div class="beq-detail-item">
+              <div class="beq-detail-label">Price Impact</div>
+              <div class="beq-detail-value ok" id="priceImpact">-0.12%</div>
+            </div>
+            <div class="beq-detail-item">
+              <div class="beq-detail-label">Gas Cost</div>
+              <div class="beq-detail-value" id="gasCost">$0.42</div>
+            </div>
+            <div class="beq-detail-item">
+              <div class="beq-detail-label">MEV Risk</div>
+              <div class="beq-detail-value ok" id="mevRisk">Protected</div>
+            </div>
+            <div class="beq-detail-item">
+              <div class="beq-detail-label">Net Output</div>
+              <div class="beq-detail-value" id="netOutput">+$2.15</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Route Preview -->
+        <div class="route-container" id="routeContainer" style="display: none;">
+          <div class="route-header">
+            <span>Route</span>
+            <span class="route-best-badge">BEST</span>
+          </div>
+          <div class="route-path">
+            <div class="route-step">
+              <div class="route-token">
+                <div class="route-token-icon bnb">B</div>
+                <span class="route-token-name">BNB</span>
+              </div>
+            </div>
+            <span class="route-arrow">→</span>
+            <span class="route-dex">PancakeSwap V3</span>
+            <span class="route-arrow">→</span>
+            <div class="route-step">
+              <div class="route-token">
+                <div class="route-token-icon usdt">U</div>
+                <span class="route-token-name">USDT</span>
+              </div>
+            </div>
+            <span class="route-arrow">→</span>
+            <span class="route-dex">1inch</span>
+            <span class="route-arrow">→</span>
+            <div class="route-step">
+              <div class="route-token">
+                <div class="route-token-icon eth">E</div>
+                <span class="route-token-name">ETH</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider Comparison -->
+        <div class="providers-container" id="providersContainer" style="display: none;">
+          <div class="providers-header">Available Providers</div>
+          
+          <div class="provider-item selected">
+            <div class="provider-left">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #1fc7d4, #0098a1);">🥞</div>
+              <div>
+                <div class="provider-name">PancakeSwap V3</div>
+                <div class="provider-rate">Best rate</div>
+              </div>
+            </div>
+            <div class="provider-right">
+              <div class="provider-output">0.2847 ETH</div>
+              <div class="provider-savings">+$2.15 vs avg</div>
+            </div>
+          </div>
+
+          <div class="provider-item">
+            <div class="provider-left">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #2b6def, #1e4bc8);">1</div>
+              <div>
+                <div class="provider-name">1inch</div>
+                <div class="provider-rate">Multi-route</div>
+              </div>
+            </div>
+            <div class="provider-right">
+              <div class="provider-output">0.2839 ETH</div>
+              <div class="provider-rate">+$0.89 vs avg</div>
+            </div>
+          </div>
+
+          <div class="provider-item">
+            <div class="provider-left">
+              <div class="provider-logo" style="background: linear-gradient(135deg, #7b3fe4, #5e2fb8);">P</div>
+              <div>
+                <div class="provider-name">ParaSwap</div>
+                <div class="provider-rate">Standard</div>
+              </div>
+            </div>
+            <div class="provider-right">
+              <div class="provider-output">0.2831 ETH</div>
+              <div class="provider-rate" style="color: var(--text-muted);">Baseline</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Swap Button -->
+        <button class="swap-btn" id="swapBtn" disabled>Enter an amount</button>
+
+        <!-- Details Toggle -->
+        <div class="details-toggle" id="detailsToggle" style="display: none;">
+          <span>Transaction Details</span>
+          <span class="details-toggle-icon">▼</span>
+        </div>
+        <div class="details-content" id="detailsContent">
+          <div class="detail-row">
+            <span>Rate</span>
+            <span>1 BNB = 0.2847 ETH</span>
+          </div>
+          <div class="detail-row">
+            <span>Slippage Tolerance</span>
+            <span>0.5%</span>
+          </div>
+          <div class="detail-row">
+            <span>Minimum Received</span>
+            <span>0.2833 ETH</span>
+          </div>
+          <div class="detail-row">
+            <span>Network Fee</span>
+            <span>~$0.42</span>
+          </div>
+          <div class="detail-row">
+            <span>Platform Fee</span>
+            <span>$0.00 (Free Tier)</span>
+          </div>
+          <div class="detail-row savings">
+            <span>You Save</span>
+            <span>+$2.15</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slippage Modal -->
+  <div class="slippage-modal" id="slippageModal">
+    <div class="slippage-content">
+      <div class="slippage-header">
+        <h3>Settings</h3>
+        <button class="slippage-close" id="closeSlippage">×</button>
+      </div>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">Slippage Tolerance</p>
+      <div class="slippage-options">
+        <div class="slippage-option">0.1%</div>
+        <div class="slippage-option active">0.5%</div>
+        <div class="slippage-option">1.0%</div>
+      </div>
+      <div class="slippage-custom">
+        <input type="text" placeholder="Custom" value="">
+        <span>%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer" style="margin-top: 60px;">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <div>© 2024 SwapPilot. All rights reserved.</div>
+        <div>
+          <a href="privacy.html" style="color: var(--text-muted); margin-right: 16px;">Privacy</a>
+          <a href="terms.html" style="color: var(--text-muted);">Terms</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Amount input handling
+    const fromAmount = document.getElementById('fromAmount');
+    const swapBtn = document.getElementById('swapBtn');
+    const beqContainer = document.getElementById('beqContainer');
+    const routeContainer = document.getElementById('routeContainer');
+    const providersContainer = document.getElementById('providersContainer');
+    const detailsToggle = document.getElementById('detailsToggle');
+    const detailsContent = document.getElementById('detailsContent');
+
+    fromAmount.addEventListener('input', function() {
+      const value = parseFloat(this.value);
+      if (value > 0) {
+        // Show quote results
+        beqContainer.style.display = 'block';
+        routeContainer.style.display = 'block';
+        providersContainer.style.display = 'block';
+        detailsToggle.style.display = 'flex';
+        swapBtn.disabled = false;
+        swapBtn.textContent = 'Swap';
+        
+        // Update to amount
+        document.getElementById('toAmount').value = (value * 0.2847).toFixed(4);
+      } else {
+        beqContainer.style.display = 'none';
+        routeContainer.style.display = 'none';
+        providersContainer.style.display = 'none';
+        detailsToggle.style.display = 'none';
+        detailsContent.classList.remove('open');
+        swapBtn.disabled = true;
+        swapBtn.textContent = 'Enter an amount';
+        document.getElementById('toAmount').value = '';
+      }
+    });
+
+    // Details toggle
+    detailsToggle.addEventListener('click', function() {
+      this.classList.toggle('open');
+      detailsContent.classList.toggle('open');
+    });
+
+    // Slippage modal
+    document.getElementById('openSlippage').addEventListener('click', function() {
+      document.getElementById('slippageModal').classList.add('open');
+    });
+
+    document.getElementById('closeSlippage').addEventListener('click', function() {
+      document.getElementById('slippageModal').classList.remove('open');
+    });
+
+    document.getElementById('slippageModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('open');
+      }
+    });
+
+    // Slippage options
+    document.querySelectorAll('.slippage-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.slippage-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Provider selection
+    document.querySelectorAll('.provider-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.provider-item').forEach(i => i.classList.remove('selected'));
+        this.classList.add('selected');
+      });
+    });
+
+    // Swap arrow rotation
+    document.querySelector('.swap-arrow-btn').addEventListener('click', function() {
+      // Swap tokens logic would go here
+    });
+  </script>
+</body>
+</html>
