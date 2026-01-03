@@ -10,8 +10,38 @@
   <link rel="stylesheet" href="styles.css">
   <style>
     .swap-app {
-      max-width: 480px;
+      display: flex;
+      gap: 24px;
+      max-width: 900px;
       margin: 0 auto;
+      align-items: flex-start;
+    }
+
+    .swap-main-column {
+      flex: 0 0 480px;
+      max-width: 480px;
+    }
+
+    .swap-side-column {
+      flex: 1;
+      min-width: 320px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Responsive: stack on mobile */
+    @media (max-width: 900px) {
+      .swap-app {
+        flex-direction: column;
+        max-width: 480px;
+      }
+      .swap-side-column {
+        width: 100%;
+        min-width: unset;
+        max-width: 100%;
+      }
     }
 
     .swap-container {
@@ -688,6 +718,8 @@
   <section class="section" style="padding-top: 140px;">
     <div class="container">
       <div class="swap-app">
+        <!-- Main Swap Column -->
+        <div class="swap-main-column">
         <!-- Main Swap Card -->
         <div class="swap-container">
           <div class="swap-header">
@@ -735,35 +767,6 @@
           </div>
         </div>
 
-        <!-- BEQ Score -->
-        <div class="beq-container" id="beqContainer" style="display: none;">
-          <div class="beq-title">
-            <span>Best Execution Quality</span>
-            <span class="beq-score-display" id="beqScore">87/100</span>
-          </div>
-          <div class="beq-progress">
-            <div class="beq-progress-fill" id="beqProgress" style="width: 87%;"></div>
-          </div>
-          <div class="beq-details">
-            <div class="beq-detail-item">
-              <div class="beq-detail-label">Price Impact</div>
-              <div class="beq-detail-value ok" id="priceImpact">-0.12%</div>
-            </div>
-            <div class="beq-detail-item">
-              <div class="beq-detail-label">Gas Cost</div>
-              <div class="beq-detail-value" id="gasCost">$0.42</div>
-            </div>
-            <div class="beq-detail-item">
-              <div class="beq-detail-label">MEV Risk</div>
-              <div class="beq-detail-value ok" id="mevRisk">Protected</div>
-            </div>
-            <div class="beq-detail-item">
-              <div class="beq-detail-label">Net Output</div>
-              <div class="beq-detail-value" id="netOutput">+$2.15</div>
-            </div>
-          </div>
-        </div>
-
         <!-- Route Preview -->
         <div class="route-container" id="routeContainer" style="display: none;">
           <div class="route-header">
@@ -794,53 +797,6 @@
                 <div class="route-token-icon eth">E</div>
                 <span class="route-token-name">ETH</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Provider Comparison -->
-        <div class="providers-container" id="providersContainer" style="display: none;">
-          <div class="providers-header">Available Providers</div>
-          
-          <div class="provider-item selected">
-            <div class="provider-left">
-              <div class="provider-logo" style="background: linear-gradient(135deg, #1fc7d4, #0098a1);">🥞</div>
-              <div>
-                <div class="provider-name">PancakeSwap V3</div>
-                <div class="provider-rate">Best rate</div>
-              </div>
-            </div>
-            <div class="provider-right">
-              <div class="provider-output">0.2847 ETH</div>
-              <div class="provider-savings">+$2.15 vs avg</div>
-            </div>
-          </div>
-
-          <div class="provider-item">
-            <div class="provider-left">
-              <div class="provider-logo" style="background: linear-gradient(135deg, #2b6def, #1e4bc8);">1</div>
-              <div>
-                <div class="provider-name">1inch</div>
-                <div class="provider-rate">Multi-route</div>
-              </div>
-            </div>
-            <div class="provider-right">
-              <div class="provider-output">0.2839 ETH</div>
-              <div class="provider-rate">+$0.89 vs avg</div>
-            </div>
-          </div>
-
-          <div class="provider-item">
-            <div class="provider-left">
-              <div class="provider-logo" style="background: linear-gradient(135deg, #7b3fe4, #5e2fb8);">P</div>
-              <div>
-                <div class="provider-name">ParaSwap</div>
-                <div class="provider-rate">Standard</div>
-              </div>
-            </div>
-            <div class="provider-right">
-              <div class="provider-output">0.2831 ETH</div>
-              <div class="provider-rate" style="color: var(--text-muted);">Baseline</div>
             </div>
           </div>
         </div>
@@ -879,6 +835,87 @@
             <span>+$2.15</span>
           </div>
         </div>
+        </div><!-- End swap-main-column -->
+
+        <!-- Side Column: Providers + BEQ -->
+        <div class="swap-side-column">
+          <!-- Provider Comparison -->
+          <div class="providers-container" id="providersContainer" style="display: none;">
+            <div class="providers-header">Available Providers</div>
+            
+            <div class="provider-item selected">
+              <div class="provider-left">
+                <div class="provider-logo" style="background: linear-gradient(135deg, #1fc7d4, #0098a1);">🥞</div>
+                <div>
+                  <div class="provider-name">PancakeSwap V3</div>
+                  <div class="provider-rate">Best rate</div>
+                </div>
+              </div>
+              <div class="provider-right">
+                <div class="provider-output">0.2847 ETH</div>
+                <div class="provider-savings">+$2.15 vs avg</div>
+              </div>
+            </div>
+
+            <div class="provider-item">
+              <div class="provider-left">
+                <div class="provider-logo" style="background: linear-gradient(135deg, #2b6def, #1e4bc8);">1</div>
+                <div>
+                  <div class="provider-name">1inch</div>
+                  <div class="provider-rate">Multi-route</div>
+                </div>
+              </div>
+              <div class="provider-right">
+                <div class="provider-output">0.2839 ETH</div>
+                <div class="provider-rate">+$0.89 vs avg</div>
+              </div>
+            </div>
+
+            <div class="provider-item">
+              <div class="provider-left">
+                <div class="provider-logo" style="background: linear-gradient(135deg, #7b3fe4, #5e2fb8);">P</div>
+                <div>
+                  <div class="provider-name">ParaSwap</div>
+                  <div class="provider-rate">Standard</div>
+                </div>
+              </div>
+              <div class="provider-right">
+                <div class="provider-output">0.2831 ETH</div>
+                <div class="provider-rate" style="color: var(--text-muted);">Baseline</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BEQ Score -->
+          <div class="beq-container" id="beqContainer" style="display: none;">
+            <div class="beq-title">
+              <span>Best Execution Quality</span>
+              <span class="beq-score-display" id="beqScore">87/100</span>
+            </div>
+            <div class="beq-progress">
+              <div class="beq-progress-fill" id="beqProgress" style="width: 87%;"></div>
+            </div>
+            <div class="beq-details">
+              <div class="beq-detail-item">
+                <div class="beq-detail-label">Price Impact</div>
+                <div class="beq-detail-value ok" id="priceImpact">-0.12%</div>
+              </div>
+              <div class="beq-detail-item">
+                <div class="beq-detail-label">Gas Cost</div>
+                <div class="beq-detail-value" id="gasCost">$0.42</div>
+              </div>
+              <div class="beq-detail-item">
+                <div class="beq-detail-label">MEV Risk</div>
+                <div class="beq-detail-value ok" id="mevRisk">Protected</div>
+              </div>
+              <div class="beq-detail-item">
+                <div class="beq-detail-label">Net Output</div>
+                <div class="beq-detail-value" id="netOutput">+$2.15</div>
+              </div>
+            </div>
+          </div>
+        </div><!-- End swap-side-column -->
+
       </div>
     </div>
   </section>
