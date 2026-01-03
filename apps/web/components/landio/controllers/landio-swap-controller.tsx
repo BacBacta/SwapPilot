@@ -15,6 +15,7 @@ import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
+import { TOKEN_ICONS } from "@/components/ui/token-image";
 import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
 
@@ -26,6 +27,25 @@ const UNIVERSAL_ROUTER_ADDRESS: Address = "0x5Dc88340E1c5c6366864Ee415d6034cadd1
 
 // Transaction history storage key
 const TX_HISTORY_KEY = "swappilot_tx_history";
+
+// Get token logo URL - uses TOKEN_ICONS, then Trust Wallet, then fallback
+function getTokenLogoUrl(token: TokenInfo | null | undefined): string | null {
+  if (!token) return null;
+  
+  // First check if token has its own logoURI
+  if (token.logoURI) return token.logoURI;
+  
+  // Then check TOKEN_ICONS by symbol
+  const iconUrl = TOKEN_ICONS[token.symbol.toUpperCase()];
+  if (iconUrl) return iconUrl;
+  
+  // Fallback to Trust Wallet assets for BSC tokens
+  if (token.address && token.address !== '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') {
+    return `https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/${token.address}/logo.png`;
+  }
+  
+  return null;
+}
 
 // Transaction type for history
 type StoredTransaction = {
@@ -154,10 +174,15 @@ function renderProviders(
   showAll: boolean,
   setSelected: (q: RankedQuote) => void,
 ) {
-  // Clear existing and rebuild
-  const header = container.querySelector(".providers-header");
-  const existingItems = container.querySelectorAll(".provider-item, .show-more-btn");
-  existingItems.forEach((el) => el.remove());
+  // Find or create providers list container
+  let listContainer = container.querySelector("#providersList") as HTMLElement | null;
+  if (!listContainer) {
+    // Fallback: use the container itself
+    listContainer = container;
+  }
+  
+  // Clear existing items
+  listContainer.innerHTML = "";
 
   const displayQuotes = showAll ? quotes : quotes.slice(0, 3);
   const hasMore = quotes.length > 3 && !showAll;
@@ -224,12 +249,12 @@ function renderProviders(
     `;
 
     item.onclick = () => {
-      container.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
+      listContainer.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
       item.classList.add("selected");
       setSelected(q);
     };
 
-    container.appendChild(item);
+    listContainer.appendChild(item);
   });
 
   // Add "Show more" button if needed
@@ -259,7 +284,7 @@ function renderProviders(
     };
     // The click event is handled by the useEffect that re-renders with showAll=true
     showMoreBtn.id = "showMoreProvidersBtn";
-    container.appendChild(showMoreBtn);
+    listContainer.appendChild(showMoreBtn);
   }
 }
 
@@ -880,7 +905,13 @@ export function LandioSwapController() {
           } else if (label === "Network Fee") {
             valueEl.textContent = best?.normalized.estimatedGasUsd ? `~$${best.normalized.estimatedGasUsd}` : "—";
           } else if (label === "Platform Fee") {
-            valueEl.textContent = "—";
+            // Use feeInfo from the hook if available
+            if (feeInfo && pilotTierInfo) {
+              const tierName = getTierDisplay(pilotTierInfo.tier);
+              valueEl.textContent = feeInfo.feeAmountUsd > 0 ? `$${formatFee(feeInfo.feeAmountUsd)} (${tierName})` : `$0.00 (${tierName})`;
+            } else {
+              valueEl.textContent = "$0.00 (Free)";
+            }
           } else if (label === "You Save") {
             valueEl.textContent = bestBuy !== null && avgBuy !== null ? formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toTokenSymbol) : "—";
           }
@@ -1895,15 +1926,30 @@ export function LandioSwapController() {
   useEffect(() => {
     const tokenInputBoxes = document.querySelectorAll('.token-input-box');
     
+    // Helper to update token icon with logo or fallback
+    const updateTokenIcon = (iconEl: Element | null, token: TokenInfo | null | undefined) => {
+      if (!iconEl || !token) return;
+      const logoUrl = getTokenLogoUrl(token);
+      
+      if (logoUrl) {
+        // Use image logo
+        iconEl.innerHTML = `<img src="${logoUrl}" alt="${token.symbol}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${token.symbol.slice(0, 2)}</span>`;
+        iconEl.className = 'token-icon';
+        (iconEl as HTMLElement).style.cssText = 'width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+      } else {
+        // Fallback to initials
+        iconEl.className = `token-icon ${token.symbol.toLowerCase()}`;
+        iconEl.textContent = token.symbol.slice(0, 2);
+        (iconEl as HTMLElement).style.cssText = '';
+      }
+    };
+    
     // From token selector (first box)
     if (tokenInputBoxes[0]) {
       const selector = tokenInputBoxes[0].querySelector('.token-selector');
       const icon = selector?.querySelector('.token-icon');
       const name = selector?.querySelector('.token-name');
-      if (icon) {
-        icon.className = `token-icon ${fromTokenSymbol.toLowerCase()}`;
-        icon.textContent = fromTokenSymbol.slice(0, 3);
-      }
+      updateTokenIcon(icon ?? null, fromTokenInfo);
       if (name) {
         name.textContent = fromTokenSymbol;
       }
@@ -1914,15 +1960,12 @@ export function LandioSwapController() {
       const selector = tokenInputBoxes[1].querySelector('.token-selector');
       const icon = selector?.querySelector('.token-icon');
       const name = selector?.querySelector('.token-name');
-      if (icon) {
-        icon.className = `token-icon ${toTokenSymbol.toLowerCase()}`;
-        icon.textContent = toTokenSymbol.slice(0, 3);
-      }
+      updateTokenIcon(icon ?? null, toTokenInfo);
       if (name) {
         name.textContent = toTokenSymbol;
       }
     }
-  }, [fromTokenSymbol, toTokenSymbol]);
+  }, [fromTokenSymbol, toTokenSymbol, fromTokenInfo, toTokenInfo]);
 
   // Handle token selector clicks and swap direction
   useEffect(() => {
@@ -2064,7 +2107,9 @@ export function LandioSwapController() {
         />
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {filteredTokens.map((token) => (
+          {filteredTokens.map((token) => {
+            const logoUrl = getTokenLogoUrl(token);
+            return (
             <div
               key={token.address}
               onClick={() => selectToken(token)}
@@ -2089,26 +2134,46 @@ export function LandioSwapController() {
                   : 'transparent';
               }}
             >
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={token.symbol}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                  }}
+                  onError={(e) => {
+                    // Fallback to initials on error
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const fallback = target.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+              ) : null}
               <div style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
                 background: 'var(--accent, #00ff88)',
-                display: 'flex',
+                display: logoUrl ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
                 fontSize: '12px',
                 color: '#000',
               }}>
-                {token.symbol.slice(0, 3)}
+                {token.symbol.slice(0, 2)}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '15px' }}>{token.symbol}</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted, #888)' }}>{token.name}</div>
               </div>
             </div>
-          ))}
+          );
+          })}
           {filteredTokens.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted, #888)' }}>
               No tokens found

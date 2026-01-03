@@ -731,7 +731,7 @@
           <div class="token-input-box">
             <div class="token-input-label">
               <span>You pay</span>
-              <span>Balance: 2.5 BNB <button class="max-btn">MAX</button></span>
+              <span>Balance: -- <button class="max-btn">MAX</button></span>
             </div>
             <div class="token-input-row">
               <input type="text" class="token-amount-input" placeholder="0" id="fromAmount">
@@ -753,7 +753,7 @@
           <div class="token-input-box">
             <div class="token-input-label">
               <span>You receive</span>
-              <span>Balance: 0 ETH</span>
+              <span>Balance: --</span>
             </div>
             <div class="token-input-row">
               <input type="text" class="token-amount-input" placeholder="0" id="toAmount" readonly>
@@ -812,27 +812,27 @@
         <div class="details-content" id="detailsContent">
           <div class="detail-row">
             <span>Rate</span>
-            <span>1 BNB = 0.2847 ETH</span>
+            <span id="rateDisplay">--</span>
           </div>
           <div class="detail-row">
             <span>Slippage Tolerance</span>
-            <span>0.5%</span>
+            <span id="slippageDisplay">0.5%</span>
           </div>
           <div class="detail-row">
             <span>Minimum Received</span>
-            <span>0.2833 ETH</span>
+            <span id="minReceivedDisplay">--</span>
           </div>
           <div class="detail-row">
             <span>Network Fee</span>
-            <span>~$0.42</span>
+            <span id="networkFeeDisplay">--</span>
           </div>
           <div class="detail-row">
             <span>Platform Fee</span>
-            <span>$0.00 (Free Tier)</span>
+            <span id="platformFeeDisplay">--</span>
           </div>
           <div class="detail-row savings">
             <span>You Save</span>
-            <span>+$2.15</span>
+            <span id="savingsDisplay">--</span>
           </div>
         </div>
         </div><!-- End swap-main-column -->
@@ -842,47 +842,8 @@
           <!-- Provider Comparison -->
           <div class="providers-container" id="providersContainer" style="display: none;">
             <div class="providers-header">Available Providers</div>
-            
-            <div class="provider-item selected">
-              <div class="provider-left">
-                <div class="provider-logo" style="background: linear-gradient(135deg, #1fc7d4, #0098a1);">🥞</div>
-                <div>
-                  <div class="provider-name">PancakeSwap V3</div>
-                  <div class="provider-rate">Best rate</div>
-                </div>
-              </div>
-              <div class="provider-right">
-                <div class="provider-output">0.2847 ETH</div>
-                <div class="provider-savings">+$2.15 vs avg</div>
-              </div>
-            </div>
-
-            <div class="provider-item">
-              <div class="provider-left">
-                <div class="provider-logo" style="background: linear-gradient(135deg, #2b6def, #1e4bc8);">1</div>
-                <div>
-                  <div class="provider-name">1inch</div>
-                  <div class="provider-rate">Multi-route</div>
-                </div>
-              </div>
-              <div class="provider-right">
-                <div class="provider-output">0.2839 ETH</div>
-                <div class="provider-rate">+$0.89 vs avg</div>
-              </div>
-            </div>
-
-            <div class="provider-item">
-              <div class="provider-left">
-                <div class="provider-logo" style="background: linear-gradient(135deg, #7b3fe4, #5e2fb8);">P</div>
-                <div>
-                  <div class="provider-name">ParaSwap</div>
-                  <div class="provider-rate">Standard</div>
-                </div>
-              </div>
-              <div class="provider-right">
-                <div class="provider-output">0.2831 ETH</div>
-                <div class="provider-rate" style="color: var(--text-muted);">Baseline</div>
-              </div>
+            <div id="providersList">
+              <!-- Providers will be dynamically inserted here -->
             </div>
           </div>
 
