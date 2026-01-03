@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
+import { type Address } from "viem";
 import { postQuotes } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
+import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
+
+// Universal Router address (used as spender for approvals)
+const UNIVERSAL_ROUTER_ADDRESS: Address = "0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897";
 
 function parseNumber(input: string): number {
   const n = parseFloat(String(input).replace(/,/g, ""));
@@ -113,6 +118,122 @@ function toWei(amount: string, decimals: number): string {
   }
 }
 
+// Rank badges for providers
+const RANK_BADGES = ["🥇", "🥈", "🥉"];
+
+// Render providers list with all enhancements
+function renderProviders(
+  container: HTMLElement,
+  quotes: RankedQuote[],
+  toTokenInfo: { decimals: number; symbol: string },
+  toTokenSymbol: string,
+  showAll: boolean,
+  setSelected: (q: RankedQuote) => void,
+) {
+  // Clear existing and rebuild
+  const header = container.querySelector(".providers-header");
+  const existingItems = container.querySelectorAll(".provider-item, .show-more-btn");
+  existingItems.forEach((el) => el.remove());
+
+  const displayQuotes = showAll ? quotes : quotes.slice(0, 3);
+  const hasMore = quotes.length > 3 && !showAll;
+
+  // Calculate average for delta %
+  const avgBuyAmount = (() => {
+    const buys = quotes
+      .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+      .filter((x): x is bigint => x !== null);
+    if (!buys.length) return null;
+    const sum = buys.reduce((a, b) => a + b, 0n);
+    return sum / BigInt(buys.length);
+  })();
+
+  // Get best buy amount for delta % calculation
+  const bestBuyAmount = toBigIntSafe(quotes[0]?.normalized.buyAmount ?? quotes[0]?.raw.buyAmount);
+
+  displayQuotes.forEach((q, idx) => {
+    const item = document.createElement("div");
+    item.className = `provider-item${idx === 0 ? " selected" : ""}`;
+    
+    const buyAmount = toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount);
+    const out = formatAmount(q.normalized.buyAmount ?? q.raw.buyAmount, toTokenInfo.decimals);
+    const beq = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : null;
+    
+    // Calculate delta % vs best
+    let deltaPercent = "";
+    if (bestBuyAmount && buyAmount && idx > 0) {
+      const diff = Number(buyAmount - bestBuyAmount) / Number(bestBuyAmount) * 100;
+      deltaPercent = `${diff.toFixed(2)}%`;
+    }
+
+    // MEV flag
+    const mevLevel = q.signals?.mevExposure?.level;
+    const mevFlag = mevLevel === "LOW" ? "✓ MEV" : mevLevel === "HIGH" ? "⚠️ MEV" : "";
+
+    // Rank badge
+    const rankBadge = idx < 3 ? RANK_BADGES[idx] : `#${idx + 1}`;
+
+    // Calculate savings vs avg
+    let savingsText = "—";
+    if (avgBuyAmount !== null && buyAmount !== null) {
+      const diff = buyAmount - avgBuyAmount;
+      savingsText = formatSignedAmount(diff, toTokenInfo.decimals, toTokenSymbol);
+    }
+
+    item.innerHTML = `
+      <div class="provider-left">
+        <div class="provider-logo">${rankBadge}</div>
+        <div>
+          <div class="provider-name">${q.providerId}</div>
+          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${mevFlag ? ` • ${mevFlag}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
+        </div>
+      </div>
+      <div class="provider-right">
+        <div class="provider-output">${out} ${toTokenSymbol}</div>
+        <div class="provider-savings">${savingsText}</div>
+      </div>
+    `;
+
+    item.onclick = () => {
+      container.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
+      item.classList.add("selected");
+      setSelected(q);
+    };
+
+    container.appendChild(item);
+  });
+
+  // Add "Show more" button if needed
+  if (hasMore) {
+    const showMoreBtn = document.createElement("button");
+    showMoreBtn.className = "show-more-btn";
+    showMoreBtn.style.cssText = `
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-card-inner);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    `;
+    showMoreBtn.textContent = `Show ${quotes.length - 3} more providers...`;
+    showMoreBtn.onmouseover = () => {
+      showMoreBtn.style.borderColor = "var(--accent)";
+      showMoreBtn.style.color = "var(--accent)";
+    };
+    showMoreBtn.onmouseout = () => {
+      showMoreBtn.style.borderColor = "var(--border)";
+      showMoreBtn.style.color = "var(--text-secondary)";
+    };
+    // The click event is handled by the useEffect that re-renders with showAll=true
+    showMoreBtn.id = "showMoreProvidersBtn";
+    container.appendChild(showMoreBtn);
+  }
+}
+
 export function LandioSwapController() {
   const { settings, updateSettings } = useSettings();
   const { resolveToken, tokens: allTokens } = useTokenRegistry();
@@ -145,6 +266,16 @@ export function LandioSwapController() {
   const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Show all providers toggle state
+  const [showAllProviders, setShowAllProviders] = useState(false);
+
+  // Auto-refresh state
+  const [refreshCountdown, setRefreshCountdown] = useState(12);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track current input amount in wei for approval check
+  const [fromAmountWei, setFromAmountWei] = useState("0");
+
   const fromTokenInfo = useMemo(() => resolveToken(fromTokenSymbol), [resolveToken, fromTokenSymbol]);
   const toTokenInfo = useMemo(() => resolveToken(toTokenSymbol), [resolveToken, toTokenSymbol]);
 
@@ -156,7 +287,7 @@ export function LandioSwapController() {
     return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
   }, [fromTokenInfo, toTokenInfo]);
 
-  const { getBalanceFormatted, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
+  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
 
   // Get token prices for USD conversion
   const priceTokenAddresses = useMemo(() => {
@@ -167,6 +298,41 @@ export function LandioSwapController() {
   }, [fromTokenInfo, toTokenInfo]);
 
   const { formatUsd, getPrice } = useTokenPrices(priceTokenAddresses);
+
+  // Token approval hook - skip for native tokens (BNB)
+  const isFromNative = fromTokenInfo?.isNative ?? false;
+  const approvalAmount = useMemo(() => {
+    try {
+      return BigInt(fromAmountWei || "0");
+    } catch {
+      return 0n;
+    }
+  }, [fromAmountWei]);
+
+  const {
+    needsApproval,
+    isApproving,
+    isApproved,
+    approve,
+    allowance,
+  } = useTokenApproval({
+    tokenAddress: isFromNative ? undefined : (fromTokenInfo?.address as Address | undefined),
+    spenderAddress: UNIVERSAL_ROUTER_ADDRESS,
+    amount: approvalAmount,
+  });
+
+  // Check if balance is insufficient
+  const hasInsufficientBalance = useMemo(() => {
+    if (!fromTokenInfo || !isConnected) return false;
+    const balanceRaw = getBalance(fromTokenInfo);
+    try {
+      const balanceBigInt = BigInt(balanceRaw || "0");
+      const amountBigInt = BigInt(fromAmountWei || "0");
+      return amountBigInt > 0n && amountBigInt > balanceBigInt;
+    } catch {
+      return false;
+    }
+  }, [fromTokenInfo, isConnected, getBalance, fromAmountWei]);
 
   // Track current input values for USD calculation
   const [fromAmountValue, setFromAmountValue] = useState(0);
@@ -309,12 +475,24 @@ export function LandioSwapController() {
       // Update fromAmount for USD calculation
       setFromAmountValue(valueNum);
 
+      // Update fromAmountWei for approval check
+      if (fromTokenInfo && valueNum > 0) {
+        setFromAmountWei(toWei(rawValue, fromTokenInfo.decimals));
+      } else {
+        setFromAmountWei("0");
+      }
+
+      // Reset refresh countdown
+      setRefreshCountdown(12);
+
       setResponse(null);
       setSelected(null);
+      setShowAllProviders(false);
 
       if (!amountInput || !toAmountInput || valueNum <= 0) {
         setFromAmountValue(0);
         setToAmountValue(0);
+        setFromAmountWei("0");
         setDisplay("beqContainer", "none");
         setDisplay("routeContainer", "none");
         setDisplay("providersContainer", "none");
@@ -394,54 +572,11 @@ export function LandioSwapController() {
           setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
         }
 
-        // Fill provider list (top 3)
+        // Fill provider list dynamically (respects showAllProviders)
+        // This initial render shows top 3, the showAllProviders effect will re-render
         const container = document.getElementById("providersContainer");
-        if (container) {
-          const items = Array.from(container.querySelectorAll<HTMLElement>(".provider-item"));
-          const top3 = (res.rankedQuotes ?? []).slice(0, 3);
-
-          const avgBuyAmount = (() => {
-            const buys = top3
-              .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
-              .filter((x): x is bigint => x !== null);
-            if (!buys.length) return null;
-            const sum = buys.reduce((a, b) => a + b, 0n);
-            return sum / BigInt(buys.length);
-          })();
-
-          items.forEach((el, idx) => {
-            const q = top3[idx];
-            if (!q) return;
-            const out = formatAmount(q.normalized.buyAmount ?? q.raw.buyAmount, toTokenInfo.decimals);
-            const nameEl = el.querySelector<HTMLElement>(".provider-name");
-            const outputEl = el.querySelector<HTMLElement>(".provider-output");
-            const rateEls = el.querySelectorAll<HTMLElement>(".provider-rate");
-            const leftRateEl = rateEls[0] ?? null;
-            const rightSavingsEl = el.querySelector<HTMLElement>(".provider-savings") ?? rateEls[1] ?? null;
-
-            if (nameEl) nameEl.textContent = q.providerId;
-            if (outputEl) outputEl.textContent = `${out} ${toTokenSymbol}`;
-
-            const beq = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : null;
-            if (leftRateEl) leftRateEl.textContent = beq !== null ? (idx === 0 ? `Best • BEQ ${beq}` : `BEQ ${beq}`) : idx === 0 ? "Best" : "";
-
-            if (rightSavingsEl) {
-              const buy = toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount);
-              if (avgBuyAmount !== null && buy !== null) {
-                const diff = buy - avgBuyAmount;
-                rightSavingsEl.textContent = `${formatSignedAmount(diff, toTokenInfo.decimals, toTokenSymbol)} vs avg`;
-              } else {
-                rightSavingsEl.textContent = "—";
-              }
-            }
-
-            el.classList.toggle("selected", idx === 0);
-            el.onclick = () => {
-              items.forEach((x) => x.classList.remove("selected"));
-              el.classList.add("selected");
-              setSelected(q);
-            };
-          });
+        if (container && res.rankedQuotes) {
+          renderProviders(container, res.rankedQuotes, toTokenInfo, toTokenSymbol, false, setSelected);
         }
 
         // BEQ details + route + transaction details
@@ -678,6 +813,315 @@ export function LandioSwapController() {
       reasonEl.textContent = reasons || "—";
     }
   }, [receipt]);
+
+  // Re-render providers when showAllProviders changes
+  useEffect(() => {
+    if (!response?.rankedQuotes || !toTokenInfo) return;
+    
+    const container = document.getElementById("providersContainer");
+    if (!container) return;
+
+    renderProviders(container, response.rankedQuotes, toTokenInfo, toTokenSymbol, showAllProviders, setSelected);
+
+    // Hook up show more button
+    const showMoreBtn = document.getElementById("showMoreProvidersBtn");
+    if (showMoreBtn) {
+      showMoreBtn.onclick = () => setShowAllProviders(true);
+    }
+  }, [showAllProviders, response, toTokenInfo, toTokenSymbol]);
+
+  // Update swap button state based on approval, balance, and connection
+  useEffect(() => {
+    if (!selected || !fromTokenInfo) return;
+    
+    const swapBtn = document.getElementById("swapBtn") as HTMLButtonElement | null;
+    if (!swapBtn) return;
+
+    // Check conditions in priority order
+    if (!isConnected) {
+      swapBtn.textContent = "Connect Wallet";
+      swapBtn.disabled = true;
+      return;
+    }
+
+    if (hasInsufficientBalance) {
+      swapBtn.textContent = `Insufficient ${fromTokenSymbol} balance`;
+      swapBtn.disabled = true;
+      swapBtn.style.background = "var(--bg-card-inner)";
+      return;
+    }
+
+    if (needsApproval && !isFromNative) {
+      swapBtn.textContent = isApproving ? "Approving..." : `Approve ${fromTokenSymbol}`;
+      swapBtn.disabled = isApproving;
+      swapBtn.style.background = "var(--accent)";
+      
+      // Override click handler for approval
+      const handleApprove = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        approve();
+      };
+      swapBtn.onclick = handleApprove;
+      return;
+    }
+
+    // Reset to swap state
+    swapBtn.style.background = "var(--accent)";
+    swapBtn.onclick = null; // Will be handled by the main useEffect
+    
+    if (swapStatus === "idle") {
+      swapBtn.textContent = "Swap";
+      swapBtn.disabled = false;
+    }
+  }, [selected, fromTokenInfo, isConnected, hasInsufficientBalance, needsApproval, isApproving, isFromNative, fromTokenSymbol, approve, swapStatus]);
+
+  // Add insufficient balance warning element
+  useEffect(() => {
+    const fromTokenBox = document.querySelector('.token-input-box:first-of-type');
+    if (!fromTokenBox) return;
+
+    // Remove existing warning if any
+    const existingWarning = fromTokenBox.querySelector('.insufficient-warning');
+    if (existingWarning) existingWarning.remove();
+
+    if (hasInsufficientBalance && isConnected) {
+      const warning = document.createElement("div");
+      warning.className = "insufficient-warning";
+      warning.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--error, #ff6b6b);
+        font-size: 12px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: rgba(255, 107, 107, 0.1);
+        border-radius: 8px;
+      `;
+      warning.innerHTML = `⚠️ Insufficient ${fromTokenSymbol} balance`;
+      fromTokenBox.appendChild(warning);
+    }
+  }, [hasInsufficientBalance, isConnected, fromTokenSymbol]);
+
+  // Add quick amount buttons (25%, 50%, 75%, MAX)
+  useEffect(() => {
+    const fromTokenBox = document.querySelector('.token-input-box:first-of-type');
+    const balanceLabel = fromTokenBox?.querySelector('.token-input-label');
+    if (!balanceLabel) return;
+
+    // Remove existing quick buttons if any
+    const existingQuickBtns = balanceLabel.querySelector('.quick-amount-btns');
+    if (existingQuickBtns) existingQuickBtns.remove();
+
+    if (isConnected && fromTokenInfo) {
+      const quickBtns = document.createElement("div");
+      quickBtns.className = "quick-amount-btns";
+      quickBtns.style.cssText = `
+        display: flex;
+        gap: 4px;
+        margin-left: 8px;
+      `;
+
+      const percentages = [25, 50, 75, 100];
+      const labels = ["25%", "50%", "75%", "MAX"];
+
+      percentages.forEach((pct, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "quick-btn";
+        btn.textContent = labels[idx] ?? `${pct}%`;
+        btn.style.cssText = `
+          padding: 2px 6px;
+          background: var(--accent-dim);
+          border: none;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 600;
+          color: var(--accent);
+          cursor: pointer;
+          transition: all 0.2s;
+        `;
+        btn.onmouseover = () => {
+          btn.style.background = "var(--accent-medium)";
+        };
+        btn.onmouseout = () => {
+          btn.style.background = "var(--accent-dim)";
+        };
+        btn.onclick = () => {
+          const balanceRaw = getBalance(fromTokenInfo);
+          try {
+            const balanceBigInt = BigInt(balanceRaw || "0");
+            const pctAmount = (balanceBigInt * BigInt(pct)) / 100n;
+            // Convert back to human-readable
+            const humanAmount = Number(pctAmount) / 10 ** fromTokenInfo.decimals;
+            const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+            if (fromAmountInput) {
+              fromAmountInput.value = humanAmount.toFixed(humanAmount >= 1 ? 4 : 6);
+              fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          } catch {
+            // ignore
+          }
+        };
+        quickBtns.appendChild(btn);
+      });
+
+      // Replace the MAX button with quick buttons
+      const maxBtn = balanceLabel.querySelector('.max-btn');
+      if (maxBtn) {
+        maxBtn.replaceWith(quickBtns);
+      } else {
+        balanceLabel.appendChild(quickBtns);
+      }
+    }
+  }, [isConnected, fromTokenInfo, getBalance]);
+
+  // Auto-refresh countdown and timer
+  useEffect(() => {
+    if (!response || !selected) {
+      setRefreshCountdown(12);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Update countdown every second
+    refreshIntervalRef.current = setInterval(() => {
+      setRefreshCountdown((prev) => {
+        if (prev <= 1) {
+          // Trigger refresh by simulating input event
+          const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+          if (fromAmountInput && fromAmountInput.value) {
+            fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          return 12;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [response, selected]);
+
+  // Display refresh countdown in providers header
+  useEffect(() => {
+    const header = document.querySelector(".providers-header");
+    if (!header) return;
+
+    if (response?.rankedQuotes && response.rankedQuotes.length > 0) {
+      const countText = showAllProviders 
+        ? `${response.rankedQuotes.length} Providers` 
+        : `Top 3 of ${response.rankedQuotes.length} Providers`;
+      header.innerHTML = `${countText} <span style="color: var(--text-muted); font-size: 12px;">⟳ ${refreshCountdown}s</span>`;
+    } else {
+      header.textContent = "Available Providers";
+    }
+  }, [refreshCountdown, response, showAllProviders]);
+
+  // Add execution mode presets (Safe/Balanced/Turbo)
+  useEffect(() => {
+    const swapHeader = document.querySelector('.swap-header');
+    if (!swapHeader) return;
+
+    // Remove existing presets if any
+    const existingPresets = document.querySelector('.execution-presets');
+    if (existingPresets) existingPresets.remove();
+
+    // Create presets container
+    const presetsContainer = document.createElement("div");
+    presetsContainer.className = "execution-presets";
+    presetsContainer.style.cssText = `
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    `;
+
+    const modes: Array<{ key: 'SAFE' | 'NORMAL' | 'DEGEN'; label: string; icon: string; description: string }> = [
+      { key: 'SAFE', label: 'Safe', icon: '🛡️', description: 'Lower risk, may have slightly less optimal rates' },
+      { key: 'NORMAL', label: 'Balanced', icon: '⚖️', description: 'Balanced between safety and rate optimization' },
+      { key: 'DEGEN', label: 'Turbo', icon: '⚡', description: 'Maximum rate optimization, higher risk tolerance' },
+    ];
+
+    modes.forEach((mode) => {
+      const btn = document.createElement("button");
+      btn.className = `preset-btn${settings.mode === mode.key ? ' active' : ''}`;
+      btn.title = mode.description;
+      btn.innerHTML = `${mode.icon} ${mode.label}`;
+      btn.style.cssText = `
+        flex: 1;
+        padding: 10px 12px;
+        background: ${settings.mode === mode.key ? 'var(--accent-dim)' : 'var(--bg-card-inner)'};
+        border: 1px solid ${settings.mode === mode.key ? 'var(--accent)' : 'var(--border)'};
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: ${settings.mode === mode.key ? 'var(--accent)' : 'var(--text-secondary)'};
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      `;
+      btn.onmouseover = () => {
+        if (settings.mode !== mode.key) {
+          btn.style.borderColor = "var(--border-light)";
+        }
+      };
+      btn.onmouseout = () => {
+        if (settings.mode !== mode.key) {
+          btn.style.borderColor = "var(--border)";
+        }
+      };
+      btn.onclick = () => {
+        updateSettings({ mode: mode.key });
+        // Trigger a re-quote if there's an amount
+        const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+        if (fromAmountInput && fromAmountInput.value) {
+          setTimeout(() => {
+            fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }, 100);
+        }
+      };
+      presetsContainer.appendChild(btn);
+    });
+
+    // Insert after the swap header
+    swapHeader.after(presetsContainer);
+
+    return () => {
+      presetsContainer.remove();
+    };
+  }, [settings.mode, updateSettings]);
+
+  // Add dynamic slippage indicator with risk colors
+  useEffect(() => {
+    const slippageOptions = document.querySelectorAll('.slippage-option');
+    
+    slippageOptions.forEach((opt, idx) => {
+      const el = opt as HTMLElement;
+      const values = [10, 50, 100]; // 0.1%, 0.5%, 1.0%
+      const bps = values[idx] ?? 50;
+      const isActive = settings.slippageBps === bps;
+      
+      // Add risk color indicator
+      let riskColor = 'var(--ok)'; // green for low slippage
+      if (bps >= 100) riskColor = 'var(--warning, #f0b90b)'; // yellow for 1%+
+      
+      if (isActive) {
+        el.style.borderColor = riskColor;
+        el.style.color = riskColor;
+        el.style.background = `${riskColor}15`;
+      }
+    });
+  }, [settings.slippageBps]);
 
   // Ensure the template starts hidden like in the HTML
   useEffect(() => {

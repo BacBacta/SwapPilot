@@ -133,7 +133,14 @@ test.describe('Swap Interface', () => {
     // Execution mode presets are on the settings page in Landio UI
     // Verify slippage presets exist in the modal
     await page.waitForTimeout(500);
-    await page.locator('#openSlippage').click();
+    
+    // Scroll to the settings button and click it
+    const settingsBtn = page.locator('#openSlippage');
+    await settingsBtn.scrollIntoViewIfNeeded();
+    await settingsBtn.click({ timeout: 5000 });
+    
+    // Wait for modal to open
+    await page.waitForTimeout(300);
     await expect(page.locator('#slippageModal')).toHaveClass(/open/, { timeout: 10000 });
     
     // Check slippage option buttons exist
