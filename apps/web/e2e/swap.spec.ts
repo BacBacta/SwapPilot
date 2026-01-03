@@ -83,7 +83,7 @@ test.describe('Swap Interface', () => {
 
   test('should close token picker on backdrop click', async ({ page }) => {
     // Wait for the page to be fully hydrated and handlers attached
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     
     // Click on token selector to open the token picker
     const tokenSelector = page.locator('.token-input-box').first().locator('.token-selector');

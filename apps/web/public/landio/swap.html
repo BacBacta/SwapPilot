@@ -907,7 +907,7 @@
   <footer class="footer" style="margin-top: 60px;">
     <div class="container">
       <div class="footer-bottom" style="border-top: none; padding-top: 0;">
-        <div>© 2024 SwapPilot. All rights reserved.</div>
+        <div>© 2026 SwapPilot. All rights reserved.</div>
         <div>
           <a href="privacy.html" style="color: var(--text-muted); margin-right: 16px;">Privacy</a>
           <a href="terms.html" style="color: var(--text-muted);">Terms</a>
@@ -916,82 +916,6 @@
     </div>
   </footer>
 
-  <script>
-    // Amount input handling
-    const fromAmount = document.getElementById('fromAmount');
-    const swapBtn = document.getElementById('swapBtn');
-    const beqContainer = document.getElementById('beqContainer');
-    const routeContainer = document.getElementById('routeContainer');
-    const providersContainer = document.getElementById('providersContainer');
-    const detailsToggle = document.getElementById('detailsToggle');
-    const detailsContent = document.getElementById('detailsContent');
-
-    fromAmount.addEventListener('input', function() {
-      const value = parseFloat(this.value);
-      if (value > 0) {
-        // Show quote results
-        beqContainer.style.display = 'block';
-        routeContainer.style.display = 'block';
-        providersContainer.style.display = 'block';
-        detailsToggle.style.display = 'flex';
-        swapBtn.disabled = false;
-        swapBtn.textContent = 'Swap';
-        
-        // Update to amount
-        document.getElementById('toAmount').value = (value * 0.2847).toFixed(4);
-      } else {
-        beqContainer.style.display = 'none';
-        routeContainer.style.display = 'none';
-        providersContainer.style.display = 'none';
-        detailsToggle.style.display = 'none';
-        detailsContent.classList.remove('open');
-        swapBtn.disabled = true;
-        swapBtn.textContent = 'Enter an amount';
-        document.getElementById('toAmount').value = '';
-      }
-    });
-
-    // Details toggle
-    detailsToggle.addEventListener('click', function() {
-      this.classList.toggle('open');
-      detailsContent.classList.toggle('open');
-    });
-
-    // Slippage modal
-    document.getElementById('openSlippage').addEventListener('click', function() {
-      document.getElementById('slippageModal').classList.add('open');
-    });
-
-    document.getElementById('closeSlippage').addEventListener('click', function() {
-      document.getElementById('slippageModal').classList.remove('open');
-    });
-
-    document.getElementById('slippageModal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        this.classList.remove('open');
-      }
-    });
-
-    // Slippage options
-    document.querySelectorAll('.slippage-option').forEach(opt => {
-      opt.addEventListener('click', function() {
-        document.querySelectorAll('.slippage-option').forEach(o => o.classList.remove('active'));
-        this.classList.add('active');
-      });
-    });
-
-    // Provider selection
-    document.querySelectorAll('.provider-item').forEach(item => {
-      item.addEventListener('click', function() {
-        document.querySelectorAll('.provider-item').forEach(i => i.classList.remove('selected'));
-        this.classList.add('selected');
-      });
-    });
-
-    // Swap arrow rotation
-    document.querySelector('.swap-arrow-btn').addEventListener('click', function() {
-      // Swap tokens logic would go here
-    });
-  </script>
+  <!-- Script inline removed - all logic handled by React LandioSwapController -->
 </body>
 </html>
