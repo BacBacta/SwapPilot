@@ -549,7 +549,7 @@
   <header class="page-header" style="padding-bottom: 40px;">
     <span class="section-badge">Rewards</span>
     <h1>Earn <span class="accent">PILOT</span></h1>
-    <p>Stake, trade, and refer to earn rewards</p>
+    <p>Hold PILOT for fee discounts, refer friends to earn rewards</p>
   </header>
 
   <!-- Main Content -->
@@ -560,71 +560,71 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon">💎</div>
-            <div class="stat-value">12,450</div>
-            <div class="stat-label">Total PILOT Earned</div>
+            <div class="stat-value" id="pilotBalance">—</div>
+            <div class="stat-label">PILOT Balance</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">📈</div>
-            <div class="stat-value">18.5%</div>
-            <div class="stat-label">Current APY</div>
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="feeDiscount">0%</div>
+            <div class="stat-label">Fee Discount</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">👥</div>
-            <div class="stat-value">23</div>
+            <div class="stat-value" id="referralCount">0</div>
             <div class="stat-label">Referrals</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🏆</div>
-            <div class="stat-value">Gold</div>
+            <div class="stat-value" id="currentTier">—</div>
             <div class="stat-label">Current Tier</div>
           </div>
         </div>
 
-        <!-- Staking & Claiming -->
+        <!-- PILOT Holdings & Claiming -->
         <div class="rewards-grid">
-          <!-- Staking Card -->
+          <!-- PILOT Holdings Card -->
           <div class="staking-card">
             <div class="staking-header">
-              <h3>Staking</h3>
-              <span class="apy-badge">18.5% APY</span>
+              <h3>Your PILOT Holdings</h3>
+              <span class="apy-badge" id="tierBadge">No Tier</span>
             </div>
             <div class="staking-balance">
-              <div class="pilot-logo">SP</div>
-              <div class="staking-balance-label">Your Staked Balance</div>
-              <div class="staking-balance-value">5,000 PILOT</div>
-              <div class="staking-balance-usd">≈ $1,250.00 USD</div>
+              <div class="pilot-logo">🪙</div>
+              <div class="staking-balance-label">Your Balance</div>
+              <div class="staking-balance-value" id="pilotBalanceLarge">— PILOT</div>
+              <div class="staking-balance-usd" id="pilotBalanceUsd">Connect wallet to view</div>
             </div>
             <div class="staking-actions">
-              <button class="btn btn-primary">Stake More</button>
-              <button class="btn btn-secondary">Unstake</button>
+              <a href="https://pancakeswap.finance/swap?outputCurrency=0xe3f77E20226fdc7BA85E495158615dEF83b48192" target="_blank" class="btn btn-primary" style="text-decoration: none; text-align: center;">Buy PILOT</a>
+              <a href="https://bscscan.com/token/0xe3f77E20226fdc7BA85E495158615dEF83b48192" target="_blank" class="btn btn-secondary" style="text-decoration: none; text-align: center;">View on BSCScan</a>
             </div>
           </div>
 
-          <!-- Claim Card -->
+          <!-- Referral Rewards Card -->
           <div class="claim-card">
             <div class="claim-header">
-              <h3>Claimable Rewards</h3>
-              <p>Your pending rewards from all sources</p>
+              <h3>Referral Rewards</h3>
+              <p>Earn PILOT when your referrals swap</p>
             </div>
             <div class="claim-amount">
-              <div class="claim-amount-value">245.8 PILOT</div>
-              <div class="claim-amount-usd">≈ $61.45 USD</div>
+              <div class="claim-amount-value" id="pendingRewards">0 PILOT</div>
+              <div class="claim-amount-usd">Pending rewards to claim</div>
             </div>
             <div class="claim-breakdown">
               <div class="claim-row">
-                <span>Staking Rewards</span>
-                <span>180.5 PILOT</span>
+                <span>Reward Rate</span>
+                <span>0.1 PILOT per $1 swapped</span>
               </div>
               <div class="claim-row">
-                <span>Trading Rewards</span>
-                <span>42.3 PILOT</span>
+                <span>Total Volume Referred</span>
+                <span id="totalVolumeReferred">$0</span>
               </div>
               <div class="claim-row">
-                <span>Referral Bonus</span>
-                <span>23.0 PILOT</span>
+                <span>Total Earned (All Time)</span>
+                <span id="totalEarned">0 PILOT</span>
               </div>
             </div>
-            <button class="claim-btn">Claim All Rewards</button>
+            <button class="claim-btn" id="claimBtn" disabled>Claim Rewards</button>
           </div>
         </div>
 
@@ -632,113 +632,139 @@
         <div class="referral-section">
           <div class="referral-header">
             <h3>Referral Program</h3>
-            <span class="current-tier">🎯 10% Commission</span>
+            <span class="current-tier">🎁 Earn PILOT Tokens</span>
           </div>
+          <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            Share your referral code and earn <strong style="color: var(--accent);">0.1 PILOT</strong> for every $1 your referrals swap. 
+            5% of total PILOT supply (50M tokens) is allocated for referral rewards.
+          </p>
           <div class="referral-stats">
             <div class="referral-stat">
-              <div class="referral-stat-value">23</div>
-              <div class="referral-stat-label">Total Referrals</div>
+              <div class="referral-stat-value" id="referralCountStat">0</div>
+              <div class="referral-stat-label">Users Referred</div>
             </div>
             <div class="referral-stat">
-              <div class="referral-stat-value accent">1,245 PILOT</div>
+              <div class="referral-stat-value accent" id="totalEarnedStat">0 PILOT</div>
               <div class="referral-stat-label">Total Earned</div>
             </div>
             <div class="referral-stat">
-              <div class="referral-stat-value">$12,450</div>
-              <div class="referral-stat-label">Referral Volume</div>
+              <div class="referral-stat-value" id="volumeReferredStat">$0</div>
+              <div class="referral-stat-label">Volume Referred</div>
             </div>
           </div>
-          <div class="referral-link-box">
-            <input type="text" class="referral-link-input" value="https://swappilot.io/r/0x1234...5678" readonly>
-            <button class="copy-btn" onclick="navigator.clipboard.writeText('https://swappilot.io/r/0x1234...5678')">📋 Copy Link</button>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 14px; color: var(--text-muted); display: block; margin-bottom: 8px;">Your Referral Code</label>
+            <div class="referral-link-box">
+              <input type="text" class="referral-link-input" id="referralCode" placeholder="Connect wallet to generate" readonly>
+              <button class="copy-btn" id="copyCodeBtn">📋 Copy</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 14px; color: var(--text-muted); display: block; margin-bottom: 8px;">Your Referral Link</label>
+            <div class="referral-link-box">
+              <input type="text" class="referral-link-input" id="referralLink" placeholder="Connect wallet to generate" readonly>
+              <button class="copy-btn" id="copyLinkBtn">📋 Copy</button>
+            </div>
           </div>
         </div>
 
         <!-- Tier Progress -->
         <div class="tier-section">
           <div class="tier-header">
-            <h3>Your Tier Progress</h3>
-            <span class="current-tier">🥇 Gold Tier</span>
+            <h3>Fee Discount Tiers</h3>
+            <span class="current-tier" id="currentTierBadge">Connect Wallet</span>
           </div>
+          <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            Hold PILOT tokens to reduce your swap fees. Base fee is <strong>0.1%</strong> on swaps over $50.
+          </p>
           <div class="tier-progress-bar">
-            <div class="tier-progress-fill" style="width: 65%;"></div>
+            <div class="tier-progress-fill" id="tierProgress" style="width: 0%;"></div>
           </div>
           <div class="tier-labels">
-            <span>7,500 PILOT staked</span>
-            <span>10,000 PILOT for Platinum</span>
+            <span id="currentHolding">0 PILOT</span>
+            <span id="nextTierTarget">100 PILOT for Bronze</span>
           </div>
           <div class="tier-cards">
-            <div class="tier-card">
-              <div class="tier-name">Bronze</div>
+            <div class="tier-card" id="tierCardNone">
+              <div class="tier-name">No Tier</div>
+              <div class="tier-requirement">&lt;100 PILOT</div>
+              <div class="tier-benefits">0.10% fee</div>
+            </div>
+            <div class="tier-card" id="tierCardBronze">
+              <div class="tier-name">🥉 Bronze</div>
               <div class="tier-requirement">100+ PILOT</div>
-              <div class="tier-benefits">0.1% fee • 5% ref</div>
+              <div class="tier-benefits">0.09% fee (-10%)</div>
             </div>
-            <div class="tier-card">
-              <div class="tier-name">Silver</div>
+            <div class="tier-card" id="tierCardSilver">
+              <div class="tier-name">🥈 Silver</div>
               <div class="tier-requirement">1,000+ PILOT</div>
-              <div class="tier-benefits">0.08% fee • 7% ref</div>
+              <div class="tier-benefits">0.085% fee (-15%)</div>
             </div>
-            <div class="tier-card active">
+            <div class="tier-card" id="tierCardGold">
               <div class="tier-name">🥇 Gold</div>
-              <div class="tier-requirement">5,000+ PILOT</div>
-              <div class="tier-benefits">0.05% fee • 10% ref</div>
-            </div>
-            <div class="tier-card locked">
-              <div class="tier-name">Platinum</div>
               <div class="tier-requirement">10,000+ PILOT</div>
-              <div class="tier-benefits">0% fee • 15% ref</div>
+              <div class="tier-benefits">0.08% fee (-20%)</div>
             </div>
           </div>
         </div>
 
-        <!-- Rewards History -->
+        <!-- Fee Distribution Info -->
+        <div class="tier-section">
+          <div class="tier-header">
+            <h3>Fee Distribution</h3>
+            <span class="current-tier">📊 Tokenomics</span>
+          </div>
+          <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            All platform fees are distributed according to the following allocation:
+          </p>
+          <div class="referral-stats">
+            <div class="referral-stat">
+              <div class="referral-stat-value">85%</div>
+              <div class="referral-stat-label">🏦 Treasury</div>
+            </div>
+            <div class="referral-stat">
+              <div class="referral-stat-value accent">15%</div>
+              <div class="referral-stat-label">🔥 Buy & Burn PILOT</div>
+            </div>
+            <div class="referral-stat">
+              <div class="referral-stat-value">5%</div>
+              <div class="referral-stat-label">🎁 Referral Pool (50M PILOT)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- How It Works -->
         <div class="history-section">
           <div class="history-header">
-            <h3>Rewards History</h3>
-            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;">View All</button>
+            <h3>How Rewards Work</h3>
           </div>
           <div class="history-table">
-            <div class="history-row header">
-              <span>Type</span>
-              <span>Amount</span>
-              <span>Date</span>
-              <span>Status</span>
-            </div>
             <div class="history-row">
               <div class="history-type">
-                <div class="history-icon claim">💎</div>
-                <span>Claim Rewards</span>
+                <div class="history-icon stake">💎</div>
+                <span>Hold PILOT</span>
               </div>
-              <div class="history-amount positive">+180.5 PILOT</div>
-              <div>Dec 28, 2024</div>
-              <div class="history-status">Completed</div>
-            </div>
-            <div class="history-row">
-              <div class="history-type">
-                <div class="history-icon stake">📈</div>
-                <span>Stake PILOT</span>
+              <div style="grid-column: span 3; color: var(--text-secondary);">
+                Simply hold PILOT tokens in your wallet to automatically get fee discounts on every swap.
               </div>
-              <div class="history-amount">2,500 PILOT</div>
-              <div>Dec 25, 2024</div>
-              <div class="history-status">Completed</div>
             </div>
             <div class="history-row">
               <div class="history-type">
                 <div class="history-icon referral">👥</div>
-                <span>Referral Bonus</span>
+                <span>Refer Friends</span>
               </div>
-              <div class="history-amount positive">+45.0 PILOT</div>
-              <div>Dec 22, 2024</div>
-              <div class="history-status">Completed</div>
+              <div style="grid-column: span 3; color: var(--text-secondary);">
+                Share your referral code. When your referrals swap, you earn 0.1 PILOT per $1 of volume.
+              </div>
             </div>
             <div class="history-row">
               <div class="history-type">
-                <div class="history-icon claim">💎</div>
-                <span>Claim Rewards</span>
+                <div class="history-icon claim">🔥</div>
+                <span>Deflationary</span>
               </div>
-              <div class="history-amount positive">+120.3 PILOT</div>
-              <div>Dec 20, 2024</div>
-              <div class="history-status">Completed</div>
+              <div style="grid-column: span 3; color: var(--text-secondary);">
+                15% of all platform fees are used to buy and burn PILOT, reducing supply over time.
+              </div>
             </div>
           </div>
         </div>
@@ -750,7 +776,7 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-bottom" style="border-top: none; padding-top: 0;">
-        <div>© 2024 SwapPilot. All rights reserved.</div>
+        <div>© 2026 SwapPilot. All rights reserved.</div>
         <div>
           <a href="privacy.html" style="color: var(--text-muted); margin-right: 16px;">Privacy</a>
           <a href="terms.html" style="color: var(--text-muted);">Terms</a>

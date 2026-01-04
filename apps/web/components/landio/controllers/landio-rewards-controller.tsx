@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
-import { useReferralClaim } from "@/lib/hooks/use-referral-claim";
+import { usePilotTier, getTierDisplay } from "@/lib/hooks/use-fees";
 
 function clickRainbowKitConnect() {
   const el = document.querySelector<HTMLElement>("[data-testid='rk-connect-button']");
@@ -13,154 +13,250 @@ function shortAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function formatPilotBalance(balance: string): string {
+  try {
+    const balanceBigInt = BigInt(balance);
+    const formatted = Number(balanceBigInt) / 1e18;
+    if (formatted >= 1000000) {
+      return `${(formatted / 1000000).toFixed(2)}M`;
+    } else if (formatted >= 1000) {
+      return `${(formatted / 1000).toFixed(2)}K`;
+    }
+    return formatted.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  } catch {
+    return "0";
+  }
+}
+
 export function LandioRewardsController() {
   const { address, isConnected } = useAccount();
-  const { 
-    pendingRewardsFormatted, 
-    totalClaimedFormatted,
-    canClaim, 
-    claim, 
-    isClaiming 
-  } = useReferralClaim();
+  const { data: pilotTierInfo, isLoading: isPilotTierLoading } = usePilotTier();
 
-  // Neutralize hardcoded stats in the overview section
+  // Update stats overview cards
   useEffect(() => {
-    // Stats overview cards - replace with real or placeholder values
-    const statsCards = document.querySelectorAll<HTMLElement>(".rewards-stat-card");
-    
-    statsCards.forEach((card) => {
-      const title = card.querySelector<HTMLElement>(".stat-label, .stat-title");
-      const value = card.querySelector<HTMLElement>(".stat-value");
-      
-      if (!title || !value) return;
-      const label = title.textContent?.toLowerCase() ?? "";
-      
-      if (label.includes("earned") || label.includes("total")) {
-        // Total claimed from smart contract
-        value.textContent = isConnected ? `${totalClaimedFormatted} BNB` : "—";
-      } else if (label.includes("apy")) {
-        // APY is not available from smart contract yet
-        value.textContent = "—";
-      } else if (label.includes("referral")) {
-        // Referral count not tracked yet
-        value.textContent = "—";
-      } else if (label.includes("tier")) {
-        // Tier system not implemented yet
-        value.textContent = "—";
-      }
-    });
+    const pilotBalanceEl = document.getElementById("pilotBalance");
+    const feeDiscountEl = document.getElementById("feeDiscount");
+    const referralCountEl = document.getElementById("referralCount");
+    const currentTierEl = document.getElementById("currentTier");
 
-    // Staking section - show placeholder
-    const stakingBalance = document.querySelector<HTMLElement>(".staking-balance-value");
-    const stakingUsd = document.querySelector<HTMLElement>(".staking-balance-usd");
-    if (stakingBalance) stakingBalance.textContent = isConnected ? "0 PILOT" : "—";
-    if (stakingUsd) stakingUsd.textContent = "";
-
-    // APY badge
-    const apyBadge = document.querySelector<HTMLElement>(".apy-badge");
-    if (apyBadge) apyBadge.textContent = "APY —";
-
-    // Tier progress
-    const tierProgress = document.querySelector<HTMLElement>(".tier-progress-label");
-    const tierBar = document.querySelector<HTMLElement>(".tier-progress-fill");
-    if (tierProgress) tierProgress.textContent = "Tier system coming soon";
-    if (tierBar) tierBar.style.width = "0%";
-
-    // Rewards breakdown - show real claimable, placeholder for others
-    const breakdownItems = document.querySelectorAll<HTMLElement>(".breakdown-item");
-    breakdownItems.forEach((item) => {
-      const label = item.querySelector<HTMLElement>(".breakdown-label");
-      const value = item.querySelector<HTMLElement>(".breakdown-value");
-      if (!label || !value) return;
-      
-      const labelText = label.textContent?.toLowerCase() ?? "";
-      if (labelText.includes("referral")) {
-        value.textContent = isConnected ? `${pendingRewardsFormatted} BNB` : "—";
-      } else {
-        value.textContent = "—";
-      }
-    });
-
-    // Referral stats
-    const referralStats = document.querySelectorAll<HTMLElement>(".referral-stat-value");
-    referralStats.forEach((stat) => {
-      stat.textContent = "—";
-    });
-
-    // History section - clear and show placeholder
-    const historyList = document.querySelector<HTMLElement>(".rewards-history-list");
-    if (historyList) {
-      historyList.innerHTML = `
-        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
-          <p>Transaction history will appear here once you claim rewards.</p>
-        </div>
-      `;
+    if (!isConnected) {
+      if (pilotBalanceEl) pilotBalanceEl.textContent = "—";
+      if (feeDiscountEl) feeDiscountEl.textContent = "0%";
+      if (referralCountEl) referralCountEl.textContent = "0";
+      if (currentTierEl) currentTierEl.textContent = "—";
+      return;
     }
-  }, [isConnected, totalClaimedFormatted, pendingRewardsFormatted]);
 
+    if (isPilotTierLoading) {
+      if (pilotBalanceEl) pilotBalanceEl.textContent = "...";
+      if (currentTierEl) currentTierEl.textContent = "...";
+      return;
+    }
+
+    if (pilotTierInfo) {
+      const tierDisplay = getTierDisplay(pilotTierInfo.tier);
+      if (pilotBalanceEl) pilotBalanceEl.textContent = formatPilotBalance(pilotTierInfo.balance);
+      if (feeDiscountEl) feeDiscountEl.textContent = `${pilotTierInfo.discountPercent}%`;
+      if (currentTierEl) currentTierEl.textContent = pilotTierInfo.tier === "none" ? "None" : tierDisplay.name;
+    }
+  }, [isConnected, isPilotTierLoading, pilotTierInfo]);
+
+  // Update PILOT holdings card
   useEffect(() => {
-    // Claim card values
-    const claimValue = document.querySelector<HTMLElement>(".claim-amount-value");
-    const claimUsd = document.querySelector<HTMLElement>(".claim-amount-usd");
-    const claimBtn = document.querySelector<HTMLButtonElement>(".claim-btn");
+    const tierBadge = document.getElementById("tierBadge");
+    const pilotBalanceLarge = document.getElementById("pilotBalanceLarge");
+    const pilotBalanceUsd = document.getElementById("pilotBalanceUsd");
 
-    if (claimValue) claimValue.textContent = `${pendingRewardsFormatted} BNB`;
-    if (claimUsd) claimUsd.textContent = "";
+    if (!isConnected) {
+      if (tierBadge) tierBadge.textContent = "Connect Wallet";
+      if (pilotBalanceLarge) pilotBalanceLarge.textContent = "— PILOT";
+      if (pilotBalanceUsd) pilotBalanceUsd.textContent = "Connect wallet to view";
+      return;
+    }
 
-    if (claimBtn) {
-      claimBtn.disabled = isClaiming;
-      claimBtn.textContent = !isConnected
-        ? "Connect Wallet"
-        : isClaiming
-        ? "Claiming..."
-        : canClaim
-        ? "Claim Rewards"
-        : "No Rewards";
+    if (isPilotTierLoading) {
+      if (tierBadge) tierBadge.textContent = "Loading...";
+      if (pilotBalanceLarge) pilotBalanceLarge.textContent = "... PILOT";
+      return;
+    }
+
+    if (pilotTierInfo) {
+      const tierDisplay = getTierDisplay(pilotTierInfo.tier);
+      if (tierBadge) {
+        tierBadge.textContent = pilotTierInfo.tier === "none" 
+          ? "No Tier" 
+          : `${tierDisplay.emoji} ${tierDisplay.name} (-${pilotTierInfo.discountPercent}%)`;
+      }
+      if (pilotBalanceLarge) {
+        pilotBalanceLarge.textContent = `${formatPilotBalance(pilotTierInfo.balance)} PILOT`;
+      }
+      if (pilotBalanceUsd) {
+        pilotBalanceUsd.textContent = pilotTierInfo.tier === "none"
+          ? "Hold 100+ PILOT for fee discounts"
+          : `${tierDisplay.emoji} ${tierDisplay.name} Tier - ${pilotTierInfo.discountPercent}% fee discount`;
+      }
+    }
+  }, [isConnected, isPilotTierLoading, pilotTierInfo]);
+
+  // Update tier progress section
+  useEffect(() => {
+    const currentTierBadge = document.getElementById("currentTierBadge");
+    const tierProgress = document.getElementById("tierProgress");
+    const currentHolding = document.getElementById("currentHolding");
+    const nextTierTarget = document.getElementById("nextTierTarget");
+
+    // Tier cards
+    const tierCardNone = document.getElementById("tierCardNone");
+    const tierCardBronze = document.getElementById("tierCardBronze");
+    const tierCardSilver = document.getElementById("tierCardSilver");
+    const tierCardGold = document.getElementById("tierCardGold");
+
+    // Reset all tier cards
+    [tierCardNone, tierCardBronze, tierCardSilver, tierCardGold].forEach(card => {
+      if (card) {
+        card.classList.remove("active", "locked");
+      }
+    });
+
+    if (!isConnected) {
+      if (currentTierBadge) currentTierBadge.textContent = "Connect Wallet";
+      if (tierProgress) tierProgress.style.width = "0%";
+      if (currentHolding) currentHolding.textContent = "0 PILOT";
+      if (nextTierTarget) nextTierTarget.textContent = "100 PILOT for Bronze";
+      return;
+    }
+
+    if (isPilotTierLoading || !pilotTierInfo) {
+      if (currentTierBadge) currentTierBadge.textContent = "Loading...";
+      return;
+    }
+
+    const tierDisplay = getTierDisplay(pilotTierInfo.tier);
+    const balanceFormatted = formatPilotBalance(pilotTierInfo.balance);
+
+    if (currentTierBadge) {
+      currentTierBadge.textContent = pilotTierInfo.tier === "none"
+        ? "No Tier"
+        : `${tierDisplay.emoji} ${tierDisplay.name} Tier`;
+    }
+
+    if (currentHolding) {
+      currentHolding.textContent = `${balanceFormatted} PILOT`;
+    }
+
+    // Calculate progress and highlight active tier
+    const balanceBigInt = BigInt(pilotTierInfo.balance);
+    const bronze = 100n * 10n ** 18n;
+    const silver = 1000n * 10n ** 18n;
+    const gold = 10000n * 10n ** 18n;
+
+    let progressPercent = 0;
+    let nextTierText = "100 PILOT for Bronze";
+
+    if (balanceBigInt >= gold) {
+      progressPercent = 100;
+      nextTierText = "Max tier reached!";
+      if (tierCardGold) tierCardGold.classList.add("active");
+    } else if (balanceBigInt >= silver) {
+      progressPercent = 66 + (Number(balanceBigInt - silver) / Number(gold - silver)) * 34;
+      const needed = Number(gold - balanceBigInt) / 1e18;
+      nextTierText = `${needed.toLocaleString()} more for Gold`;
+      if (tierCardSilver) tierCardSilver.classList.add("active");
+      if (tierCardGold) tierCardGold.classList.add("locked");
+    } else if (balanceBigInt >= bronze) {
+      progressPercent = 33 + (Number(balanceBigInt - bronze) / Number(silver - bronze)) * 33;
+      const needed = Number(silver - balanceBigInt) / 1e18;
+      nextTierText = `${needed.toLocaleString()} more for Silver`;
+      if (tierCardBronze) tierCardBronze.classList.add("active");
+      if (tierCardSilver) tierCardSilver.classList.add("locked");
+      if (tierCardGold) tierCardGold.classList.add("locked");
+    } else {
+      progressPercent = (Number(balanceBigInt) / Number(bronze)) * 33;
+      const needed = Number(bronze - balanceBigInt) / 1e18;
+      nextTierText = `${needed.toLocaleString()} more for Bronze`;
+      if (tierCardNone) tierCardNone.classList.add("active");
+      if (tierCardBronze) tierCardBronze.classList.add("locked");
+      if (tierCardSilver) tierCardSilver.classList.add("locked");
+      if (tierCardGold) tierCardGold.classList.add("locked");
+    }
+
+    if (tierProgress) tierProgress.style.width = `${Math.min(100, progressPercent)}%`;
+    if (nextTierTarget) nextTierTarget.textContent = nextTierText;
+  }, [isConnected, isPilotTierLoading, pilotTierInfo]);
+
+  // Handle referral code/link
+  useEffect(() => {
+    const referralCodeInput = document.getElementById("referralCode") as HTMLInputElement | null;
+    const referralLinkInput = document.getElementById("referralLink") as HTMLInputElement | null;
+    const copyCodeBtn = document.getElementById("copyCodeBtn");
+    const copyLinkBtn = document.getElementById("copyLinkBtn");
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://swappilot.io";
+
+    if (!isConnected || !address) {
+      if (referralCodeInput) referralCodeInput.value = "Connect wallet to generate";
+      if (referralLinkInput) referralLinkInput.value = "Connect wallet to generate";
+      return;
+    }
+
+    // Generate referral code from address
+    const code = address.slice(2, 10).toUpperCase();
+    const link = `${origin}/swap?ref=${code}`;
+
+    if (referralCodeInput) referralCodeInput.value = code;
+    if (referralLinkInput) referralLinkInput.value = link;
+
+    const copyCode = async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        if (copyCodeBtn) {
+          const original = copyCodeBtn.textContent;
+          copyCodeBtn.textContent = "✓ Copied!";
+          setTimeout(() => { copyCodeBtn.textContent = original; }, 2000);
+        }
+      } catch { /* ignore */ }
+    };
+
+    const copyLink = async () => {
+      try {
+        await navigator.clipboard.writeText(link);
+        if (copyLinkBtn) {
+          const original = copyLinkBtn.textContent;
+          copyLinkBtn.textContent = "✓ Copied!";
+          setTimeout(() => { copyLinkBtn.textContent = original; }, 2000);
+        }
+      } catch { /* ignore */ }
+    };
+
+    copyCodeBtn?.addEventListener("click", copyCode);
+    copyLinkBtn?.addEventListener("click", copyLink);
+
+    return () => {
+      copyCodeBtn?.removeEventListener("click", copyCode);
+      copyLinkBtn?.removeEventListener("click", copyLink);
+    };
+  }, [isConnected, address]);
+
+  // Connect wallet button in nav
+  useEffect(() => {
+    const navConnectBtn = document.querySelector<HTMLButtonElement>(".nav-right .btn-secondary");
+    
+    if (navConnectBtn) {
+      if (isConnected && address) {
+        navConnectBtn.textContent = shortAddress(address);
+      } else {
+        navConnectBtn.textContent = "Connect Wallet";
+      }
 
       const onClick = (e: Event) => {
         e.preventDefault();
-        if (!isConnected) {
-          clickRainbowKitConnect();
-          return;
-        }
-        if (!canClaim || isClaiming) return;
-        claim();
+        clickRainbowKitConnect();
       };
 
-      claimBtn.removeAttribute("onclick");
-      claimBtn.addEventListener("click", onClick);
-
-      // Referral link box
-      const referralInput = document.querySelector<HTMLInputElement>(".referral-link-input");
-      const copyBtn = document.querySelector<HTMLButtonElement>(".copy-btn");
-
-      const origin = window.location.origin;
-      const link = address ? `${origin}/referrals?ref=${address}` : `${origin}/referrals`;
-      if (referralInput) referralInput.value = address ? `${origin}/r/${shortAddress(address)}` : link;
-
-      const onCopy = async (evt: Event) => {
-        evt.preventDefault();
-        const value = referralInput?.value ?? link;
-        try {
-          await navigator.clipboard.writeText(value);
-        } catch {
-          // ignore
-        }
-      };
-
-      if (copyBtn) {
-        copyBtn.removeAttribute("onclick");
-        copyBtn.addEventListener("click", onCopy);
-      }
-
-      return () => {
-        claimBtn.removeEventListener("click", onClick);
-        if (copyBtn) copyBtn.removeEventListener("click", onCopy);
-      };
+      navConnectBtn.addEventListener("click", onClick);
+      return () => navConnectBtn.removeEventListener("click", onClick);
     }
-
-    return;
-  }, [address, canClaim, claim, isClaiming, isConnected, pendingRewardsFormatted]);
+  }, [isConnected, address]);
 
   return null;
 }
