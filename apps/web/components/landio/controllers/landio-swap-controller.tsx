@@ -837,30 +837,42 @@ export function LandioSwapController() {
         if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
           const ratio = Number(bestBuy) / Number(maxBuy);
           const pct = (1 - ratio) * 100;
-          setText("priceImpact", `-${formatPercent(clamp(pct, 0, 99.99), 2)}`);
+          // Only show negative sign if there's actual impact, format nicely
+          if (pct < 0.01) {
+            setText("priceImpact", "0.00%");
+          } else {
+            setText("priceImpact", `-${formatPercent(clamp(pct, 0, 99.99), 2)}`);
+          }
         } else {
           setText("priceImpact", "—");
         }
 
-        // Gas & MEV
-        setText("gasCost", best?.normalized.estimatedGasUsd ? `$${best.normalized.estimatedGasUsd}` : "$—");
+        // Gas & MEV - format gas USD properly
+        const gasUsdRaw = parseFloat(best?.normalized.estimatedGasUsd ?? "");
+        const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
+          ? `$${gasUsdRaw.toFixed(2)}`
+          : "$—";
+        setText("gasCost", formattedGas);
         setText(
           "mevRisk",
           best?.signals?.mevExposure?.level ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") : "—",
         );
 
-        // Net Output: show delta vs avg of top-3 (token units)
-        const top3ForNet = (res.rankedQuotes ?? []).slice(0, 3);
-        const avgBuy = (() => {
-          const buys = top3ForNet
-            .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
-            .filter((x): x is bigint => x !== null);
-          if (!buys.length) return null;
-          const sum = buys.reduce((a, b) => a + b, 0n);
-          return sum / BigInt(buys.length);
-        })();
-        if (bestBuy !== null && avgBuy !== null) {
-          setText("netOutput", formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toTokenSymbol));
+        // Net Output: show delta vs worst quote (actual savings)
+        const allBuys = (res.rankedQuotes ?? [])
+          .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+          .filter((x): x is bigint => x !== null);
+        const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
+        const avgBuy = allBuys.length > 0 
+          ? allBuys.reduce((a, b) => a + b, 0n) / BigInt(allBuys.length)
+          : null;
+        
+        if (bestBuy !== null && worstBuy !== null && bestBuy !== worstBuy) {
+          setText("netOutput", formatSignedAmount(bestBuy - worstBuy, toTokenInfo.decimals, toTokenSymbol));
+        } else if (bestBuy !== null) {
+          // Only one quote or all same - show actual output
+          const outFormatted = formatAmount(bestBuy.toString(), toTokenInfo.decimals);
+          setText("netOutput", `${outFormatted} ${toTokenSymbol}`);
         } else {
           setText("netOutput", "—");
         }
@@ -915,7 +927,11 @@ export function LandioSwapController() {
           } else if (label === "Minimum Received") {
             valueEl.textContent = minReceived !== null ? `${minReceived.toFixed(minReceived >= 1 ? 4 : 6)} ${toTokenSymbol}` : "—";
           } else if (label === "Network Fee") {
-            valueEl.textContent = best?.normalized.estimatedGasUsd ? `~$${best.normalized.estimatedGasUsd}` : "—";
+            // Format network fee properly - validate it's a reasonable value
+            const networkFeeRaw = parseFloat(best?.normalized.estimatedGasUsd ?? "");
+            valueEl.textContent = Number.isFinite(networkFeeRaw) && networkFeeRaw >= 0 && networkFeeRaw < 1000
+              ? `~$${networkFeeRaw.toFixed(2)}`
+              : "—";
           } else if (label === "Platform Fee") {
             // Use feeInfo from the hook if available
             if (feeInfo && pilotTierInfo) {
@@ -925,7 +941,12 @@ export function LandioSwapController() {
               valueEl.textContent = "$0.00 (Free)";
             }
           } else if (label === "You Save") {
-            valueEl.textContent = bestBuy !== null && avgBuy !== null ? formatSignedAmount(bestBuy - avgBuy, toTokenInfo.decimals, toTokenSymbol) : "—";
+            // Show savings vs worst quote
+            if (bestBuy !== null && worstBuy !== null && bestBuy !== worstBuy) {
+              valueEl.textContent = formatSignedAmount(bestBuy - worstBuy, toTokenInfo.decimals, toTokenSymbol);
+            } else {
+              valueEl.textContent = "—";
+            }
           }
         }
 
