@@ -562,7 +562,8 @@ export function LandioSwapController() {
 
     if (fromUsdEl && fromTokenInfo) {
       if (fromAmountValue > 0) {
-        fromUsdEl.textContent = `≈ ${formatUsd(fromTokenInfo.address, fromAmountValue)}`;
+        const usdFormatted = formatUsd(fromTokenInfo.address, fromAmountValue);
+        fromUsdEl.textContent = `≈ ${usdFormatted}`;
       } else {
         fromUsdEl.textContent = "≈ $0.00";
       }
@@ -570,7 +571,8 @@ export function LandioSwapController() {
 
     if (toUsdEl && toTokenInfo) {
       if (toAmountValue > 0) {
-        toUsdEl.textContent = `≈ ${formatUsd(toTokenInfo.address, toAmountValue)}`;
+        const usdFormatted = formatUsd(toTokenInfo.address, toAmountValue);
+        toUsdEl.textContent = `≈ ${usdFormatted}`;
       } else {
         toUsdEl.textContent = "≈ $0.00";
       }
