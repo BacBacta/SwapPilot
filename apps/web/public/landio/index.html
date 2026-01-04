@@ -451,7 +451,7 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1rem;
+      gap: 1.25rem;
       padding: 2rem 0;
     }
 
@@ -461,25 +461,25 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      width: 100px;
-      height: 100px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
+      width: 110px;
+      height: 110px;
+      border-radius: 20px;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
-      padding: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border: none;
+      cursor: pointer;
     }
 
     .integration-logo:hover {
-      transform: translateY(-4px) scale(1.05);
-      border-color: var(--accent);
-      background: var(--accent-dim);
+      transform: translateY(-6px) scale(1.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     }
 
     .integration-logo .provider-icon {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -491,51 +491,14 @@
     }
 
     .integration-logo .provider-name {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--text);
+      font-size: 0.7rem;
+      font-weight: 600;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 90px;
-    }
-
-    /* Status indicators for dynamic logos */
-    .integration-logo.status-operational::after {
-      content: '';
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-    }
-
-    .integration-logo.status-degraded::after {
-      content: '';
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #f59e0b;
-      box-shadow: 0 0 6px #f59e0b;
-    }
-
-    .integration-logo.status-down::after {
-      content: '';
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #ef4444;
-      box-shadow: 0 0 6px #ef4444;
+      max-width: 100px;
+      letter-spacing: 0.02em;
     }
 
     /* ===== COMPARISON ANIMATION ===== */

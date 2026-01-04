@@ -222,90 +222,106 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   // Update the status message
   statusEl.textContent = `${aggregators.length} aggregators + ${dexes.length} DEXes connected • ${operational}/${data.providers.length} operational`;
 
-  // Update logos with status indicators - generate from live providers
+  // Update logos - generate from live providers
   logosEl.innerHTML = "";
   
-  // Provider logo configuration with colors and SVG icons
-  const providerLogos: Record<string, { name: string; color: string; icon: string }> = {
+  // Provider logo configuration with brand colors and icons
+  const providerLogos: Record<string, { name: string; bg: string; fg: string; icon: string }> = {
     "1inch": {
       name: "1inch",
-      color: "#1B314F",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20C55.8 20 20 55.8 20 100s35.8 80 80 80 80-35.8 80-80S144.2 20 100 20zm25.5 115.8c-1.2 1.6-3 2.5-4.9 2.5H79.4c-1.9 0-3.7-.9-4.9-2.5-1.2-1.6-1.5-3.6-.9-5.5l8.8-26.3-16.7 8.4c-2.4 1.2-5.3.6-7-1.4-1.7-2-2-4.9-.6-7.2l35-57.5c1.6-2.7 5-3.5 7.7-1.9 2.7 1.6 3.5 5 1.9 7.7L87.5 78l17.7-8.8c2.4-1.2 5.3-.6 7 1.4 1.7 2 2 4.9.6 7.2l-15.2 25h23.2c2.5 0 4.7 1.5 5.7 3.8l5 12.5c.9 2.3.4 4.9-1.3 6.7-.9 1-17.7 10-17.7 10z" fill="currentColor"/></svg>`,
+      bg: "#1B314F",
+      fg: "#ED5843",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 5L10 12v16l10 7 10-7V12L20 5zm0 4l6 4.2v8.4L20 26l-6-4.4v-8.4L20 9z" fill="currentColor"/></svg>`,
     },
     "zerox": {
       name: "0x",
-      color: "#000000",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="80" font-weight="bold" fill="currentColor">0x</text></svg>`,
+      bg: "#000000",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">0x</text></svg>`,
     },
     "0x": {
       name: "0x",
-      color: "#000000",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="80" font-weight="bold" fill="currentColor">0x</text></svg>`,
+      bg: "#000000",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">0x</text></svg>`,
     },
     "pancakeswap": {
       name: "PancakeSwap",
-      color: "#633001",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="60" fill="currentColor">🥞</text></svg>`,
+      bg: "#633001",
+      fg: "#FEDC90",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="14" r="6" fill="#FEDC90"/><circle cx="20" cy="26" r="8" fill="#D1884F"/><circle cx="16" cy="24" r="2" fill="#633001"/><circle cx="24" cy="24" r="2" fill="#633001"/></svg>`,
     },
     "okx": {
       name: "OKX",
-      color: "#000000",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><rect x="40" y="40" width="50" height="50" fill="currentColor"/><rect x="110" y="40" width="50" height="50" fill="currentColor"/><rect x="75" y="75" width="50" height="50" fill="currentColor"/><rect x="40" y="110" width="50" height="50" fill="currentColor"/><rect x="110" y="110" width="50" height="50" fill="currentColor"/></svg>`,
+      bg: "#000000",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="10" height="10" fill="currentColor"/><rect x="22" y="8" width="10" height="10" fill="currentColor"/><rect x="15" y="15" width="10" height="10" fill="currentColor"/><rect x="8" y="22" width="10" height="10" fill="currentColor"/><rect x="22" y="22" width="10" height="10" fill="currentColor"/></svg>`,
     },
     "kyberswap": {
       name: "KyberSwap",
-      color: "#31CB9E",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20L40 60v80l60 40 60-40V60L100 20zm0 20l40 26.7v53.3L100 146.7 60 120V66.7L100 40z" fill="currentColor"/><path d="M100 60L70 80v40l30 20 30-20V80l-30-20z" fill="currentColor"/></svg>`,
+      bg: "#31CB9E",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 6L8 14v12l12 8 12-8V14L20 6z" fill="currentColor" fill-opacity="0.3"/><path d="M20 12l-6 4v8l6 4 6-4v-8l-6-4z" fill="currentColor"/></svg>`,
     },
     "openocean": {
       name: "OpenOcean",
-      color: "#1B4DFF",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="60" stroke="currentColor" stroke-width="12" fill="none"/><circle cx="100" cy="100" r="30" fill="currentColor"/></svg>`,
+      bg: "#1B4DFF",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="5" fill="currentColor"/></svg>`,
     },
     "paraswap": {
       name: "ParaSwap",
-      color: "#0058FF",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><polygon points="100,30 30,170 170,170" fill="currentColor"/></svg>`,
+      bg: "#0058FF",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 6L6 34h28L20 6z" fill="currentColor"/></svg>`,
     },
     "dodo": {
       name: "DODO",
-      color: "#FFE804",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><ellipse cx="100" cy="110" rx="60" ry="50" fill="currentColor"/><circle cx="70" cy="90" r="15" fill="#000"/><circle cx="130" cy="90" r="15" fill="#000"/><circle cx="70" cy="88" r="6" fill="#fff"/><circle cx="130" cy="88" r="6" fill="#fff"/><ellipse cx="100" cy="130" rx="20" ry="10" fill="#FF9500"/></svg>`,
+      bg: "#FFE804",
+      fg: "#000000",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><ellipse cx="20" cy="22" rx="12" ry="10" fill="#000"/><circle cx="14" cy="18" r="3" fill="#FFF"/><circle cx="26" cy="18" r="3" fill="#FFF"/><circle cx="14" cy="17" r="1.5" fill="#000"/><circle cx="26" cy="17" r="1.5" fill="#000"/><ellipse cx="20" cy="26" rx="4" ry="2" fill="#FF9500"/></svg>`,
     },
     "odos": {
       name: "Odos",
-      color: "#8B5CF6",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="70" stroke="currentColor" stroke-width="15" fill="none"/><circle cx="100" cy="100" r="25" fill="currentColor"/></svg>`,
+      bg: "#8B5CF6",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="5" fill="currentColor"/></svg>`,
     },
     "bebop": {
       name: "Bebop",
-      color: "#FF6B35",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><rect x="50" y="50" width="100" height="100" rx="20" fill="currentColor"/><circle cx="85" cy="100" r="15" fill="#000"/><circle cx="115" cy="100" r="15" fill="#000"/></svg>`,
+      bg: "#FF6B35",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" rx="6" fill="currentColor"/><circle cx="15" cy="20" r="3" fill="#000"/><circle cx="25" cy="20" r="3" fill="#000"/></svg>`,
     },
     "rango": {
       name: "Rango",
-      color: "#00D395",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 30L40 80v40l60 50 60-50V80L100 30z" fill="currentColor"/></svg>`,
+      bg: "#472B8A",
+      fg: "#00D395",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 4l-14 10v12l14 10 14-10V14L20 4z" fill="currentColor"/></svg>`,
     },
     "lifi": {
       name: "LI.FI",
-      color: "#EF46FF",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M40 100L100 40l60 60-60 60-60-60z" fill="currentColor"/></svg>`,
+      bg: "#EF46FF",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M8 20l12-12 12 12-12 12-12-12z" fill="currentColor"/></svg>`,
     },
     "magpie": {
       name: "Magpie",
-      color: "#00C8FF",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 30c-38.7 0-70 31.3-70 70s31.3 70 70 70 70-31.3 70-70-31.3-70-70-70zm0 120c-27.6 0-50-22.4-50-50s22.4-50 50-50 50 22.4 50 50-22.4 50-50 50z" fill="currentColor"/><circle cx="100" cy="100" r="20" fill="currentColor"/></svg>`,
+      bg: "#0A1628",
+      fg: "#00C8FF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg>`,
     },
     "oku": {
       name: "Oku",
-      color: "#6366F1",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="60" fill="currentColor"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="50" font-weight="bold" fill="#fff">O</text></svg>`,
+      bg: "#6366F1",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" fill="currentColor"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-weight="bold" fill="#6366F1">O</text></svg>`,
     },
     "firebird": {
       name: "Firebird",
-      color: "#FF4500",
-      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20c-10 30-40 50-40 80 0 33.1 26.9 60 60 60s60-26.9 60-60c0-30-30-50-40-80-10 20-30 30-40 30s-30-10-40-30z" fill="currentColor"/></svg>`,
+      bg: "#FF4500",
+      fg: "#FFFFFF",
+      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 4c-2 6-8 10-8 16 0 6.6 5.4 12 12 12s12-5.4 12-12c0-6-6-10-8-16-2 4-6 6-8 6s-6-2-8-6z" fill="currentColor"/></svg>`,
     },
   };
 
@@ -313,27 +329,26 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     const div = document.createElement("div");
     div.className = "integration-logo";
     
-    // Add status indicator
-    const statusClass = provider.status === "ok" ? "operational" : 
-                       provider.status === "degraded" ? "degraded" : "down";
-    div.classList.add(`status-${statusClass}`);
-    
     const config = providerLogos[provider.providerId];
     
     if (config) {
-      // Create logo with icon
+      // Apply brand colors as background
+      div.style.backgroundColor = config.bg;
+      div.style.color = config.fg;
       div.innerHTML = `
-        <div class="provider-icon" style="color: ${config.color}">
+        <div class="provider-icon">
           ${config.icon}
         </div>
         <span class="provider-name">${config.name}</span>
       `;
     } else {
-      // Fallback to text only
+      // Fallback with gradient background
+      div.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      div.style.color = "#FFFFFF";
       div.innerHTML = `<span class="provider-name">${provider.displayName}</span>`;
     }
     
-    div.title = `${provider.displayName} - ${provider.status}`;
+    div.title = provider.displayName;
     logosEl.appendChild(div);
   });
 }
