@@ -27,7 +27,7 @@ function wireToggle(params: {
   rowLabel: string;
   get: () => boolean;
   set: (next: boolean) => void;
-}) {
+}): () => void {
   const row = findSettingsRowByLabel(params.rowLabel);
   const toggle = row?.querySelector<HTMLElement>(".toggle-switch");
   if (!toggle) return () => {};
@@ -43,6 +43,82 @@ function wireToggle(params: {
 
   toggle.addEventListener("click", onClick);
   return () => toggle.removeEventListener("click", onClick);
+}
+
+function wireNumberInput(params: {
+  rowLabel: string;
+  get: () => number;
+  set: (next: number) => void;
+  min?: number;
+  max?: number;
+}): () => void {
+  const row = findSettingsRowByLabel(params.rowLabel);
+  const input = row?.querySelector<HTMLInputElement>(".settings-input");
+  if (!input) return () => {};
+
+  input.value = String(params.get());
+
+  const onBlur = () => {
+    const val = Number.parseFloat(input.value);
+    if (!Number.isFinite(val)) {
+      input.value = String(params.get());
+      return;
+    }
+    const clamped = Math.max(params.min ?? 0, Math.min(params.max ?? Infinity, val));
+    params.set(clamped);
+    input.value = String(clamped);
+  };
+
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onBlur();
+      input.blur();
+    }
+  };
+
+  input.addEventListener("blur", onBlur);
+  input.addEventListener("keydown", onKeydown);
+  return () => {
+    input.removeEventListener("blur", onBlur);
+    input.removeEventListener("keydown", onKeydown);
+  };
+}
+
+function wireSelect(params: {
+  rowLabel: string;
+  get: () => string;
+  set: (next: string) => void;
+  valueMap?: Record<string, string>; // display text -> stored value
+}): () => void {
+  const row = findSettingsRowByLabel(params.rowLabel);
+  const select = row?.querySelector<HTMLSelectElement>(".settings-select");
+  if (!select) return () => {};
+
+  const valueMap = params.valueMap ?? {};
+  const reverseMap: Record<string, string> = {};
+  for (const [display, stored] of Object.entries(valueMap)) {
+    reverseMap[stored] = display;
+  }
+
+  // Set initial value
+  const currentStored = params.get();
+  const displayValue = reverseMap[currentStored] ?? currentStored;
+  for (const opt of select.options) {
+    if (opt.text === displayValue || opt.value === currentStored) {
+      opt.selected = true;
+      break;
+    }
+  }
+
+  const onChange = () => {
+    const selectedText = select.options[select.selectedIndex]?.text ?? "";
+    const storedValue = valueMap[selectedText] ?? selectedText.toLowerCase().replace(/\s+/g, '-');
+    params.set(storedValue);
+  };
+
+  select.addEventListener("change", onChange);
+  return () => select.removeEventListener("change", onChange);
 }
 
 export function LandioSettingsController() {
@@ -165,13 +241,123 @@ export function LandioSettingsController() {
       slippageCleanup.push(() => slippageCustom.removeEventListener("blur", onCustomCommit));
     }
 
-    // Persisted toggles (only those that map cleanly to existing settings)
+    // Persisted toggles
     const cleanupToggles: Array<() => void> = [];
+    
+    // Trading toggles
     cleanupToggles.push(
       wireToggle({
         rowLabel: "MEV Protection",
         get: () => settings.mevAwareScoring,
         set: (next) => updateSettings({ mevAwareScoring: next }),
+      })
+    );
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Auto Route Optimization",
+        get: () => settings.autoRouteOptimization,
+        set: (next) => updateSettings({ autoRouteOptimization: next }),
+      })
+    );
+    
+    // Notification toggles
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Transaction Confirmations",
+        get: () => settings.notifyTransactionConfirmations,
+        set: (next) => updateSettings({ notifyTransactionConfirmations: next }),
+      })
+    );
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Price Alerts",
+        get: () => settings.notifyPriceAlerts,
+        set: (next) => updateSettings({ notifyPriceAlerts: next }),
+      })
+    );
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Reward Notifications",
+        get: () => settings.notifyRewards,
+        set: (next) => updateSettings({ notifyRewards: next }),
+      })
+    );
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Email Updates",
+        get: () => settings.notifyEmailUpdates,
+        set: (next) => updateSettings({ notifyEmailUpdates: next }),
+      })
+    );
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Browser Notifications",
+        get: () => settings.notifyBrowser,
+        set: (next) => updateSettings({ notifyBrowser: next }),
+      })
+    );
+    
+    // Security toggles
+    cleanupToggles.push(
+      wireToggle({
+        rowLabel: "Require Confirmation",
+        get: () => settings.requireConfirmation,
+        set: (next) => updateSettings({ requireConfirmation: next }),
+      })
+    );
+
+    // Number inputs
+    const cleanupInputs: Array<() => void> = [];
+    cleanupInputs.push(
+      wireNumberInput({
+        rowLabel: "Transaction Deadline",
+        get: () => settings.transactionDeadlineMinutes,
+        set: (next) => updateSettings({ transactionDeadlineMinutes: next }),
+        min: 1,
+        max: 60,
+      })
+    );
+    cleanupInputs.push(
+      wireNumberInput({
+        rowLabel: "Spending Limit",
+        get: () => settings.spendingLimitUsd,
+        set: (next) => updateSettings({ spendingLimitUsd: next }),
+        min: 0,
+        max: 1000000,
+      })
+    );
+
+    // Select dropdowns
+    const cleanupSelects: Array<() => void> = [];
+    cleanupSelects.push(
+      wireSelect({
+        rowLabel: "Gas Price Strategy",
+        get: () => settings.gasPriceStrategy,
+        set: (next) => updateSettings({ gasPriceStrategy: next as 'standard' | 'fast' | 'instant' | 'custom' }),
+        valueMap: {
+          "Standard": "standard",
+          "Fast": "fast",
+          "Instant": "instant",
+          "Custom": "custom",
+        },
+      })
+    );
+    cleanupSelects.push(
+      wireSelect({
+        rowLabel: "Quote Refresh Interval",
+        get: () => String(settings.quoteRefreshIntervalSeconds),
+        set: (next) => {
+          const seconds = parseInt(next.replace(/\D/g, ''), 10);
+          if (Number.isFinite(seconds)) {
+            updateSettings({ quoteRefreshIntervalSeconds: seconds });
+          }
+        },
+        valueMap: {
+          "5 seconds": "5",
+          "10 seconds": "10",
+          "15 seconds": "15",
+          "30 seconds": "30",
+        },
       })
     );
 
@@ -205,13 +391,38 @@ export function LandioSettingsController() {
       themeCleanup.push(() => option.removeEventListener("click", onClick));
     }
 
-    // Language selector (UI-only)
+    // Language selector (persisted)
     const langOptions = Array.from(document.querySelectorAll<HTMLElement>(".language-option"));
+    const langMap: Record<string, string> = {
+      "English": "en",
+      "Français": "fr",
+      "Español": "es",
+      "Deutsch": "de",
+      "中文": "zh",
+      "日本語": "ja",
+      "한국어": "ko",
+      "Русский": "ru",
+    };
+    const reverseLangMap: Record<string, string> = {};
+    for (const [name, code] of Object.entries(langMap)) {
+      reverseLangMap[code] = name;
+    }
+
+    // Apply current language
+    const currentLangName = reverseLangMap[settings.language] ?? "English";
+    langOptions.forEach((el) => {
+      const langName = el.querySelector<HTMLElement>(".language-name")?.textContent ?? "";
+      el.classList.toggle("active", langName === currentLangName);
+    });
+
     const langCleanup: Array<() => void> = [];
     for (const option of langOptions) {
       const onClick = () => {
         langOptions.forEach((el) => el.classList.remove("active"));
         option.classList.add("active");
+        const langName = option.querySelector<HTMLElement>(".language-name")?.textContent ?? "";
+        const langCode = langMap[langName] ?? "en";
+        updateSettings({ language: langCode });
       };
       option.addEventListener("click", onClick);
       langCleanup.push(() => option.removeEventListener("click", onClick));
@@ -250,6 +461,8 @@ export function LandioSettingsController() {
       navCleanup.forEach((fn) => fn());
       slippageCleanup.forEach((fn) => fn());
       cleanupToggles.forEach((fn) => fn());
+      cleanupInputs.forEach((fn) => fn());
+      cleanupSelects.forEach((fn) => fn());
       themeCleanup.forEach((fn) => fn());
       langCleanup.forEach((fn) => fn());
 
@@ -267,8 +480,7 @@ export function LandioSettingsController() {
     isConnected,
     resetSettings,
     setTheme,
-    settings.mevAwareScoring,
-    settings.slippageBps,
+    settings,
     theme,
     updateSettings,
   ]);

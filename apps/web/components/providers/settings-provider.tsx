@@ -15,15 +15,67 @@ export type SwapSettings = {
   canonicalPoolsOnly: boolean;
   /** Quote mode */
   mode: 'SAFE' | 'NORMAL' | 'DEGEN';
+  
+  // Trading settings
+  /** Transaction deadline in minutes */
+  transactionDeadlineMinutes: number;
+  /** Auto route optimization across DEXs */
+  autoRouteOptimization: boolean;
+  /** Gas price strategy */
+  gasPriceStrategy: 'standard' | 'fast' | 'instant' | 'custom';
+  /** Quote refresh interval in seconds */
+  quoteRefreshIntervalSeconds: number;
+  
+  // Appearance
+  /** UI language */
+  language: string;
+  
+  // Notifications
+  /** Notify on transaction confirmations */
+  notifyTransactionConfirmations: boolean;
+  /** Notify on price alerts */
+  notifyPriceAlerts: boolean;
+  /** Notify when rewards available */
+  notifyRewards: boolean;
+  /** Receive email updates */
+  notifyEmailUpdates: boolean;
+  /** Show browser notifications */
+  notifyBrowser: boolean;
+  
+  // Security
+  /** Require confirmation before swaps */
+  requireConfirmation: boolean;
+  /** Maximum single transaction value (USD) */
+  spendingLimitUsd: number;
 };
 
 const DEFAULT_SETTINGS: SwapSettings = {
   slippageBps: 100, // 1%
-  autoSlippage: true, // Enable by default
+  autoSlippage: true,
   sellabilityCheck: true,
   mevAwareScoring: true,
   canonicalPoolsOnly: true,
   mode: 'NORMAL',
+  
+  // Trading
+  transactionDeadlineMinutes: 20,
+  autoRouteOptimization: true,
+  gasPriceStrategy: 'fast',
+  quoteRefreshIntervalSeconds: 10,
+  
+  // Appearance
+  language: 'en',
+  
+  // Notifications
+  notifyTransactionConfirmations: true,
+  notifyPriceAlerts: true,
+  notifyRewards: true,
+  notifyEmailUpdates: false,
+  notifyBrowser: true,
+  
+  // Security
+  requireConfirmation: true,
+  spendingLimitUsd: 10000,
 };
 
 type SettingsContextValue = {
