@@ -447,15 +447,58 @@
     }
 
     /* ===== INTEGRATION LOGOS ===== */
+    .integration-logos {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      padding: 2rem 0;
+    }
+
     .integration-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
+      padding: 0.75rem;
     }
 
     .integration-logo:hover {
       transform: translateY(-4px) scale(1.05);
       border-color: var(--accent);
       background: var(--accent-dim);
+    }
+
+    .integration-logo .provider-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .integration-logo .provider-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .integration-logo .provider-name {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
     }
 
     /* Status indicators for dynamic logos */

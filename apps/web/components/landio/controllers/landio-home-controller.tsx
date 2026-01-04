@@ -225,24 +225,88 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   // Update logos with status indicators - generate from live providers
   logosEl.innerHTML = "";
   
-  // Provider emoji/name mapping for display
-  const providerDisplayNames: Record<string, string> = {
-    "1inch": "1inch",
-    "zerox": "0x",
-    "0x": "0x",
-    "pancakeswap": "🥞 PCS",
-    "okx": "OKX",
-    "kyberswap": "Kyber",
-    "openocean": "OpenOcean",
-    "paraswap": "ParaSwap",
-    "dodo": "DODO",
-    "odos": "Odos",
-    "bebop": "Bebop",
-    "rango": "Rango",
-    "lifi": "LI.FI",
-    "magpie": "Magpie",
-    "oku": "Oku",
-    "firebird": "Firebird",
+  // Provider logo configuration with colors and SVG icons
+  const providerLogos: Record<string, { name: string; color: string; icon: string }> = {
+    "1inch": {
+      name: "1inch",
+      color: "#1B314F",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20C55.8 20 20 55.8 20 100s35.8 80 80 80 80-35.8 80-80S144.2 20 100 20zm25.5 115.8c-1.2 1.6-3 2.5-4.9 2.5H79.4c-1.9 0-3.7-.9-4.9-2.5-1.2-1.6-1.5-3.6-.9-5.5l8.8-26.3-16.7 8.4c-2.4 1.2-5.3.6-7-1.4-1.7-2-2-4.9-.6-7.2l35-57.5c1.6-2.7 5-3.5 7.7-1.9 2.7 1.6 3.5 5 1.9 7.7L87.5 78l17.7-8.8c2.4-1.2 5.3-.6 7 1.4 1.7 2 2 4.9.6 7.2l-15.2 25h23.2c2.5 0 4.7 1.5 5.7 3.8l5 12.5c.9 2.3.4 4.9-1.3 6.7-.9 1-17.7 10-17.7 10z" fill="currentColor"/></svg>`,
+    },
+    "zerox": {
+      name: "0x",
+      color: "#000000",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="80" font-weight="bold" fill="currentColor">0x</text></svg>`,
+    },
+    "0x": {
+      name: "0x",
+      color: "#000000",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="80" font-weight="bold" fill="currentColor">0x</text></svg>`,
+    },
+    "pancakeswap": {
+      name: "PancakeSwap",
+      color: "#633001",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="60" fill="currentColor">🥞</text></svg>`,
+    },
+    "okx": {
+      name: "OKX",
+      color: "#000000",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><rect x="40" y="40" width="50" height="50" fill="currentColor"/><rect x="110" y="40" width="50" height="50" fill="currentColor"/><rect x="75" y="75" width="50" height="50" fill="currentColor"/><rect x="40" y="110" width="50" height="50" fill="currentColor"/><rect x="110" y="110" width="50" height="50" fill="currentColor"/></svg>`,
+    },
+    "kyberswap": {
+      name: "KyberSwap",
+      color: "#31CB9E",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20L40 60v80l60 40 60-40V60L100 20zm0 20l40 26.7v53.3L100 146.7 60 120V66.7L100 40z" fill="currentColor"/><path d="M100 60L70 80v40l30 20 30-20V80l-30-20z" fill="currentColor"/></svg>`,
+    },
+    "openocean": {
+      name: "OpenOcean",
+      color: "#1B4DFF",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="60" stroke="currentColor" stroke-width="12" fill="none"/><circle cx="100" cy="100" r="30" fill="currentColor"/></svg>`,
+    },
+    "paraswap": {
+      name: "ParaSwap",
+      color: "#0058FF",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><polygon points="100,30 30,170 170,170" fill="currentColor"/></svg>`,
+    },
+    "dodo": {
+      name: "DODO",
+      color: "#FFE804",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><ellipse cx="100" cy="110" rx="60" ry="50" fill="currentColor"/><circle cx="70" cy="90" r="15" fill="#000"/><circle cx="130" cy="90" r="15" fill="#000"/><circle cx="70" cy="88" r="6" fill="#fff"/><circle cx="130" cy="88" r="6" fill="#fff"/><ellipse cx="100" cy="130" rx="20" ry="10" fill="#FF9500"/></svg>`,
+    },
+    "odos": {
+      name: "Odos",
+      color: "#8B5CF6",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="70" stroke="currentColor" stroke-width="15" fill="none"/><circle cx="100" cy="100" r="25" fill="currentColor"/></svg>`,
+    },
+    "bebop": {
+      name: "Bebop",
+      color: "#FF6B35",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><rect x="50" y="50" width="100" height="100" rx="20" fill="currentColor"/><circle cx="85" cy="100" r="15" fill="#000"/><circle cx="115" cy="100" r="15" fill="#000"/></svg>`,
+    },
+    "rango": {
+      name: "Rango",
+      color: "#00D395",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 30L40 80v40l60 50 60-50V80L100 30z" fill="currentColor"/></svg>`,
+    },
+    "lifi": {
+      name: "LI.FI",
+      color: "#EF46FF",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M40 100L100 40l60 60-60 60-60-60z" fill="currentColor"/></svg>`,
+    },
+    "magpie": {
+      name: "Magpie",
+      color: "#00C8FF",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 30c-38.7 0-70 31.3-70 70s31.3 70 70 70 70-31.3 70-70-31.3-70-70-70zm0 120c-27.6 0-50-22.4-50-50s22.4-50 50-50 50 22.4 50 50-22.4 50-50 50z" fill="currentColor"/><circle cx="100" cy="100" r="20" fill="currentColor"/></svg>`,
+    },
+    "oku": {
+      name: "Oku",
+      color: "#6366F1",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="60" fill="currentColor"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="50" font-weight="bold" fill="#fff">O</text></svg>`,
+    },
+    "firebird": {
+      name: "Firebird",
+      color: "#FF4500",
+      icon: `<svg viewBox="0 0 200 200" fill="none"><path d="M100 20c-10 30-40 50-40 80 0 33.1 26.9 60 60 60s60-26.9 60-60c0-30-30-50-40-80-10 20-30 30-40 30s-30-10-40-30z" fill="currentColor"/></svg>`,
+    },
   };
 
   data.providers.forEach((provider) => {
@@ -254,10 +318,22 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
                        provider.status === "degraded" ? "degraded" : "down";
     div.classList.add(`status-${statusClass}`);
     
-    const displayName = providerDisplayNames[provider.providerId] || provider.displayName;
-    div.textContent = displayName;
-    div.title = `${provider.displayName} - ${provider.status}`;
+    const config = providerLogos[provider.providerId];
     
+    if (config) {
+      // Create logo with icon
+      div.innerHTML = `
+        <div class="provider-icon" style="color: ${config.color}">
+          ${config.icon}
+        </div>
+        <span class="provider-name">${config.name}</span>
+      `;
+    } else {
+      // Fallback to text only
+      div.innerHTML = `<span class="provider-name">${provider.displayName}</span>`;
+    }
+    
+    div.title = `${provider.displayName} - ${provider.status}`;
     logosEl.appendChild(div);
   });
 }
