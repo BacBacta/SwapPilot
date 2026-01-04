@@ -1339,6 +1339,95 @@ export function LandioSwapController() {
     }
   }, [showAllProviders, response, toTokenInfo, toTokenSymbol]);
 
+  // Update BEQ panel when selected quote changes
+  useEffect(() => {
+    if (!selected || !response?.rankedQuotes || !toTokenInfo) return;
+
+    // BEQ Score for selected quote
+    const score = selected.score?.beqScore;
+    if (typeof score === "number") {
+      setText("beqScore", `${Math.round(score)}/100`);
+      setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
+    } else {
+      setText("beqScore", "—");
+      setWidth("beqProgress", "0%");
+    }
+
+    // Calculate max buy amount across all quotes for Price Impact comparison
+    const allBuys = response.rankedQuotes
+      .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+      .filter((x): x is bigint => x !== null);
+    const maxBuy = allBuys.length > 0 ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
+    const selectedBuy = toBigIntSafe(selected.normalized.buyAmount ?? selected.raw.buyAmount);
+
+    // Price Impact: ratio of selected vs best possible
+    if (selectedBuy !== null && maxBuy !== null && maxBuy > 0n) {
+      const ratio = Number(selectedBuy) / Number(maxBuy);
+      const pct = (1 - ratio) * 100;
+      if (pct < 0.01) {
+        setText("priceImpact", "0.00%");
+      } else {
+        setText("priceImpact", `-${formatPercent(clamp(pct, 0, 99.99), 2)}`);
+      }
+    } else {
+      setText("priceImpact", "—");
+    }
+
+    // Gas Cost for selected quote
+    const gasUsdRaw = parseFloat(selected.normalized.estimatedGasUsd ?? "");
+    const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
+      ? `$${gasUsdRaw.toFixed(2)}`
+      : "—";
+    setText("gasCost", formattedGas);
+
+    // MEV Risk for selected quote
+    setText(
+      "mevRisk",
+      selected.signals?.mevExposure?.level 
+        ? (selected.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") 
+        : "—",
+    );
+
+    // Net Output: delta vs worst quote
+    const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
+    if (selectedBuy !== null && worstBuy !== null && selectedBuy !== worstBuy) {
+      setText("netOutput", formatSignedAmount(selectedBuy - worstBuy, toTokenInfo.decimals, toTokenInfo.symbol));
+    } else if (selectedBuy !== null) {
+      const outFormatted = formatAmount(selectedBuy.toString(), toTokenInfo.decimals);
+      setText("netOutput", `${outFormatted} ${toTokenInfo.symbol}`);
+    } else {
+      setText("netOutput", "—");
+    }
+
+    // Update route display for selected provider
+    const routeAddrs = Array.isArray(selected.raw?.route) ? selected.raw.route : [];
+    const routeSymbols = routeAddrs
+      .map((addr) => resolveToken(String(addr)))
+      .filter((t): t is NonNullable<ReturnType<typeof resolveToken>> => Boolean(t))
+      .map((t) => t.symbol);
+
+    const fromSym = fromTokenInfo?.symbol ?? "—";
+    const toSym = toTokenInfo.symbol;
+    const mid = routeSymbols.filter((s) => s !== fromSym && s !== toSym);
+    const compactMid = mid.length > 0 ? "…" : null;
+    const path = [fromSym, compactMid, toSym].filter((x): x is string => Boolean(x));
+
+    const p0 = path[0] ?? "—";
+    const p1 = path[1] ?? "—";
+    const p2 = path[2] ?? "—";
+    const routeHtml =
+      `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p0.slice(0, 1)}</div><span class="route-token-name">${p0}</span></div></div>` +
+      `<span class="route-arrow">→</span>` +
+      `<span class="route-dex">${selected.providerId ?? "—"}</span>` +
+      `<span class="route-arrow">→</span>` +
+      (path.length === 3
+        ? `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1}</div><span class="route-token-name">${p1}</span></div></div><span class="route-arrow">→</span>` +
+          `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p2.slice(0, 1)}</div><span class="route-token-name">${p2}</span></div></div>`
+        : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
+    setHtml("#routeContainer .route-path", routeHtml);
+
+  }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken]);
+
   // Update swap button state based on approval, balance, and connection
   useEffect(() => {
     if (!selected || !fromTokenInfo) return;
