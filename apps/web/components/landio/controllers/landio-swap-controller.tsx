@@ -364,7 +364,7 @@ export function LandioSwapController() {
     return addresses;
   }, [fromTokenInfo, toTokenInfo]);
 
-  const { formatUsd, getPrice } = useTokenPrices(priceTokenAddresses);
+  const { formatUsd, getPrice, prices } = useTokenPrices(priceTokenAddresses);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 10: BALANCES HOOK
@@ -575,8 +575,8 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // Update USD values when amounts or prices change
   useEffect(() => {
-    const fromUsdEl = document.querySelector('.token-input-box:first-of-type .usd-value');
-    const toUsdEl = document.querySelector('.token-input-box:nth-of-type(2) .usd-value, .token-input-box:last-of-type .usd-value');
+    const fromUsdEl = document.getElementById('fromUsdValue');
+    const toUsdEl = document.getElementById('toUsdValue');
 
     if (fromUsdEl && fromTokenInfo) {
       if (fromAmountValue > 0) {
@@ -595,43 +595,37 @@ export function LandioSwapController() {
         toUsdEl.textContent = "≈ $0.00";
       }
     }
-  }, [fromAmountValue, toAmountValue, fromTokenInfo, toTokenInfo, formatUsd]);
+  }, [fromAmountValue, toAmountValue, fromTokenInfo, toTokenInfo, formatUsd, prices]);
 
   // Update balance displays when wallet connects/disconnects
   useEffect(() => {
-    const fromBalanceLabel = document.querySelector('.token-input-box:first-of-type .token-input-label span:last-child');
-    const toBalanceLabel = document.querySelector('.token-input-box:last-of-type .token-input-label span:first-child + span, .token-input-box:nth-of-type(2) .token-input-label span:last-child');
+    const fromBalanceLabel = document.getElementById('fromBalanceLabel');
+    const toBalanceLabel = document.getElementById('toBalanceLabel');
 
     if (fromBalanceLabel && fromTokenInfo) {
       if (isConnected && !isLoadingBalances) {
         const balance = getBalanceFormatted(fromTokenInfo);
-        fromBalanceLabel.innerHTML = `Balance: ${balance} ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: ${balance} <button class="max-btn">MAX</button>`;
       } else if (isConnected && isLoadingBalances) {
-        fromBalanceLabel.innerHTML = `Balance: ... ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: ... <button class="max-btn">MAX</button>`;
       } else {
-        fromBalanceLabel.innerHTML = `Balance: — ${fromTokenSymbol} <button class="max-btn">MAX</button>`;
+        fromBalanceLabel.innerHTML = `Balance: -- <button class="max-btn">MAX</button>`;
       }
     }
 
-    // Find the "to" token balance label (second token-input-box)
-    const tokenInputBoxes = document.querySelectorAll('.token-input-box');
-    if (tokenInputBoxes.length >= 2 && toTokenInfo) {
-      const toBox = tokenInputBoxes[1];
-      const toLabel = toBox?.querySelector('.token-input-label span:last-child');
-      if (toLabel) {
-        if (isConnected && !isLoadingBalances) {
-          const balance = getBalanceFormatted(toTokenInfo);
-          toLabel.textContent = `Balance: ${balance} ${toTokenSymbol}`;
-        } else if (isConnected && isLoadingBalances) {
-          toLabel.textContent = `Balance: ... ${toTokenSymbol}`;
-        } else {
-          toLabel.textContent = `Balance: — ${toTokenSymbol}`;
-        }
+    if (toBalanceLabel && toTokenInfo) {
+      if (isConnected && !isLoadingBalances) {
+        const balance = getBalanceFormatted(toTokenInfo);
+        toBalanceLabel.textContent = `Balance: ${balance}`;
+      } else if (isConnected && isLoadingBalances) {
+        toBalanceLabel.textContent = `Balance: ...`;
+      } else {
+        toBalanceLabel.textContent = `Balance: --`;
       }
     }
 
     // Hook up MAX button
-    const maxBtn = document.querySelector('.max-btn');
+    const maxBtn = fromBalanceLabel?.querySelector('.max-btn');
     const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
     const handleMax = () => {
       if (fromAmountInput && fromTokenInfo && isConnected) {
@@ -645,7 +639,7 @@ export function LandioSwapController() {
     return () => {
       maxBtn?.removeEventListener('click', handleMax);
     };
-  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo, fromTokenSymbol, toTokenSymbol]);
+  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 20: DOM SYNC EFFECTS - Settings Modal

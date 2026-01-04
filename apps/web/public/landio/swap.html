@@ -731,7 +731,7 @@
           <div class="token-input-box">
             <div class="token-input-label">
               <span>You pay</span>
-              <span>Balance: -- <button class="max-btn">MAX</button></span>
+              <span id="fromBalanceLabel">Balance: -- <button class="max-btn">MAX</button></span>
             </div>
             <div class="token-input-row">
               <input type="text" class="token-amount-input" placeholder="0" id="fromAmount">
@@ -741,7 +741,7 @@
                 <span class="token-dropdown-icon">▼</span>
               </div>
             </div>
-            <div class="usd-value">≈ $0.00</div>
+            <div class="usd-value" id="fromUsdValue">≈ $0.00</div>
           </div>
 
           <!-- Swap Arrow -->
@@ -753,7 +753,7 @@
           <div class="token-input-box">
             <div class="token-input-label">
               <span>You receive</span>
-              <span>Balance: --</span>
+              <span id="toBalanceLabel">Balance: --</span>
             </div>
             <div class="token-input-row">
               <input type="text" class="token-amount-input" placeholder="0" id="toAmount" readonly>
@@ -763,7 +763,7 @@
                 <span class="token-dropdown-icon">▼</span>
               </div>
             </div>
-            <div class="usd-value">≈ $0.00</div>
+            <div class="usd-value" id="toUsdValue">≈ $0.00</div>
           </div>
         </div>
 
