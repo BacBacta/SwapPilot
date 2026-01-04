@@ -225,104 +225,77 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   // Update logos - generate from live providers
   logosEl.innerHTML = "";
   
-  // Provider logo configuration with brand colors and icons
-  const providerLogos: Record<string, { name: string; bg: string; fg: string; icon: string }> = {
+  // Provider logo URLs (official CDN sources)
+  const providerLogos: Record<string, { name: string; logo: string }> = {
     "1inch": {
       name: "1inch",
-      bg: "#1B314F",
-      fg: "#ED5843",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 5L10 12v16l10 7 10-7V12L20 5zm0 4l6 4.2v8.4L20 26l-6-4.4v-8.4L20 9z" fill="currentColor"/></svg>`,
+      logo: "https://cdn.1inch.io/logo.png",
     },
     "zerox": {
       name: "0x",
-      bg: "#000000",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">0x</text></svg>`,
+      logo: "https://www.0x.org/images/0x-logo.svg",
     },
     "0x": {
       name: "0x",
-      bg: "#000000",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">0x</text></svg>`,
+      logo: "https://www.0x.org/images/0x-logo.svg",
     },
     "pancakeswap": {
       name: "PancakeSwap",
-      bg: "#633001",
-      fg: "#FEDC90",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="14" r="6" fill="#FEDC90"/><circle cx="20" cy="26" r="8" fill="#D1884F"/><circle cx="16" cy="24" r="2" fill="#633001"/><circle cx="24" cy="24" r="2" fill="#633001"/></svg>`,
+      logo: "https://assets.pancakeswap.finance/web/og/hero.jpg",
     },
     "okx": {
-      name: "OKX",
-      bg: "#000000",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="10" height="10" fill="currentColor"/><rect x="22" y="8" width="10" height="10" fill="currentColor"/><rect x="15" y="15" width="10" height="10" fill="currentColor"/><rect x="8" y="22" width="10" height="10" fill="currentColor"/><rect x="22" y="22" width="10" height="10" fill="currentColor"/></svg>`,
+      name: "OKX DEX",
+      logo: "https://static.okx.com/cdn/assets/imgs/221/5F74EB20302D7761.png",
     },
     "kyberswap": {
       name: "KyberSwap",
-      bg: "#31CB9E",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 6L8 14v12l12 8 12-8V14L20 6z" fill="currentColor" fill-opacity="0.3"/><path d="M20 12l-6 4v8l6 4 6-4v-8l-6-4z" fill="currentColor"/></svg>`,
+      logo: "https://kyberswap.com/favicon.ico",
     },
     "openocean": {
       name: "OpenOcean",
-      bg: "#1B4DFF",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="5" fill="currentColor"/></svg>`,
+      logo: "https://openocean.finance/favicon.ico",
     },
     "paraswap": {
       name: "ParaSwap",
-      bg: "#0058FF",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 6L6 34h28L20 6z" fill="currentColor"/></svg>`,
+      logo: "https://app.paraswap.io/favicon.ico",
     },
     "dodo": {
       name: "DODO",
-      bg: "#FFE804",
-      fg: "#000000",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><ellipse cx="20" cy="22" rx="12" ry="10" fill="#000"/><circle cx="14" cy="18" r="3" fill="#FFF"/><circle cx="26" cy="18" r="3" fill="#FFF"/><circle cx="14" cy="17" r="1.5" fill="#000"/><circle cx="26" cy="17" r="1.5" fill="#000"/><ellipse cx="20" cy="26" rx="4" ry="2" fill="#FF9500"/></svg>`,
+      logo: "https://app.dodoex.io/favicon.ico",
     },
     "odos": {
       name: "Odos",
-      bg: "#8B5CF6",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="5" fill="currentColor"/></svg>`,
+      logo: "https://app.odos.xyz/favicon.ico",
     },
     "bebop": {
       name: "Bebop",
-      bg: "#FF6B35",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" rx="6" fill="currentColor"/><circle cx="15" cy="20" r="3" fill="#000"/><circle cx="25" cy="20" r="3" fill="#000"/></svg>`,
+      logo: "https://bebop.xyz/favicon.ico",
     },
     "rango": {
       name: "Rango",
-      bg: "#472B8A",
-      fg: "#00D395",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 4l-14 10v12l14 10 14-10V14L20 4z" fill="currentColor"/></svg>`,
+      logo: "https://app.rango.exchange/favicon.ico",
     },
     "lifi": {
       name: "LI.FI",
-      bg: "#EF46FF",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M8 20l12-12 12 12-12 12-12-12z" fill="currentColor"/></svg>`,
+      logo: "https://li.fi/favicon.ico",
     },
     "magpie": {
       name: "Magpie",
-      bg: "#0A1628",
-      fg: "#00C8FF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" stroke="currentColor" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg>`,
+      logo: "https://www.magpiefi.xyz/favicon.ico",
     },
     "oku": {
       name: "Oku",
-      bg: "#6366F1",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" fill="currentColor"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-weight="bold" fill="#6366F1">O</text></svg>`,
+      logo: "https://oku.trade/favicon.ico",
     },
     "firebird": {
       name: "Firebird",
-      bg: "#FF4500",
-      fg: "#FFFFFF",
-      icon: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 4c-2 6-8 10-8 16 0 6.6 5.4 12 12 12s12-5.4 12-12c0-6-6-10-8-16-2 4-6 6-8 6s-6-2-8-6z" fill="currentColor"/></svg>`,
+      logo: "https://app.firebird.finance/favicon.ico",
     },
+  };
+
+  // Fallback initials for when images fail to load
+  const getInitials = (name: string): string => {
+    return name.split(/[\s.-]+/).map(word => word[0]?.toUpperCase() || "").join("").slice(0, 2);
   };
 
   data.providers.forEach((provider) => {
@@ -330,25 +303,24 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     div.className = "integration-logo";
     
     const config = providerLogos[provider.providerId];
+    const displayName = config?.name || provider.displayName;
+    const initials = getInitials(displayName);
     
-    if (config) {
-      // Apply brand colors as background
-      div.style.backgroundColor = config.bg;
-      div.style.color = config.fg;
-      div.innerHTML = `
-        <div class="provider-icon">
-          ${config.icon}
-        </div>
-        <span class="provider-name">${config.name}</span>
-      `;
-    } else {
-      // Fallback with gradient background
-      div.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-      div.style.color = "#FFFFFF";
-      div.innerHTML = `<span class="provider-name">${provider.displayName}</span>`;
-    }
+    // Create image with fallback to initials
+    div.innerHTML = `
+      <div class="provider-img-wrapper">
+        <img 
+          src="${config?.logo || ""}" 
+          alt="${displayName}" 
+          class="provider-img"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="provider-initials" style="display: ${config?.logo ? 'none' : 'flex'};">${initials}</div>
+      </div>
+      <span class="provider-name">${displayName}</span>
+    `;
     
-    div.title = provider.displayName;
+    div.title = displayName;
     logosEl.appendChild(div);
   });
 }

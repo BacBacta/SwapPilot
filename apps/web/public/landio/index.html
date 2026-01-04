@@ -451,7 +451,7 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1.25rem;
+      gap: 1rem;
       padding: 2rem 0;
     }
 
@@ -460,45 +460,68 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      width: 110px;
-      height: 110px;
-      border-radius: 20px;
+      gap: 0.75rem;
+      width: 120px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
-      padding: 1rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      border: none;
+      padding: 1rem 0.75rem;
       cursor: pointer;
     }
 
     .integration-logo:hover {
-      transform: translateY(-6px) scale(1.08);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
     }
 
-    .integration-logo .provider-icon {
-      width: 48px;
-      height: 48px;
+    .integration-logo .provider-img-wrapper {
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.1);
     }
 
-    .integration-logo .provider-icon svg {
+    .integration-logo .provider-img {
       width: 100%;
       height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .integration-logo .provider-initials {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
     }
 
     .integration-logo .provider-name {
       font-size: 0.7rem;
-      font-weight: 600;
+      font-weight: 500;
+      color: var(--text-dim);
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 100px;
-      letter-spacing: 0.02em;
+      max-width: 110px;
+    }
+
+    .integration-logo:hover .provider-name {
+      color: var(--text);
     }
 
     /* ===== COMPARISON ANIMATION ===== */
