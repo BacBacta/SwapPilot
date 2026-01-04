@@ -27,7 +27,6 @@ export interface FeeCollectorInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "BURN_PERCENT"
-      | "REFERRAL_PERCENT"
       | "TREASURY_PERCENT"
       | "collectTokenFees"
       | "convertTokenToBnb"
@@ -36,10 +35,8 @@ export interface FeeCollectorInterface extends Interface {
       | "emergencyWithdraw"
       | "owner"
       | "pilotToken"
-      | "referralPool"
       | "renounceOwnership"
       | "setDexRouter"
-      | "setReferralPool"
       | "setTreasury"
       | "totalFeesCollected"
       | "totalPilotBurned"
@@ -58,10 +55,6 @@ export interface FeeCollectorInterface extends Interface {
 
   encodeFunctionData(
     functionFragment: "BURN_PERCENT",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "REFERRAL_PERCENT",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -91,19 +84,11 @@ export interface FeeCollectorInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "referralPool",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "setDexRouter",
-    values: [AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setReferralPool",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -130,10 +115,6 @@ export interface FeeCollectorInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "REFERRAL_PERCENT",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "TREASURY_PERCENT",
     data: BytesLike
   ): Result;
@@ -157,19 +138,11 @@ export interface FeeCollectorInterface extends Interface {
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pilotToken", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "referralPool",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "setDexRouter",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setReferralPool",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -208,18 +181,12 @@ export namespace FeesCollectedEvent {
 export namespace FeesDistributedEvent {
   export type InputTuple = [
     burnAmount: BigNumberish,
-    treasuryAmount: BigNumberish,
-    referralAmount: BigNumberish
+    treasuryAmount: BigNumberish
   ];
-  export type OutputTuple = [
-    burnAmount: bigint,
-    treasuryAmount: bigint,
-    referralAmount: bigint
-  ];
+  export type OutputTuple = [burnAmount: bigint, treasuryAmount: bigint];
   export interface OutputObject {
     burnAmount: bigint;
     treasuryAmount: bigint;
-    referralAmount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -298,8 +265,6 @@ export interface FeeCollector extends BaseContract {
 
   BURN_PERCENT: TypedContractMethod<[], [bigint], "view">;
 
-  REFERRAL_PERCENT: TypedContractMethod<[], [bigint], "view">;
-
   TREASURY_PERCENT: TypedContractMethod<[], [bigint], "view">;
 
   collectTokenFees: TypedContractMethod<
@@ -328,18 +293,10 @@ export interface FeeCollector extends BaseContract {
 
   pilotToken: TypedContractMethod<[], [string], "view">;
 
-  referralPool: TypedContractMethod<[], [string], "view">;
-
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
   setDexRouter: TypedContractMethod<
     [_dexRouter: AddressLike],
-    [void],
-    "nonpayable"
-  >;
-
-  setReferralPool: TypedContractMethod<
-    [_referralPool: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -370,9 +327,6 @@ export interface FeeCollector extends BaseContract {
 
   getFunction(
     nameOrSignature: "BURN_PERCENT"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "REFERRAL_PERCENT"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "TREASURY_PERCENT"
@@ -407,17 +361,11 @@ export interface FeeCollector extends BaseContract {
     nameOrSignature: "pilotToken"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
-    nameOrSignature: "referralPool"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setDexRouter"
   ): TypedContractMethod<[_dexRouter: AddressLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "setReferralPool"
-  ): TypedContractMethod<[_referralPool: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setTreasury"
   ): TypedContractMethod<[_treasury: AddressLike], [void], "nonpayable">;
@@ -478,7 +426,7 @@ export interface FeeCollector extends BaseContract {
       FeesCollectedEvent.OutputObject
     >;
 
-    "FeesDistributed(uint256,uint256,uint256)": TypedContractEvent<
+    "FeesDistributed(uint256,uint256)": TypedContractEvent<
       FeesDistributedEvent.InputTuple,
       FeesDistributedEvent.OutputTuple,
       FeesDistributedEvent.OutputObject

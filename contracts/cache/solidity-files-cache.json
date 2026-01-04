@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/workspaces/SwapPilot/contracts/src/FeeCollector.sol": {
-      "lastModificationDate": 1767196286700,
-      "contentHash": "7e3a28451fa3318a22642d49520f2671",
+      "lastModificationDate": 1767548460831,
+      "contentHash": "0620cf109483e5ebdff08978506a69ff",
       "sourceName": "src/FeeCollector.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -608,6 +608,47 @@
       ],
       "artifacts": [
         "ReferralPool"
+      ]
+    },
+    "/workspaces/SwapPilot/contracts/src/ReferralRewards.sol": {
+      "lastModificationDate": 1767548518115,
+      "contentHash": "35035a26a8f8e3f5830aff4f2cab1359",
+      "sourceName": "src/ReferralRewards.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ReferralRewards"
       ]
     }
   }

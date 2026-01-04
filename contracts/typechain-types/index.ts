@@ -38,3 +38,5 @@ export type { PILOTToken } from "./src/PILOTToken";
 export { PILOTToken__factory } from "./factories/src/PILOTToken__factory";
 export type { ReferralPool } from "./src/ReferralPool";
 export { ReferralPool__factory } from "./factories/src/ReferralPool__factory";
+export type { ReferralRewards } from "./src/ReferralRewards";
+export { ReferralRewards__factory } from "./factories/src/ReferralRewards__factory";
