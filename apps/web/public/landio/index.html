@@ -165,8 +165,9 @@
     }
 
     /* ===== REVEAL ON SCROLL ===== */
+    /* Elements are visible by default, animations are progressive enhancement */
     .reveal {
-      opacity: 0;
+      opacity: 1;
       transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -175,7 +176,7 @@
     }
 
     .reveal-up {
-      transform: translateY(60px);
+      transform: translateY(0);
     }
 
     .reveal-up.active {
@@ -183,7 +184,7 @@
     }
 
     .reveal-down {
-      transform: translateY(-60px);
+      transform: translateY(0);
     }
 
     .reveal-down.active {
@@ -191,7 +192,7 @@
     }
 
     .reveal-left {
-      transform: translateX(-60px);
+      transform: translateX(0);
     }
 
     .reveal-left.active {
@@ -199,7 +200,7 @@
     }
 
     .reveal-right {
-      transform: translateX(60px);
+      transform: translateX(0);
     }
 
     .reveal-right.active {
@@ -207,7 +208,7 @@
     }
 
     .reveal-scale {
-      transform: scale(0.85);
+      transform: scale(1);
     }
 
     .reveal-scale.active {
@@ -215,17 +216,17 @@
     }
 
     .reveal-blur {
-      filter: blur(10px);
+      filter: blur(0);
     }
 
     .reveal-blur.active {
       filter: blur(0);
     }
 
-    /* Stagger children */
+    /* Stagger children - visible by default */
     .stagger-children > * {
-      opacity: 0;
-      transform: translateY(30px);
+      opacity: 1;
+      transform: translateY(0);
       transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
