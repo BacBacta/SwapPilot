@@ -21,16 +21,14 @@ export function LandioNav() {
 
   const links = isLanding
     ? [
-        { href: "/#features", label: "Features" },
-        { href: "/#pricing", label: "Pricing" },
-        { href: "/blog", label: "Blog" },
-        { href: "/contact", label: "Contact" },
+        { href: "/#services", label: "Services" },
+        { href: "/#integrations", label: "Integrations" },
+        { href: "/#faq", label: "FAQ" },
       ]
     : [
         { href: "/swap", label: "Swap" },
         { href: "/rewards", label: "Rewards" },
         { href: "/status", label: "Status" },
-        { href: "/settings", label: "Settings" },
       ];
 
   const isActive = (href: string) => pathname === href;
