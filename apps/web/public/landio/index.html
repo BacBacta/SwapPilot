@@ -549,6 +549,65 @@
       transition: width 0.1s;
     }
 
+    /* ===== BEQ DEMO STYLES ===== */
+    .beq-demo {
+      padding: 1rem;
+    }
+    .beq-score-display {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .beq-score-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #10b981);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(200, 255, 0, 0.3);
+    }
+    .beq-score-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #000;
+    }
+    .beq-score-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #000;
+      opacity: 0.8;
+    }
+    .beq-factors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .beq-factor {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.6rem;
+      background: var(--bg-card-inner);
+      border-radius: 6px;
+    }
+    .factor-label {
+      opacity: 0.7;
+    }
+    .factor-value {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .beq-caption {
+      text-align: center;
+      font-size: 0.7rem;
+      opacity: 0.5;
+      margin: 0;
+    }
+
     /* ===== TYPING TEXT EFFECT ===== */
     .typing-text {
       overflow: hidden;
@@ -602,13 +661,13 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-badge hero-animate" style="--delay: 0s;">
-      <span class="hero-badge-dot"></span>
-      NEW GEN DEX AGGREGATOR
+      <span class="hero-badge-dot" id="hero-status-dot"></span>
+      <span id="hero-badge-text">DEX AGGREGATOR</span>
     </div>
     
     <h1 class="hero-animate" style="--delay: 0.1s;">Swap Smarter. <span class="accent">Save More.</span> With BEQ.</h1>
     
-    <p class="hero-subtitle hero-animate" style="--delay: 0.2s;">AI-Powered DEX Aggregation Made Simple</p>
+    <p class="hero-subtitle hero-animate" style="--delay: 0.2s;">Compare <span id="provider-count">15+</span> aggregators. Get the best execution. Pay only <strong>0.1%</strong> fees.</p>
     
     <div class="hero-buttons hero-animate" style="--delay: 0.3s;">
       <a href="/swap" class="btn btn-primary btn-lg">Launch App</a>
@@ -617,24 +676,27 @@
     <div class="hero-visual hero-animate" style="--delay: 0.4s;">
       <div class="hero-card hero-card-main float-animation">
         <div class="hero-card-header">
-          <span class="hero-card-badge">WE ANALYZE YOUR TRADES</span>
+          <span class="hero-card-badge">LIVE BEQ DEMO</span>
         </div>
-        <p class="hero-card-quote">
-          " We <span class="highlight">find the best routes</span>, compare <span class="highlight">15+ aggregators</span> & optimize your <span class="highlight">swap execution</span>. Best part is we also calculate <span class="highlight">real costs</span> including gas. "
-        </p>
-        <div class="hero-card-author">
-          <div class="hero-card-avatar">
-            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Avatar">
+        <div class="beq-demo" id="beq-demo">
+          <div class="beq-score-display">
+            <div class="beq-score-circle">
+              <span class="beq-score-value" id="beq-score">--</span>
+              <span class="beq-score-label">BEQ</span>
+            </div>
           </div>
-          <div class="hero-card-author-info">
-            <div class="hero-card-author-name">SwapPilot Team</div>
-            <div class="hero-card-author-role">BEQ Scoring Engine</div>
+          <div class="beq-factors">
+            <div class="beq-factor"><span class="factor-label">Net Output</span><span class="factor-value" id="beq-output">--</span></div>
+            <div class="beq-factor"><span class="factor-label">Gas Cost</span><span class="factor-value" id="beq-gas">--</span></div>
+            <div class="beq-factor"><span class="factor-label">Slippage Risk</span><span class="factor-value" id="beq-slippage">--</span></div>
+            <div class="beq-factor"><span class="factor-label">MEV Risk</span><span class="factor-value" id="beq-mev">--</span></div>
           </div>
+          <p class="beq-caption">Real-time scoring from our BEQ engine</p>
         </div>
       </div>
 
       <div class="hero-card float-animation" style="animation-delay: 0.5s;">
-        <div class="swap-mock">
+        <div class="swap-mock" id="live-quote">
           <div class="swap-row">
             <div class="swap-token">
               <div class="swap-token-icon bnb">BNB</div>
@@ -645,23 +707,24 @@
             </div>
             <div class="swap-amount">
               <div class="swap-amount-value">1.0</div>
-              <div class="swap-amount-usd">≈ $580</div>
+              <div class="swap-amount-usd" id="quote-from-usd">Loading...</div>
             </div>
           </div>
           <div class="swap-arrow">↓</div>
           <div class="swap-row">
             <div class="swap-token">
-              <div class="swap-token-icon eth">ETH</div>
+              <div class="swap-token-icon usdt">USDT</div>
               <div>
-                <div class="swap-token-name">ETH</div>
-                <div class="swap-token-label">To</div>
+                <div class="swap-token-name">USDT</div>
+                <div class="swap-token-label">To (Best Quote)</div>
               </div>
             </div>
             <div class="swap-amount">
-              <div class="swap-amount-value accent">0.2847</div>
-              <div class="swap-amount-usd">≈ $579</div>
+              <div class="swap-amount-value accent" id="quote-to-amount">--</div>
+              <div class="swap-amount-usd" id="quote-provider">via --</div>
             </div>
           </div>
+          <div class="quote-meta" id="quote-meta" style="font-size: 0.7rem; opacity: 0.6; margin-top: 0.5rem; text-align: center;"></div>
         </div>
       </div>
     </div>
@@ -1001,65 +1064,6 @@
     </div>
   </section>
 
-  <!-- SUCCESS STORIES -->
-  <section id="stories" class="section">
-    <div class="container">
-      <div class="section-header reveal reveal-up">
-        <span class="section-badge">POTENTIAL OUTCOMES</span>
-        <h2 class="section-title">Success Stories to Inspire</h2>
-        <p class="section-subtitle">Illustrative examples of what traders can achieve</p>
-        <p class="section-disclaimer" style="font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem;">*These are hypothetical scenarios for illustration purposes only. Actual results may vary.</p>
-      </div>
-
-      <div class="stories-grid stagger-children reveal">
-        <div class="story-card">
-          <h3>DeFi Fund's Revolution</h3>
-          <p>A crypto fund implemented SwapPilot for all their trades. This move slashed operational costs by 50% and boosted trade efficiency by 75%, empowering the team to scale faster.</p>
-          <div class="story-stats">
-            <div class="story-stat">
-              <span class="stat-value">50%</span>
-              <span class="stat-label">reduction in costs</span>
-            </div>
-            <div class="story-stat">
-              <span class="stat-value">75%</span>
-              <span class="stat-label">boost in efficiency</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="story-card">
-          <h3>Whale Trader's Success</h3>
-          <p>A high-volume trader transformed their execution using BEQ scoring. This shift resulted in a 60% increase in savings and a 45% improvement in fill rates.</p>
-          <div class="story-stats">
-            <div class="story-stat">
-              <span class="stat-value">60%</span>
-              <span class="stat-label">growth in savings</span>
-            </div>
-            <div class="story-stat">
-              <span class="stat-value">45%</span>
-              <span class="stat-label">rise in fill rates</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="story-card">
-          <h3>Yield Farmer's Breakthrough</h3>
-          <p>A yield farming protocol used SwapPilot to optimize rebalancing. The insights led to a 40% increase in yield and a 30% reduction in gas costs.</p>
-          <div class="story-stats">
-            <div class="story-stat">
-              <span class="stat-value">40%</span>
-              <span class="stat-label">gain in yield</span>
-            </div>
-            <div class="story-stat">
-              <span class="stat-value">30%</span>
-              <span class="stat-label">gas savings</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- INTEGRATIONS -->
   <section id="integrations" class="section">
     <div class="container">
@@ -1207,8 +1211,10 @@
             SwapPilot
           </a>
           <p>The smartest DEX aggregator on BNB Chain. Compare, score, and execute trades with confidence.</p>
-          <div class="footer-social">
-            <span style="opacity: 0.5; font-size: 0.85rem;">Social links coming soon</span>
+          <div class="footer-social" style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+            <span style="opacity: 0.4; font-size: 1.2rem;" title="Twitter coming soon">𝕏</span>
+            <span style="opacity: 0.4; font-size: 1.2rem;" title="Discord coming soon">💬</span>
+            <span style="opacity: 0.4; font-size: 1.2rem;" title="Telegram coming soon">✈️</span>
           </div>
         </div>
         <div class="footer-column">
@@ -1225,8 +1231,7 @@
           <ul>
             <li><a href="#services">Features</a></li>
             <li><a href="#faq">FAQ</a></li>
-            <li><a href="contact.html">Contact</a></li>
-            <li><a href="blog.html">Blog</a></li>
+            <li><a href="#integrations">Integrations</a></li>
           </ul>
         </div>
         <div class="footer-column">

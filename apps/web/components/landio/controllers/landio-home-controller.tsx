@@ -20,6 +20,24 @@ type HealthResponse = {
   version?: string;
 };
 
+type QuoteResult = {
+  providerId: string;
+  displayName: string;
+  buyAmount: string;
+  buyAmountUsd?: number;
+  sellAmountUsd?: number;
+  gasCostUsd?: number;
+  netOutputUsd?: number;
+  score?: number;
+  slippageRisk?: string;
+  mevRisk?: string;
+};
+
+type QuoteResponse = {
+  results: QuoteResult[];
+  bestProviderId?: string;
+};
+
 function getApiBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ??
@@ -56,20 +74,28 @@ export function LandioHomeController() {
 async function loadDynamicData(signal: AbortSignal): Promise<void> {
   const baseUrl = getApiBaseUrl();
 
-  // Load health status and provider status in parallel
-  const [healthResult, providersResult] = await Promise.allSettled([
+  // Load all data in parallel
+  const [healthResult, providersResult, quoteResult] = await Promise.allSettled([
     fetchHealth(baseUrl, signal),
     fetchProviders(baseUrl, signal),
+    fetchLiveQuote(baseUrl, signal),
   ]);
 
-  // Update integrations section with live data
+  // Update provider count in hero
   if (providersResult.status === "fulfilled") {
+    updateProviderCount(providersResult.value);
     updateIntegrationsSection(providersResult.value);
   }
 
   // Update status indicator if health is available
   if (healthResult.status === "fulfilled") {
     updateHealthBadge(healthResult.value);
+  }
+
+  // Update live quote and BEQ demo
+  if (quoteResult.status === "fulfilled") {
+    updateLiveQuote(quoteResult.value);
+    updateBEQDemo(quoteResult.value);
   }
 }
 
@@ -85,6 +111,102 @@ async function fetchProviders(baseUrl: string, signal: AbortSignal): Promise<Pro
   return res.json();
 }
 
+async function fetchLiveQuote(baseUrl: string, signal: AbortSignal): Promise<QuoteResponse> {
+  // Fetch a real quote: 1 BNB -> USDT on BSC
+  const params = new URLSearchParams({
+    chainId: "56",
+    sellToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // Native BNB
+    buyToken: "0x55d398326f99059fF775485246999027B3197955", // USDT on BSC
+    sellAmount: "1000000000000000000", // 1 BNB in wei
+    slippageBps: "100",
+  });
+  
+  const res = await fetch(`${baseUrl}/v1/quotes?${params}`, { signal });
+  if (!res.ok) throw new Error(`Quote fetch failed: ${res.status}`);
+  return res.json();
+}
+
+function updateProviderCount(data: ProviderStatusResponse): void {
+  const countEl = document.getElementById("provider-count");
+  if (countEl) {
+    countEl.textContent = `${data.providers.length}`;
+  }
+
+  // Update hero badge text
+  const badgeText = document.getElementById("hero-badge-text");
+  if (badgeText) {
+    const operational = data.providers.filter((p) => p.status === "ok").length;
+    badgeText.textContent = `${operational}/${data.providers.length} PROVIDERS ONLINE`;
+  }
+}
+
+function updateLiveQuote(data: QuoteResponse): void {
+  if (!data.results || data.results.length === 0) return;
+
+  // Find best quote
+  const bestQuote = data.results.find(r => r.providerId === data.bestProviderId) || data.results[0];
+
+  // Update quote display
+  const fromUsdEl = document.getElementById("quote-from-usd");
+  const toAmountEl = document.getElementById("quote-to-amount");
+  const providerEl = document.getElementById("quote-provider");
+  const metaEl = document.getElementById("quote-meta");
+
+  if (fromUsdEl && bestQuote.sellAmountUsd) {
+    fromUsdEl.textContent = `≈ $${bestQuote.sellAmountUsd.toFixed(2)}`;
+  }
+
+  if (toAmountEl) {
+    // Convert from wei to readable amount (USDT has 18 decimals on BSC)
+    const amount = parseFloat(bestQuote.buyAmount) / 1e18;
+    toAmountEl.textContent = amount.toFixed(2);
+  }
+
+  if (providerEl) {
+    providerEl.textContent = `via ${bestQuote.displayName}`;
+  }
+
+  if (metaEl) {
+    const gasText = bestQuote.gasCostUsd ? `Gas: $${bestQuote.gasCostUsd.toFixed(2)}` : "";
+    const scoreText = bestQuote.score ? `BEQ: ${bestQuote.score}` : "";
+    metaEl.textContent = [gasText, scoreText].filter(Boolean).join(" • ");
+  }
+}
+
+function updateBEQDemo(data: QuoteResponse): void {
+  if (!data.results || data.results.length === 0) return;
+
+  const bestQuote = data.results.find(r => r.providerId === data.bestProviderId) || data.results[0];
+
+  // Update BEQ score
+  const scoreEl = document.getElementById("beq-score");
+  if (scoreEl && bestQuote.score) {
+    scoreEl.textContent = bestQuote.score.toString();
+  }
+
+  // Update BEQ factors
+  const outputEl = document.getElementById("beq-output");
+  const gasEl = document.getElementById("beq-gas");
+  const slippageEl = document.getElementById("beq-slippage");
+  const mevEl = document.getElementById("beq-mev");
+
+  if (outputEl && bestQuote.netOutputUsd) {
+    outputEl.textContent = `$${bestQuote.netOutputUsd.toFixed(2)}`;
+  }
+
+  if (gasEl && bestQuote.gasCostUsd) {
+    gasEl.textContent = `$${bestQuote.gasCostUsd.toFixed(2)}`;
+  }
+
+  if (slippageEl) {
+    slippageEl.textContent = bestQuote.slippageRisk || "Low";
+  }
+
+  if (mevEl) {
+    mevEl.textContent = bestQuote.mevRisk || "Protected";
+  }
+}
+
 function updateIntegrationsSection(data: ProviderStatusResponse): void {
   const statusEl = document.getElementById("integration-status");
   const logosEl = document.getElementById("integration-logos");
@@ -98,16 +220,17 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   // Update the status message
   statusEl.textContent = `${aggregators.length} aggregators + ${dexes.length} DEXes connected • ${operational}/${data.providers.length} operational`;
 
-  // Update logos with status indicators
+  // Update logos with status indicators - generate from live providers
   logosEl.innerHTML = "";
   
-  // Provider name mapping for display
+  // Provider emoji/name mapping for display
   const providerDisplayNames: Record<string, string> = {
     "1inch": "1inch",
+    "zerox": "0x",
     "0x": "0x",
-    "pancakeswap": "🥞",
+    "pancakeswap": "🥞 PCS",
     "okx": "OKX",
-    "kyberswap": "KyberSwap",
+    "kyberswap": "Kyber",
     "openocean": "OpenOcean",
     "paraswap": "ParaSwap",
     "dodo": "DODO",
@@ -138,13 +261,8 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
 }
 
 function updateHealthBadge(health: HealthResponse): void {
-  // Find hero badge and update with live status
-  const heroBadge = document.querySelector(".hero-badge");
-  if (!heroBadge) return;
-
-  const dot = heroBadge.querySelector(".hero-badge-dot") as HTMLElement;
+  const dot = document.getElementById("hero-status-dot") as HTMLElement;
   if (dot) {
-    // Update the dot color based on health status
     if (health.status === "ok") {
       dot.style.backgroundColor = "#10b981";
       dot.style.boxShadow = "0 0 10px #10b981";
