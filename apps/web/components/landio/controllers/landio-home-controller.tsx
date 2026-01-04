@@ -144,7 +144,8 @@ function updateLiveQuote(data: QuoteResponse): void {
   if (!data.results || data.results.length === 0) return;
 
   // Find best quote
-  const bestQuote = data.results.find(r => r.providerId === data.bestProviderId) || data.results[0];
+  const bestQuote = data.results.find((r) => r.providerId === data.bestProviderId) ?? data.results[0];
+  if (!bestQuote) return;
 
   // Update quote display
   const fromUsdEl = document.getElementById("quote-from-usd");
@@ -152,7 +153,7 @@ function updateLiveQuote(data: QuoteResponse): void {
   const providerEl = document.getElementById("quote-provider");
   const metaEl = document.getElementById("quote-meta");
 
-  if (fromUsdEl && bestQuote.sellAmountUsd) {
+  if (fromUsdEl && typeof bestQuote.sellAmountUsd === "number") {
     fromUsdEl.textContent = `≈ $${bestQuote.sellAmountUsd.toFixed(2)}`;
   }
 
@@ -167,8 +168,8 @@ function updateLiveQuote(data: QuoteResponse): void {
   }
 
   if (metaEl) {
-    const gasText = bestQuote.gasCostUsd ? `Gas: $${bestQuote.gasCostUsd.toFixed(2)}` : "";
-    const scoreText = bestQuote.score ? `BEQ: ${bestQuote.score}` : "";
+    const gasText = typeof bestQuote.gasCostUsd === "number" ? `Gas: $${bestQuote.gasCostUsd.toFixed(2)}` : "";
+    const scoreText = typeof bestQuote.score === "number" ? `BEQ: ${bestQuote.score}` : "";
     metaEl.textContent = [gasText, scoreText].filter(Boolean).join(" • ");
   }
 }
@@ -176,11 +177,12 @@ function updateLiveQuote(data: QuoteResponse): void {
 function updateBEQDemo(data: QuoteResponse): void {
   if (!data.results || data.results.length === 0) return;
 
-  const bestQuote = data.results.find(r => r.providerId === data.bestProviderId) || data.results[0];
+  const bestQuote = data.results.find((r) => r.providerId === data.bestProviderId) ?? data.results[0];
+  if (!bestQuote) return;
 
   // Update BEQ score
   const scoreEl = document.getElementById("beq-score");
-  if (scoreEl && bestQuote.score) {
+  if (scoreEl && typeof bestQuote.score === "number") {
     scoreEl.textContent = bestQuote.score.toString();
   }
 
@@ -190,11 +192,11 @@ function updateBEQDemo(data: QuoteResponse): void {
   const slippageEl = document.getElementById("beq-slippage");
   const mevEl = document.getElementById("beq-mev");
 
-  if (outputEl && bestQuote.netOutputUsd) {
+  if (outputEl && typeof bestQuote.netOutputUsd === "number") {
     outputEl.textContent = `$${bestQuote.netOutputUsd.toFixed(2)}`;
   }
 
-  if (gasEl && bestQuote.gasCostUsd) {
+  if (gasEl && typeof bestQuote.gasCostUsd === "number") {
     gasEl.textContent = `$${bestQuote.gasCostUsd.toFixed(2)}`;
   }
 
