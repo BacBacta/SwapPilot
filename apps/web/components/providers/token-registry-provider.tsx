@@ -176,8 +176,8 @@ export function TokenRegistryProvider({ children }: { children: ReactNode }) {
             .then((meta) => {
               const newToken: TokenInfo = {
                 address: raw as `0x${string}`,
-                symbol: meta.symbol ?? raw.slice(0, 6) + '…',
-                name: meta.name ?? 'Unknown Token',
+                symbol: meta.symbol ?? 'TOKEN',
+                name: meta.name ?? 'Custom Token',
                 decimals: meta.decimals,
                 isCustom: true,
                 isNative: meta.isNative,
@@ -202,8 +202,8 @@ export function TokenRegistryProvider({ children }: { children: ReactNode }) {
         // Return placeholder immediately with default decimals
         // Will be updated on next render after async resolution completes
         return { 
-          symbol: raw.slice(0, 6) + '…', 
-          name: 'Unknown Token', 
+          symbol: 'Loading...', 
+          name: 'Custom Token', 
           address: raw as `0x${string}`, 
           decimals: 18, 
           isCustom: true 
