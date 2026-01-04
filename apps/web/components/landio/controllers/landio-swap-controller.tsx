@@ -543,14 +543,32 @@ export function LandioSwapController() {
     }
   }, []);
 
-  // Ensure the template starts hidden like in the HTML
+  // Ensure the template starts hidden and reset BEQ values
   useEffect(() => {
     setDisplay("beqContainer", "none");
     setDisplay("routeContainer", "none");
     setDisplay("providersContainer", "none");
     setDisplay("detailsToggle", "none");
     setDisabled("swapBtn", true);
+    
+    // Reset BEQ values to placeholder (they will be updated when quotes load)
+    setText("priceImpact", "—");
+    setText("gasCost", "—");
+    setText("mevRisk", "—");
+    setText("netOutput", "—");
+    setText("beqScore", "—");
   }, []);
+  
+  // Update slippage display dynamically when settings change
+  useEffect(() => {
+    const slippageDisplay = document.getElementById("slippageDisplay");
+    if (slippageDisplay) {
+      const pct = effectiveSlippageBps / 100;
+      const autoIndicator = dynamicSlippage.isAuto ? "⚡ " : "";
+      slippageDisplay.textContent = `${autoIndicator}${pct.toFixed(pct % 1 === 0 ? 0 : 2)}%`;
+      slippageDisplay.title = dynamicSlippage.reason;
+    }
+  }, [effectiveSlippageBps, dynamicSlippage.isAuto, dynamicSlippage.reason]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 19: DOM SYNC EFFECTS - Balance & USD Display
