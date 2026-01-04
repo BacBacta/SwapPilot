@@ -752,6 +752,38 @@ export function LandioSwapController() {
         return;
       }
 
+      // Check if user has sufficient balance before fetching quotes
+      if (isConnected) {
+        const balanceRaw = getBalance(fromTokenInfo);
+        try {
+          const balanceBigInt = BigInt(balanceRaw || "0");
+          if (balanceBigInt === 0n) {
+            setDisplay("beqContainer", "none");
+            setDisplay("routeContainer", "none");
+            setDisplay("providersContainer", "none");
+            setDisplay("detailsToggle", "none");
+            setDisabled("swapBtn", true);
+            setSwapBtnText(`No ${fromTokenInfo.symbol} balance`);
+            if (toAmountInput) toAmountInput.value = "";
+            return;
+          }
+          const amountWei = toWei(rawValue, fromTokenInfo.decimals);
+          const amountBigInt = BigInt(amountWei || "0");
+          if (amountBigInt > balanceBigInt) {
+            setDisplay("beqContainer", "none");
+            setDisplay("routeContainer", "none");
+            setDisplay("providersContainer", "none");
+            setDisplay("detailsToggle", "none");
+            setDisabled("swapBtn", true);
+            setSwapBtnText(`Insufficient ${fromTokenInfo.symbol} balance`);
+            if (toAmountInput) toAmountInput.value = "";
+            return;
+          }
+        } catch {
+          // Ignore balance check errors, continue with quote fetch
+        }
+      }
+
       // Show analyzing shimmer state
       const swapContainer = document.querySelector<HTMLElement>(".swap-container");
       swapContainer?.classList.add("analyzing-state");
@@ -1193,6 +1225,7 @@ export function LandioSwapController() {
     executeSwap,
     fromTokenInfo,
     fromTokenSymbol,
+    getBalance,
     getPrice,
     isConnected,
     refetchAllowance,
