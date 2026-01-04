@@ -448,6 +448,7 @@
     /* ===== INTEGRATION LOGOS ===== */
     .integration-logo {
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
 
     .integration-logo:hover {
@@ -456,25 +457,41 @@
       background: var(--accent-dim);
     }
 
-    /* ===== TEAM CARDS ===== */
-    .team-card {
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Status indicators for dynamic logos */
+    .integration-logo.status-operational::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
     }
 
-    .team-card:hover {
-      transform: translateY(-10px);
+    .integration-logo.status-degraded::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
     }
 
-    .team-card:hover .team-image img {
-      transform: scale(1.1);
-    }
-
-    .team-image {
-      overflow: hidden;
-    }
-
-    .team-image img {
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    .integration-logo.status-down::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
     }
 
     /* ===== COMPARISON ANIMATION ===== */
@@ -577,7 +594,6 @@
         <li><a href="contact.html">Contact</a></li>
       </ul>
       <div class="nav-right">
-        <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
         <a href="swap.html" class="btn btn-primary">Launch App</a>
       </div>
     </div>
@@ -596,9 +612,6 @@
     
     <div class="hero-buttons hero-animate" style="--delay: 0.3s;">
       <a href="/swap" class="btn btn-primary btn-lg">Launch App</a>
-      <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
-      <a href="https://instagram.com" class="btn btn-icon">📷</a>
-      <a href="https://facebook.com" class="btn btn-icon">📘</a>
     </div>
 
     <div class="hero-visual hero-animate" style="--delay: 0.4s;">
@@ -992,9 +1005,10 @@
   <section id="stories" class="section">
     <div class="container">
       <div class="section-header reveal reveal-up">
-        <span class="section-badge">OUR CLIENTS</span>
+        <span class="section-badge">POTENTIAL OUTCOMES</span>
         <h2 class="section-title">Success Stories to Inspire</h2>
-        <p class="section-subtitle">Discover how traders achieve results</p>
+        <p class="section-subtitle">Illustrative examples of what traders can achieve</p>
+        <p class="section-disclaimer" style="font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem;">*These are hypothetical scenarios for illustration purposes only. Actual results may vary.</p>
       </div>
 
       <div class="stories-grid stagger-children reveal">
@@ -1056,7 +1070,7 @@
       </div>
 
       <div class="integrations-showcase reveal reveal-scale">
-        <div class="integration-logos">
+        <div class="integration-logos" id="integration-logos">
           <div class="integration-logo">1inch</div>
           <div class="integration-logo">0x</div>
           <div class="integration-logo">🥞</div>
@@ -1066,133 +1080,8 @@
           <div class="integration-logo">ParaSwap</div>
           <div class="integration-logo">DODO</div>
         </div>
-        <p class="integration-quote">"Our BEQ engine plugs into your favorite DEXes to create a unified, intelligent trading experience"</p>
+        <p class="integration-quote" id="integration-status">Loading aggregator status...</p>
       </div>
-    </div>
-  </section>
-
-  <!-- TESTIMONIALS -->
-  <section id="testimonials" class="section">
-    <div class="container">
-      <div class="section-header reveal reveal-up">
-        <span class="section-badge">REVIEWS</span>
-        <h2 class="section-title">Trusted by Visionaries</h2>
-        <p class="section-subtitle">Hear from real users who achieved success</p>
-      </div>
-
-      <div class="testimonials-grid stagger-children reveal">
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Daniel Kim</div>
-          <div class="testimonial-role">DeFi Trader at Flowbyte</div>
-          <p class="testimonial-text">"Truly impressive. The BEQ scoring is fast, accurate, and blends into our daily trading without friction."</p>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Priya Mehra</div>
-          <div class="testimonial-role">CTO at Brightstack Labs</div>
-          <p class="testimonial-text">"Game-changer. MEV protection works flawlessly. Our team now focuses only on what really matters."</p>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Elena Rodriguez</div>
-          <div class="testimonial-role">Product Manager at Nexora</div>
-          <p class="testimonial-text">"Smooth setup. Their system replaced three tools. We saw improvements in just the first week."</p>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Marcus Thompson</div>
-          <div class="testimonial-role">Trading Director at OrbitShift</div>
-          <p class="testimonial-text">"Surprisingly simple. The scoring adapts quickly. Our trades are now running 2x more efficiently."</p>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Sarah Wong</div>
-          <div class="testimonial-role">Analytics Manager at Corelink</div>
-          <p class="testimonial-text">"Huge time-saver. Data is better organized. The insights we get now are actionable and fast."</p>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-avatar">
-            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face" alt="Avatar">
-          </div>
-          <div class="testimonial-name">Ravi Shah</div>
-          <div class="testimonial-role">COO at PixelNest</div>
-          <p class="testimonial-text">"Very intuitive. No fluff, just performance. Our trading processes finally feel under control."</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PRICING -->
-  <section id="pricing" class="section">
-    <div class="container">
-      <div class="section-header reveal reveal-up">
-        <span class="section-badge">PRICING</span>
-        <h2 class="section-title">Flexible Plans for Everyone</h2>
-        <p class="section-subtitle">Choose a plan that fits your goals and scale as you grow</p>
-      </div>
-
-      <div class="pricing-toggle reveal reveal-up" style="--delay: 0.1s;">
-        <button class="active">Monthly</button>
-        <button>Yearly <span class="save-badge">Save 20%</span></button>
-      </div>
-
-      <div class="pricing-grid stagger-children reveal">
-        <div class="pricing-card">
-          <div class="pricing-tier">Starter</div>
-          <div class="pricing-price">$0</div>
-          <div class="pricing-period">Swaps under $1,000</div>
-          <a href="/swap" class="btn btn-secondary pricing-cta">Get Started</a>
-          <ul class="pricing-features">
-            <li><span class="check">✓</span> No fees on small trades</li>
-            <li><span class="check">✓</span> Full BEQ™ scoring access</li>
-            <li><span class="check">✓</span> All 15+ aggregators</li>
-            <li><span class="check">✓</span> Basic analytics</li>
-            <li><span class="check">✓</span> Community support</li>
-          </ul>
-        </div>
-
-        <div class="pricing-card featured">
-          <span class="popular-badge">Popular</span>
-          <div class="pricing-tier">Pro</div>
-          <div class="pricing-price">0.05%</div>
-          <div class="pricing-period">per swap</div>
-          <a href="/swap" class="btn btn-primary pricing-cta">Get Started</a>
-          <ul class="pricing-features">
-            <li><span class="check">✓</span> 50% fee discount with PILOT</li>
-            <li><span class="check">✓</span> Priority execution</li>
-            <li><span class="check">✓</span> Advanced analytics</li>
-            <li><span class="check">✓</span> API access</li>
-            <li><span class="check">✓</span> Priority support</li>
-          </ul>
-        </div>
-
-        <div class="pricing-card">
-          <div class="pricing-tier">Enterprise</div>
-          <div class="pricing-price">Custom</div>
-          <div class="pricing-period">contact us</div>
-          <a href="contact.html" class="btn btn-secondary pricing-cta">Get Started</a>
-          <ul class="pricing-features">
-            <li><span class="check">✓</span> Unlimited custom workflows</li>
-            <li><span class="check">✓</span> Dedicated account manager</li>
-            <li><span class="check">✓</span> Private integrations</li>
-            <li><span class="check">✓</span> Real-time dashboards</li>
-            <li><span class="check">✓</span> 24/7 Premium support + SLA</li>
-          </ul>
-        </div>
-      </div>
-
-      <p class="pricing-note">We donate 2% of platform fees to DeFi education initiatives</p>
     </div>
   </section>
 
@@ -1238,15 +1127,6 @@
             </button>
             <div class="faq-answer">
               <p>BEQ (Best Execution Quality) considers multiple factors: net output after gas, slippage risk, MEV vulnerability, liquidity depth, and provider reliability. Each quote gets a score from 0-100.</p>
-            </div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-question">
-              What are the benefits of holding PILOT tokens?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-answer">
-              <p>PILOT holders get up to 80% discount on fees, priority execution, referral rewards (5% commission), exclusive airdrops, and early access to new features.</p>
             </div>
           </div>
           <div class="faq-item">
@@ -1303,87 +1183,14 @@
     </div>
   </section>
 
-  <!-- TEAM -->
-  <section id="team" class="section">
-    <div class="container">
-      <div class="section-header reveal reveal-up">
-        <span class="section-badge">OUR AMAZING TEAM</span>
-        <h2 class="section-title">Get to Know Us</h2>
-        <p class="section-subtitle">Everything you need to collaborate, create, and scale</p>
-      </div>
-
-      <div class="team-grid stagger-children reveal">
-        <div class="team-card">
-          <div class="team-image">
-            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=500&fit=crop" alt="Team member">
-          </div>
-          <div class="team-info">
-            <div class="team-name">Alex Chen</div>
-            <div class="team-role">Founder / Lead Developer</div>
-            <div class="team-social">
-              <a href="#">𝕏</a>
-              <a href="#">📷</a>
-              <a href="#">💼</a>
-            </div>
-          </div>
-        </div>
-        <div class="team-card">
-          <div class="team-image">
-            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=500&fit=crop" alt="Team member">
-          </div>
-          <div class="team-info">
-            <div class="team-name">Sarah Mitchell</div>
-            <div class="team-role">BEQ Strategist</div>
-            <div class="team-social">
-              <a href="#">𝕏</a>
-              <a href="#">📷</a>
-              <a href="#">💼</a>
-            </div>
-          </div>
-        </div>
-        <div class="team-card">
-          <div class="team-image">
-            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=500&fit=crop" alt="Team member">
-          </div>
-          <div class="team-info">
-            <div class="team-name">James Wilson</div>
-            <div class="team-role">Smart Contract Engineer</div>
-            <div class="team-social">
-              <a href="#">𝕏</a>
-              <a href="#">📷</a>
-              <a href="#">💼</a>
-            </div>
-          </div>
-        </div>
-        <div class="team-card">
-          <div class="team-image">
-            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop" alt="Team member">
-          </div>
-          <div class="team-info">
-            <div class="team-name">Emma Davis</div>
-            <div class="team-role">Community Manager</div>
-            <div class="team-social">
-              <a href="#">𝕏</a>
-              <a href="#">📷</a>
-              <a href="#">💼</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- CTA -->
   <section id="cta" class="section">
     <div class="container">
       <div class="cta-card reveal reveal-scale">
         <h2>Ready to Swap Smarter? Let's Trade Together</h2>
-        <p>Schedule a call or start trading now</p>
+        <p>Start trading now with the best execution</p>
         <div class="cta-buttons">
           <a href="/swap" class="btn btn-primary btn-lg">Launch App</a>
-          <a href="https://twitter.com" class="btn btn-icon">𝕏</a>
-          <a href="https://instagram.com" class="btn btn-icon">📷</a>
-          <a href="https://facebook.com" class="btn btn-icon">📘</a>
         </div>
         <div class="cta-email">support@swappilot.io</div>
       </div>
@@ -1401,26 +1208,23 @@
           </a>
           <p>The smartest DEX aggregator on BNB Chain. Compare, score, and execute trades with confidence.</p>
           <div class="footer-social">
-            <a href="#">𝕏</a>
-            <a href="#">📘</a>
-            <a href="#">📷</a>
-            <a href="#">💬</a>
+            <span style="opacity: 0.5; font-size: 0.85rem;">Social links coming soon</span>
           </div>
         </div>
         <div class="footer-column">
           <h4>Product</h4>
           <ul>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#pricing">Pricing</a></li>
-            <li><a href="contact.html">Contact</a></li>
-            <li><a href="blog.html">Blog</a></li>
+            <li><a href="swap.html">Swap</a></li>
+            <li><a href="status.html">Status</a></li>
+            <li><a href="rewards.html">Rewards</a></li>
+            <li><a href="settings.html">Settings</a></li>
           </ul>
         </div>
         <div class="footer-column">
           <h4>Resources</h4>
           <ul>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#services">Features</a></li>
+            <li><a href="#faq">FAQ</a></li>
             <li><a href="contact.html">Contact</a></li>
             <li><a href="blog.html">Blog</a></li>
           </ul>

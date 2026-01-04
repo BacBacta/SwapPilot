@@ -21,3 +21,8 @@ export const DynamicStatusController = dynamic(
   () => import("./landio-status-controller").then((m) => m.LandioStatusController),
   { ssr: false }
 );
+
+export const DynamicHomeController = dynamic(
+  () => import("./landio-home-controller").then((m) => m.LandioHomeController),
+  { ssr: false }
+);
