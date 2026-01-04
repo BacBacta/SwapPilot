@@ -16,7 +16,7 @@ import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
 import { TOKEN_ICONS } from "@/components/ui/token-image";
-import { BASE_TOKENS, type TokenInfo } from "@/lib/tokens";
+import { BASE_TOKENS, type TokenInfo, isAddress } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
 
 // Debounce delay for quote fetching (ms)
@@ -453,17 +453,29 @@ export function LandioSwapController() {
     }
   }, [fromTokenInfo, isConnected, getBalance, fromAmountWei]);
 
-  // Filter tokens for picker
+  // Filter tokens for picker - includes dynamic resolution for unknown addresses
   const filteredTokens = useMemo(() => {
     const tokens = allTokens.length > 0 ? allTokens : BASE_TOKENS;
     if (!searchQuery.trim()) return tokens;
-    const q = searchQuery.toLowerCase();
-    return tokens.filter(t => 
+    const q = searchQuery.toLowerCase().trim();
+    
+    // Filter existing tokens by symbol, name, or address
+    const filtered = tokens.filter(t => 
       t.symbol.toLowerCase().includes(q) || 
       t.name.toLowerCase().includes(q) ||
       t.address.toLowerCase().includes(q)
     );
-  }, [allTokens, searchQuery]);
+    
+    // If no results and query looks like an address, try to resolve it
+    if (filtered.length === 0 && isAddress(q)) {
+      const resolved = resolveToken(q);
+      if (resolved) {
+        return [resolved];
+      }
+    }
+    
+    return filtered;
+  }, [allTokens, searchQuery, resolveToken]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 16: HANDLERS (useCallback)
