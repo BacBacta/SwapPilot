@@ -1714,11 +1714,35 @@ img {
   border-top: 1px solid var(--border);
 }
 
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
 .footer-grid {
   display: grid;
   grid-template-columns: 1.5fr repeat(3, 1fr);
   gap: 48px;
   margin-bottom: 48px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+  padding-top: 8px;
+}
+
+.footer-links a {
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
 }
 
 .footer-brand .logo {
