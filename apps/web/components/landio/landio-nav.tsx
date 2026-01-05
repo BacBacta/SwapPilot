@@ -12,9 +12,18 @@ function shortAddress(address: string) {
 export function LandioNav() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const isLanding = pathname === "/";
@@ -24,7 +33,6 @@ export function LandioNav() {
         { href: "/#services", label: "Services" },
         { href: "/#integrations", label: "Integrations" },
         { href: "/#faq", label: "FAQ" },
-        { href: "/swap", label: "Launch App", isButton: true },
       ]
     : [
         { href: "/swap", label: "Swap" },
@@ -34,21 +42,30 @@ export function LandioNav() {
 
   const isActive = (href: string) => pathname === href;
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   return (
-    <nav className="nav">
+    <nav 
+      className={`nav ${scrolled ? "nav-scrolled" : ""}`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="nav-inner">
-        <Link href="/" className="logo">
+        {/* Logo */}
+        <Link href="/" className="logo" aria-label="SwapPilot - Home">
           <div className="logo-icon">SP</div>
-          SwapPilot
+          <span className="logo-text">SwapPilot</span>
         </Link>
 
-        <ul className="nav-links">
+        {/* Desktop Navigation */}
+        <ul className="nav-links" role="menubar">
           {links.map((link) => (
-            <li key={link.href}>
+            <li key={link.href} role="none">
               <Link 
-                href={link.href} 
-                className={(link as { isButton?: boolean }).isButton ? "btn btn-primary btn-sm" : undefined}
-                style={!isLanding && isActive(link.href) ? { color: "var(--accent)" } : undefined}
+                href={link.href}
+                role="menuitem"
+                className={!isLanding && isActive(link.href) ? "active" : undefined}
+                onClick={closeMobileMenu}
               >
                 {link.label}
               </Link>
@@ -56,8 +73,25 @@ export function LandioNav() {
           ))}
         </ul>
 
-        <div className="nav-right" style={{ display: isLanding ? "none" : "flex" }}>
-          {!isLanding && mounted && (
+        {/* Right Section */}
+        <div className="nav-right">
+          {/* Network Badge - visible on app pages */}
+          {!isLanding && (
+            <div className="network-badge" title="Connected to BNB Chain">
+              <span className="network-dot"></span>
+              <span className="network-name">BNB Chain</span>
+            </div>
+          )}
+
+          {/* CTA Button - always visible */}
+          {isLanding ? (
+            <Link href="/swap" className="btn btn-primary btn-cta">
+              Launch App
+              <svg className="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 12l4-4-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          ) : mounted ? (
             <ConnectButton.Custom>
               {({
                 account,
@@ -83,7 +117,7 @@ export function LandioNav() {
                     {(() => {
                       if (!connected) {
                         return (
-                          <button onClick={openConnectModal} className="btn btn-secondary">
+                          <button onClick={openConnectModal} className="btn btn-primary btn-cta">
                             Connect Wallet
                           </button>
                         );
@@ -98,7 +132,8 @@ export function LandioNav() {
                       }
 
                       return (
-                        <button onClick={openAccountModal} className="btn btn-secondary">
+                        <button onClick={openAccountModal} className="btn btn-secondary btn-wallet">
+                          <span className="wallet-dot"></span>
                           {shortAddress(account.address)}
                         </button>
                       );
@@ -107,8 +142,50 @@ export function LandioNav() {
                 );
               }}
             </ConnectButton.Custom>
+          ) : (
+            <button className="btn btn-primary btn-cta" disabled>
+              Connect Wallet
+            </button>
           )}
+
+          {/* Mobile Menu Button */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+          >
+            <span className={`hamburger ${mobileMenuOpen ? "open" : ""}`}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </button>
         </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`} role="menu">
+        <ul>
+          {links.map((link) => (
+            <li key={link.href} role="none">
+              <Link 
+                href={link.href}
+                role="menuitem"
+                onClick={closeMobileMenu}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+          {isLanding && (
+            <li role="none">
+              <Link href="/swap" className="btn btn-primary" onClick={closeMobileMenu}>
+                Launch App
+              </Link>
+            </li>
+          )}
+        </ul>
       </div>
     </nav>
   );
