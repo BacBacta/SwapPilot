@@ -1,23 +1,24 @@
 import type { ReactNode } from "react";
 import { LandioNav } from "./landio-nav";
 import { Suspense } from "react";
+import Link from "next/link";
 
 // Static SSR fallback navigation - shown instantly while JS loads
 function NavFallback() {
   return (
     <nav className="nav" role="navigation" aria-label="Main navigation">
       <div className="nav-inner">
-        <a href="/" className="logo" aria-label="SwapPilot - Home">
+        <Link href="/" className="logo" aria-label="SwapPilot - Home">
           <div className="logo-icon">SP</div>
           <span className="logo-text">SwapPilot</span>
-        </a>
+        </Link>
         <ul className="nav-links" role="menubar">
-          <li role="none"><a href="/#services" role="menuitem">Services</a></li>
-          <li role="none"><a href="/#integrations" role="menuitem">Integrations</a></li>
-          <li role="none"><a href="/#faq" role="menuitem">FAQ</a></li>
+          <li role="none"><Link href="/#services" role="menuitem">Services</Link></li>
+          <li role="none"><Link href="/#integrations" role="menuitem">Integrations</Link></li>
+          <li role="none"><Link href="/#faq" role="menuitem">FAQ</Link></li>
         </ul>
         <div className="nav-right">
-          <a href="/swap" className="btn btn-primary btn-cta">Launch App</a>
+          <Link href="/swap" className="btn btn-primary btn-cta">Launch App</Link>
         </div>
       </div>
     </nav>

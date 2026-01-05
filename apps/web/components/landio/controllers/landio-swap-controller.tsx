@@ -1223,11 +1223,13 @@ export function LandioSwapController() {
     dynamicSlippage.reason,
     effectiveSlippageBps,
     executeSwap,
+    feeInfo,
     fromTokenInfo,
     fromTokenSymbol,
     getBalance,
     getPrice,
     isConnected,
+    pilotTierInfo,
     refetchAllowance,
     toTokenSymbol,
     resolveToken,
@@ -2304,6 +2306,7 @@ export function LandioSwapController() {
               }}
             >
               {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- External token logos with onError fallback
                 <img
                   src={logoUrl}
                   alt={token.symbol}
