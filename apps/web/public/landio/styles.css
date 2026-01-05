@@ -1736,24 +1736,37 @@ img {
 .footer-social {
   display: flex;
   gap: 12px;
+  margin-top: 1rem;
 }
 
 .footer-social a {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  transition: all 0.2s;
+  color: var(--text-secondary);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.footer-social a svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s;
 }
 
 .footer-social a:hover {
   border-color: var(--accent);
   color: var(--accent);
+  background: rgba(200, 255, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.footer-social a:hover svg {
+  transform: scale(1.1);
 }
 
 .footer-column h4 {
