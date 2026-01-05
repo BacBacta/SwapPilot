@@ -52,11 +52,10 @@ export function LandioNav() {
         </ul>
 
         <div className="nav-right">
-          {isLanding ? (
-            <Link href="/swap" className="btn btn-primary">
-              Launch App
-            </Link>
-          ) : mounted ? (
+          <Link href="/swap" className="btn btn-primary">
+            Launch App
+          </Link>
+          {!isLanding && mounted && (
             <ConnectButton.Custom>
               {({
                 account,
@@ -106,8 +105,6 @@ export function LandioNav() {
                 );
               }}
             </ConnectButton.Custom>
-          ) : (
-            <button className="btn btn-secondary">Connect Wallet</button>
           )}
         </div>
       </div>
