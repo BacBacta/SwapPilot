@@ -225,23 +225,27 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   // Update logos - generate from live providers
   logosEl.innerHTML = "";
   
-  // Provider logo URLs (official CDN sources)
+  // Provider logo URLs (reliable CDN sources and official logos)
   const providerLogos: Record<string, { name: string; logo: string }> = {
     "1inch": {
       name: "1inch",
-      logo: "https://cdn.1inch.io/logo.png",
+      logo: "https://tokens.1inch.io/1inch.png",
     },
     "zerox": {
       name: "0x",
-      logo: "https://www.0x.org/images/0x-logo.svg",
+      logo: "https://raw.githubusercontent.com/0xProject/0x-launch-kit-frontend/master/src/assets/icons/zrx_icon.svg",
     },
     "0x": {
       name: "0x",
-      logo: "https://www.0x.org/images/0x-logo.svg",
+      logo: "https://raw.githubusercontent.com/0xProject/0x-launch-kit-frontend/master/src/assets/icons/zrx_icon.svg",
     },
     "pancakeswap": {
       name: "PancakeSwap",
-      logo: "https://assets.pancakeswap.finance/web/og/hero.jpg",
+      logo: "https://tokens.pancakeswap.finance/images/0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82.png",
+    },
+    "okx-dex": {
+      name: "OKX DEX",
+      logo: "https://static.okx.com/cdn/assets/imgs/221/5F74EB20302D7761.png",
     },
     "okx": {
       name: "OKX DEX",
@@ -249,47 +253,63 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "kyberswap": {
       name: "KyberSwap",
-      logo: "https://kyberswap.com/favicon.ico",
+      logo: "https://raw.githubusercontent.com/KyberNetwork/kyberswap-interface/main/src/assets/svg/kyber.svg",
     },
     "openocean": {
       name: "OpenOcean",
-      logo: "https://openocean.finance/favicon.ico",
+      logo: "https://raw.githubusercontent.com/openocean-finance/OpenOcean-API/main/logo/OpenOcean.png",
     },
     "paraswap": {
       name: "ParaSwap",
-      logo: "https://app.paraswap.io/favicon.ico",
+      logo: "https://raw.githubusercontent.com/paraswap/paraswap-brand-kit/main/logo/icon.svg",
     },
     "dodo": {
       name: "DODO",
-      logo: "https://app.dodoex.io/favicon.ico",
+      logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x43Dfc4159D86F3A37A5A4B3D4580b888ad7d4DDd/logo.png",
     },
     "odos": {
       name: "Odos",
-      logo: "https://app.odos.xyz/favicon.ico",
+      logo: "https://assets.odos.xyz/icons/ODOS-logo.svg",
     },
     "bebop": {
       name: "Bebop",
-      logo: "https://bebop.xyz/favicon.ico",
+      logo: "https://app.bebop.xyz/bebop-logo.svg",
     },
     "rango": {
       name: "Rango",
-      logo: "https://app.rango.exchange/favicon.ico",
+      logo: "https://raw.githubusercontent.com/rango-exchange/rango-types/main/src/logo.svg",
     },
     "lifi": {
       name: "LI.FI",
-      logo: "https://li.fi/favicon.ico",
+      logo: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/lifi.svg",
     },
     "magpie": {
       name: "Magpie",
-      logo: "https://www.magpiefi.xyz/favicon.ico",
+      logo: "https://www.magpiefi.xyz/logo.svg",
     },
-    "oku": {
-      name: "Oku",
-      logo: "https://oku.trade/favicon.ico",
+    "binance-wallet": {
+      name: "Binance Wallet",
+      logo: "https://public.bnbstatic.com/static/images/common/favicon.ico",
     },
-    "firebird": {
-      name: "Firebird",
-      logo: "https://app.firebird.finance/favicon.ico",
+    "metamask": {
+      name: "MetaMask",
+      logo: "https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/SVG_MetaMask_Icon_Color.svg",
+    },
+    "uniswap": {
+      name: "Uniswap",
+      logo: "https://raw.githubusercontent.com/Uniswap/brand-assets/main/Uniswap%20Brand%20Assets/Uniswap_icon_pink.svg",
+    },
+    "uniswap-v2": {
+      name: "Uniswap",
+      logo: "https://raw.githubusercontent.com/Uniswap/brand-assets/main/Uniswap%20Brand%20Assets/Uniswap_icon_pink.svg",
+    },
+    "uniswap-v3": {
+      name: "Uniswap",
+      logo: "https://raw.githubusercontent.com/Uniswap/brand-assets/main/Uniswap%20Brand%20Assets/Uniswap_icon_pink.svg",
+    },
+    "liquidmesh": {
+      name: "LiquidMesh",
+      logo: "",
     },
   };
 
@@ -298,12 +318,22 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     return name.split(/[\s.-]+/).map(word => word[0]?.toUpperCase() || "").join("").slice(0, 2);
   };
 
+  // Track displayed providers to avoid duplicates (e.g., Uniswap V2/V3)
+  const displayedNames = new Set<string>();
+
   data.providers.forEach((provider) => {
+    const config = providerLogos[provider.providerId];
+    const displayName = config?.name || provider.displayName;
+    
+    // Skip if we've already displayed this provider (handles Uniswap V2/V3 deduplication)
+    if (displayedNames.has(displayName)) {
+      return;
+    }
+    displayedNames.add(displayName);
+
     const div = document.createElement("div");
     div.className = "integration-logo";
     
-    const config = providerLogos[provider.providerId];
-    const displayName = config?.name || provider.displayName;
     const initials = getInitials(displayName);
     
     // Create image with fallback to initials
