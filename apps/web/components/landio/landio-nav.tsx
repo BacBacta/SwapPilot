@@ -18,6 +18,9 @@ export function LandioNav() {
   useEffect(() => {
     setMounted(true);
     
+    // Check initial scroll position
+    setScrolled(window.scrollY > 20);
+    
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -25,6 +28,9 @@ export function LandioNav() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+  
+  // Always render the navigation structure - never return null
+  // Only wallet-related features depend on `mounted` state
 
   const isLanding = pathname === "/";
 
