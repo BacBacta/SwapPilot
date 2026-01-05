@@ -24,6 +24,7 @@ export function LandioNav() {
         { href: "/#services", label: "Services" },
         { href: "/#integrations", label: "Integrations" },
         { href: "/#faq", label: "FAQ" },
+        { href: "/swap", label: "Launch App", isButton: true },
       ]
     : [
         { href: "/swap", label: "Swap" },
@@ -44,17 +45,18 @@ export function LandioNav() {
         <ul className="nav-links">
           {links.map((link) => (
             <li key={link.href}>
-              <Link href={link.href} style={!isLanding && isActive(link.href) ? { color: "var(--accent)" } : undefined}>
+              <Link 
+                href={link.href} 
+                className={(link as { isButton?: boolean }).isButton ? "btn btn-primary btn-sm" : undefined}
+                style={!isLanding && isActive(link.href) ? { color: "var(--accent)" } : undefined}
+              >
                 {link.label}
               </Link>
             </li>
           ))}
         </ul>
 
-        <div className="nav-right">
-          <Link href="/swap" className="btn btn-primary">
-            Launch App
-          </Link>
+        <div className="nav-right" style={{ display: isLanding ? "none" : "flex" }}>
           {!isLanding && mounted && (
             <ConnectButton.Custom>
               {({
