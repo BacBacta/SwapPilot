@@ -289,6 +289,31 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       account: userAddress,
     };
 
+    // Step 0: Pre-check balance to detect wallet sync issues early
+    if (publicClient && txRequest.value > 0n) {
+      try {
+        const currentBalance = await publicClient.getBalance({ address: userAddress });
+        const requiredValue = txRequest.value;
+        
+        console.info("[swap][execute] balance check", {
+          currentBalance: currentBalance.toString(),
+          requiredValue: requiredValue.toString(),
+          sufficient: currentBalance >= requiredValue,
+        });
+        
+        if (currentBalance < requiredValue) {
+          const haveFormatted = (Number(currentBalance) / 1e18).toFixed(6);
+          const needFormatted = (Number(requiredValue) / 1e18).toFixed(6);
+          setError(`Insufficient BNB balance: you have ${haveFormatted} BNB but need at least ${needFormatted} BNB (plus gas). Please add more BNB to your wallet.`);
+          setStatus("error");
+          return;
+        }
+      } catch (balanceError) {
+        console.warn("[swap][execute] balance check failed, continuing...", balanceError);
+        // Don't block on balance check failure, let the simulation catch it
+      }
+    }
+
     // Step 1: Estimate gas to simulate the transaction before sending
     // This catches revert errors early with better messages
     let estimatedGas: bigint | undefined;
@@ -338,9 +363,27 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       else if (errMsg.includes("EXPIRED") || errMsg.includes("Transaction too old")) {
         userMessage = "Quote expired. Please refresh and try again.";
       } 
-      // Balance issues
+      // Balance issues - enhanced detection with wallet sync hint
       else if (errMsg.includes("insufficient funds") || errMsg.includes("insufficient balance")) {
-        userMessage = "Insufficient balance for gas + value.";
+        // Check if this might be a wallet sync issue
+        const haveMatch = errMsg.match(/have\s+(\d+)/);
+        const wantMatch = errMsg.match(/want\s+(\d+)/);
+        
+        if (haveMatch?.[1] && wantMatch?.[1]) {
+          const have = BigInt(haveMatch[1]);
+          const want = BigInt(wantMatch[1]);
+          const haveFormatted = (Number(have) / 1e18).toFixed(6);
+          const wantFormatted = (Number(want) / 1e18).toFixed(6);
+          
+          // If reported balance is very low but user expects more, suggest wallet resync
+          if (have < want / 10n) {
+            userMessage = `Wallet sync issue detected. Your wallet reports ${haveFormatted} BNB but needs ${wantFormatted} BNB. Try: 1) Refresh the page, 2) Disconnect and reconnect your wallet, 3) Clear MetaMask activity data in Settings → Advanced.`;
+          } else {
+            userMessage = `Insufficient balance: have ${haveFormatted} BNB, need ${wantFormatted} BNB (including gas).`;
+          }
+        } else {
+          userMessage = "Insufficient balance for gas + value. Try refreshing the page or reconnecting your wallet.";
+        }
       }
       // 0x Protocol errors
       else if (errMsg.includes("IncompleteFillError") || errMsg.includes("OrderNotFillableError")) {

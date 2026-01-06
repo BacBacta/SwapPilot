@@ -2,19 +2,50 @@
 
 import { useState, useEffect } from "react";
 import { getDefaultConfig, RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
-import { WagmiProvider } from "wagmi";
+import { WagmiProvider, createConfig, http } from "wagmi";
 import { bsc, mainnet, polygon, arbitrum, optimism, base } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { injected, walletConnect } from "wagmi/connectors";
 import "@rainbow-me/rainbowkit/styles.css";
 
 /* ========================================
-   WAGMI CONFIG - MULTI-CHAIN
+   RELIABLE BSC RPC ENDPOINTS
    ======================================== */
+const BSC_RPC_URLS = [
+  "https://bsc-dataseed1.binance.org",
+  "https://bsc-dataseed2.binance.org",
+  "https://bsc-dataseed3.binance.org",
+  "https://bsc-dataseed4.binance.org",
+  "https://bsc-dataseed1.defibit.io",
+  "https://bsc-dataseed1.ninicoin.io",
+];
+
+/* ========================================
+   WAGMI CONFIG - MULTI-CHAIN WITH CUSTOM RPC
+   ======================================== */
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "demo";
+
 const config = getDefaultConfig({
   appName: "SwapPilot",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "demo",
+  projectId,
   chains: [bsc, mainnet, polygon, arbitrum, optimism, base],
   ssr: true,
+  transports: {
+    // Use reliable BSC RPC endpoints with fallback
+    [bsc.id]: http(BSC_RPC_URLS[0], {
+      batch: true,
+      fetchOptions: {
+        cache: "no-store",
+      },
+      retryCount: 3,
+      retryDelay: 1000,
+    }),
+    [mainnet.id]: http(),
+    [polygon.id]: http(),
+    [arbitrum.id]: http(),
+    [optimism.id]: http(),
+    [base.id]: http(),
+  },
 });
 
 const queryClient = new QueryClient();
