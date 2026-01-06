@@ -229,7 +229,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   const providerLogos: Record<string, { name: string; logo: string }> = {
     "1inch": {
       name: "1inch",
-      logo: "https://tokens.1inch.io/1inch.png",
+      logo: "https://cdn.1inch.io/logo.png",
     },
     "zerox": {
       name: "0x",
@@ -253,7 +253,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "kyberswap": {
       name: "KyberSwap",
-      logo: "https://raw.githubusercontent.com/KyberNetwork/kyberswap-interface/main/src/assets/svg/kyber.svg",
+      logo: "https://kyberswap.com/favicon.ico",
     },
     "openocean": {
       name: "OpenOcean",

@@ -39,3 +39,12 @@ SwapPilot is a next-generation DEX aggregator designed to simplify token swaps w
 - [Security](security.md) - Security considerations
 - [User Experience](user-experience.md) - Interface and usability
 - [Roadmap](roadmap.md) - Future development plans
+
+---
+
+## Resources
+
+- **Live Documentation**: [GitBook](https://app.gitbook.com/o/wEQX4qwkyI7GCvklIz6d/home)
+- **Application**: [https://app-swappilot.xyz](https://app-swappilot.xyz)
+- **API**: [https://swappilot-api.fly.dev](https://swappilot-api.fly.dev)
+- **GitHub**: [https://github.com/BacBacta/SwapPilot](https://github.com/BacBacta/SwapPilot)
