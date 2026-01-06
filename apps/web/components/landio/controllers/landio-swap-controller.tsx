@@ -756,6 +756,9 @@ export function LandioSwapController() {
       }
 
       // Check if user has sufficient balance before fetching quotes
+      // Also determine the actual amount to use (may be capped to exact balance)
+      let finalSellAmountWei = toWei(rawValue, fromTokenInfo.decimals);
+      
       if (isConnected) {
         const balanceRaw = getBalance(fromTokenInfo);
         try {
@@ -770,20 +773,19 @@ export function LandioSwapController() {
             if (toAmountInput) toAmountInput.value = "";
             return;
           }
-          let amountWei = toWei(rawValue, fromTokenInfo.decimals);
-          let amountBigInt = BigInt(amountWei || "0");
+          const amountBigInt = BigInt(finalSellAmountWei || "0");
           
           // Allow a small tolerance (0.01%) to account for display rounding
           // If user enters a value very close to their balance, cap it to balance
           const tolerance = balanceBigInt / 10000n; // 0.01%
           if (amountBigInt > balanceBigInt && amountBigInt <= balanceBigInt + tolerance) {
             // User likely entered the displayed (rounded) balance - use exact balance
-            amountBigInt = balanceBigInt;
-            amountWei = balanceRaw;
+            finalSellAmountWei = balanceRaw;
             setFromAmountWei(balanceRaw); // Use exact balance
+            console.info("[landio][input] capped to exact balance:", balanceRaw);
           }
           
-          if (amountBigInt > balanceBigInt) {
+          if (amountBigInt > balanceBigInt + tolerance) {
             setDisplay("beqContainer", "none");
             setDisplay("routeContainer", "none");
             setDisplay("providersContainer", "none");
@@ -812,6 +814,7 @@ export function LandioSwapController() {
       // Capture current values in local variables for the debounced callback
       const capturedFromTokenInfo = fromTokenInfo;
       const capturedToTokenInfo = toTokenInfo;
+      const capturedSellAmountWei = finalSellAmountWei; // Use the corrected amount (may be capped to balance)
 
       // Debounce the API call by 500ms
       debounceTimerRef.current = setTimeout(async () => {
@@ -822,13 +825,12 @@ export function LandioSwapController() {
         const currentSettings = currentParamsRef.current.settings;
 
         try {
-          const sellAmountWei = toWei(rawValue, capturedFromTokenInfo.decimals);
           const res = await postQuotes({
             request: {
               chainId: 56,
               sellToken: capturedFromTokenInfo.address,
               buyToken: capturedToTokenInfo.address,
-              sellAmount: sellAmountWei,
+              sellAmount: capturedSellAmountWei, // Use the captured (possibly corrected) amount
               slippageBps: currentSlippageBps, // Use current slippage from ref
               mode: currentSettings.mode,
               scoringOptions: {
@@ -1080,7 +1082,9 @@ export function LandioSwapController() {
         setSwapBtnText("Building...");
         setDisabled("swapBtn", true);
 
-        const sellAmountWei = toWei(fromAmountInputEl?.value ?? "0", fromTokenInfo.decimals);
+        // Use the state-stored amount which may have been capped to exact balance
+        // This prevents TRANSFER_FROM_FAILED errors due to rounding differences
+        const sellAmountWei = fromAmountWei || toWei(fromAmountInputEl?.value ?? "0", fromTokenInfo.decimals);
 
         // Step 1: Build the transaction
         const tx = await buildTransaction({
