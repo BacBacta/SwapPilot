@@ -440,14 +440,17 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 15: DERIVED STATE (useMemo)
   // ═══════════════════════════════════════════════════════════════════════════
-  // Check if balance is insufficient
+  // Check if balance is insufficient (with tolerance for display rounding)
   const hasInsufficientBalance = useMemo(() => {
     if (!fromTokenInfo || !isConnected) return false;
     const balanceRaw = getBalance(fromTokenInfo);
     try {
       const balanceBigInt = BigInt(balanceRaw || "0");
       const amountBigInt = BigInt(fromAmountWei || "0");
-      return amountBigInt > 0n && amountBigInt > balanceBigInt;
+      if (amountBigInt === 0n) return false;
+      // Allow 0.01% tolerance for display rounding issues
+      const tolerance = balanceBigInt / 10000n;
+      return amountBigInt > balanceBigInt + tolerance;
     } catch {
       return false;
     }
@@ -767,8 +770,19 @@ export function LandioSwapController() {
             if (toAmountInput) toAmountInput.value = "";
             return;
           }
-          const amountWei = toWei(rawValue, fromTokenInfo.decimals);
-          const amountBigInt = BigInt(amountWei || "0");
+          let amountWei = toWei(rawValue, fromTokenInfo.decimals);
+          let amountBigInt = BigInt(amountWei || "0");
+          
+          // Allow a small tolerance (0.01%) to account for display rounding
+          // If user enters a value very close to their balance, cap it to balance
+          const tolerance = balanceBigInt / 10000n; // 0.01%
+          if (amountBigInt > balanceBigInt && amountBigInt <= balanceBigInt + tolerance) {
+            // User likely entered the displayed (rounded) balance - use exact balance
+            amountBigInt = balanceBigInt;
+            amountWei = balanceRaw;
+            setFromAmountWei(balanceRaw); // Use exact balance
+          }
+          
           if (amountBigInt > balanceBigInt) {
             setDisplay("beqContainer", "none");
             setDisplay("routeContainer", "none");
