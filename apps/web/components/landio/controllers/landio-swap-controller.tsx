@@ -2299,6 +2299,9 @@ export function LandioSwapController() {
   // SECTION 26: JSX RETURN (Token Picker Modal + History Drawer)
   // ═══════════════════════════════════════════════════════════════════════════
   // Always render the token picker modal (hidden when not open)
+  // Detect mobile for responsive layout
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
   return (
     <>
     <div 
@@ -2309,39 +2312,65 @@ export function LandioSwapController() {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.7)',
+        background: 'rgba(0,0,0,0.8)',
         display: pickerOpen ? 'flex' : 'none',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
         zIndex: 9999,
+        padding: isMobile ? 0 : '16px',
       }}
     >
       <div 
         className="token-picker-modal"
         style={{
           background: 'var(--bg-card, #1a1a2e)',
-          borderRadius: '16px',
-          padding: '24px',
-          width: '90%',
-          maxWidth: '420px',
-          maxHeight: '70vh',
+          borderRadius: isMobile ? '20px 20px 0 0' : '16px',
+          padding: isMobile ? '20px 16px' : '24px',
+          paddingBottom: isMobile ? 'max(20px, env(safe-area-inset-bottom, 20px))' : '24px',
+          width: isMobile ? '100%' : '90%',
+          maxWidth: isMobile ? '100%' : '420px',
+          maxHeight: isMobile ? '85vh' : '70vh',
           display: 'flex',
           flexDirection: 'column',
-          border: '1px solid var(--border, #333)',
+          border: isMobile ? 'none' : '1px solid var(--border, #333)',
+          borderTop: '1px solid var(--border, #333)',
         }}
       >
+        {/* Drag handle for mobile */}
+        {isMobile && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginBottom: '12px',
+            marginTop: '-8px',
+          }}>
+            <div style={{
+              width: '36px',
+              height: '4px',
+              background: 'var(--text-muted, #666)',
+              borderRadius: '2px',
+            }} />
+          </div>
+        )}
+        
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+          <h3 style={{ margin: 0, fontSize: isMobile ? '17px' : '18px', fontWeight: 600 }}>
             Select {pickerTarget === "from" ? "From" : "To"} Token
           </h3>
           <button 
             onClick={() => setPickerOpen(false)}
             style={{
-              background: 'transparent',
+              background: 'var(--bg-card-inner, #252540)',
               border: 'none',
-              fontSize: '24px',
+              fontSize: '20px',
               cursor: 'pointer',
               color: 'var(--text-muted, #888)',
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             ×
@@ -2353,21 +2382,26 @@ export function LandioSwapController() {
           placeholder="Search by name or address..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          autoFocus
+          autoFocus={!isMobile} // Don't autofocus on mobile to prevent keyboard jump
           style={{
             width: '100%',
-            padding: '12px 16px',
+            padding: isMobile ? '14px 16px' : '12px 16px',
             background: 'var(--bg-card-inner, #252540)',
             border: '1px solid var(--border, #333)',
             borderRadius: '12px',
             color: 'var(--text-primary, #fff)',
-            fontSize: '14px',
+            fontSize: '16px', // 16px prevents iOS zoom
             marginBottom: '16px',
             outline: 'none',
+            minHeight: '48px',
           }}
         />
 
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ 
+          overflowY: 'auto', 
+          flex: 1,
+          WebkitOverflowScrolling: 'touch', // Smooth scroll on iOS
+        }}>
           {filteredTokens.map((token) => {
             const logoUrl = getTokenLogoUrl(token);
             return (
@@ -2378,19 +2412,20 @@ export function LandioSwapController() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '12px',
+                padding: isMobile ? '14px 12px' : '12px',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 transition: 'background 0.2s',
+                minHeight: '48px', // Touch-friendly
                 background: (pickerTarget === "from" ? fromTokenSymbol : toTokenSymbol) === token.symbol 
                   ? 'var(--accent-dim, rgba(0,255,136,0.1))' 
                   : 'transparent',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-card-inner, #252540)';
+                if (!isMobile) e.currentTarget.style.background = 'var(--bg-card-inner, #252540)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = (pickerTarget === "from" ? fromTokenSymbol : toTokenSymbol) === token.symbol 
+                if (!isMobile) e.currentTarget.style.background = (pickerTarget === "from" ? fromTokenSymbol : toTokenSymbol) === token.symbol 
                   ? 'var(--accent-dim, rgba(0,255,136,0.1))' 
                   : 'transparent';
               }}
@@ -2401,8 +2436,8 @@ export function LandioSwapController() {
                   src={logoUrl}
                   alt={token.symbol}
                   style={{
-                    width: '36px',
-                    height: '36px',
+                    width: isMobile ? '40px' : '36px',
+                    height: isMobile ? '40px' : '36px',
                     borderRadius: '50%',
                     objectFit: 'cover',
                   }}
@@ -2416,22 +2451,29 @@ export function LandioSwapController() {
                 />
               ) : null}
               <div style={{
-                width: '36px',
-                height: '36px',
+                width: isMobile ? '40px' : '36px',
+                height: isMobile ? '40px' : '36px',
                 borderRadius: '50%',
                 background: 'var(--accent, #00ff88)',
                 display: logoUrl ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
-                fontSize: '12px',
+                fontSize: isMobile ? '13px' : '12px',
                 color: '#000',
+                flexShrink: 0,
               }}>
                 {token.symbol.slice(0, 2)}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '15px' }}>{token.symbol}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted, #888)' }}>{token.name}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: isMobile ? '16px' : '15px' }}>{token.symbol}</div>
+                <div style={{ 
+                  fontSize: isMobile ? '13px' : '12px', 
+                  color: 'var(--text-muted, #888)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>{token.name}</div>
               </div>
             </div>
           );
@@ -2455,9 +2497,10 @@ export function LandioSwapController() {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.7)',
+          background: 'rgba(0,0,0,0.8)',
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: isMobile ? 'center' : 'flex-end',
+          alignItems: isMobile ? 'flex-end' : 'stretch',
           zIndex: 9999,
         }}
       >
@@ -2466,24 +2509,42 @@ export function LandioSwapController() {
           style={{
             background: 'var(--bg-card, #1a1a2e)',
             width: '100%',
-            maxWidth: '420px',
-            height: '100%',
+            maxWidth: isMobile ? '100%' : '420px',
+            height: isMobile ? '85vh' : '100%',
             display: 'flex',
             flexDirection: 'column',
-            borderLeft: '1px solid var(--border, #333)',
+            borderLeft: isMobile ? 'none' : '1px solid var(--border, #333)',
+            borderRadius: isMobile ? '20px 20px 0 0' : '0',
+            paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : '0',
           }}
         >
+          {/* Drag handle for mobile */}
+          {isMobile && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              padding: '12px 0 8px',
+            }}>
+              <div style={{
+                width: '36px',
+                height: '4px',
+                background: 'var(--text-muted, #666)',
+                borderRadius: '2px',
+              }} />
+            </div>
+          )}
+          
           {/* Header */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '20px 24px',
+            padding: isMobile ? '12px 16px 16px' : '20px 24px',
             borderBottom: '1px solid var(--border, #333)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px' }}>📜</span>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Transaction History</h3>
+              <h3 style={{ margin: 0, fontSize: isMobile ? '17px' : '18px', fontWeight: 700 }}>Transaction History</h3>
               {txHistory.length > 0 && (
                 <span style={{
                   background: 'var(--bg-card-inner)',
@@ -2509,6 +2570,10 @@ export function LandioSwapController() {
                     fontSize: '12px',
                     color: 'var(--error, #ff6b6b)',
                     cursor: 'pointer',
+                    padding: '8px',
+                    minHeight: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   Clear all
@@ -2519,12 +2584,15 @@ export function LandioSwapController() {
                 style={{
                   background: 'var(--bg-card-inner)',
                   border: 'none',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  fontSize: '18px',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  fontSize: '20px',
                   cursor: 'pointer',
                   color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 ×
@@ -2533,7 +2601,12 @@ export function LandioSwapController() {
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            padding: isMobile ? '12px' : '16px',
+            WebkitOverflowScrolling: 'touch',
+          }}>
             {txHistory.length === 0 ? (
               <div style={{
                 textAlign: 'center',
@@ -2551,7 +2624,7 @@ export function LandioSwapController() {
                   style={{
                     background: 'var(--bg-card-inner)',
                     borderRadius: '12px',
-                    padding: '16px',
+                    padding: isMobile ? '14px' : '16px',
                     marginBottom: '12px',
                     border: '1px solid var(--border)',
                   }}

@@ -35,12 +35,45 @@
     @media (max-width: 900px) {
       .swap-app {
         flex-direction: column;
-        max-width: 480px;
+        max-width: 100%;
+        padding: 0;
+      }
+      .swap-main-column {
+        flex: none;
+        max-width: 100%;
+        width: 100%;
       }
       .swap-side-column {
         width: 100%;
         min-width: unset;
         max-width: 100%;
+      }
+    }
+    
+    /* Enhanced mobile styles */
+    @media (max-width: 480px) {
+      .swap-container {
+        padding: 12px;
+        border-radius: 16px;
+      }
+      .token-amount-input {
+        font-size: 22px;
+      }
+      .token-selector {
+        padding: 6px 10px 6px 6px;
+        gap: 6px;
+      }
+      .token-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 9px;
+      }
+      .token-name {
+        font-size: 14px;
+      }
+      .swap-btn {
+        padding: 16px;
+        min-height: 48px;
       }
     }
 
