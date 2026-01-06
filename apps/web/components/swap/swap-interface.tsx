@@ -316,18 +316,39 @@ export function SwapInterface() {
   // Fee calculation based on swap value
   const { data: feeData } = useFeeCalculation(fromUsdValue);
 
-  // Check if amount exceeds balance
-  const fromBalanceNum = useMemo(() => {
-    if (!fromTokenInfo || !isConnected) return 0;
-    const balanceStr = getBalanceFormatted(fromTokenInfo);
-    return parseFloat(balanceStr.replace(/,/g, "") || "0");
-  }, [fromTokenInfo, isConnected, getBalanceFormatted]);
-
+  // Check if amount exceeds balance using precise wei comparison
   const insufficientBalance = useMemo(() => {
     if (!isConnected || !fromTokenInfo) return false;
     if (isNaN(fromAmountNum) || fromAmountNum === 0) return false;
-    return fromAmountNum > fromBalanceNum;
-  }, [isConnected, fromTokenInfo, fromAmountNum, fromBalanceNum]);
+    
+    // Get the exact balance in wei
+    const balanceWei = getBalance(fromTokenInfo);
+    if (!balanceWei) return false;
+    
+    // If we have exact wei amount (from Max/percentage click), compare directly
+    if (fromAmountRawWei) {
+      try {
+        return BigInt(fromAmountRawWei) > BigInt(balanceWei);
+      } catch {
+        // Fall through to float comparison
+      }
+    }
+    
+    // For manual input, convert to wei for precise comparison
+    try {
+      const decimals = fromTokenInfo.decimals ?? 18;
+      // Parse the input amount to wei (handle decimal input)
+      const [whole, fraction = ""] = fromAmount.replace(/,/g, "").split(".");
+      const paddedFraction = fraction.padEnd(decimals, "0").slice(0, decimals);
+      const amountWei = BigInt(whole + paddedFraction);
+      return amountWei > BigInt(balanceWei);
+    } catch {
+      // Fallback: use float comparison with small tolerance
+      const balanceNum = parseFloat(getBalanceFormatted(fromTokenInfo).replace(/,/g, "") || "0");
+      // Allow a tiny tolerance for floating point errors (0.0001%)
+      return fromAmountNum > balanceNum * 1.000001;
+    }
+  }, [isConnected, fromTokenInfo, fromAmountNum, fromAmountRawWei, fromAmount, getBalance, getBalanceFormatted]);
 
   // Get quotes based on mode
   const activeQuotes = useMemo(() => {
