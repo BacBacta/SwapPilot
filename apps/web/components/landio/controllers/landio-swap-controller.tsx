@@ -325,6 +325,7 @@ export function LandioSwapController() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const successToastShownRef = useRef<string | null>(null); // Track txHash to prevent duplicate toasts
   const errorToastShownRef = useRef<string | null>(null); // Track error to prevent duplicate error toasts
+  const manualApprovalDoneRef = useRef(false); // Track if manual approval was done in-swap to prevent button loop
   // Ref to store current values for debounced callback (avoids stale closures)
   const currentParamsRef = useRef<{
     fromTokenInfo: TokenInfo | null;
@@ -501,6 +502,9 @@ export function LandioSwapController() {
       setToTokenSymbol(token.symbol);
     }
     setPickerOpen(false);
+    
+    // Reset manual approval flag when changing tokens
+    manualApprovalDoneRef.current = false;
     
     // Clear amounts and reset
     const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
@@ -1177,6 +1181,9 @@ export function LandioSwapController() {
                 message: "Verifying allowance...",
               });
 
+              // Mark manual approval as done to prevent button loop
+              manualApprovalDoneRef.current = true;
+
               // Wait for chain state to propagate, then verify allowance
               await new Promise(resolve => setTimeout(resolve, 2000));
               refetchAllowance();
@@ -1355,6 +1362,7 @@ export function LandioSwapController() {
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
         successToastShownRef.current = null; // Reset toast tracker for next swap
+        manualApprovalDoneRef.current = false; // Reset manual approval tracker for next swap
         resetSwap();
       }, 3000);
       return () => {
@@ -1393,6 +1401,7 @@ export function LandioSwapController() {
       const timeout = setTimeout(() => {
         setSwapBtnText("Swap");
         errorToastShownRef.current = null; // Reset error toast tracker for next swap
+        manualApprovalDoneRef.current = false; // Reset manual approval tracker for next swap
         resetSwap();
       }, 3000);
       return () => clearTimeout(timeout);
@@ -1558,7 +1567,8 @@ export function LandioSwapController() {
       return;
     }
 
-    if (needsApproval && !isFromNative) {
+    // Skip approval button if manual approval was done in-swap flow
+    if (needsApproval && !isFromNative && !manualApprovalDoneRef.current) {
       swapBtn.textContent = isApproving ? "Approving..." : `Approve ${fromTokenSymbol}`;
       swapBtn.disabled = isApproving;
       swapBtn.style.background = "var(--accent)";
