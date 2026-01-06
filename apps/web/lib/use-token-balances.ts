@@ -3,7 +3,7 @@
 import { useAccount, useBalance, useReadContracts } from "wagmi";
 import { formatUnits } from "viem";
 import { bsc } from "wagmi/chains";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 
 import type { TokenInfo } from "@/lib/tokens";
 
@@ -54,6 +54,9 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     chainId: bsc.id,
     query: {
       enabled: isConnected && !!address && !!nativeToken,
+      // Short stale time to ensure fresh data after swaps
+      staleTime: 3_000,
+      refetchInterval: false,
     },
   });
 
@@ -68,6 +71,9 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     })),
     query: {
       enabled: isConnected && !!address,
+      // Short stale time to ensure fresh data after swaps
+      staleTime: 3_000,
+      refetchInterval: false,
     },
   });
 
@@ -116,10 +122,12 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     return balances[token.address]?.balanceFormatted ?? "0.0000";
   };
 
-  const refetch = () => {
-    refetchNative();
-    refetchErc20();
-  };
+  const refetch = useCallback(() => {
+    console.info("[balances] refetching balances...");
+    // Force refetch by invalidating cache
+    refetchNative({ cancelRefetch: true });
+    refetchErc20({ cancelRefetch: true });
+  }, [refetchNative, refetchErc20]);
 
   return {
     balances,

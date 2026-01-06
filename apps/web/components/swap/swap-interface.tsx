@@ -641,11 +641,20 @@ export function SwapInterface() {
       resetSwap();
       refetchAllowance();
       
-      // Refresh balances and quotes after successful swap
-      // Small delay to let the chain state propagate
+      // Refresh balances multiple times to ensure UI updates
+      // First refresh immediately
+      refetchBalances();
+      
+      // Then refresh again after delays to catch chain propagation
+      const refreshIntervals = [1000, 2500, 5000];
+      refreshIntervals.forEach((delay) => {
+        setTimeout(() => {
+          refetchBalances();
+        }, delay);
+      });
+      
+      // Re-fetch quotes after the last balance refresh
       setTimeout(() => {
-        refetchBalances();
-        // Re-fetch quotes to update output estimates
         if (fromTokenInfo && toTokenInfo && fromAmount) {
           fetchQuotes({
             sellToken: fromTokenInfo.address,
@@ -655,7 +664,7 @@ export function SwapInterface() {
             mode: settings.mode,
           });
         }
-      }, 2000);
+      }, 3000);
     }
   }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance, refetchBalances, fetchQuotes, fromTokenInfo, toTokenInfo, fromAmount, settings.slippageBps, settings.mode]);
 
