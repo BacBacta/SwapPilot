@@ -323,6 +323,8 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   const lastRequestIdRef = useRef(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const successToastShownRef = useRef<string | null>(null); // Track txHash to prevent duplicate toasts
+  const errorToastShownRef = useRef<string | null>(null); // Track error to prevent duplicate error toasts
   // Ref to store current values for debounced callback (avoids stale closures)
   const currentParamsRef = useRef<{
     fromTokenInfo: TokenInfo | null;
@@ -1308,8 +1310,11 @@ export function LandioSwapController() {
       setSwapBtnText("Success!");
       setDisabled("swapBtn", true);
       
-      // Show success toast
-      toast.success("Swap successful!", `Transaction: ${txHash?.slice(0, 10)}...`);
+      // Show success toast only once per transaction
+      if (txHash && successToastShownRef.current !== txHash) {
+        successToastShownRef.current = txHash;
+        toast.success("Swap successful!", `Transaction: ${txHash.slice(0, 10)}...`);
+      }
       
       // Update the most recent pending transaction to success
       setTxHistory((prev) => {
@@ -1349,6 +1354,7 @@ export function LandioSwapController() {
       const timeout = setTimeout(() => {
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
+        successToastShownRef.current = null; // Reset toast tracker for next swap
         resetSwap();
       }, 3000);
       return () => {
@@ -1359,8 +1365,12 @@ export function LandioSwapController() {
         clearTimeout(balanceRefresh3);
       };
     } else if (swapStatus === "error") {
-      // Show error toast
-      toast.error("Transaction failed", swapError ?? "Unknown error");
+      // Show error toast only once per error
+      const errorKey = swapError ?? "unknown";
+      if (errorToastShownRef.current !== errorKey) {
+        errorToastShownRef.current = errorKey;
+        toast.error("Transaction failed", swapError ?? "Unknown error");
+      }
       
       // Update the most recent pending transaction to failed
       setTxHistory((prev) => {
@@ -1382,6 +1392,7 @@ export function LandioSwapController() {
       // Reset after 3 seconds
       const timeout = setTimeout(() => {
         setSwapBtnText("Swap");
+        errorToastShownRef.current = null; // Reset error toast tracker for next swap
         resetSwap();
       }, 3000);
       return () => clearTimeout(timeout);
