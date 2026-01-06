@@ -376,7 +376,7 @@ export function LandioSwapController() {
     return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
   }, [fromTokenInfo, toTokenInfo]);
 
-  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances } = useTokenBalances(balanceTokens);
+  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances, refetch: refetchBalances } = useTokenBalances(balanceTokens);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 11: SWAP EXECUTION HOOK
@@ -1285,6 +1285,14 @@ export function LandioSwapController() {
       // Refresh balances and quotes after successful swap
       refetchAllowance();
       
+      // Refresh balances multiple times to ensure UI updates
+      // RPC nodes can have slight delays in reflecting new state
+      console.info("[swap][success] refreshing balances...");
+      refetchBalances(); // Immediate
+      const balanceRefresh1 = setTimeout(() => refetchBalances(), 1000);  // 1s
+      const balanceRefresh2 = setTimeout(() => refetchBalances(), 2500);  // 2.5s
+      const balanceRefresh3 = setTimeout(() => refetchBalances(), 5000);  // 5s
+      
       // Re-fetch quotes after a delay to let the chain state propagate
       const refreshTimeout = setTimeout(() => {
         const fromAmountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
@@ -1302,6 +1310,9 @@ export function LandioSwapController() {
       return () => {
         clearTimeout(timeout);
         clearTimeout(refreshTimeout);
+        clearTimeout(balanceRefresh1);
+        clearTimeout(balanceRefresh2);
+        clearTimeout(balanceRefresh3);
       };
     } else if (swapStatus === "error") {
       // Show error toast
@@ -1331,7 +1342,7 @@ export function LandioSwapController() {
       }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [swapStatus, swapError, resetSwap, toast, refetchAllowance, txHash]);
+  }, [swapStatus, swapError, resetSwap, toast, refetchAllowance, refetchBalances, txHash]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 23: DOM SYNC EFFECTS - Providers & Details Display
