@@ -1,52 +1,35 @@
-# SwapPilot — Documentation
+# SwapPilot Documentation
 
-These documents are **required** by `instructions.md` and must exist **before any implementation work**.
+Welcome to the official SwapPilot documentation.
 
-## Reading order (mandatory)
-1. `docs/architecture.md`
-2. `docs/providers.md`
-3. `docs/pancakeswap.md`
-4. `docs/scoring.md`
-5. `docs/api.md`
-6. `docs/security.md`
-7. `docs/adr/0001-monorepo.md`
-8. `docs/adr/0002-scoring.md`
+SwapPilot is a decentralized exchange (DEX) aggregator that optimizes token swaps across multiple liquidity sources on the BNB Smart Chain (BSC).
 
-## Acknowledgment checklist (must be completed before implementation)
-- [x] Option 1 is non-custodial and non-executing (deep-link only)
-- [x] BEQ and Best Raw Output are always separate views
-- [x] Sellability is never guaranteed; only OK/UNCERTAIN/FAIL with confidence
-- [x] All providers are behind strict adapters with timeouts + domain allowlist
-- [x] Zod validates all external inputs/outputs
-- [x] Logs are structured and redact sensitive data
+## Quick Links
 
-## Required docs (must exist)
-- `docs/README.md`
-- `docs/architecture.md`
-- `docs/providers.md`
-- `docs/pancakeswap.md`
-- `docs/scoring.md`
-- `docs/api.md`
-- `docs/security.md`
-- `docs/adr/0001-monorepo.md`
-- `docs/adr/0002-scoring.md`
+- [Whitepaper](whitepaper/README.md) - Complete technical documentation
+- [Getting Started](getting-started.md) - How to use SwapPilot
+- [API Reference](api-reference.md) - Developer documentation
 
-## Additional docs (recommended)
-These are useful supplements and may evolve over time:
-- `docs/adapters.md`
-- `docs/normalization-and-receipts.md`
-- `docs/risk-and-confidence.md`
-- `docs/observability.md`
-- `docs/repo-standards.md`
-- `docs/runbook.md`
-- `docs/ops.md`
-- `docs/release-checklist.md`
+## Features
 
-## Scope
-- Option 1 only: SwapPilot is **non-custodial** and **non-executing** (deep-link only).
-- Option 2 is future work.
+| Feature | Description |
+|---------|-------------|
+| 🎯 **Best Price Discovery** | Automatic comparison across 4+ DEX protocols |
+| ⚡ **Fast Execution** | Optimized transaction routing with minimal latency |
+| 🛡️ **User Protection** | Built-in slippage controls and transaction simulation |
+| 🌐 **Single Interface** | Unified access to fragmented DeFi liquidity |
 
-## Conventions
-- “BEQ” = Best Executable Quote (normalized + risk-aware + confidence-aware).
-- “Best Raw Output” = max output among sources (not necessarily executable/sellable).
-- Never claim guarantees for sellability.
+## Supported Protocols
+
+| Protocol | Status |
+|----------|--------|
+| 1inch | ✅ Active |
+| KyberSwap | ✅ Active |
+| ParaSwap | ✅ Active |
+| OKX DEX | ✅ Active |
+
+## Links
+
+- **App**: [https://app-swappilot.xyz](https://app-swappilot.xyz)
+- **API**: [https://swappilot-api.fly.dev](https://swappilot-api.fly.dev)
+- **GitHub**: [https://github.com/BacBacta/SwapPilot](https://github.com/BacBacta/SwapPilot)
