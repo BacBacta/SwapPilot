@@ -62,10 +62,14 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
   const { getPrice, formatUsd } = useTokenPrices();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
-  // Try to get token logo from Trust Wallet assets
-  const getTrustWalletLogoUrl = useCallback((address: string): string => {
-    // Trust Wallet uses checksummed addresses
-    return `https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/${address}/logo.png`;
+  // Try to get token logo - use multiple fallback sources
+  const getTokenLogoUrl = useCallback((address: string): string | undefined => {
+    // Skip native token address
+    if (address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
+      return undefined;
+    }
+    // Use BSCScan token images as they're more reliable and CORS-friendly
+    return `https://tokens.pancakeswap.finance/images/${address}.png`;
   }, []);
 
   // Fetch token info from blockchain when address is entered
@@ -84,15 +88,15 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
       // Resolve via backend (RPC-based)
       const meta = await resolveTokenMetadata({ address: address as `0x${string}` });
       
-      // Try to get logo from Trust Wallet assets
-      const logoURI = getTrustWalletLogoUrl(meta.address);
+      // Try to get logo from reliable sources
+      const logoURI = getTokenLogoUrl(meta.address);
       
       const newToken: TokenInfo = {
         symbol: (meta.symbol ?? address.slice(0, 6) + "...").toUpperCase(),
         name: meta.name ?? "Unknown Token",
         address: meta.address,
         decimals: meta.decimals ?? 18,
-        logoURI, // Add logo URL for custom tokens
+        ...(logoURI ? { logoURI } : {}), // Only add logoURI if defined
         isCustom: true,
       };
 
@@ -104,7 +108,7 @@ export function TokenPickerModal({ open, onClose, onSelect, selectedToken }: Tok
       setTokenError("Failed to fetch token info. Check your connection.");
       return null;
     }
-  }, [registryTokens, upsertCustomToken, getTrustWalletLogoUrl]);
+  }, [registryTokens, upsertCustomToken, getTokenLogoUrl]);
 
   // Handle address search
   useEffect(() => {

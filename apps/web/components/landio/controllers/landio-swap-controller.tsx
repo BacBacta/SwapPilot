@@ -39,9 +39,9 @@ function getTokenLogoUrl(token: TokenInfo | null | undefined): string | null {
   const iconUrl = TOKEN_ICONS[token.symbol.toUpperCase()];
   if (iconUrl) return iconUrl;
   
-  // Fallback to Trust Wallet assets for BSC tokens
+  // Fallback to PancakeSwap token images for BSC tokens (more reliable, CORS-friendly)
   if (token.address && token.address !== '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') {
-    return `https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/${token.address}/logo.png`;
+    return `https://tokens.pancakeswap.finance/images/${token.address}.png`;
   }
   
   return null;
