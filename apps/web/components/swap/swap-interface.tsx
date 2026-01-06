@@ -641,6 +641,13 @@ export function SwapInterface() {
       resetSwap();
       refetchAllowance();
       
+      // Clear the form after successful swap to prevent re-using stale data
+      setFromAmount("");
+      setFromAmountRawWei(null);
+      
+      // Reset quotes to clear stale quote data
+      reset();
+      
       // Refresh balances multiple times to ensure UI updates
       // First refresh immediately
       refetchBalances();
@@ -652,21 +659,8 @@ export function SwapInterface() {
           refetchBalances();
         }, delay);
       });
-      
-      // Re-fetch quotes after the last balance refresh
-      setTimeout(() => {
-        if (fromTokenInfo && toTokenInfo && fromAmount) {
-          fetchQuotes({
-            sellToken: fromTokenInfo.address,
-            buyToken: toTokenInfo.address,
-            sellAmount: fromAmount.replace(/,/g, ""),
-            slippageBps: settings.slippageBps,
-            mode: settings.mode,
-          });
-        }
-      }, 3000);
     }
-  }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance, refetchBalances, fetchQuotes, fromTokenInfo, toTokenInfo, fromAmount, settings.slippageBps, settings.mode]);
+  }, [isSwapSuccess, txHash, toast, transactions, updateTransaction, resetSwap, refetchAllowance, refetchBalances, reset]);
 
   // Watch for swap errors
   useEffect(() => {
