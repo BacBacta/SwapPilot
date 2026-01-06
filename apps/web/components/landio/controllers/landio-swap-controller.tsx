@@ -1103,10 +1103,11 @@ export function LandioSwapController() {
           fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
 
         if (!isNativeToken && tx.approvalAddress) {
-          // Read current allowance directly
+          // Read current allowance directly using reliable BSC RPC
+          const BSC_RPC = "https://bsc-dataseed1.binance.org";
           const publicClient = createPublicClient({
             chain: bsc,
-            transport: http(),
+            transport: http(BSC_RPC),
           });
 
           let currentAllowance = 0n;
@@ -1117,6 +1118,7 @@ export function LandioSwapController() {
               functionName: "allowance",
               args: [address as `0x${string}`, tx.approvalAddress as `0x${string}`],
             });
+            console.info("[landio][swap] current allowance:", currentAllowance.toString(), "needed:", sellAmountWei);
           } catch (e) {
             console.warn("[landio][swap] failed to read allowance", e);
           }
@@ -1166,12 +1168,50 @@ export function LandioSwapController() {
               toast.updateToast(loadingToastId, {
                 type: "success",
                 title: "Approval confirmed!",
-                message: "Now executing swap...",
+                message: "Verifying allowance...",
               });
 
-              // Small delay to let the chain state propagate
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              // Wait for chain state to propagate, then verify allowance
+              await new Promise(resolve => setTimeout(resolve, 2000));
               refetchAllowance();
+              
+              // Re-verify allowance before proceeding
+              let verifiedAllowance = 0n;
+              for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                  verifiedAllowance = await publicClient.readContract({
+                    address: fromTokenInfo.address as `0x${string}`,
+                    abi: erc20Abi,
+                    functionName: "allowance",
+                    args: [address as `0x${string}`, tx.approvalAddress as `0x${string}`],
+                  });
+                  console.info(`[landio][swap] verified allowance (attempt ${attempt + 1}):`, verifiedAllowance.toString());
+                  if (verifiedAllowance >= sellAmountBigInt) {
+                    break;
+                  }
+                } catch (e) {
+                  console.warn("[landio][swap] allowance verification failed", e);
+                }
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 1500));
+              }
+              
+              if (verifiedAllowance < sellAmountBigInt) {
+                toast.updateToast(loadingToastId, {
+                  type: "error",
+                  title: "Approval not detected",
+                  message: "Please try the swap again - the approval may take a moment to propagate",
+                });
+                setSwapBtnText("Swap");
+                setDisabled("swapBtn", false);
+                return;
+              }
+              
+              toast.updateToast(loadingToastId, {
+                type: "success",
+                title: "Allowance verified!",
+                message: "Now executing swap...",
+              });
 
             } catch (approvalError) {
               const msg = approvalError instanceof Error ? approvalError.message : "Approval failed";
