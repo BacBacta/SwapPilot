@@ -354,6 +354,13 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           errMsg.includes("TRANSFER_FROM_FAILED") ||
           errMsg.includes("TransferHelper") ||
           errMsg.includes("STF") ||
+          // 1inch ReturnAmountIsNotEnough (0x064a4ec6) - often caused by fee-on-transfer tokens
+          errMsg.includes("0x064a4ec6") ||
+          errMsg.includes("ReturnAmountIsNotEnough") ||
+          // Generic slippage errors that may indicate fee-on-transfer
+          errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT") ||
+          errMsg.includes("Too little received") ||
+          errMsg.includes("MinReturnError") ||
           // Taxed tokens often fail simulation with allowance errors even when approved
           (errMsg.includes("insufficient allowance") && errMsg.includes("execution reverted"));
         

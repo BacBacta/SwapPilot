@@ -429,6 +429,8 @@ export function LandioSwapController() {
     userSlippageBps: settings.slippageBps,
     autoSlippageEnabled: settings.autoSlippage ?? true,
     tokenSymbol: toTokenInfo?.symbol ?? "TOKEN",
+    sellTokenAddress: fromTokenInfo?.address,
+    buyTokenAddress: toTokenInfo?.address,
   });
 
   // Effective slippage to use (dynamic when auto-enabled)

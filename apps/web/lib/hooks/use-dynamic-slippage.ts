@@ -16,7 +16,11 @@ export type DynamicSlippageParams = {
   /** Whether auto-slippage is enabled */
   autoSlippageEnabled: boolean;
   /** Token symbol for display */
-  tokenSymbol?: string;
+  tokenSymbol?: string | undefined;
+  /** Sell token address for risk assessment */
+  sellTokenAddress?: string | undefined;
+  /** Buy token address for risk assessment */
+  buyTokenAddress?: string | undefined;
 };
 
 export type DynamicSlippageResult = {
@@ -46,6 +50,8 @@ export function useDynamicSlippage({
   userSlippageBps,
   autoSlippageEnabled,
   tokenSymbol,
+  sellTokenAddress,
+  buyTokenAddress,
 }: DynamicSlippageParams): DynamicSlippageResult {
   return useMemo(() => {
     // If auto-slippage is disabled, use user's setting
@@ -70,11 +76,33 @@ export function useDynamicSlippage({
       };
     }
 
-    // Start with base slippage
-    let baseBps = 100; // 1% default
-    let reason = "Standard slippage";
-    let riskLevel: "low" | "medium" | "high" = "low";
-    const factors: string[] = [];
+    // Get token address from params for risk assessment
+    const buyAddr = buyTokenAddress?.toLowerCase() ?? "";
+    const sellAddr = sellTokenAddress?.toLowerCase() ?? "";
+    
+    // Check if either token is a known safe token
+    const safeTokens = [
+      "0x55d398326f99059ff775485246999027b3197955", // USDT
+      "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", // USDC
+      "0xe9e7cea3dedca5984780bafc599bd69add087d56", // BUSD
+      "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3", // DAI
+      "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c", // WBNB
+      "0x2170ed0880ac9a755fd29b2688956bd959f933f8", // ETH
+      "0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c", // BTCB
+      "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82", // CAKE
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", // Native
+      "0x0000000000000000000000000000000000000000", // Native
+    ];
+    
+    const isBuyTokenSafe = !buyAddr || safeTokens.includes(buyAddr);
+    const isSellTokenSafe = !sellAddr || safeTokens.includes(sellAddr);
+    const hasUnknownToken = !isBuyTokenSafe || !isSellTokenSafe;
+
+    // Start with base slippage - higher for unknown tokens
+    let baseBps = hasUnknownToken ? 500 : 100; // 5% for unknown tokens, 1% for known safe
+    let reason = hasUnknownToken ? "Unknown token (higher default)" : "Standard slippage";
+    let riskLevel: "low" | "medium" | "high" = hasUnknownToken ? "medium" : "low";
+    const factors: string[] = hasUnknownToken ? ["unknown token"] : [];
 
     // Factor 1: Sellability status
     const sellability = quote.signals?.sellability;
@@ -167,7 +195,7 @@ export function useDynamicSlippage({
       riskLevel,
       suggestedMinBps: baseBps,
     };
-  }, [quote, userSlippageBps, autoSlippageEnabled]);
+  }, [quote, userSlippageBps, autoSlippageEnabled, sellTokenAddress, buyTokenAddress]);
 }
 
 /**
