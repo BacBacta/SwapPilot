@@ -54,8 +54,8 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     chainId: bsc.id,
     query: {
       enabled: isConnected && !!address && !!nativeToken,
-      // Short stale time to ensure fresh data after swaps
-      staleTime: 3_000,
+      // Longer stale time - balance updates are triggered manually after swaps
+      staleTime: 15_000,
       refetchInterval: false,
     },
   });
@@ -71,8 +71,8 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     })),
     query: {
       enabled: isConnected && !!address,
-      // Short stale time to ensure fresh data after swaps
-      staleTime: 3_000,
+      // Longer stale time - balance updates are triggered manually after swaps
+      staleTime: 15_000,
       refetchInterval: false,
     },
   });

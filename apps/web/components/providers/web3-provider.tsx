@@ -14,13 +14,13 @@ import {
   trustWallet,
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, http, createConfig } from "wagmi";
+import { WagmiProvider, http, createConfig, fallback } from "wagmi";
 import { bsc } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
 
 /* ========================================
-   RELIABLE BSC RPC ENDPOINTS
+   RELIABLE BSC RPC ENDPOINTS - with fallback support
    ======================================== */
 const BSC_RPC_URLS = [
   "https://bsc-dataseed1.binance.org",
@@ -59,25 +59,41 @@ const connectors = connectorsForWallets(
   }
 );
 
+// Create optimized HTTP transport with fallback RPCs
+const bscTransports = BSC_RPC_URLS.map(url => 
+  http(url, {
+    batch: {
+      batchSize: 100, // Batch up to 100 calls together
+      wait: 10, // Wait max 10ms to batch calls
+    },
+    timeout: 5_000, // Reduced timeout for faster fallback
+    retryCount: 1, // Quick retry before fallback
+  })
+);
+
 const config = createConfig({
   connectors,
   chains: [bsc],
   ssr: true,
   transports: {
-    [bsc.id]: http(BSC_RPC_URLS[0], {
-      batch: true,
-      timeout: 8_000, // Reduced timeout for faster failures
-      retryCount: 2,
+    [bsc.id]: fallback(bscTransports, {
+      rank: true, // Automatically rank RPCs by latency
+      retryCount: 2, // Retry across fallback RPCs
     }),
   },
+  // Disable expensive multicall for simple reads
+  multiInjectedProviderDiscovery: false,
 });
 
-// Create query client with optimized settings
+// Create query client with optimized settings for performance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5_000,
-      gcTime: 10_000,
+      staleTime: 10_000, // Data fresh for 10s (was 5s)
+      gcTime: 30_000, // Keep in cache for 30s (was 10s)
+      refetchOnWindowFocus: false, // Disable refetch on window focus
+      refetchOnReconnect: false, // Disable refetch on reconnect
+      retry: 1, // Only 1 retry for failed queries
     },
   },
 });
@@ -135,18 +151,10 @@ interface Web3ProviderProps {
 }
 
 function RainbowKitWrapper({ children }: Web3ProviderProps) {
-  const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(true);
 
-  // Ensure client-side only rendering to avoid indexedDB SSR issues
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Listen to theme changes via data-theme attribute
-  useEffect(() => {
-    if (!mounted) return;
-    
+  useEffect(() => {    
     const updateTheme = () => {
       const theme = document.documentElement.getAttribute("data-theme");
       setIsDark(theme !== "light");
@@ -163,12 +171,7 @@ function RainbowKitWrapper({ children }: Web3ProviderProps) {
     });
 
     return () => observer.disconnect();
-  }, [mounted]);
-
-  // Prevent SSR flash - show nothing until mounted
-  if (!mounted) {
-    return <>{children}</>;
-  }
+  }, []);
 
   return (
     <RainbowKitProvider 

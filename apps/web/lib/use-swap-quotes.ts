@@ -8,7 +8,7 @@ import { parseUnits } from "viem";
 import type { TokenInfo } from "@/lib/tokens";
 
 const BSC_CHAIN_ID = 56;
-const QUOTE_REFRESH_INTERVAL_MS = 12_000; // Refresh quotes every 12 seconds
+const QUOTE_REFRESH_INTERVAL_MS = 15_000; // Refresh quotes every 15 seconds (reduced frequency)
 
 export type ResolveTokenFn = (tokenOrSymbolOrAddress: string) => TokenInfo | null;
 
@@ -131,7 +131,7 @@ export function useSwapQuotes(resolveToken: ResolveTokenFn): UseSwapQuotesReturn
 
     try {
       fetchingRef.current = true;
-      const response = await postQuotes({ request, timeoutMs: 15_000 });
+      const response = await postQuotes({ request, timeoutMs: 8_000 });
       setQuotes({ status: "success", data: response, error: null });
       // If the API embeds a receipt in the quotes response, surface it immediately.
       // This avoids relying on an ephemeral receipt store.
