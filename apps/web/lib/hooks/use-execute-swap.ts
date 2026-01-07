@@ -265,7 +265,8 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   }, [isConnected, userAddress]);
 
   // Execute the swap transaction with pre-flight simulation
-  const executeSwap = useCallback(async (tx?: BuiltTransaction) => {
+  // skipSimulation: bypass gas estimation for fee-on-transfer tokens
+  const executeSwap = useCallback(async (tx?: BuiltTransaction, skipSimulation = false) => {
     const transaction = tx || builtTx;
     
     if (!transaction) {
@@ -316,28 +317,54 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
 
     // Step 1: Estimate gas to simulate the transaction before sending
     // This catches revert errors early with better messages
+    // Skip simulation for fee-on-transfer tokens (skipSimulation=true)
     let estimatedGas: bigint | undefined;
-    try {
-      if (publicClient) {
-        console.info("[swap][execute] estimating gas...", {
-          providerId: transaction.providerId,
-          to: transaction.to,
-        });
+    
+    if (skipSimulation) {
+      console.info("[swap][execute] skipping simulation (fee-on-transfer token)", {
+        providerId: transaction.providerId,
+      });
+      // Use a generous fixed gas limit for fee-on-transfer tokens
+      estimatedGas = 500_000n;
+    } else {
+      try {
+        if (publicClient) {
+          console.info("[swap][execute] estimating gas...", {
+            providerId: transaction.providerId,
+            to: transaction.to,
+          });
+          
+          estimatedGas = await publicClient.estimateGas(txRequest);
+          
+          console.info("[swap][execute] gas estimated", {
+            providerId: transaction.providerId,
+            estimatedGas: estimatedGas.toString(),
+            providedGas: transaction.gas,
+          });
+        }
+      } catch (estimateError) {
+        // Gas estimation failed = transaction would revert
+        const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
         
-        estimatedGas = await publicClient.estimateGas(txRequest);
+        // Check if this is a fee-on-transfer token error
+        const isFeeOnTransferError = 
+          errMsg.includes("External call failed") ||
+          errMsg.includes("TRANSFER_FROM_FAILED") ||
+          errMsg.includes("TransferHelper") ||
+          errMsg.includes("STF");
         
-        console.info("[swap][execute] gas estimated", {
-          providerId: transaction.providerId,
-          estimatedGas: estimatedGas.toString(),
-          providedGas: transaction.gas,
-        });
-      }
-    } catch (estimateError) {
-      // Gas estimation failed = transaction would revert
-      const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
-      
-      // Parse common revert reasons for better UX
-      let userMessage = "Transaction would fail: ";
+        if (isFeeOnTransferError) {
+          console.warn("[swap][execute] detected fee-on-transfer token, retrying without simulation", {
+            providerId: transaction.providerId,
+            error: errMsg.slice(0, 200),
+          });
+          
+          // Retry without simulation
+          return executeSwap(transaction, true);
+        }
+        
+        // Parse common revert reasons for better UX
+        let userMessage = "Transaction would fail: ";
       
       // 1inch ReturnAmountIsNotEnough error (0x064a4ec6)
       if (errMsg.includes("0x064a4ec6") || errMsg.includes("ReturnAmountIsNotEnough")) {
@@ -412,6 +439,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       setStatus("error");
       return;
     }
+    } // Close else block (skipSimulation)
 
     // Use estimated gas with 20% buffer, or provided gas
     const gas = (() => {
