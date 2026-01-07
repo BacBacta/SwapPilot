@@ -348,7 +348,7 @@ export class ParaSwapAdapter implements Adapter {
       // Step 2: Build transaction
       // ParaSwap requires: for SELL side, use slippage (not destAmount)
       // Use tokens from priceRoute to ensure exact match (case-sensitive!)
-      const txUrl = `${this.baseUrl}/transactions/${this.chainId}`;
+      const txUrl = `${this.baseUrl}/transactions/${this.chainId}?ignoreChecks=true&ignoreGasEstimate=true`;
       const txBody = {
         srcToken: priceRoute.srcToken,
         destToken: priceRoute.destToken,
@@ -358,6 +358,9 @@ export class ParaSwapAdapter implements Adapter {
         priceRoute,
         userAddress: request.account,
         partner: this.partner,
+        // Allow transactions even if simulation fails (for fee-on-transfer tokens)
+        ignoreChecks: true,
+        ignoreGasEstimate: true,
       };
 
       const txRes = await fetch(txUrl, {
