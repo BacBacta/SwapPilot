@@ -106,6 +106,17 @@ export function useTokenApproval({
     setError(approvalReceiptError);
   }, [isApprovalReceiptError, approvalReceiptError]);
 
+  // Refetch allowance when approval is confirmed
+  useEffect(() => {
+    if (isApprovalConfirmed) {
+      console.info("[swap][approve] confirmed, refetching allowance", {
+        tokenAddress,
+        approvalHash,
+      });
+      refetchAllowance();
+    }
+  }, [isApprovalConfirmed, refetchAllowance, tokenAddress, approvalHash]);
+
   const isApproving = isWritePending || isWaitingForTx;
 
   // Check if approval is needed
