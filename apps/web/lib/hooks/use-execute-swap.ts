@@ -346,17 +346,21 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
         // Gas estimation failed = transaction would revert
         const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
         
-        // Check if this is a fee-on-transfer token error
+        // Check if this is a fee-on-transfer token error or simulation-only failure
+        // Some taxed tokens report misleading "insufficient allowance" during simulation
+        // but work fine when actually executed
         const isFeeOnTransferError = 
           errMsg.includes("External call failed") ||
           errMsg.includes("TRANSFER_FROM_FAILED") ||
           errMsg.includes("TransferHelper") ||
-          errMsg.includes("STF");
+          errMsg.includes("STF") ||
+          // Taxed tokens often fail simulation with allowance errors even when approved
+          (errMsg.includes("insufficient allowance") && errMsg.includes("execution reverted"));
         
         if (isFeeOnTransferError) {
-          console.warn("[swap][execute] detected fee-on-transfer token, retrying without simulation", {
+          console.warn("[swap][execute] detected fee-on-transfer token or simulation failure, retrying without simulation", {
             providerId: transaction.providerId,
-            error: errMsg.slice(0, 200),
+            error: errMsg.slice(0, 300),
           });
           
           // Retry without simulation
