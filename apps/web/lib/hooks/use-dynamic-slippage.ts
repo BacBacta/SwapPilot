@@ -80,18 +80,18 @@ export function useDynamicSlippage({
     const sellability = quote.signals?.sellability;
     if (sellability) {
       if (sellability.status === "FAIL") {
-        // Token cannot be sold - very risky
-        baseBps = Math.max(baseBps, 500); // 5%
+        // Token cannot be sold - very risky, likely has transfer fees
+        baseBps = Math.max(baseBps, 1500); // 15% for tokens with sell issues
         factors.push("risky token (sell check failed)");
         riskLevel = "high";
       } else if (sellability.status === "UNCERTAIN" || sellability.confidence < 0.5) {
         // Unknown token - higher slippage needed
-        baseBps = Math.max(baseBps, 300); // 3%
+        baseBps = Math.max(baseBps, 800); // 8%
         factors.push("uncertain sellability");
-        riskLevel = "medium";
+        riskLevel = "high";
       } else if (sellability.confidence < 0.8) {
         // Somewhat uncertain
-        baseBps = Math.max(baseBps, 200); // 2%
+        baseBps = Math.max(baseBps, 400); // 4%
         factors.push("lower confidence");
         riskLevel = "medium";
       }
@@ -139,11 +139,13 @@ export function useDynamicSlippage({
       (r: string) =>
         r.toLowerCase().includes("fee") ||
         r.toLowerCase().includes("tax") ||
-        r.toLowerCase().includes("transfer")
+        r.toLowerCase().includes("transfer") ||
+        r.toLowerCase().includes("external call failed") ||
+        r.toLowerCase().includes("simulation")
     );
     if (hasFeeOnTransfer) {
-      baseBps = Math.max(baseBps, 400); // 4% for fee tokens
-      factors.push("possible transfer fee");
+      baseBps = Math.max(baseBps, 1200); // 12% for fee-on-transfer tokens
+      factors.push("fee-on-transfer token");
       riskLevel = "high";
     }
 
@@ -206,6 +208,6 @@ export function suggestSlippageForToken(tokenAddress: string): number {
     return 100; // 1%
   }
 
-  // Unknown token - higher default
-  return 200; // 2%
+  // Unknown token - higher default for safety
+  return 500; // 5% for unknown tokens (may have transfer fees)
 }
