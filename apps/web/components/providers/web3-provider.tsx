@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getDefaultConfig, RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
-import { WagmiProvider, http } from "wagmi";
+import { 
+  RainbowKitProvider, 
+  darkTheme, 
+  lightTheme,
+  connectorsForWallets,
+} from "@rainbow-me/rainbowkit";
+import {
+  metaMaskWallet,
+  walletConnectWallet,
+  coinbaseWallet,
+  trustWallet,
+  injectedWallet,
+} from "@rainbow-me/rainbowkit/wallets";
+import { WagmiProvider, http, createConfig } from "wagmi";
 import { bsc } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
@@ -18,20 +30,44 @@ const BSC_RPC_URLS = [
 ];
 
 /* ========================================
-   WAGMI CONFIG - BSC ONLY (faster initialization)
+   WAGMI CONFIG - OPTIMIZED FOR FAST WALLET CONNECTION
    ======================================== */
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64";
 
-const config = getDefaultConfig({
-  appName: "SwapPilot",
-  projectId,
-  // Only BSC for now - reduces initialization time significantly
+// Only include essential wallets for faster modal loading
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Popular",
+      wallets: [
+        metaMaskWallet,
+        trustWallet,
+        coinbaseWallet,
+      ],
+    },
+    {
+      groupName: "Other",
+      wallets: [
+        walletConnectWallet,
+        injectedWallet,
+      ],
+    },
+  ],
+  {
+    appName: "SwapPilot",
+    projectId,
+  }
+);
+
+const config = createConfig({
+  connectors,
   chains: [bsc],
   ssr: true,
   transports: {
     [bsc.id]: http(BSC_RPC_URLS[0], {
       batch: true,
-      timeout: 10_000,
+      timeout: 8_000, // Reduced timeout for faster failures
+      retryCount: 2,
     }),
   },
 });
