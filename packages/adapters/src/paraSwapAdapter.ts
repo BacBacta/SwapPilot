@@ -52,6 +52,19 @@ const PARASWAP_SUPPORTED_CHAINS = [
   250,   // Fantom
 ];
 
+// ParaSwap TokenTransferProxy addresses per chain
+// This is the contract that needs approval for ERC-20 swaps
+const PARASWAP_TOKEN_TRANSFER_PROXY: Record<number, string> = {
+  1: '0x216b4b4ba9f3e719726886d34a177484278bfcae',     // Ethereum
+  56: '0x216b4b4ba9f3e719726886d34a177484278bfcae',    // BSC
+  137: '0x216b4b4ba9f3e719726886d34a177484278bfcae',   // Polygon
+  42161: '0x216b4b4ba9f3e719726886d34a177484278bfcae', // Arbitrum
+  10: '0x216b4b4ba9f3e719726886d34a177484278bfcae',    // Optimism
+  8453: '0x216b4b4ba9f3e719726886d34a177484278bfcae',  // Base
+  43114: '0x216b4b4ba9f3e719726886d34a177484278bfcae', // Avalanche
+  250: '0x216b4b4ba9f3e719726886d34a177484278bfcae',   // Fantom
+};
+
 export class ParaSwapAdapter implements Adapter {
   private readonly chainId: number;
   private readonly partner: string;
@@ -66,6 +79,19 @@ export class ParaSwapAdapter implements Adapter {
 
   private isSupported(): boolean {
     return PARASWAP_SUPPORTED_CHAINS.includes(this.chainId);
+  }
+
+  private isNativeToken(token: string): boolean {
+    const lower = token.toLowerCase();
+    return (
+      lower === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+      lower === 'eth' ||
+      lower === 'bnb' ||
+      lower === 'matic' ||
+      lower === 'avax' ||
+      lower === 'ftm' ||
+      lower === '0x0000000000000000000000000000000000000000'
+    );
   }
 
   getProviderMeta(): ProviderMeta {
@@ -360,12 +386,17 @@ export class ParaSwapAdapter implements Adapter {
         chainId: number;
       };
 
+      // For ERC-20 tokens, user needs to approve the TokenTransferProxy first
+      const sellTokenIsNative = this.isNativeToken(request.sellToken);
+      const approvalAddress = sellTokenIsNative ? undefined : PARASWAP_TOKEN_TRANSFER_PROXY[this.chainId];
+
       return {
         to: txData.to,
         data: txData.data,
         value: txData.value,
         gas: txData.gas,
         gasPrice: txData.gasPrice,
+        ...(approvalAddress ? { approvalAddress } : {}),
       };
     } catch (err) {
       clearTimeout(timeout);
