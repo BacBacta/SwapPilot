@@ -834,8 +834,11 @@
           </div>
         </div>
 
-        <!-- Swap Button -->
-        <button class="swap-btn" id="swapBtn" disabled>Enter an amount</button>
+        <!-- Swap Button Container -->
+        <div class="swap-btn-container" style="display: flex; gap: 8px;">
+          <button class="swap-btn" id="swapBtn" disabled style="flex: 1;">Enter an amount</button>
+          <button class="cancel-btn" id="cancelSwapBtn" style="display: none; padding: 0 20px; background: var(--error, #ff6b6b); border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;">Cancel</button>
+        </div>
 
         <!-- Details Toggle -->
         <div class="details-toggle" id="detailsToggle" style="display: none;">

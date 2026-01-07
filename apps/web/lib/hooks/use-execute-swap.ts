@@ -106,15 +106,15 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
   } = useWaitForTransactionReceipt({
     chainId,
     hash: submittedTxHash ?? txHash,
-    // Retry more aggressively for faster feedback
+    // Retry aggressively for faster feedback
     query: {
       enabled: Boolean(submittedTxHash ?? txHash),
-      retry: 60, // Retry up to 60 times
-      retryDelay: 3000, // Every 3 seconds = 3 minutes total
+      retry: 15, // Retry up to 15 times
+      retryDelay: 3000, // Every 3 seconds = 45 seconds total
     },
   });
 
-  // Timeout: if still pending after 3 minutes, show error
+  // Timeout: if still pending after 45 seconds, show error and allow reset
   useEffect(() => {
     const hash = submittedTxHash ?? txHash;
     if (!hash || status !== "pending") return;
@@ -125,10 +125,10 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           hash,
           chainId,
         });
-        setError("Transaction timeout - the transaction may not have been broadcast to the network. Check your wallet or block explorer.");
+        setError("Transaction not found on-chain. It may not have been broadcast. Check MetaMask activity or try again.");
         setStatus("error");
       }
-    }, 180_000); // 3 minutes
+    }, 45_000); // 45 seconds
 
     return () => clearTimeout(timeoutId);
   }, [submittedTxHash, txHash, status, isTxConfirmed, isTxReceiptError, chainId]);

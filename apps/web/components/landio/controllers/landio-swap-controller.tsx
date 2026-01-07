@@ -1277,10 +1277,32 @@ export function LandioSwapController() {
     };
     swapBtn?.addEventListener("click", onSwap);
 
+    // Cancel button event listener
+    const cancelBtn = document.getElementById("cancelSwapBtn");
+    const onCancel = () => {
+      console.info("[swap][cancel] user cancelled pending swap");
+      resetSwap();
+      setSwapBtnText("Swap");
+      setDisabled("swapBtn", false);
+      // Mark pending transaction as cancelled
+      setTxHistory((prev) => {
+        const pendingTx = prev.find((t) => t.status === "pending");
+        if (pendingTx) {
+          const updated = prev.map((t) => t.id === pendingTx.id ? { ...t, status: "failed" as const } : t);
+          localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+      toast.info("Swap cancelled", "You can try again with a new quote.");
+    };
+    cancelBtn?.addEventListener("click", onCancel);
+
     return () => {
       amountInput?.removeEventListener("input", onInput);
       detailsToggle?.removeEventListener("click", onToggleDetails);
       swapBtn?.removeEventListener("click", onSwap);
+      cancelBtn?.removeEventListener("click", onCancel);
       // NOTE: Don't cleanup debounce timer here - it's managed by the timer itself
     };
   }, [
@@ -1298,6 +1320,7 @@ export function LandioSwapController() {
     isConnected,
     pilotTierInfo,
     refetchAllowance,
+    resetSwap,
     toTokenSymbol,
     resolveToken,
     selected,
@@ -1310,6 +1333,12 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // Handle swap status changes
   useEffect(() => {
+    // Show/hide cancel button based on pending status
+    const cancelBtn = document.getElementById("cancelSwapBtn");
+    if (cancelBtn) {
+      cancelBtn.style.display = swapStatus === "pending" ? "block" : "none";
+    }
+
     if (swapStatus === "pending") {
       setSwapBtnText("Pending...");
       setDisabled("swapBtn", true);
