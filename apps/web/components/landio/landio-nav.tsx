@@ -39,11 +39,15 @@ export function LandioNav() {
         { href: "/#services", label: "Services" },
         { href: "/#integrations", label: "Integrations" },
         { href: "/#faq", label: "FAQ" },
+        { href: "https://github.com/BacBacta/SwapPilot", label: "GitHub ↗", external: true },
+        { href: "https://swappilot.gitbook.io/swappilot", label: "GitBook ↗", external: true },
       ]
     : [
         { href: "/swap", label: "Swap" },
         { href: "/rewards", label: "Rewards" },
         { href: "/status", label: "Status" },
+        { href: "https://github.com/BacBacta/SwapPilot", label: "GitHub ↗", external: true },
+        { href: "https://swappilot.gitbook.io/swappilot", label: "GitBook ↗", external: true },
       ];
 
   const isActive = (href: string) => pathname === href;
@@ -67,14 +71,25 @@ export function LandioNav() {
         <ul className="nav-links" role="menubar">
           {links.map((link) => (
             <li key={link.href} role="none">
-              <Link 
-                href={link.href}
-                role="menuitem"
-                className={!isLanding && isActive(link.href) ? "active" : undefined}
-                onClick={closeMobileMenu}
-              >
-                {link.label}
-              </Link>
+              {link.external ? (
+                <a 
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  role="menuitem"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link 
+                  href={link.href}
+                  role="menuitem"
+                  className={!isLanding && isActive(link.href) ? "active" : undefined}
+                  onClick={closeMobileMenu}
+                >
+                  {link.label}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
