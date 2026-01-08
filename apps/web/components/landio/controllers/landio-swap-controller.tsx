@@ -180,7 +180,7 @@ function extractTokenTax(signals: RankedQuote["signals"] | undefined): {
   for (const reason of signals.sellability.reasons) {
     // Match patterns like "token_security:goplus:buy_tax:3" or "token_security:honeypotis:buy_tax:3.5"
     const buyMatch = reason.match(/buy_tax:(\d+(?:\.\d+)?)/);
-    if (buyMatch) {
+    if (buyMatch && buyMatch[1]) {
       const tax = parseFloat(buyMatch[1]);
       if (!isNaN(tax) && (result.buyTax === null || tax > result.buyTax)) {
         result.buyTax = tax;
@@ -188,7 +188,7 @@ function extractTokenTax(signals: RankedQuote["signals"] | undefined): {
     }
     
     const sellMatch = reason.match(/sell_tax:(\d+(?:\.\d+)?)/);
-    if (sellMatch) {
+    if (sellMatch && sellMatch[1]) {
       const tax = parseFloat(sellMatch[1]);
       if (!isNaN(tax) && (result.sellTax === null || tax > result.sellTax)) {
         result.sellTax = tax;
