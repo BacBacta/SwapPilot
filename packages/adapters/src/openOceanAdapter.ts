@@ -356,9 +356,14 @@ export class OpenOceanAdapter implements Adapter {
       const slippage = (request.slippageBps ?? 100) / 100; // Convert bps to percent
 
       // OpenOcean swap endpoint returns transaction data
-      // Normalize native token addresses to wrapped versions
-      const inToken = this.normalizeTokenAddress(request.sellToken);
-      const outToken = this.normalizeTokenAddress(request.buyToken);
+      // IMPORTANT: For native token swaps, do NOT normalize to wrapped token
+      // OpenOcean expects the native token placeholder and will handle wrapping internally
+      const sellTokenIsNative = this.isNativeToken(request.sellToken);
+      const buyTokenIsNative = this.isNativeToken(request.buyToken);
+      
+      // Only normalize output token, keep input as native placeholder if selling native
+      const inToken = sellTokenIsNative ? request.sellToken : this.normalizeTokenAddress(request.sellToken);
+      const outToken = buyTokenIsNative ? request.buyToken : this.normalizeTokenAddress(request.buyToken);
       
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/swap`);
       url.searchParams.set('inTokenAddress', inToken);
@@ -397,7 +402,6 @@ export class OpenOceanAdapter implements Adapter {
 
       // Fix: If selling native token (BNB/ETH), ensure value is set to sellAmount
       // OpenOcean API sometimes returns value: "0" for native token swaps
-      const sellTokenIsNative = this.isNativeToken(request.sellToken);
       const txValue = sellTokenIsNative ? request.sellAmount : json.data.value;
 
       return {
