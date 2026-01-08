@@ -361,6 +361,9 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           errMsg.includes("INSUFFICIENT_OUTPUT_AMOUNT") ||
           errMsg.includes("Too little received") ||
           errMsg.includes("MinReturnError") ||
+          // ParaSwap specific slippage error
+          errMsg.includes("less then expected") ||
+          errMsg.includes("less than expected") ||
           // Taxed tokens often fail simulation with allowance errors even when approved
           (errMsg.includes("insufficient allowance") && errMsg.includes("execution reverted"));
         
