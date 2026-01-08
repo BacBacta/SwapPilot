@@ -99,9 +99,9 @@ export function useDynamicSlippage({
     const hasUnknownToken = !isBuyTokenSafe || !isSellTokenSafe;
 
     // Start with base slippage - higher for unknown tokens
-    let baseBps = hasUnknownToken ? 500 : 100; // 5% for unknown tokens, 1% for known safe
+    let baseBps = hasUnknownToken ? 2500 : 100; // 25% for unknown tokens, 1% for known safe
     let reason = hasUnknownToken ? "Unknown token (higher default)" : "Standard slippage";
-    let riskLevel: "low" | "medium" | "high" = hasUnknownToken ? "medium" : "low";
+    let riskLevel: "low" | "medium" | "high" = hasUnknownToken ? "high" : "low";
     const factors: string[] = hasUnknownToken ? ["unknown token"] : [];
 
     // Factor 1: Sellability status

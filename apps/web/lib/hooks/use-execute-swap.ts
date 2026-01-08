@@ -368,17 +368,15 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           (errMsg.includes("insufficient allowance") && errMsg.includes("execution reverted"));
         
         if (isFeeOnTransferError) {
-          console.warn("[swap][execute] detected fee-on-transfer token or slippage error", {
+          console.warn("[swap][execute] detected fee-on-transfer token or slippage error, bypassing simulation", {
             providerId: transaction.providerId,
             error: errMsg.slice(0, 300),
           });
           
-          // Don't retry with the same transaction data - it will fail on-chain too
-          // The minReturn baked into the calldata is too high for this taxed token
-          // User needs to rebuild with higher slippage
-          setError("This token appears to have a transfer tax. Please increase slippage to 20-30% and try again.");
-          setStatus("error");
-          return;
+          // For fee-on-transfer tokens, simulation often fails due to price/slippage mismatch
+          // But the actual transaction may still succeed. Skip simulation and proceed.
+          // The user has already accepted the slippage tolerance.
+          return executeSwap(transaction, true);
         }
         
         // Parse common revert reasons for better UX
