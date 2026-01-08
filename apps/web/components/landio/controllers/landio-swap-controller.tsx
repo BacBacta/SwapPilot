@@ -970,13 +970,11 @@ export function LandioSwapController() {
 
         // BEQ details + route + transaction details
         const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
-        const maxBuy = (() => {
-          const buys = (res.rankedQuotes ?? [])
-            .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
-            .filter((x): x is bigint => x !== null);
-          if (!buys.length) return null;
-          return buys.reduce((a, b) => (b > a ? b : a), buys[0]!);
-        })();
+        const allBuys = (res.rankedQuotes ?? [])
+          .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+          .filter((x): x is bigint => x !== null);
+        const maxBuy = allBuys.length ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
+        const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
 
         // Price Impact: use a quote-relative proxy (best vs best-raw)
         if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
