@@ -172,8 +172,16 @@ export function useDynamicSlippage({
         r.toLowerCase().includes("simulation")
     );
     if (hasFeeOnTransfer) {
-      baseBps = Math.max(baseBps, 1200); // 12% for fee-on-transfer tokens
-      factors.push("fee-on-transfer token");
+      baseBps = Math.max(baseBps, 2500); // 25% for fee-on-transfer tokens
+      factors.push("fee-on-transfer token detected");
+      riskLevel = "high";
+    }
+
+    // Factor 6: For unknown buy tokens (meme coins), use aggressive slippage
+    // These often have 5-20% transfer taxes
+    if (!isBuyTokenSafe && !hasFeeOnTransfer) {
+      baseBps = Math.max(baseBps, 1500); // 15% for unknown tokens as precaution
+      factors.push("potential meme/tax token");
       riskLevel = "high";
     }
 
