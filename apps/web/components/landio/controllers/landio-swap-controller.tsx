@@ -173,6 +173,7 @@ function renderProviders(
   toTokenSymbol: string,
   showAll: boolean,
   setSelected: (q: RankedQuote) => void,
+  onShowMore?: () => void,
 ) {
   // Find or create providers list container
   let listContainer = container.querySelector("#providersList") as HTMLElement | null;
@@ -282,7 +283,10 @@ function renderProviders(
       showMoreBtn.style.borderColor = "var(--border)";
       showMoreBtn.style.color = "var(--text-secondary)";
     };
-    // The click event is handled by the useEffect that re-renders with showAll=true
+    // Attach click handler directly if provided
+    if (onShowMore) {
+      showMoreBtn.onclick = onShowMore;
+    }
     showMoreBtn.id = "showMoreProvidersBtn";
     listContainer.appendChild(showMoreBtn);
   }
@@ -890,7 +894,15 @@ export function LandioSwapController() {
         // This initial render shows top 3, the showAllProviders effect will re-render
         const container = document.getElementById("providersContainer");
         if (container && res.rankedQuotes) {
-          renderProviders(container, res.rankedQuotes, toTokenInfo, toTokenSymbol, false, setSelected);
+          renderProviders(
+            container, 
+            res.rankedQuotes, 
+            toTokenInfo, 
+            toTokenSymbol, 
+            false, 
+            setSelected,
+            () => setShowAllProviders(true)
+          );
         }
 
         // BEQ details + route + transaction details
@@ -1479,13 +1491,15 @@ export function LandioSwapController() {
     const container = document.getElementById("providersContainer");
     if (!container) return;
 
-    renderProviders(container, response.rankedQuotes, toTokenInfo, toTokenSymbol, showAllProviders, setSelected);
-
-    // Hook up show more button
-    const showMoreBtn = document.getElementById("showMoreProvidersBtn");
-    if (showMoreBtn) {
-      showMoreBtn.onclick = () => setShowAllProviders(true);
-    }
+    renderProviders(
+      container, 
+      response.rankedQuotes, 
+      toTokenInfo, 
+      toTokenSymbol, 
+      showAllProviders, 
+      setSelected,
+      () => setShowAllProviders(true)
+    );
   }, [showAllProviders, response, toTokenInfo, toTokenSymbol]);
 
   // Update BEQ panel when selected quote changes
