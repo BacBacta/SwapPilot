@@ -165,6 +165,41 @@ function toWei(amount: string, decimals: number): string {
 // Rank badges for providers
 const RANK_BADGES = ["🥇", "🥈", "🥉"];
 
+/**
+ * Extract token tax percentage from sellability reasons.
+ * Returns the buy tax (for buying tokens) or null if not found.
+ */
+function extractTokenTax(signals: RankedQuote["signals"] | undefined): {
+  buyTax: number | null;
+  sellTax: number | null;
+  maxTax: number | null;
+} {
+  const result = { buyTax: null as number | null, sellTax: null as number | null, maxTax: null as number | null };
+  if (!signals?.sellability?.reasons) return result;
+
+  for (const reason of signals.sellability.reasons) {
+    // Match patterns like "token_security:goplus:buy_tax:3" or "token_security:honeypotis:buy_tax:3.5"
+    const buyMatch = reason.match(/buy_tax:(\d+(?:\.\d+)?)/);
+    if (buyMatch) {
+      const tax = parseFloat(buyMatch[1]);
+      if (!isNaN(tax) && (result.buyTax === null || tax > result.buyTax)) {
+        result.buyTax = tax;
+      }
+    }
+    
+    const sellMatch = reason.match(/sell_tax:(\d+(?:\.\d+)?)/);
+    if (sellMatch) {
+      const tax = parseFloat(sellMatch[1]);
+      if (!isNaN(tax) && (result.sellTax === null || tax > result.sellTax)) {
+        result.sellTax = tax;
+      }
+    }
+  }
+  
+  result.maxTax = Math.max(result.buyTax ?? 0, result.sellTax ?? 0) || null;
+  return result;
+}
+
 // Render providers list with all enhancements
 function renderProviders(
   container: HTMLElement,
@@ -868,14 +903,42 @@ export function LandioSwapController() {
         setDisplay("providersContainer", "block");
         setDisplay("detailsToggle", "flex");
 
-        const buyAmount = best?.normalized.buyAmount ?? best?.raw.buyAmount;
-        const formatted = buyAmount ? formatAmount(buyAmount, toTokenInfo.decimals) : "—";
-        toAmountInput.value = formatted === "—" ? "" : formatted;
-
-        // Update toAmount for USD calculation
-        if (buyAmount) {
+        // Extract token tax and adjust displayed amount
+        const tokenTaxInfo = extractTokenTax(best?.signals);
+        const buyTaxPercent = tokenTaxInfo.buyTax ?? 0;
+        
+        const rawBuyAmount = best?.normalized.buyAmount ?? best?.raw.buyAmount;
+        let displayBuyAmount = rawBuyAmount;
+        
+        // Adjust for buy tax if present
+        if (rawBuyAmount && buyTaxPercent > 0) {
           try {
-            const toNum = Number(BigInt(buyAmount)) / 10 ** toTokenInfo.decimals;
+            const rawBigInt = BigInt(rawBuyAmount);
+            // Subtract tax: amount * (100 - tax%) / 100
+            const adjustedBigInt = (rawBigInt * BigInt(Math.round((100 - buyTaxPercent) * 100))) / 10000n;
+            displayBuyAmount = adjustedBigInt.toString();
+          } catch {
+            // Keep original if conversion fails
+          }
+        }
+        
+        const formatted = displayBuyAmount ? formatAmount(displayBuyAmount, toTokenInfo.decimals) : "—";
+        
+        // Show tax warning in the input
+        if (buyTaxPercent > 0) {
+          toAmountInput.value = formatted === "—" ? "" : `~${formatted}`;
+          toAmountInput.title = `After ${buyTaxPercent.toFixed(1)}% token buy tax`;
+          toAmountInput.style.color = "#f59e0b";
+        } else {
+          toAmountInput.value = formatted === "—" ? "" : formatted;
+          toAmountInput.title = "";
+          toAmountInput.style.color = "";
+        }
+
+        // Update toAmount for USD calculation (use adjusted amount)
+        if (displayBuyAmount) {
+          try {
+            const toNum = Number(BigInt(displayBuyAmount)) / 10 ** toTokenInfo.decimals;
             setToAmountValue(toNum);
           } catch {
             setToAmountValue(0);
@@ -940,21 +1003,34 @@ export function LandioSwapController() {
           best?.signals?.mevExposure?.level ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") : "—",
         );
 
-        // Net Output: show delta vs worst quote (actual savings)
-        const allBuys = (res.rankedQuotes ?? [])
-          .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
-          .filter((x): x is bigint => x !== null);
-        const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
-        const avgBuy = allBuys.length > 0 
-          ? allBuys.reduce((a, b) => a + b, 0n) / BigInt(allBuys.length)
-          : null;
+        // Net Output: show actual expected output after token tax (if any)
+        const tokenTax = extractTokenTax(best?.signals);
+        const taxPercent = tokenTax.buyTax ?? 0;
         
-        if (bestBuy !== null && worstBuy !== null && bestBuy !== worstBuy) {
-          setText("netOutput", formatSignedAmount(bestBuy - worstBuy, toTokenInfo.decimals, toTokenSymbol));
-        } else if (bestBuy !== null) {
-          // Only one quote or all same - show actual output
-          const outFormatted = formatAmount(bestBuy.toString(), toTokenInfo.decimals);
-          setText("netOutput", `${outFormatted} ${toTokenSymbol}`);
+        // Adjust buy amount for token tax
+        const adjustedBestBuy = bestBuy !== null && taxPercent > 0
+          ? (bestBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
+          : bestBuy;
+        
+        if (adjustedBestBuy !== null) {
+          const outFormatted = formatAmount(adjustedBestBuy.toString(), toTokenInfo.decimals);
+          if (taxPercent > 0) {
+            // Show with tax warning
+            setText("netOutput", `~${outFormatted} ${toTokenSymbol}`);
+            // Update the net output element with a tooltip/warning
+            const netOutputEl = document.getElementById("netOutput");
+            if (netOutputEl) {
+              netOutputEl.title = `After ${taxPercent.toFixed(1)}% token tax`;
+              netOutputEl.style.color = "#f59e0b"; // amber warning color
+            }
+          } else {
+            setText("netOutput", `+${outFormatted} ${toTokenSymbol}`);
+            const netOutputEl = document.getElementById("netOutput");
+            if (netOutputEl) {
+              netOutputEl.title = "";
+              netOutputEl.style.color = "";
+            }
+          }
         } else {
           setText("netOutput", "—");
         }
@@ -1641,6 +1717,39 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 24: DOM SYNC EFFECTS - Validation & Quick Actions
   // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Add token tax warning when buying taxed tokens
+  useEffect(() => {
+    const toTokenBox = document.querySelector('.token-input-box:last-of-type');
+    if (!toTokenBox) return;
+
+    // Remove existing tax warning if any
+    const existingWarning = toTokenBox.querySelector('.token-tax-warning');
+    if (existingWarning) existingWarning.remove();
+
+    // Check for token tax
+    const tokenTax = extractTokenTax(selected?.signals);
+    const buyTax = tokenTax.buyTax;
+
+    if (buyTax && buyTax > 0) {
+      const warning = document.createElement("div");
+      warning.className = "token-tax-warning";
+      warning.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #f59e0b;
+        font-size: 12px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: rgba(245, 158, 11, 0.1);
+        border-radius: 8px;
+      `;
+      warning.innerHTML = `⚠️ This token has a ${buyTax.toFixed(1)}% buy tax. Actual amount received will be less.`;
+      toTokenBox.appendChild(warning);
+    }
+  }, [selected]);
+
   // Add insufficient balance warning element
   useEffect(() => {
     const fromTokenBox = document.querySelector('.token-input-box:first-of-type');
