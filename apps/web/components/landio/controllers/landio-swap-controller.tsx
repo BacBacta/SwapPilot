@@ -436,29 +436,11 @@ export function LandioSwapController() {
   } = useExecuteSwap();
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SECTION 12: TOKEN APPROVAL HOOK
+  // SECTION 12: TOKEN APPROVAL STATE
   // ═══════════════════════════════════════════════════════════════════════════
   const isFromNative = fromTokenInfo?.isNative ?? false;
-  const approvalAmount = useMemo(() => {
-    try {
-      return BigInt(fromAmountWei || "0");
-    } catch {
-      return 0n;
-    }
-  }, [fromAmountWei]);
-
-  const {
-    needsApproval,
-    isApproving,
-    isApproved,
-    approve,
-    allowance,
-    refetchAllowance,
-  } = useTokenApproval({
-    tokenAddress: isFromNative ? undefined : (fromTokenInfo?.address as Address | undefined),
-    spenderAddress: UNIVERSAL_ROUTER_ADDRESS,
-    amount: approvalAmount,
-  });
+  // Approval state for tracking inline approval during swap
+  const [isApproving, setIsApproving] = useState(false);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 13: DYNAMIC SLIPPAGE
@@ -1230,6 +1212,7 @@ export function LandioSwapController() {
             });
 
             setSwapBtnText("Approving...");
+            setIsApproving(true);
 
             try {
               // Create wallet client from window.ethereum
@@ -1271,10 +1254,10 @@ export function LandioSwapController() {
 
               // Mark manual approval as done to prevent button loop
               manualApprovalDoneRef.current = true;
+              setIsApproving(false);
 
               // Wait for chain state to propagate, then verify allowance
               await new Promise(resolve => setTimeout(resolve, 2000));
-              refetchAllowance();
               
               // Re-verify allowance before proceeding
               let verifiedAllowance = 0n;
@@ -1303,6 +1286,7 @@ export function LandioSwapController() {
                   title: "Approval not detected",
                   message: "Please try the swap again - the approval may take a moment to propagate",
                 });
+                setIsApproving(false);
                 setSwapBtnText("Swap");
                 setDisabled("swapBtn", false);
                 return;
@@ -1321,6 +1305,7 @@ export function LandioSwapController() {
                 title: "Approval failed",
                 message: msg.includes("User rejected") ? "User rejected the request" : msg,
               });
+              setIsApproving(false);
               // Update tx history to failed
               setTxHistory((prev) => {
                 const updated = prev.map((t) => t.id === txId ? { ...t, status: "failed" as const } : t);
@@ -1407,7 +1392,6 @@ export function LandioSwapController() {
     getPrice,
     isConnected,
     pilotTierInfo,
-    refetchAllowance,
     resetSwap,
     toTokenSymbol,
     resolveToken,
@@ -1454,9 +1438,6 @@ export function LandioSwapController() {
         }
         return prev;
       });
-      
-      // Refresh balances and quotes after successful swap
-      refetchAllowance();
       
       // Refresh balances multiple times to ensure UI updates
       // RPC nodes can have slight delays in reflecting new state
@@ -1523,7 +1504,7 @@ export function LandioSwapController() {
       }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [swapStatus, swapError, resetSwap, toast, refetchAllowance, refetchBalances, txHash]);
+  }, [swapStatus, swapError, resetSwap, toast, refetchBalances, txHash]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 23: DOM SYNC EFFECTS - Providers & Details Display
@@ -1686,31 +1667,18 @@ export function LandioSwapController() {
       return;
     }
 
-    // Skip approval button if manual approval was done in-swap flow
-    if (needsApproval && !isFromNative && !manualApprovalDoneRef.current) {
-      swapBtn.textContent = isApproving ? "Approving..." : `Approve ${fromTokenSymbol}`;
-      swapBtn.disabled = isApproving;
-      swapBtn.style.background = "var(--accent)";
-      
-      // Override click handler for approval
-      const handleApprove = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        approve();
-      };
-      swapBtn.onclick = handleApprove;
-      return;
-    }
-
     // Reset to swap state
     swapBtn.style.background = "var(--accent)";
     swapBtn.onclick = null; // Will be handled by the main useEffect
     
-    if (swapStatus === "idle") {
+    if (swapStatus === "idle" && !isApproving) {
       swapBtn.textContent = "Swap";
       swapBtn.disabled = false;
+    } else if (isApproving) {
+      swapBtn.textContent = "Approving...";
+      swapBtn.disabled = true;
     }
-  }, [selected, fromTokenInfo, isConnected, hasInsufficientBalance, needsApproval, isApproving, isFromNative, fromTokenSymbol, approve, swapStatus]);
+  }, [selected, fromTokenInfo, isConnected, hasInsufficientBalance, isApproving, isFromNative, fromTokenSymbol, swapStatus]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 24: DOM SYNC EFFECTS - Validation & Quick Actions
