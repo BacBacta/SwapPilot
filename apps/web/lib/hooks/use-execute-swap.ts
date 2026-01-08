@@ -373,8 +373,15 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
             error: errMsg.slice(0, 300),
           });
           
-          // For fee-on-transfer tokens, simulation often fails due to price/slippage mismatch
-          // But the actual transaction may still succeed. Skip simulation and proceed.
+          // For ParaSwap specifically, simulation failures often mean on-chain failure too
+          // Recommend trying a different provider
+          if (transaction.providerId === "paraswap") {
+            setError("ParaSwap simulation failed for this token. Please try OpenOcean or another provider from the list.");
+            setStatus("error");
+            return;
+          }
+          
+          // For other providers, bypass simulation and proceed
           // The user has already accepted the slippage tolerance.
           return executeSwap(transaction, true);
         }
