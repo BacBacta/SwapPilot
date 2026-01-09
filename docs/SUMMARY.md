@@ -29,4 +29,6 @@
 * [Architecture](architecture.md)
 * [Adapters](adapters.md)
 * [Providers](providers.md)
+* [Normalization & Receipts](normalization-and-receipts.md)
+* [Risk & Confidence](risk-and-confidence.md)
 * [Scoring](scoring.md)

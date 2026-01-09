@@ -4,22 +4,34 @@
 
 SwapPilot fetches quotes from all providers in parallel and ranks them by:
 
-1. **Effective Output**: Actual tokens received after all fees
-2. **Gas Cost**: Estimated transaction cost in native currency
-3. **Price Impact**: Deviation from market price
-4. **Execution Probability**: Historical success rate
+1. **Net Output (fees + gas)**: Output is evaluated on the expected net tokens received after explicit fees and gas costs.
+2. **Execution confidence**: Integration reliability + sellability confidence signals.
+3. **Risk signals**: Revert risk, MEV exposure, and churn.
+4. **Preflight simulation**: When available, simulated execution is used to validate quotes and penalize output mismatch.
 
 ### Ranking Algorithm
 
+SwapPilot uses **BEQ v2** (Best Executable Quote) rather than a naive “highest raw output wins” sort.
+
+At a high level:
+
 ```typescript
-const rankedQuotes = quotes
-  .filter(q => q.status === 'success')
-  .sort((a, b) => {
-    const aEffective = BigInt(a.buyAmount) - estimateGasCost(a);
-    const bEffective = BigInt(b.buyAmount) - estimateGasCost(b);
-    return bEffective > aEffective ? 1 : -1;
-  });
+// Pseudocode (see packages/scoring/src/beq-v2.ts)
+
+netBuyAmount = buyAmount - fee(buyAmount, feeBps) - gasCostInTokens(estimatedGasUsd)
+outputScore = 100 * netBuyAmount / maxNetBuyAmountAcrossQuotes
+
+beqScore = outputScore * qualityMultiplier * riskMultiplier
 ```
+
+This avoids picking a quote that looks better on raw output but is worse after fees/gas, and it makes the decision explainable in receipts.
+
+### SAFE mode guardrails (important)
+- In **SAFE** mode, quotes with missing preflight data are **disqualified** from BEQ ranking.
+- In **SAFE** mode, failed preflight simulations are **disqualified**.
+- In **SAFE** mode, sellability `FAIL` is **disqualified**.
+
+This makes SAFE consistently prioritize executability over optimistic quotes.
 
 ---
 

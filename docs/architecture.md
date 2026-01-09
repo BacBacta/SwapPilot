@@ -57,6 +57,7 @@ User signs via wallet; SwapPilot never holds keys.
 ## Non-negotiable UX
 - UI must show BEQ and Best Raw Output as distinct.
 - UI must surface: confidence, revert risk, MEV exposure, churn, sellability.
+- SAFE mode note: quotes missing preflight simulation data are disqualified from BEQ ranking.
 
 ## Web UI flows (Option 1)
 
