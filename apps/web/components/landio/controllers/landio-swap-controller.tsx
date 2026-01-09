@@ -1509,6 +1509,28 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 23: DOM SYNC EFFECTS - Providers & Details Display
   // ═══════════════════════════════════════════════════════════════════════════
+  // Display receipt ID (click to copy) when available
+  useEffect(() => {
+    const id = response?.receiptId;
+    if (!id) return;
+
+    setText("receiptId", id);
+    const el = document.getElementById("receiptId");
+    if (!el) return;
+
+    el.title = "Click to copy";
+    if (el.getAttribute("data-copy-bound") === "1") return;
+    el.setAttribute("data-copy-bound", "1");
+    el.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(id);
+        toast.success("Copied", "Receipt ID copied to clipboard");
+      } catch {
+        toast.error("Copy failed", "Couldn't copy Receipt ID");
+      }
+    });
+  }, [response?.receiptId, toast]);
+
   // Display receipt info (whyWinner) when available
   useEffect(() => {
     if (!receipt) return;
