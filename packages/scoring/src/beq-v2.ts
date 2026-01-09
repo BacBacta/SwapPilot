@@ -31,6 +31,8 @@ export type BeqV2Input = {
   providerId: string;
   buyAmount: bigint;
   maxBuyAmount: bigint; // The highest buyAmount across all quotes (for normalization)
+  /** Optional: max NET buy amount across all quotes (preferred normalization basis). */
+  maxNetBuyAmount?: bigint;
   feeBps: number | null;
   integrationConfidence: number; // 0..1
   signals: RiskSignals;
@@ -145,6 +147,26 @@ function calculateNetOutput(
 }
 
 /**
+ * Compute net buy amount for BEQ v2 using the same logic as scoring.
+ * Exported so ranking can normalize output net-vs-net.
+ */
+export function computeNetBuyAmountV2(input: {
+  buyAmount: bigint;
+  feeBps: number | null;
+  estimatedGasUsd?: string | null | undefined;
+  buyTokenPriceUsd?: number | null | undefined;
+  buyTokenDecimals?: number | undefined;
+}): { netBuyAmount: bigint; gasCostInTokens: bigint } {
+  const gasCostInTokens = calculateGasCostInTokens(
+    input.estimatedGasUsd,
+    input.buyTokenPriceUsd,
+    input.buyTokenDecimals ?? 18,
+  );
+  const netBuyAmount = calculateNetOutput(input.buyAmount, input.feeBps, gasCostInTokens);
+  return { netBuyAmount, gasCostInTokens };
+}
+
+/**
  * Calculate output score (0-100) relative to the best quote
  */
 function calculateOutputScore(netBuyAmount: bigint, maxBuyAmount: bigint): number {
@@ -247,7 +269,10 @@ function calculatePreflightFactor(
   const preflight = signals.preflight;
   
   if (!preflight) {
-    return { factor: 0.8, disqualified: false, reason: 'No preflight data (default 80%)' };
+    if (mode === 'SAFE') {
+      return { factor: 0, disqualified: true, reason: 'No preflight data - disqualified in SAFE mode' };
+    }
+    return { factor: mode === 'DEGEN' ? 0.9 : 0.8, disqualified: false, reason: 'No preflight data' };
   }
 
   if (!preflight.ok) {
@@ -323,18 +348,18 @@ function calculatePreflightFactor(
 export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
   const explanation: string[] = [];
 
-  // 1. Calculate gas cost in tokens
-  const gasCostInTokens = calculateGasCostInTokens(
-    input.estimatedGasUsd,
-    input.buyTokenPriceUsd,
-    input.buyTokenDecimals ?? 18
-  );
+  // 1. Calculate net output after fees and gas
+  const { netBuyAmount, gasCostInTokens } = computeNetBuyAmountV2({
+    buyAmount: input.buyAmount,
+    feeBps: input.feeBps,
+    estimatedGasUsd: input.estimatedGasUsd,
+    buyTokenPriceUsd: input.buyTokenPriceUsd,
+    buyTokenDecimals: input.buyTokenDecimals ?? 18,
+  });
 
-  // 2. Calculate net output after fees and gas
-  const netBuyAmount = calculateNetOutput(input.buyAmount, input.feeBps, gasCostInTokens);
-  
-  // 3. Calculate output score (0-100)
-  const outputScore = calculateOutputScore(netBuyAmount, input.maxBuyAmount);
+  // 2. Calculate output score (0-100) relative to best NET quote when available
+  const outputDenominator = input.maxNetBuyAmount ?? input.maxBuyAmount;
+  const outputScore = calculateOutputScore(netBuyAmount, outputDenominator);
   
   // Build explanation for output
   if (gasCostInTokens > 0n) {
@@ -406,6 +431,7 @@ export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
     rawData: {
       buyAmount: input.buyAmount.toString(),
       maxBuyAmount: input.maxBuyAmount.toString(),
+      ...(input.maxNetBuyAmount !== undefined ? { maxNetBuyAmount: input.maxNetBuyAmount.toString() } : {}),
       feeBps: input.feeBps,
       integrationConfidence: input.integrationConfidence,
       netBuyAmount: netBuyAmount.toString(),

@@ -11,13 +11,14 @@ function makeQuote(params: {
   buyAmount: string;
   mode: QuoteMode;
   sellability: 'OK' | 'UNCERTAIN' | 'FAIL';
+  feeBps?: number | null;
 }): RankedQuote {
   const assumptions = defaultAssumptions();
   const raw = {
     sellAmount: '1000',
     buyAmount: params.buyAmount,
     estimatedGas: 210000,
-    feeBps: 0,
+    feeBps: params.feeBps ?? 0,
     route: ['0x0000000000000000000000000000000000000001'],
   };
 
@@ -163,5 +164,41 @@ describe('rankQuotes', () => {
     // Worst should have ~50% output score
     expect(out.rankedQuotes[2]!.providerId).toBe('worst');
     expect(out.rankedQuotes[2]!.score.v2Details?.components.outputScore).toBeCloseTo(50, 0);
+  });
+
+  it('uses net-vs-net output normalization (fees can flip winner)', () => {
+    const assumptions = defaultAssumptions();
+    const quotes = [
+      makeQuote({ providerId: 'no-fee', buyAmount: '1000', feeBps: 0, mode: 'NORMAL', sellability: 'OK' }),
+      makeQuote({ providerId: 'high-fee', buyAmount: '1050', feeBps: 500, mode: 'NORMAL', sellability: 'OK' }),
+    ];
+
+    const providerMeta = new Map<string, ProviderMeta>([
+      ['no-fee', { providerId: 'no-fee', displayName: 'No Fee', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 1.0, notes: '' }],
+      ['high-fee', { providerId: 'high-fee', displayName: 'High Fee', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: true, deepLink: true }, integrationConfidence: 1.0, notes: '' }],
+    ]);
+
+    const out = rankQuotes({ mode: 'NORMAL', providerMeta, quotes, assumptions });
+
+    // Raw output winner would be high-fee (1050 > 1000), but net output is lower after 5% fee.
+    expect(out.beqRecommendedProviderId).toBe('no-fee');
+    expect(out.rankedQuotes[0]!.providerId).toBe('no-fee');
+  });
+
+  it('SAFE disqualifies quotes with missing preflight', () => {
+    const assumptions = defaultAssumptions();
+    const ok = makeQuote({ providerId: 'ok', buyAmount: '1000', mode: 'SAFE', sellability: 'OK' });
+    const missing = makeQuote({ providerId: 'missing', buyAmount: '999999', mode: 'SAFE', sellability: 'OK' });
+    // Simulate missing preflight signal
+    delete (missing.signals as any).preflight;
+
+    const providerMeta = new Map<string, ProviderMeta>([
+      ['ok', { providerId: 'ok', displayName: 'ok', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: false, deepLink: true }, integrationConfidence: 1, notes: '' }],
+      ['missing', { providerId: 'missing', displayName: 'missing', category: 'aggregator', homepageUrl: 'x', capabilities: { quote: true, buildTx: false, deepLink: true }, integrationConfidence: 1, notes: '' }],
+    ]);
+
+    const out = rankQuotes({ mode: 'SAFE', providerMeta, quotes: [ok, missing], assumptions });
+    expect(out.rankedQuotes.map((q) => q.providerId)).toEqual(['ok']);
+    expect(out.beqRecommendedProviderId).toBe('ok');
   });
 });

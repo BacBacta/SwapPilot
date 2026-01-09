@@ -10,7 +10,7 @@
 import type { NormalizationAssumptions, QuoteMode, RankedQuote, ScoringOptions } from '@swappilot/shared';
 import type { ProviderMeta } from '@swappilot/adapters';
 
-import { computeBeqScoreV2, type BeqV2Output } from './beq-v2';
+import { computeBeqScoreV2, computeNetBuyAmountV2, type BeqV2Output } from './beq-v2';
 
 export type RankV2Result = {
   /** The provider ID of the BEQ winner (highest score, not disqualified) */
@@ -49,6 +49,19 @@ export function rankQuotesV2(input: {
     return amt > max ? amt : max;
   }, 0n);
 
+  // 1b. Find the maximum NET buy amount for net-vs-net output normalization
+  const maxNetBuyAmount = input.quotes.reduce((max, q) => {
+    const buyAmount = BigInt(q.raw.buyAmount);
+    const { netBuyAmount } = computeNetBuyAmountV2({
+      buyAmount,
+      feeBps: q.raw.feeBps,
+      estimatedGasUsd: q.normalized.estimatedGasUsd,
+      buyTokenPriceUsd: input.buyTokenPriceUsd,
+      buyTokenDecimals: input.buyTokenDecimals ?? 18,
+    });
+    return netBuyAmount > max ? netBuyAmount : max;
+  }, 0n);
+
   // 2. Score all quotes using BEQ v2
   const scoreDetails = new Map<string, BeqV2Output>();
   const scored: { quote: RankedQuote; score: BeqV2Output }[] = [];
@@ -64,6 +77,7 @@ export function rankQuotesV2(input: {
       providerId: q.providerId,
       buyAmount,
       maxBuyAmount,
+      maxNetBuyAmount,
       feeBps: q.raw.feeBps,
       integrationConfidence,
       signals: q.signals,

@@ -139,9 +139,15 @@ export const BeqV2DetailsSchema = z.object({
   rawData: z.object({
     buyAmount: z.string(),
     maxBuyAmount: z.string(),
+    /** Optional: max NET buy amount used for output normalization */
+    maxNetBuyAmount: z.string().optional(),
     feeBps: z.number().nullable(),
     integrationConfidence: z.number(),
     netBuyAmount: z.string(),
+    /** Optional: gas cost converted to buy token units */
+    gasCostInTokens: z.string().nullable().optional(),
+    /** Optional: estimated gas cost in USD (as provided by adapter/API) */
+    estimatedGasUsd: z.string().nullable().optional(),
   }),
 });
 
