@@ -1606,15 +1606,34 @@ export function LandioSwapController() {
         : "—",
     );
 
-    // Net Output: delta vs worst quote
-    const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
-    if (selectedBuy !== null && worstBuy !== null && selectedBuy !== worstBuy) {
-      setText("netOutput", formatSignedAmount(selectedBuy - worstBuy, toTokenInfo.decimals, toTokenInfo.symbol));
-    } else if (selectedBuy !== null) {
-      const outFormatted = formatAmount(selectedBuy.toString(), toTokenInfo.decimals);
-      setText("netOutput", `${outFormatted} ${toTokenInfo.symbol}`);
+    // Net Output: show expected output amount (and adjust for buy tax if present)
+    const tokenTax = extractTokenTax(selected?.signals);
+    const taxPercent = tokenTax.buyTax ?? 0;
+
+    const adjustedSelectedBuy = selectedBuy !== null && taxPercent > 0
+      ? (selectedBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
+      : selectedBuy;
+
+    if (adjustedSelectedBuy !== null) {
+      const outFormatted = formatAmount(adjustedSelectedBuy.toString(), toTokenInfo.decimals);
+      setText("netOutput", `${taxPercent > 0 ? "~" : ""}${outFormatted} ${toTokenInfo.symbol}`);
+      const netOutputEl = document.getElementById("netOutput");
+      if (netOutputEl) {
+        if (taxPercent > 0) {
+          netOutputEl.title = `After ${taxPercent.toFixed(1)}% token buy tax`;
+          netOutputEl.style.color = "#f59e0b";
+        } else {
+          netOutputEl.title = "";
+          netOutputEl.style.color = "";
+        }
+      }
     } else {
       setText("netOutput", "—");
+      const netOutputEl = document.getElementById("netOutput");
+      if (netOutputEl) {
+        netOutputEl.title = "";
+        netOutputEl.style.color = "";
+      }
     }
 
     // Update route display for selected provider
