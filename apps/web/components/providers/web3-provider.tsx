@@ -82,7 +82,9 @@ const config = createConfig({
     }),
   },
   // Disable expensive multicall for simple reads
-  multiInjectedProviderDiscovery: false,
+  // Keep injected-provider discovery enabled so selecting MetaMask works
+  // reliably on browsers with multiple injected wallets (e.g. Brave Wallet).
+  multiInjectedProviderDiscovery: true,
 });
 
 // Create query client with optimized settings for performance
