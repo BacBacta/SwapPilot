@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, height=1080" />
+  <title>SwapPilot — Pitch Deck (SwapPilot UI)</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       SwapPilot / Landio Design System (mirrors apps/web/app/globals.css)
+       ======================================== */
+    :root {
+      --bg-primary: #050505;
+      --bg-secondary: #0a0a0a;
+      --bg-card: #0d0d0d;
+      --bg-card-inner: #111111;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-light: rgba(255, 255, 255, 0.12);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.65);
+      --text-muted: rgba(255, 255, 255, 0.4);
+      --accent: #c8ff00;
+      --accent-dim: rgba(200, 255, 0, 0.08);
+      --accent-medium: rgba(200, 255, 0, 0.15);
+      --ok: #22c55e;
+      --bad: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-2xl: 32px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      padding: 90px 110px;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(900px 520px at 15% 10%, rgba(200,255,0,0.10), rgba(0,0,0,0) 60%),
+                  radial-gradient(900px 520px at 80% 30%, rgba(200,255,0,0.06), rgba(0,0,0,0) 60%),
+                  linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 96px 96px;
+      opacity: 0.08;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 30% 20%, rgba(0,0,0,1), rgba(0,0,0,0));
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 64px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .meta {
+      font-size: 12px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 2;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .kicker::before {
+      content: '';
+      width: 26px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    h1 {
+      font-size: 84px;
+      line-height: 1.03;
+      letter-spacing: -2.6px;
+      font-weight: 800;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      font-size: 54px;
+      line-height: 1.12;
+      letter-spacing: -1.8px;
+      font-weight: 800;
+      margin-bottom: 30px;
+    }
+
+    h3 {
+      font-size: 22px;
+      letter-spacing: -0.4px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .lead {
+      font-size: 22px;
+      color: rgba(255,255,255,0.70);
+      max-width: 980px;
+    }
+
+    .accent { color: var(--accent); }
+
+    /* Buttons (same classes as globals.css) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 100px;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 100px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(200, 255, 0, 0.2);
+      width: fit-content;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    .row { display: grid; gap: 22px; }
+    .row-2 { grid-template-columns: 1.1fr 0.9fr; }
+    .row-3 { grid-template-columns: repeat(3, 1fr); }
+    .row-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 26px;
+    }
+
+    .card-inner {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 26px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .stat .value {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: var(--text-primary);
+    }
+
+    .stat .label {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .list { list-style: none; margin-top: 10px; }
+    .list li {
+      display: flex;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      color: rgba(255,255,255,0.86);
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .list li:last-child { border-bottom: none; }
+
+    .num {
+      width: 30px;
+      height: 30px;
+      border-radius: 12px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(200,255,0,0.20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-weight: 800;
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+    }
+
+    .table th {
+      text-align: left;
+      padding: 16px 18px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table td {
+      padding: 18px;
+      font-size: 16px;
+      color: rgba(255,255,255,0.86);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table tr:last-child td { border-bottom: none; }
+
+    .frame {
+      height: 520px;
+      border-radius: var(--radius-2xl);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .frame .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      color: rgba(255,255,255,0.82);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.4px;
+    }
+
+    .frame .screen {
+      flex: 1;
+      border-radius: 18px;
+      border: 1px dashed rgba(255,255,255,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.62);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .cta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .cta h1 { font-size: 92px; }
+
+    .btns { display: flex; gap: 12px; margin-top: 30px; justify-content: center; }
+
+    .note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    @media print {
+      .slide { page-break-after: always; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 01: Cover -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">Pitch Deck · 01 / 13</div>
+    </div>
+
+    <div class="content" style="justify-content:center;">
+      <div class="badge"><span class="dot"></span> Live product · BNB Chain</div>
+      <h1 style="margin-top:18px;">Smart swaps. <span class="accent">Real</span> outputs.</h1>
+      <p class="lead">SwapPilot compares multiple liquidity sources and executes the best route — while surfacing token risk signals and tax-adjusted receive amounts.</p>
+
+      <div class="btns" style="justify-content:flex-start;">
+        <a class="btn btn-primary" href="#">Explore IDO</a>
+        <a class="btn btn-secondary" href="#">See tokenomics</a>
+        <a class="btn btn-secondary" href="#">Watch demo</a>
+      </div>
+
+      <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 40px;">
+        <div class="stat"><div class="value">10+</div><div class="label">Providers</div></div>
+        <div class="stat"><div class="value">Tax-aware</div><div class="label">Net output</div></div>
+        <div class="stat"><div class="value">Non-custodial</div><div class="label">Self custody</div></div>
+      </div>
+
+      <div class="note">This deck matches SwapPilot’s UI tokens (black + lime accent). Replace “TBD” with real data.</div>
+    </div>
+  </section>
+
+  <!-- 02: Problem -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">02 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Problem</div>
+      <h2>Swapping still feels risky and confusing.</h2>
+
+      <div class="row row-3" style="margin-top:28px;">
+        <div class="card">
+          <h3>Fragmented liquidity</h3>
+          <p>Prices vary across DEXs. Without aggregation, users rarely get the best execution.</p>
+        </div>
+        <div class="card">
+          <h3>Hidden costs</h3>
+          <p>Slippage, price impact and token transfer taxes can reduce what users actually receive.</p>
+        </div>
+        <div class="card">
+          <h3>Token risk</h3>
+          <p>Honeypots and malicious contracts are difficult to spot in a manual flow.</p>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="value">TBD</div><div class="label">Monthly volume (target)</div></div>
+        <div class="stat"><div class="value">TBD%</div><div class="label">Avg. value lost</div></div>
+        <div class="stat"><div class="value">TBD</div><div class="label">Risk flags surfaced</div></div>
+        <div class="stat"><div class="value">Internal</div><div class="label">Data source</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03: Solution -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">03 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Solution</div>
+      <h2>One flow. Best route. Clear warnings.</h2>
+
+      <div class="row row-2" style="margin-top:22px;">
+        <div class="card">
+          <h3>What SwapPilot does</h3>
+          <ul class="list">
+            <li><span class="num">1</span><span>Fetch multi-provider quotes</span></li>
+            <li><span class="num">2</span><span>Select the best route via scoring</span></li>
+            <li><span class="num">3</span><span>Show net output when token taxes exist</span></li>
+            <li><span class="num">4</span><span>Flag honeypot/tax risk before execution</span></li>
+            <li><span class="num">5</span><span>Minimize approvals and confirmations</span></li>
+          </ul>
+        </div>
+
+        <div class="frame">
+          <div class="bar"><span>SwapPilot App</span><span style="color: var(--text-muted);">Screenshot</span></div>
+          <div class="screen">Drop swap UI screenshot here</div>
+          <div class="card-inner">
+            <p style="font-size: 14px; color: var(--text-secondary);">Tip: use a screenshot showing the “net output” + token tax warning for credibility.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04: How it works -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">04 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Product</div>
+      <h2>How the trade is executed</h2>
+
+      <div class="row row-4" style="margin-top:26px;">
+        <div class="card"><h3>Input</h3><p>Select tokens & amount.</p></div>
+        <div class="card"><h3>Quote</h3><p>Query multiple sources in parallel.</p></div>
+        <div class="card"><h3>Score</h3><p>Rank routes on output, gas, and risk.</p></div>
+        <div class="card"><h3>Execute</h3><p>Approve if needed, then swap.</p></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="value">10+</div><div class="label">Quote providers</div></div>
+        <div class="stat"><div class="value">TBD ms</div><div class="label">Quote latency (p50)</div></div>
+        <div class="stat"><div class="value">TBD%</div><div class="label">Savings vs single DEX</div></div>
+        <div class="stat"><div class="value">Risk-aware</div><div class="label">Warnings</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05: Market -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">05 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Market</div>
+      <h2>Large volume, recurring behavior</h2>
+      <p class="lead">We keep this slide honest by default — fill in sourced numbers (DefiLlama/Dune/internal analytics).</p>
+
+      <div class="stat-grid" style="margin-top: 28px;">
+        <div class="stat"><div class="value">TBD</div><div class="label">TAM (annual DEX volume)</div></div>
+        <div class="stat"><div class="value">TBD</div><div class="label">SAM (target chains)</div></div>
+        <div class="stat"><div class="value">TBD</div><div class="label">SOM (24 months)</div></div>
+        <div class="stat"><div class="value">TBD%</div><div class="label">Expected take rate</div></div>
+      </div>
+
+      <div class="row row-2" style="margin-top: 22px;">
+        <div class="card"><h3>Target users</h3><p>Active traders, memecoin participants, and DeFi users who care about execution quality.</p></div>
+        <div class="card"><h3>Why we win first</h3><p>Chains where token taxes and scams are common — clarity becomes a differentiator.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06: Traction -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">06 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Traction</div>
+      <h2>Proof beats promises</h2>
+
+      <div class="row row-2" style="margin-top:22px;">
+        <div class="card">
+          <h3>Real KPIs (fill in)</h3>
+          <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat"><div class="value">TBD</div><div class="label">Users (30d)</div></div>
+            <div class="stat"><div class="value">TBD</div><div class="label">Volume (30d)</div></div>
+            <div class="stat"><div class="value">TBD</div><div class="label">Successful swaps</div></div>
+            <div class="stat"><div class="value">TBD%</div><div class="label">Quote→swap conversion</div></div>
+          </div>
+          <div class="note">If you don’t have KPIs yet, replace with “beta” milestones + dates.</div>
+        </div>
+        <div class="card">
+          <h3>Chart placeholder</h3>
+          <div class="card-inner" style="height: 360px; display:flex; align-items:center; justify-content:center;">
+            <span style="color: var(--text-muted); font-weight: 700;">Replace with a real chart (PNG/SVG)</span>
+          </div>
+          <div class="note">Do not present illustrative charts to investors.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07: Business model -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">07 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Business</div>
+      <h2>Revenue aligned with usage</h2>
+
+      <div class="row row-3" style="margin-top:26px;">
+        <div class="card"><h3>Swap fees</h3><p>Fee on successful swaps. Can be tiered via SWAP holdings/staking.</p></div>
+        <div class="card"><h3>Referrals</h3><p>Partner program with revenue share tied to referred volume.</p></div>
+        <div class="card"><h3>Premium</h3><p>Advanced analytics, automation, and priority routing for power users.</p></div>
+      </div>
+
+      <div class="card" style="margin-top:22px;">
+        <h3>Example fee tiers (editable)</h3>
+        <table class="table" style="margin-top:14px;">
+          <thead>
+            <tr><th>Tier</th><th>Requirement</th><th>Fee</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Captain</strong></td><td>50,000+ SWAP</td><td><strong>0.10%</strong></td></tr>
+            <tr><td><strong>Pilot</strong></td><td>10,000+ SWAP</td><td><strong>0.15%</strong></td></tr>
+            <tr><td><strong>Crew</strong></td><td>1,000+ SWAP</td><td><strong>0.20%</strong></td></tr>
+            <tr><td><strong>Passenger</strong></td><td>Free</td><td><strong>0.30%</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08: Tokenomics -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">08 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Tokenomics</div>
+      <h2>SWAP distribution & key metrics</h2>
+
+      <div class="row row-2" style="margin-top:22px;">
+        <div class="card">
+          <h3>Key numbers</h3>
+          <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat"><div class="value">1B</div><div class="label">Total supply</div></div>
+            <div class="stat"><div class="value">$0.0057</div><div class="label">IDO price</div></div>
+            <div class="stat"><div class="value">$5.7M</div><div class="label">FDV</div></div>
+            <div class="stat"><div class="value">$966K</div><div class="label">TGE market cap</div></div>
+          </div>
+          <div class="note">TGE circulating: 169.5M SWAP (16.95%).</div>
+        </div>
+
+        <div class="card">
+          <h3>Allocation</h3>
+          <table class="table" style="margin-top:14px;">
+            <thead>
+              <tr><th>Bucket</th><th>Allocation</th><th>TGE</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>IDO</strong></td><td><strong>35%</strong></td><td><strong>25%</strong></td></tr>
+              <tr><td><strong>Liquidity</strong></td><td><strong>12%</strong></td><td><strong>35%</strong></td></tr>
+              <tr><td><strong>CEX & Marketing</strong></td><td><strong>12%</strong></td><td><strong>25%</strong></td></tr>
+              <tr><td><strong>Treasury</strong></td><td><strong>20%</strong></td><td><strong>5%</strong></td></tr>
+              <tr><td><strong>Team</strong></td><td><strong>11%</strong></td><td>0%</td></tr>
+              <tr><td><strong>Advisors</strong></td><td><strong>5%</strong></td><td>0%</td></tr>
+              <tr><td><strong>Referral</strong></td><td><strong>5%</strong></td><td>0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09: Vesting -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">09 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Vesting</div>
+      <h2>Unlock schedule</h2>
+
+      <div class="row row-2" style="margin-top:22px;">
+        <div class="card">
+          <h3>Vesting table</h3>
+          <table class="table" style="margin-top:14px;">
+            <thead>
+              <tr><th>Bucket</th><th>Allocation</th><th>TGE</th><th>Vesting</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>IDO</strong></td><td>35%</td><td><strong>25%</strong></td><td>Linear 8 months</td></tr>
+              <tr><td><strong>CEX & Marketing</strong></td><td>12%</td><td><strong>25%</strong></td><td>Linear 18 months</td></tr>
+              <tr><td><strong>Liquidity</strong></td><td>12%</td><td><strong>35%</strong></td><td>Linear 18 months</td></tr>
+              <tr><td><strong>Treasury</strong></td><td>20%</td><td><strong>5%</strong></td><td>Linear 24 months</td></tr>
+              <tr><td><strong>Team</strong></td><td>11%</td><td>0%</td><td>4-month cliff, then 24 months linear</td></tr>
+              <tr><td><strong>Advisors</strong></td><td>5%</td><td>0%</td><td>4-month cliff, then 12 months linear</td></tr>
+              <tr><td><strong>Referral</strong></td><td>5%</td><td>0%</td><td>2-month cliff, 100% at Month 3</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Circulating milestones</h3>
+          <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat"><div class="value">16.95%</div><div class="label">At TGE</div></div>
+            <div class="stat"><div class="value">52.83%</div><div class="label">Month 6</div></div>
+            <div class="stat"><div class="value">78.67%</div><div class="label">Month 12</div></div>
+            <div class="stat"><div class="value">28</div><div class="label">Months to full unlock</div></div>
+          </div>
+          <div class="note">Optional: replace with unlock chart image.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10: Roadmap -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">10 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Roadmap</div>
+      <h2>Execution plan</h2>
+
+      <div class="row row-4" style="margin-top:26px;">
+        <div class="card"><div class="badge" style="margin-bottom: 12px;">Q1 2026</div><h3>Launch</h3><p>IDO, DEX listing, UX improvements, more providers.</p></div>
+        <div class="card"><div class="badge" style="margin-bottom: 12px;">Q2 2026</div><h3>Growth</h3><p>Partnerships, referrals, analytics, retention loops.</p></div>
+        <div class="card"><div class="badge" style="margin-bottom: 12px;">Q3 2026</div><h3>Expansion</h3><p>More chains, automation (DCA/limit), SDK.</p></div>
+        <div class="card"><div class="badge" style="margin-bottom: 12px;">Q4 2026</div><h3>Scale</h3><p>Institutional API, governance, deeper liquidity.</p></div>
+      </div>
+
+      <div class="note">Keep roadmap verifiable; avoid overpromising.</div>
+    </div>
+  </section>
+
+  <!-- 11: Team -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">11 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Team</div>
+      <h2>Builders focused on shipping</h2>
+
+      <div class="row row-3" style="margin-top:26px;">
+        <div class="card"><h3>CEO</h3><p><strong>Name Surname</strong> — 1–2 factual highlights + link(s).</p></div>
+        <div class="card"><h3>CTO</h3><p><strong>Name Surname</strong> — engineering, blockchain, security experience.</p></div>
+        <div class="card"><h3>Growth</h3><p><strong>Name Surname</strong> — product, partnerships, community, metrics.</p></div>
+      </div>
+
+      <div class="note">Replace placeholders with real bios and verifiable links (optional).</div>
+    </div>
+  </section>
+
+  <!-- 12: IDO -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">12 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">IDO</div>
+      <h2>Public sale snapshot</h2>
+
+      <div class="row row-4" style="margin-top:26px;">
+        <div class="stat"><div class="value">$0.0057</div><div class="label">Token price</div></div>
+        <div class="stat"><div class="value">$2M</div><div class="label">Hard cap</div></div>
+        <div class="stat"><div class="value">350M</div><div class="label">Tokens for sale</div></div>
+        <div class="stat"><div class="value">BNB</div><div class="label">Chain</div></div>
+      </div>
+
+      <div class="row row-2" style="margin-top:22px;">
+        <div class="card">
+          <h3>Unlock at TGE</h3>
+          <p><span class="accent" style="font-weight:800; font-size: 44px; letter-spacing:-1px;">25%</span><br><span style="color: var(--text-secondary);">87.5M SWAP unlocked at TGE</span></p>
+        </div>
+        <div class="card">
+          <h3>Vesting</h3>
+          <p><span style="font-weight:800; font-size: 44px; letter-spacing:-1px; color: var(--text-primary);">8 months</span><br><span style="color: var(--text-secondary);">Remaining 75% linear</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13: CTA -->
+  <section class="slide">
+    <div class="grid"></div>
+
+    <div class="topbar">
+      <div class="brand"><div class="mark">SP</div>SwapPilot</div>
+      <div class="meta">13 / 13</div>
+    </div>
+
+    <div class="content">
+      <div class="cta">
+        <div class="badge"><span class="dot"></span> Next: IDO + growth</div>
+        <h1 style="margin-top:12px;">Ready to <span class="accent">take off</span>?</h1>
+        <p class="lead" style="text-align:center;">We can share a KPI snapshot + product demo upon request.</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="#">Contact / Data room</a>
+          <a class="btn btn-secondary" href="#">Whitepaper</a>
+          <a class="btn btn-secondary" href="#">Website</a>
+        </div>
+        <div class="note">app-swappilot.xyz · support@swappilot.io · @SwapPilotDeFi</div>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

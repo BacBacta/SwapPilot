@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>SwapPilot - Pitch Deck (Pitch Style)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --white: #ffffff;
+      --off-white: #fafbfc;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      padding: 80px 100px;
+      display: flex;
+      flex-direction: column;
+      background: var(--white);
+      page-break-after: always;
+      position: relative;
+    }
+
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 60px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .slide-number {
+      font-size: 14px;
+      color: var(--gray-400);
+      font-weight: 500;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 24px;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    h1 {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      color: var(--gray-900);
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -1px;
+      color: var(--gray-900);
+      margin-bottom: 40px;
+    }
+
+    h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 22px;
+      color: var(--gray-500);
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    .text-gradient {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Cover Slide */
+    .slide-cover {
+      justify-content: center;
+      background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+    }
+
+    .slide-cover .logo {
+      position: absolute;
+      top: 80px;
+      left: 100px;
+    }
+
+    .cover-content {
+      max-width: 1000px;
+    }
+
+    .cover-content h1 {
+      font-size: 80px;
+      margin-bottom: 32px;
+    }
+
+    .cover-badges {
+      display: flex;
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--gray-50);
+      border-radius: 20px;
+      padding: 40px;
+      height: 100%;
+    }
+
+    .card-outlined {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 20px;
+      padding: 40px;
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--primary);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .card h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .card p {
+      font-size: 16px;
+      color: var(--gray-500);
+      line-height: 1.7;
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      margin-top: 60px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 40px 24px;
+      background: var(--gray-50);
+      border-radius: 20px;
+    }
+
+    .stat-value {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+    }
+
+    .stat-value.primary {
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 15px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+
+    /* Feature List */
+    .feature-list {
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 18px;
+      color: var(--gray-700);
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+
+    .feature-check {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Process/Flow */
+    .process-flow {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      margin-top: 60px;
+    }
+
+    .process-step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+
+    .process-step::after {
+      content: '→';
+      position: absolute;
+      right: -24px;
+      top: 40px;
+      font-size: 24px;
+      color: var(--gray-300);
+    }
+
+    .process-step:last-child::after {
+      display: none;
+    }
+
+    .process-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--primary);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 24px;
+    }
+
+    .process-step h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--gray-800);
+    }
+
+    .process-step p {
+      font-size: 14px;
+      color: var(--gray-500);
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 16px 24px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-400);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .data-table td {
+      padding: 20px 24px;
+      font-size: 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table .highlight {
+      background: var(--gray-50);
+    }
+
+    .data-table .value {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Timeline */
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin-top: 60px;
+    }
+
+    .timeline-item {
+      padding: 32px;
+      border-left: 3px solid var(--gray-200);
+      position: relative;
+    }
+
+    .timeline-item.active {
+      border-color: var(--primary);
+      background: var(--gray-50);
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: 36px;
+      width: 12px;
+      height: 12px;
+      background: var(--gray-300);
+      border-radius: 50%;
+    }
+
+    .timeline-item.active::before {
+      background: var(--primary);
+    }
+
+    .timeline-period {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .timeline-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 20px;
+    }
+
+    .timeline-list {
+      list-style: none;
+    }
+
+    .timeline-list li {
+      font-size: 14px;
+      color: var(--gray-500);
+      padding: 6px 0;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .timeline-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--gray-400);
+    }
+
+    /* Team */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      margin-top: 60px;
+    }
+
+    .team-member {
+      text-align: center;
+    }
+
+    .team-avatar {
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: 24px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .team-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 4px;
+    }
+
+    .team-role {
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .team-bio {
+      font-size: 14px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* Metrics Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .metric-card {
+      background: var(--gray-50);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-card .label {
+      font-size: 15px;
+      color: var(--gray-500);
+    }
+
+    .metric-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .metric-card.primary {
+      background: var(--primary);
+    }
+
+    .metric-card.primary .label,
+    .metric-card.primary .value {
+      color: white;
+    }
+
+    /* Allocation */
+    .allocation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      margin-top: 40px;
+    }
+
+    .allocation-list {
+      list-style: none;
+    }
+
+    .allocation-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .allocation-item:last-child {
+      border-bottom: none;
+    }
+
+    .allocation-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .allocation-name {
+      flex: 1;
+      font-size: 16px;
+      color: var(--gray-700);
+    }
+
+    .allocation-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    /* IDO Highlight */
+    .ido-highlight {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 24px;
+      padding: 60px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .ido-stat {
+      text-align: center;
+    }
+
+    .ido-stat .label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 12px;
+    }
+
+    .ido-stat .value {
+      font-size: 40px;
+      font-weight: 800;
+      color: white;
+    }
+
+    /* CTA */
+    .cta-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: 72px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 36px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--gray-700);
+      border: 1px solid var(--gray-200);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gray-300);
+      background: var(--gray-50);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 60px 0;
+    }
+
+    /* Quote box */
+    .quote-box {
+      background: var(--gray-50);
+      border-left: 4px solid var(--primary);
+      padding: 32px 40px;
+      margin: 40px 0;
+    }
+
+    .quote-box p {
+      font-size: 20px;
+      color: var(--gray-700);
+      font-style: italic;
+      line-height: 1.7;
+    }
+
+    @media print {
+      .slide {
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Cover -->
+  <div class="slide slide-cover">
+    <div class="logo">
+      <div class="logo-icon">SP</div>
+      SwapPilot
+    </div>
+    
+    <div class="slide-content" style="justify-content: center;">
+      <div class="cover-content">
+        <div class="section-label">DEX Aggregator</div>
+        <h1>The smartest way to<br><span class="text-gradient">swap tokens</span></h1>
+        <p class="subtitle">SwapPilot aggregates 10+ DEXs to find you the best price on every trade. AI-powered routing, risk protection, and one-click execution.</p>
+        
+        <div class="cover-badges">
+          <span class="badge"><span class="badge-dot"></span> Live on BNB Chain</span>
+          <span class="badge">10+ DEX Providers</span>
+          <span class="badge">Non-Custodial</span>
+          <span class="badge">IDO Ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 2: Problem -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">02 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">The Problem</div>
+      <h2>DeFi trading costs users billions</h2>
+      
+      <div class="grid-3" style="margin-top: 40px;">
+        <div class="card">
+          <div class="card-number">01</div>
+          <h3>Fragmented Liquidity</h3>
+          <p>Liquidity scattered across 50+ DEXs means users rarely get the best price. Manual comparison is impossible.</p>
+        </div>
+        <div class="card">
+          <div class="card-number">02</div>
+          <h3>Hidden Slippage</h3>
+          <p>2-5% of trade value lost to slippage, MEV attacks, and poor routing. Most users don't realize they're overpaying.</p>
+        </div>
+        <div class="card">
+          <div class="card-number">03</div>
+          <h3>Security Risks</h3>
+          <p>15% of new tokens are scams. Users need expertise to identify honeypots and malicious contracts.</p>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-value primary">$500M+</div>
+          <div class="stat-label">Lost to poor execution monthly</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">73%</div>
+          <div class="stat-label">Trade on single DEX</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">2-5%</div>
+          <div class="stat-label">Average loss per trade</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">15%</div>
+          <div class="stat-label">New tokens are scams</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: Solution -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">03 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">The Solution</div>
+      <h2>One click. Best price. Always.</h2>
+      
+      <div class="grid-2" style="margin-top: 40px;">
+        <div>
+          <p class="subtitle" style="margin-bottom: 40px;">SwapPilot aggregates quotes from 10+ DEXs in real-time, scores each route with our AI algorithm, and executes the optimal trade — all in one click.</p>
+          
+          <ul class="feature-list">
+            <li>
+              <span class="feature-check">✓</span>
+              <span>Query 10+ DEXs simultaneously in under 500ms</span>
+            </li>
+            <li>
+              <span class="feature-check">✓</span>
+              <span>AI-powered scoring for optimal route selection</span>
+            </li>
+            <li>
+              <span class="feature-check">✓</span>
+              <span>Real-time token security analysis</span>
+            </li>
+            <li>
+              <span class="feature-check">✓</span>
+              <span>Automatic slippage optimization</span>
+            </li>
+            <li>
+              <span class="feature-check">✓</span>
+              <span>MEV protection built-in</span>
+            </li>
+            <li>
+              <span class="feature-check">✓</span>
+              <span>100% non-custodial</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div style="background: var(--gray-100); border-radius: 24px; height: 500px; display: flex; align-items: center; justify-content: center; color: var(--gray-400); font-size: 20px;">
+          [Product Screenshot]
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: How It Works -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">04 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Product</div>
+      <h2>How SwapPilot works</h2>
+      
+      <div class="process-flow">
+        <div class="process-step">
+          <div class="process-icon">💰</div>
+          <h4>Enter Swap</h4>
+          <p>Select tokens and enter amount</p>
+        </div>
+        <div class="process-step">
+          <div class="process-icon">🔍</div>
+          <h4>Query DEXs</h4>
+          <p>10+ providers queried in parallel</p>
+        </div>
+        <div class="process-step">
+          <div class="process-icon">🧠</div>
+          <h4>AI Scoring</h4>
+          <p>Routes ranked by price, gas, risk</p>
+        </div>
+        <div class="process-step">
+          <div class="process-icon">✅</div>
+          <h4>Execute</h4>
+          <p>One-click optimal execution</p>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-value primary">10+</div>
+          <div class="stat-label">DEX Providers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">&lt;500ms</div>
+          <div class="stat-label">Quote Response</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">2-5%</div>
+          <div class="stat-label">Average Savings</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">85%</div>
+          <div class="stat-label">Scams Detected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Market -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">05 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Market Opportunity</div>
+      <h2>A massive and growing market</h2>
+      
+      <div class="grid-3" style="margin-top: 40px;">
+        <div class="card">
+          <div class="stat-value primary" style="font-size: 56px; margin-bottom: 16px;">$50B+</div>
+          <h3>Monthly DEX Volume</h3>
+          <p>BNB Chain alone processes over $50 billion in DEX trades monthly.</p>
+        </div>
+        <div class="card">
+          <div class="stat-value" style="font-size: 56px; margin-bottom: 16px;">2.5M</div>
+          <h3>Daily Traders</h3>
+          <p>Millions of active traders across chains looking for better execution.</p>
+        </div>
+        <div class="card">
+          <div class="stat-value" style="font-size: 56px; margin-bottom: 16px;">35%</div>
+          <h3>YoY Growth</h3>
+          <p>DEX usage continues to grow as DeFi adoption accelerates.</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid-3">
+        <div class="metric-card">
+          <div>
+            <div class="label">Total Addressable Market</div>
+            <div class="value">$15B+</div>
+          </div>
+        </div>
+        <div class="metric-card primary">
+          <div>
+            <div class="label">Serviceable Market</div>
+            <div class="value">$3B+</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div>
+            <div class="label">Target (24 months)</div>
+            <div class="value">$500M</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Business Model -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">06 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Business Model</div>
+      <h2>Sustainable revenue streams</h2>
+      
+      <div class="grid-2" style="margin-top: 40px;">
+        <div>
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-icon">💱</div>
+            <h3>Swap Fees</h3>
+            <p>0.1% - 0.3% fee on successful trades. Fee tier based on SWAP token holdings. Primary revenue driver.</p>
+          </div>
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-icon">🎯</div>
+            <h3>Referral Revenue</h3>
+            <p>Partners earn commission on referred volume. Aligned incentives for growth.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">⚡</div>
+            <h3>Premium Features</h3>
+            <p>Advanced analytics, limit orders, and priority routing for stakers.</p>
+          </div>
+        </div>
+        
+        <div>
+          <h3 style="margin-bottom: 24px;">Fee Tiers by SWAP Holdings</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Requirement</th>
+                <th>Fee</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Captain</strong></td>
+                <td>50,000+ SWAP</td>
+                <td class="value">0.10%</td>
+              </tr>
+              <tr>
+                <td><strong>Pilot</strong></td>
+                <td>10,000+ SWAP</td>
+                <td class="value">0.15%</td>
+              </tr>
+              <tr>
+                <td><strong>Crew</strong></td>
+                <td>1,000+ SWAP</td>
+                <td class="value">0.20%</td>
+              </tr>
+              <tr>
+                <td><strong>Passenger</strong></td>
+                <td>Free</td>
+                <td class="value">0.30%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Tokenomics -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">07 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Tokenomics</div>
+      <h2>SWAP token distribution</h2>
+      
+      <div class="allocation-grid">
+        <div>
+          <ul class="allocation-list">
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #6366f1;"></div>
+              <span class="allocation-name">IDO (Public Sale)</span>
+              <span class="allocation-value">35%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #8b5cf6;"></div>
+              <span class="allocation-name">Treasury</span>
+              <span class="allocation-value">20%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #a855f7;"></div>
+              <span class="allocation-name">CEX & Marketing</span>
+              <span class="allocation-value">12%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #10b981;"></div>
+              <span class="allocation-name">Liquidity</span>
+              <span class="allocation-value">12%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #f59e0b;"></div>
+              <span class="allocation-name">Team</span>
+              <span class="allocation-value">11%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #ef4444;"></div>
+              <span class="allocation-name">Advisors</span>
+              <span class="allocation-value">5%</span>
+            </li>
+            <li class="allocation-item">
+              <div class="allocation-color" style="background: #06b6d4;"></div>
+              <span class="allocation-name">Referral</span>
+              <span class="allocation-value">5%</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div>
+          <div class="metrics-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="metric-card">
+              <div class="label">Total Supply</div>
+              <div class="value">1B SWAP</div>
+            </div>
+            <div class="metric-card primary">
+              <div class="label">IDO Price</div>
+              <div class="value">$0.0057</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">FDV</div>
+              <div class="value">$5.7M</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">TGE Market Cap</div>
+              <div class="value">$966K</div>
+            </div>
+            <div class="metric-card" style="grid-column: span 2;">
+              <div class="label">TGE Circulating Supply</div>
+              <div class="value">169.5M SWAP (16.95%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: Vesting -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">08 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Vesting</div>
+      <h2>Token unlock schedule</h2>
+      
+      <table class="data-table" style="margin-top: 40px;">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Allocation</th>
+            <th>TGE Unlock</th>
+            <th>Vesting Period</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight">
+            <td><strong>IDO</strong></td>
+            <td>35%</td>
+            <td class="value">25%</td>
+            <td>Linear 8 months</td>
+          </tr>
+          <tr>
+            <td><strong>CEX & Marketing</strong></td>
+            <td>12%</td>
+            <td class="value">25%</td>
+            <td>Linear 18 months</td>
+          </tr>
+          <tr>
+            <td><strong>Liquidity</strong></td>
+            <td>12%</td>
+            <td class="value">35%</td>
+            <td>Linear 18 months</td>
+          </tr>
+          <tr>
+            <td><strong>Treasury</strong></td>
+            <td>20%</td>
+            <td class="value">5%</td>
+            <td>Linear 24 months</td>
+          </tr>
+          <tr>
+            <td><strong>Team</strong></td>
+            <td>11%</td>
+            <td>0%</td>
+            <td>4-month cliff, then 24 months linear</td>
+          </tr>
+          <tr>
+            <td><strong>Advisors</strong></td>
+            <td>5%</td>
+            <td>0%</td>
+            <td>4-month cliff, then 12 months linear</td>
+          </tr>
+          <tr>
+            <td><strong>Referral</strong></td>
+            <td>5%</td>
+            <td>0%</td>
+            <td>2-month cliff, 100% at Month 3</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="stats-row" style="margin-top: 40px;">
+        <div class="stat">
+          <div class="stat-value primary">16.95%</div>
+          <div class="stat-label">Circulating at TGE</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">52.83%</div>
+          <div class="stat-label">Circulating at Month 6</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">78.67%</div>
+          <div class="stat-label">Circulating at Month 12</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">28</div>
+          <div class="stat-label">Months to Full Unlock</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 9: Roadmap -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">09 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Roadmap</div>
+      <h2>2026 milestones</h2>
+      
+      <div class="timeline">
+        <div class="timeline-item active">
+          <div class="timeline-period">Q1 2026</div>
+          <div class="timeline-title">Launch</div>
+          <ul class="timeline-list">
+            <li>IDO on launchpad</li>
+            <li>DEX listing (PancakeSwap)</li>
+            <li>Mainnet launch</li>
+            <li>10 DEX integrations</li>
+            <li>Referral program</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-period">Q2 2026</div>
+          <div class="timeline-title">Growth</div>
+          <ul class="timeline-list">
+            <li>CEX listings</li>
+            <li>Mobile app beta</li>
+            <li>Limit orders</li>
+            <li>Arbitrum support</li>
+            <li>25 DEX integrations</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-period">Q3 2026</div>
+          <div class="timeline-title">Expansion</div>
+          <ul class="timeline-list">
+            <li>Ethereum mainnet</li>
+            <li>DCA automation</li>
+            <li>Governance launch</li>
+            <li>Developer SDK</li>
+            <li>Staking rewards</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-period">Q4 2026</div>
+          <div class="timeline-title">Scale</div>
+          <ul class="timeline-list">
+            <li>Cross-chain swaps</li>
+            <li>Advanced analytics</li>
+            <li>Institutional API</li>
+            <li>50+ DEX integrations</li>
+            <li>$100M+ TVR</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: Team -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">10 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Team</div>
+      <h2>Experienced builders</h2>
+      
+      <div class="team-grid">
+        <div class="team-member">
+          <div class="team-avatar">AB</div>
+          <div class="team-name">Alex B.</div>
+          <div class="team-role">CEO & Founder</div>
+          <div class="team-bio">10+ years in fintech. Former engineering lead at major DeFi protocol.</div>
+        </div>
+        <div class="team-member">
+          <div class="team-avatar">MK</div>
+          <div class="team-name">Marie K.</div>
+          <div class="team-role">CTO</div>
+          <div class="team-bio">Ex-Binance engineer. Smart contract security and MEV expert.</div>
+        </div>
+        <div class="team-member">
+          <div class="team-avatar">JD</div>
+          <div class="team-name">John D.</div>
+          <div class="team-role">Head of Product</div>
+          <div class="team-bio">Former product lead at top DEX aggregator. UX specialist.</div>
+        </div>
+        <div class="team-member">
+          <div class="team-avatar">SL</div>
+          <div class="team-name">Sarah L.</div>
+          <div class="team-role">Head of BD</div>
+          <div class="team-bio">DeFi native. Built partnerships for top 10 protocols.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 11: IDO Details -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">11 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">IDO</div>
+      <h2>Public sale details</h2>
+      
+      <div class="ido-highlight">
+        <div class="ido-stat">
+          <div class="label">Token Price</div>
+          <div class="value">$0.0057</div>
+        </div>
+        <div class="ido-stat">
+          <div class="label">Hard Cap</div>
+          <div class="value">$2M</div>
+        </div>
+        <div class="ido-stat">
+          <div class="label">Tokens for Sale</div>
+          <div class="value">350M</div>
+        </div>
+        <div class="ido-stat">
+          <div class="label">Chain</div>
+          <div class="value">BNB</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 40px;">
+        <div class="card-outlined">
+          <h3>TGE Unlock</h3>
+          <div class="stat-value primary" style="margin: 16px 0;">25%</div>
+          <p>87.5M SWAP tokens released at Token Generation Event</p>
+        </div>
+        <div class="card-outlined">
+          <h3>Vesting Period</h3>
+          <div class="stat-value" style="margin: 16px 0;">8 Months</div>
+          <p>Remaining 75% released linearly over 8 months</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 12: Use of Funds -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">12 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="section-label">Funding</div>
+      <h2>Use of funds</h2>
+      
+      <div class="grid-2" style="margin-top: 40px;">
+        <div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>%</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Development</strong></td>
+                <td>40%</td>
+                <td class="value">$800,000</td>
+              </tr>
+              <tr>
+                <td><strong>Marketing & Growth</strong></td>
+                <td>25%</td>
+                <td class="value">$500,000</td>
+              </tr>
+              <tr>
+                <td><strong>Liquidity</strong></td>
+                <td>20%</td>
+                <td class="value">$400,000</td>
+              </tr>
+              <tr>
+                <td><strong>Operations</strong></td>
+                <td>10%</td>
+                <td class="value">$200,000</td>
+              </tr>
+              <tr>
+                <td><strong>Legal & Compliance</strong></td>
+                <td>5%</td>
+                <td class="value">$100,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div>
+          <div class="card" style="margin-bottom: 24px;">
+            <h3>Development (40%)</h3>
+            <p>Multi-chain expansion, mobile apps, advanced features, and security audits.</p>
+          </div>
+          <div class="card" style="margin-bottom: 24px;">
+            <h3>Marketing (25%)</h3>
+            <p>User acquisition, partnerships, community building, and KOL campaigns.</p>
+          </div>
+          <div class="card">
+            <h3>Liquidity (20%)</h3>
+            <p>DEX liquidity pools, CEX market making, and trading incentives.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 13: CTA -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        SwapPilot
+      </div>
+      <div class="slide-number">13 / 13</div>
+    </div>
+    
+    <div class="slide-content">
+      <div class="cta-container">
+        <div class="section-label">Join Us</div>
+        <h1 class="cta-title">Ready to <span class="text-gradient">take off</span>?</h1>
+        <p class="subtitle" style="text-align: center;">Join the SwapPilot IDO and be part of the future of decentralized trading.</p>
+        
+        <div class="cta-buttons">
+          <a href="#" class="btn btn-primary">🚀 Join IDO</a>
+          <a href="#" class="btn btn-outline">📄 Whitepaper</a>
+          <a href="#" class="btn btn-outline">💬 Telegram</a>
+          <a href="#" class="btn btn-outline">🐦 Twitter</a>
+        </div>
+
+        <div style="margin-top: 80px; color: var(--gray-400); font-size: 16px;">
+          swappilot.io · @SwapPilotDeFi · team@swappilot.io
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

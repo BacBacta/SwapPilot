@@ -34,12 +34,67 @@ export type DynamicSlippageResult = {
   riskLevel: "low" | "medium" | "high";
   /** Suggested minimum slippage for this token/swap */
   suggestedMinBps: number;
+  /** Detected tax percentages */
+  detectedTaxes?: {
+    buyTaxPercent: number | null;
+    sellTaxPercent: number | null;
+    transferTaxPercent: number | null;
+  } | undefined;
 };
+
+/**
+ * Parse tax data from security check reasons.
+ * Extracts buy_tax, sell_tax, transfer_tax from GoPlus and Honeypot.is responses.
+ */
+function parseTaxesFromReasons(reasons: string[]): {
+  buyTaxPercent: number | null;
+  sellTaxPercent: number | null;
+  transferTaxPercent: number | null;
+  holderAvgTaxPercent: number | null;
+  isHoneypot: boolean;
+  cannotSellAll: boolean;
+} {
+  let buyTaxPercent: number | null = null;
+  let sellTaxPercent: number | null = null;
+  let transferTaxPercent: number | null = null;
+  let holderAvgTaxPercent: number | null = null;
+  let isHoneypot = false;
+  let cannotSellAll = false;
+
+  for (const reason of reasons) {
+    // Parse tax values from GoPlus/Honeypot.is
+    const buyTaxMatch = reason.match(/buy_tax:([0-9.]+)/);
+    if (buyTaxMatch && buyTaxMatch[1]) buyTaxPercent = parseFloat(buyTaxMatch[1]);
+
+    const sellTaxMatch = reason.match(/sell_tax:([0-9.]+)/);
+    if (sellTaxMatch && sellTaxMatch[1]) sellTaxPercent = parseFloat(sellTaxMatch[1]);
+
+    const transferTaxMatch = reason.match(/transfer_tax:([0-9.]+)/);
+    if (transferTaxMatch && transferTaxMatch[1]) transferTaxPercent = parseFloat(transferTaxMatch[1]);
+
+    const holderAvgMatch = reason.match(/holder_avg_tax:([0-9.]+)/);
+    if (holderAvgMatch && holderAvgMatch[1]) holderAvgTaxPercent = parseFloat(holderAvgMatch[1]);
+
+    // Detect critical flags
+    if (reason.includes("is_honeypot")) isHoneypot = true;
+    if (reason.includes("cannot_sell_all")) cannotSellAll = true;
+  }
+
+  return {
+    buyTaxPercent,
+    sellTaxPercent,
+    transferTaxPercent,
+    holderAvgTaxPercent,
+    isHoneypot,
+    cannotSellAll,
+  };
+}
 
 /**
  * Calculates dynamic slippage based on quote signals and token characteristics.
  * 
  * Factors considered:
+ * - Actual tax rates from GoPlus and Honeypot.is (buy/sell/transfer taxes)
  * - Sellability status (tokens with uncertain sellability need higher slippage)
  * - MEV exposure (high MEV = more price manipulation = higher slippage)
  * - Revert risk (high revert risk = higher slippage buffer)
@@ -98,110 +153,164 @@ export function useDynamicSlippage({
     const isSellTokenSafe = !sellAddr || safeTokens.includes(sellAddr);
     const hasUnknownToken = !isBuyTokenSafe || !isSellTokenSafe;
 
-    // Start with base slippage - higher for unknown tokens
-    let baseBps = hasUnknownToken ? 2500 : 100; // 25% for unknown tokens, 1% for known safe
-    let reason = hasUnknownToken ? "Unknown token (higher default)" : "Standard slippage";
-    let riskLevel: "low" | "medium" | "high" = hasUnknownToken ? "high" : "low";
-    const factors: string[] = hasUnknownToken ? ["unknown token"] : [];
+    // Extract tax data from sellability reasons
+    const sellabilityReasons = quote.signals?.sellability?.reasons ?? [];
+    const revertReasons = quote.signals?.revertRisk?.reasons ?? [];
+    const allReasons = [...sellabilityReasons, ...revertReasons];
+    
+    const taxData = parseTaxesFromReasons(allReasons);
+    const { buyTaxPercent, sellTaxPercent, transferTaxPercent, holderAvgTaxPercent, isHoneypot, cannotSellAll } = taxData;
 
-    // Factor 1: Sellability status
-    const sellability = quote.signals?.sellability;
-    if (sellability) {
-      if (sellability.status === "FAIL") {
-        // Token cannot be sold - very risky, likely has transfer fees
-        baseBps = Math.max(baseBps, 1500); // 15% for tokens with sell issues
-        factors.push("risky token (sell check failed)");
+    // Calculate max tax from all sources
+    const maxTax = Math.max(
+      buyTaxPercent ?? 0,
+      sellTaxPercent ?? 0,
+      transferTaxPercent ?? 0,
+      holderAvgTaxPercent ?? 0
+    );
+    
+    const hasTaxData = buyTaxPercent !== null || sellTaxPercent !== null || transferTaxPercent !== null;
+    const isFeeOnTransfer = maxTax > 0.1;
+
+    // Build factors list and calculate slippage
+    const factors: string[] = [];
+    let baseBps = 50; // Start with 0.5% base
+    let riskLevel: "low" | "medium" | "high" = "low";
+
+    // ============================================
+    // PRIORITY 1: Honeypot / Cannot Sell (Critical)
+    // ============================================
+    if (isHoneypot || cannotSellAll) {
+      factors.push("⚠️ honeypot/cannot-sell detected");
+      baseBps = Math.max(baseBps, 4900); // 49% - near maximum
+      riskLevel = "high";
+    }
+
+    // ============================================
+    // PRIORITY 2: Actual Tax Data from Oracles
+    // ============================================
+    else if (hasTaxData && maxTax > 0) {
+      // Convert tax percent to bps and add 30% safety margin
+      const taxBps = Math.round(maxTax * 100 * 1.3);
+      baseBps = Math.max(baseBps, taxBps + 50); // Tax + 0.5% buffer
+      
+      if (buyTaxPercent !== null && buyTaxPercent > 0) {
+        factors.push(`buy tax: ${buyTaxPercent.toFixed(1)}%`);
+      }
+      if (sellTaxPercent !== null && sellTaxPercent > 0) {
+        factors.push(`sell tax: ${sellTaxPercent.toFixed(1)}%`);
+      }
+      if (transferTaxPercent !== null && transferTaxPercent > 0) {
+        factors.push(`transfer tax: ${transferTaxPercent.toFixed(1)}%`);
+      }
+      
+      // Use holder analysis for more accurate real-world data
+      if (holderAvgTaxPercent !== null && holderAvgTaxPercent > maxTax) {
+        const holderTaxBps = Math.round(holderAvgTaxPercent * 100 * 1.3);
+        baseBps = Math.max(baseBps, holderTaxBps + 50);
+        factors.push(`observed avg: ${holderAvgTaxPercent.toFixed(1)}%`);
+      }
+
+      // Set risk level based on tax amount
+      if (maxTax >= 15) {
         riskLevel = "high";
-      } else if (sellability.status === "UNCERTAIN" || sellability.confidence < 0.5) {
-        // Unknown token - higher slippage needed
-        baseBps = Math.max(baseBps, 800); // 8%
-        factors.push("uncertain sellability");
-        riskLevel = "high";
-      } else if (sellability.confidence < 0.8) {
-        // Somewhat uncertain
-        baseBps = Math.max(baseBps, 400); // 4%
-        factors.push("lower confidence");
+      } else if (maxTax >= 5) {
         riskLevel = "medium";
       }
     }
 
-    // Factor 2: MEV exposure
-    const mevExposure = quote.signals?.mevExposure;
-    if (mevExposure) {
-      if (mevExposure.level === "HIGH") {
-        baseBps = Math.max(baseBps, 250); // 2.5%
-        factors.push("high MEV exposure");
-        riskLevel = riskLevel === "high" ? "high" : "medium";
-      } else if (mevExposure.level === "MEDIUM") {
-        baseBps = Math.max(baseBps, 150); // 1.5%
-        factors.push("moderate MEV risk");
+    // ============================================
+    // PRIORITY 3: Sellability Status (No Tax Data)
+    // ============================================
+    else {
+      const sellability = quote.signals?.sellability;
+      if (sellability) {
+        if (sellability.status === "FAIL") {
+          // Token cannot be sold - very risky, likely has transfer fees
+          baseBps = Math.max(baseBps, 1500); // 15% for tokens with sell issues
+          factors.push("risky token (sell check failed)");
+          riskLevel = "high";
+        } else if (sellability.status === "UNCERTAIN" || sellability.confidence < 0.5) {
+          // Unknown token - higher slippage needed
+          baseBps = Math.max(baseBps, 800); // 8%
+          factors.push("uncertain sellability");
+          riskLevel = "high";
+        } else if (sellability.confidence < 0.8) {
+          // Somewhat uncertain
+          baseBps = Math.max(baseBps, 400); // 4%
+          factors.push("lower confidence");
+          riskLevel = "medium";
+        }
       }
-    }
 
-    // Factor 3: Revert risk
-    const revertRisk = quote.signals?.revertRisk;
-    if (revertRisk) {
-      if (revertRisk.level === "HIGH") {
-        baseBps = Math.max(baseBps, 300); // 3%
-        factors.push("high revert risk");
-        riskLevel = "high";
-      } else if (revertRisk.level === "MEDIUM") {
-        baseBps = Math.max(baseBps, 200); // 2%
-        factors.push("moderate revert risk");
+      // Unknown token without tax data - use precautionary slippage
+      if (hasUnknownToken && !hasTaxData) {
+        baseBps = Math.max(baseBps, 500); // 5% for unknown tokens without data
+        factors.push("unknown token");
         riskLevel = riskLevel === "low" ? "medium" : riskLevel;
       }
     }
 
-    // Factor 4: Provider type (DEX direct vs aggregator)
+    // ============================================
+    // ADDITIONAL FACTORS
+    // ============================================
+
+    // Factor: MEV exposure
+    const mevExposure = quote.signals?.mevExposure;
+    if (mevExposure) {
+      if (mevExposure.level === "HIGH") {
+        baseBps = Math.max(baseBps, baseBps + 100); // Add 1%
+        factors.push("high MEV exposure");
+        riskLevel = riskLevel === "high" ? "high" : "medium";
+      } else if (mevExposure.level === "MEDIUM") {
+        baseBps = Math.max(baseBps, baseBps + 50); // Add 0.5%
+        factors.push("moderate MEV risk");
+      }
+    }
+
+    // Factor: Revert risk
+    const revertRisk = quote.signals?.revertRisk;
+    if (revertRisk) {
+      if (revertRisk.level === "HIGH") {
+        baseBps = Math.max(baseBps, baseBps + 100); // Add 1%
+        factors.push("high revert risk");
+        riskLevel = "high";
+      } else if (revertRisk.level === "MEDIUM") {
+        baseBps = Math.max(baseBps, baseBps + 50); // Add 0.5%
+        if (!factors.includes("moderate revert risk")) factors.push("moderate revert risk");
+      }
+    }
+
+    // Factor: Provider type (DEX direct vs aggregator)
     if (quote.sourceType === "dex") {
-      // DEX direct swaps often have less optimal routing
-      baseBps = Math.max(baseBps, 150); // 1.5% minimum for DEX
+      baseBps = Math.max(baseBps, baseBps + 50); // Add 0.5% for DEX
       factors.push("direct DEX swap");
     }
 
-    // Factor 5: Check revert risk reasons for fee-on-transfer indicators
-    const revertReasons = quote.signals?.revertRisk?.reasons ?? [];
-    const sellabilityReasons = quote.signals?.sellability?.reasons ?? [];
-    const allReasons = [...revertReasons, ...sellabilityReasons];
-    const hasFeeOnTransfer = allReasons.some(
-      (r: string) =>
-        r.toLowerCase().includes("fee") ||
-        r.toLowerCase().includes("tax") ||
-        r.toLowerCase().includes("transfer") ||
-        r.toLowerCase().includes("external call failed") ||
-        r.toLowerCase().includes("simulation")
-    );
-    if (hasFeeOnTransfer) {
-      baseBps = Math.max(baseBps, 2500); // 25% for fee-on-transfer tokens
-      factors.push("fee-on-transfer token detected");
-      riskLevel = "high";
-    }
-
-    // Factor 6: For unknown buy tokens (meme coins), use aggressive slippage
-    // These often have 5-20% transfer taxes
-    if (!isBuyTokenSafe && !hasFeeOnTransfer) {
-      baseBps = Math.max(baseBps, 1500); // 15% for unknown tokens as precaution
-      factors.push("potential meme/tax token");
-      riskLevel = "high";
-    }
+    // Cap at reasonable maximum
+    baseBps = Math.min(baseBps, 4900);
 
     // Build reason string
+    let reason: string;
     if (factors.length > 0) {
       reason = `Auto: ${factors.join(", ")}`;
+    } else if (isBuyTokenSafe && isSellTokenSafe) {
+      reason = "Auto: safe tokens";
     } else {
-      reason = "Auto: standard token";
+      reason = "Auto: standard";
     }
 
-    // Use the calculated base slippage when auto is enabled
-    // Don't force it higher than what's calculated - user can still set higher manually
-    const finalBps = baseBps;
-
     return {
-      slippageBps: finalBps,
+      slippageBps: baseBps,
       isAuto: true,
       reason,
       riskLevel,
       suggestedMinBps: baseBps,
+      detectedTaxes: hasTaxData ? {
+        buyTaxPercent,
+        sellTaxPercent,
+        transferTaxPercent,
+      } : undefined,
     };
   }, [quote, userSlippageBps, autoSlippageEnabled, sellTokenAddress, buyTokenAddress]);
 }

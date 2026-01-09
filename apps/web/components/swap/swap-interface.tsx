@@ -263,6 +263,8 @@ export function SwapInterface() {
     userSlippageBps: settings.slippageBps,
     autoSlippageEnabled: settings.autoSlippage,
     tokenSymbol: toToken,
+    sellTokenAddress: fromTokenInfo?.address,
+    buyTokenAddress: toTokenInfo?.address,
   });
 
   // The effective slippage to use for swaps

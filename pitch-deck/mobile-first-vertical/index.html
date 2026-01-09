@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080, height=1920" />
+  <title>SwapPilot — Pitch Deck (Mobile-First 9:16)</title>
+
+  <!-- Modern sans-serif; fintech landing vibes -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* Airy, rounded, premium minimalism.
+        Kept dark-mode friendly per spec (high contrast). */
+      --bg: #07080b;
+      --bg2: #0b0d14;
+      --surface: rgba(255,255,255,0.06);
+      --surface2: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.12);
+      --border2: rgba(255,255,255,0.08);
+
+      --text: rgba(255,255,255,0.94);
+      --muted: rgba(255,255,255,0.70);
+      --muted2: rgba(255,255,255,0.52);
+
+      --accent: #b6ff6a;
+      --accent2: #7dd3fc;
+
+      --shadow: 0 24px 80px rgba(0,0,0,0.34);
+      --shadow-soft: 0 18px 60px rgba(0,0,0,0.22);
+
+      --r-sm: 18px;
+      --r: 28px;
+      --r-lg: 40px;
+
+      /* Type scale (minimums: body >= 24pt ~ 32px; titles >= 40pt ~ 54px) */
+      --title: 64px;
+      --h2: 48px;
+      --body: 30px;
+      --caption: 22px;
+      --micro: 18px;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    /* 9:16 slides */
+    .slide {
+      width: 1080px;
+      height: 1920px;
+      padding: 84px 68px;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(780px 540px at 18% 8%, rgba(182,255,106,0.16), rgba(0,0,0,0) 62%),
+        radial-gradient(820px 560px at 80% 18%, rgba(125,211,252,0.14), rgba(0,0,0,0) 62%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+
+    .noise {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px);
+      background-size: 22px 22px;
+      opacity: 0.04;
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 48px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 900;
+      font-size: 28px;
+      letter-spacing: -0.3px;
+    }
+
+    .mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 950;
+      font-size: 22px;
+      letter-spacing: -0.4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mark::before {
+      content: "";
+      position: absolute;
+      inset: -30px;
+      background: radial-gradient(circle at 30% 35%, rgba(182,255,106,0.45), rgba(0,0,0,0) 55%),
+                  radial-gradient(circle at 75% 30%, rgba(125,211,252,0.40), rgba(0,0,0,0) 55%);
+      opacity: 0.65;
+    }
+
+    .mark span { position: relative; z-index: 1; }
+
+    .meta {
+      font-size: var(--micro);
+      color: var(--muted2);
+      font-weight: 850;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: var(--micro);
+      font-weight: 900;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--muted2);
+    }
+
+    .kicker::before {
+      content: "";
+      width: 30px;
+      height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    h1 {
+      font-size: var(--title);
+      line-height: 1.06;
+      letter-spacing: -1.9px;
+      font-weight: 950;
+    }
+
+    h2 {
+      font-size: var(--h2);
+      line-height: 1.12;
+      letter-spacing: -1.2px;
+      font-weight: 920;
+    }
+
+    .lead {
+      font-size: var(--body);
+      line-height: 1.50;
+      color: var(--muted);
+    }
+
+    .accent { color: var(--accent); }
+
+    /* Banki-ish chips */
+    .chiprow { display: flex; flex-wrap: wrap; gap: 14px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.86);
+      font-size: var(--caption);
+      font-weight: 850;
+    }
+
+    .chip b {
+      color: rgba(255,255,255,0.95);
+      font-weight: 950;
+      letter-spacing: -0.2px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(182,255,106,0.16);
+    }
+
+    /* Cards */
+    .card {
+      border-radius: var(--r);
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
+      border: 1px solid var(--border);
+      padding: 26px;
+    }
+
+    .card-title {
+      font-size: var(--caption);
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 10px;
+    }
+
+    .card-sub {
+      font-size: var(--caption);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* One visual per screen */
+    .visual {
+      border-radius: var(--r-lg);
+      border: 1px solid var(--border2);
+      background:
+        radial-gradient(560px 460px at 28% 25%, rgba(182,255,106,0.16), rgba(0,0,0,0) 62%),
+        radial-gradient(620px 520px at 78% 20%, rgba(125,211,252,0.14), rgba(0,0,0,0) 64%),
+        rgba(255,255,255,0.03);
+      padding: 28px;
+      min-height: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow:
+        var(--shadow);
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: -0.2px;
+    }
+
+    .visual-caption {
+      font-size: var(--caption);
+      color: var(--muted2);
+      font-weight: 850;
+      letter-spacing: 0.4px;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Data cards */
+    .data-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .data {
+      border-radius: var(--r-sm);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 18px;
+    }
+
+    .data .k {
+      font-size: var(--micro);
+      color: var(--muted2);
+      font-weight: 850;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+    }
+
+    .data .v {
+      margin-top: 10px;
+      font-size: 40px;
+      font-weight: 950;
+      letter-spacing: -1px;
+      color: rgba(255,255,255,0.94);
+      line-height: 1.06;
+      word-break: break-word;
+    }
+
+    /* Screenshot frame (for real UI screenshots or high-fidelity placeholders) */
+    .frame {
+      border-radius: 34px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .frame-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .dots { display: flex; gap: 8px; }
+    .dots i { width: 10px; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.22); display: inline-block; }
+    .frame-tag {
+      font-size: var(--micro);
+      color: rgba(255,255,255,0.78);
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .frame-body {
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .shot {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.10);
+      object-fit: cover;
+      background: rgba(0,0,0,0.25);
+    }
+
+    .shot-wrap {
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(7,8,11,0.55);
+    }
+
+    .shot-note {
+      margin-top: 12px;
+      font-size: var(--caption);
+      color: var(--muted2);
+      font-weight: 850;
+    }
+
+    .ui-card {
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(7,8,11,0.55);
+      padding: 18px;
+    }
+
+    .ui-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .ui-k {
+      font-size: var(--micro);
+      color: var(--muted2);
+      font-weight: 900;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+    }
+
+    .ui-v {
+      font-size: 36px;
+      font-weight: 950;
+      letter-spacing: -0.8px;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .pillrow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+    .pill {
+      font-size: var(--caption);
+      font-weight: 900;
+      color: rgba(255,255,255,0.86);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .pill.good { border-color: rgba(182,255,106,0.26); background: rgba(182,255,106,0.10); }
+    .pill.warn { border-color: rgba(125,211,252,0.24); background: rgba(125,211,252,0.08); }
+
+    /* Big CTA click zones */
+    .cta {
+      display: block;
+      width: 100%;
+      padding: 26px 28px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-size: var(--body);
+      font-weight: 950;
+      letter-spacing: -0.6px;
+      text-align: center;
+      border: 1px solid transparent;
+    }
+
+    .cta.primary {
+      background: linear-gradient(90deg, rgba(182,255,106,1) 0%, rgba(125,211,252,0.90) 100%);
+      color: #07080b;
+      box-shadow: 0 24px 60px rgba(182,255,106,0.10);
+    }
+
+    .cta.secondary {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.92);
+    }
+
+    .cta-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    /* Simple visuals (no complex tables) */
+    .barlist { display: flex; flex-direction: column; gap: 16px; }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .bar .label {
+      font-size: var(--caption);
+      font-weight: 850;
+      color: rgba(255,255,255,0.86);
+    }
+
+    .bar .value {
+      font-size: var(--caption);
+      font-weight: 950;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .track {
+      grid-column: 1 / -1;
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(182,255,106,1) 0%, rgba(125,211,252,0.85) 100%);
+    }
+
+    .donut {
+      width: 460px;
+      height: 460px;
+      border-radius: 50%;
+      background:
+        conic-gradient(
+          /* Allocation (degrees) based on: 35 / 20 / 12 / 12 / 11 / 5 / 5 */
+          rgba(182,255,106,0.95) 0deg 126deg,       /* IDO 35% */
+          rgba(182,255,106,0.52) 126deg 198deg,     /* Treasury 20% */
+          rgba(125,211,252,0.74) 198deg 241.2deg,   /* CEX & Marketing 12% */
+          rgba(125,211,252,0.46) 241.2deg 284.4deg, /* Liquidity 12% */
+          rgba(255,255,255,0.22) 284.4deg 324deg,   /* Team 11% */
+          rgba(255,255,255,0.15) 324deg 342deg,     /* Advisors 5% */
+          rgba(255,255,255,0.10) 342deg 360deg      /* Referral 5% */
+        );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px auto 0;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .donut::after {
+      content: "";
+      width: 292px;
+      height: 292px;
+      border-radius: 50%;
+      background: rgba(7,8,11,0.95);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .donut-label {
+      position: absolute;
+      text-align: center;
+      z-index: 2;
+      padding: 0 20px;
+    }
+
+    .donut-label .big {
+      font-size: 56px;
+      font-weight: 950;
+      letter-spacing: -1px;
+      color: rgba(255,255,255,0.94);
+    }
+
+    .donut-label .small {
+      margin-top: 10px;
+      font-size: var(--caption);
+      color: var(--muted2);
+      font-weight: 850;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .foot {
+      font-size: var(--micro);
+      color: var(--muted2);
+      margin-top: auto;
+      padding-top: 18px;
+    }
+
+    @media print {
+      .slide { page-break-after: always; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 01 / 12 — Cover (Hero + tap CTAs) -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">01 / 12</div>
+    </div>
+
+    <div class="content" style="justify-content: center;">
+      <div class="chiprow">
+        <div class="chip"><span class="dot"></span><b>BNB</b> Smart Chain</div>
+        <div class="chip"><span class="dot"></span><b>BEQ</b> ranking</div>
+        <div class="chip"><span class="dot"></span><b>Receipts</b> before you sign</div>
+      </div>
+
+      <h1 style="margin-top: 6px;">Safer swaps on<br><span class="accent">BNB Chain</span> — with receipts.</h1>
+      <p class="lead">SwapPilot is a DEX aggregator for BNB Smart Chain. It ranks quotes into BEQ (Best Executable Quote) and shows the trade-off between raw output and execution safety before you sign.</p>
+
+      <div class="visual" aria-label="Hero visual">
+        <div class="frame" style="flex: 1;">
+          <div class="frame-head">
+            <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="frame-tag">App preview (swap + receipt)</div>
+          </div>
+          <div class="frame-body">
+            <div class="shot-wrap">
+              <img class="shot" src="./assets/hero-swap-wide.png" alt="SwapPilot swap screen screenshot" loading="eager" decoding="async" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <a class="cta primary" href="https://app-swappilot.xyz" target="_blank" rel="noreferrer">Open app →</a>
+        <a class="cta secondary" href="https://swappilot.gitbook.io/untitled" target="_blank" rel="noreferrer">Read docs →</a>
+      </div>
+
+      <div class="foot">app-swappilot.xyz · swappilot-api.fly.dev · github.com/BacBacta/SwapPilot</div>
+    </div>
+  </section>
+
+  <!-- 02 / 12 — Problem -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">02 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Problem</div>
+      <h2>Swaps still feel unpredictable.</h2>
+      <p class="lead">Users can’t reliably estimate what they will actually receive — especially on fee-on-transfer tokens and fast-moving routes.</p>
+
+      <div class="visual" aria-label="Problem cards visual">
+        <div class="stack">
+          <div class="card"><div class="card-title">Fragmented liquidity</div><div class="card-sub">Prices differ per DEX. Manual comparison is slow and error-prone.</div></div>
+          <div class="card"><div class="card-title">Hidden costs</div><div class="card-sub">Slippage + token transfer taxes reduce net output after execution.</div></div>
+          <div class="card"><div class="card-title">Execution risk</div><div class="card-sub">Routes can fail; users need preflight signals and clear warnings.</div></div>
+        </div>
+      </div>
+
+      <div class="foot">One screen = one idea + one visual.</div>
+    </div>
+  </section>
+
+  <!-- 03 / 12 — Solution -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">03 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Solution</div>
+      <h2>One flow that optimizes & explains.</h2>
+      <p class="lead">SwapPilot separates “best raw output” from “best executable” and documents the decision in a receipt (whyWinner, warnings, mode rationale).</p>
+
+      <div class="visual" aria-label="Solution cards visual">
+        <div class="stack">
+          <div class="card"><div class="card-title">BEQ (Best Executable Quote)</div><div class="card-sub">Optimizes for executability first — then for output — instead of only chasing the highest quote.</div></div>
+          <div class="card"><div class="card-title">Decision receipt</div><div class="card-sub">Every quote returns a <b>receiptId</b> with: whyWinner · warnings · ranking rationale · normalization assumptions.</div></div>
+          <div class="card"><div class="card-title">Risk modes</div><div class="card-sub">SAFE / NORMAL / DEGEN switch the BEQ weights — while the receipt keeps the reasoning transparent.</div></div>
+        </div>
+      </div>
+
+      <div class="foot">Clear tradeoffs. Verifiable claims only.</div>
+    </div>
+  </section>
+
+  <!-- 04 / 12 — How it works -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">04 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Product</div>
+      <h2>How a swap happens</h2>
+      <p class="lead">Four steps — mapped to real API calls.</p>
+
+      <div class="visual" aria-label="How it works visual">
+        <div class="stack">
+          <div class="card"><div class="card-title">1) Quote</div><div class="card-sub">POST <b>/v1/quotes</b> — fan-out to multiple providers in parallel (BSC chainId 56).</div></div>
+          <div class="card"><div class="card-title">2) Rank</div><div class="card-sub">Return <b>rankedQuotes</b> (BEQ) + <b>bestRawQuotes</b> + <b>beqRecommendedProviderId</b>.</div></div>
+          <div class="card"><div class="card-title">3) Explain</div><div class="card-sub">GET <b>/v1/receipts/:id</b> — whyWinner + warnings + assumptions in a single artifact.</div></div>
+          <div class="card"><div class="card-title">4) Execute</div><div class="card-sub">Use <b>/v1/build-tx</b> when supported (ready-to-sign tx + <b>approvalAddress</b>). Otherwise open the provider via <b>deepLink</b>.</div></div>
+        </div>
+      </div>
+
+      <div class="foot">Simple mental model: quote → rank → explain → execute.</div>
+    </div>
+  </section>
+
+  <!-- 05 / 12 — Coverage -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">05 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Coverage</div>
+      <h2>Coverage on BNB Chain.</h2>
+      <p class="lead">Top aggregators + DEX routers. BEQ helps prioritize executability over the best-looking number.</p>
+
+      <div class="visual" aria-label="Provider coverage visual">
+        <div class="stack">
+          <div class="card">
+            <div class="card-title">Providers</div>
+            <div class="card-sub">PancakeSwap · 1inch · OKX DEX · KyberSwap · ParaSwap · Odos · OpenOcean · 0x · Uniswap V2 · Uniswap V3</div>
+          </div>
+          <div class="card"><div class="card-title">Capabilities</div><div class="card-sub">Quotes + ranking · <b>buildTx</b> where supported · deep-links as fallback · health endpoint <b>/v1/providers/status</b>.</div></div>
+          <div class="card"><div class="card-title">Risk signals</div><div class="card-sub">Sellability · revert risk · MEV exposure · churn · optional token security (GoPlus / Honeypot.is).</div></div>
+          <div class="card"><div class="card-title">Non-custodial</div><div class="card-sub">Users sign in their wallet; SwapPilot does not hold keys or funds.</div></div>
+        </div>
+      </div>
+
+      <div class="foot">Adapters + normalization keep outputs comparable.</div>
+    </div>
+  </section>
+
+  <!-- 06 / 12 — Proof -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">06 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Proof</div>
+      <h2>A working system — with receipts.</h2>
+      <p class="lead">Public app + public API. Every quote run returns a receiptId for auditability.</p>
+
+      <div class="visual" aria-label="Product proof cards visual">
+        <div class="data-row">
+          <div class="data"><div class="k">Live app</div><div class="v">app-swappilot.xyz</div></div>
+          <div class="data"><div class="k">Public API</div><div class="v">swappilot-api.fly.dev</div></div>
+        </div>
+        <div class="data-row">
+          <div class="data"><div class="k">Swagger UI</div><div class="v">/docs</div></div>
+          <div class="data"><div class="k">OpenAPI JSON</div><div class="v">/docs/json</div></div>
+        </div>
+        <div class="data-row">
+          <div class="data"><div class="k">Endpoints</div><div class="v">/v1/quotes</div></div>
+          <div class="data"><div class="k">Receipts</div><div class="v">/v1/receipts/:id</div></div>
+        </div>
+        <div class="data-row">
+          <div class="data"><div class="k">Execution</div><div class="v">/v1/build-tx</div></div>
+          <div class="data"><div class="k">Provider status</div><div class="v">/v1/providers/status</div></div>
+        </div>
+        <div class="card" style="margin-top: 10px;">
+          <div class="card-title">What the receipt includes</div>
+          <div class="card-sub">rankedQuotes · bestRawQuotes · beqRecommendedProviderId · whyWinner · warnings · ranking.mode · signals (preflight, MEV, sellability)</div>
+        </div>
+      </div>
+
+      <div class="foot">Receipts are the product: explainability by default.</div>
+    </div>
+  </section>
+
+  <!-- 07 / 12 — Business model -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">07 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Business Model</div>
+      <h2>Revenue aligned with usage.</h2>
+      <p class="lead">Simple monetization primitives built into the stack.</p>
+
+      <div class="visual" aria-label="Business model visual">
+        <div class="stack">
+          <div class="card"><div class="card-title">Fee engine (API)</div><div class="card-sub">Endpoints: <b>/v1/fees/calculate</b> and <b>/v1/pilot/tier</b> to compute fees and holding-based discounts.</div></div>
+          <div class="card"><div class="card-title">Fee distribution (contracts)</div><div class="card-sub">FeeCollector contract supports <b>15%</b> buy & burn and <b>85%</b> treasury distribution.</div></div>
+          <div class="card"><div class="card-title">Referral incentives (contracts)</div><div class="card-sub">ReferralPool + ReferralRewards contracts to support referral-based rewards flows.</div></div>
+        </div>
+      </div>
+
+      <div class="foot">No revenue projections; just shipped primitives.</div>
+    </div>
+  </section>
+
+  <!-- 08 / 12 — Tokenomics snapshot -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">08 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Tokenomics</div>
+      <h2>Clear, investor-ready metrics.</h2>
+      <p class="lead">Snapshot from the tokenomics doc (no estimates).</p>
+
+      <div class="visual" aria-label="Tokenomics key metrics visual">
+        <div class="data-row">
+          <div class="data"><div class="k">Total Supply</div><div class="v">1B</div></div>
+          <div class="data"><div class="k">IDO Price</div><div class="v">$0.0057</div></div>
+        </div>
+        <div class="data-row">
+          <div class="data"><div class="k">FDV</div><div class="v">$5.7M</div></div>
+          <div class="data"><div class="k">TGE MCap</div><div class="v">$966K</div></div>
+        </div>
+        <div class="card" style="margin-top: 10px;">
+          <div class="card-title">TGE circulating supply</div>
+          <div class="card-sub" style="font-size: 40px; font-weight: 950; letter-spacing:-1px; color: rgba(255,255,255,0.94);">169.5M tokens (16.95%)</div>
+        </div>
+      </div>
+
+      <div class="foot">One idea: token snapshot. One visual: data cards.</div>
+    </div>
+  </section>
+
+  <!-- 09 / 12 — Distribution -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">09 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Distribution</div>
+      <h2>Balanced allocation.</h2>
+      <p class="lead">A single clean visual: donut + legend cards.</p>
+
+      <div class="visual" aria-label="Distribution donut visual">
+        <div class="donut">
+          <div class="donut-label">
+            <div class="big">1B</div>
+            <div class="small">Total supply</div>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top: 18px;">
+          <div class="card"><div class="card-title">IDO</div><div class="card-sub">35%</div></div>
+          <div class="card"><div class="card-title">Treasury</div><div class="card-sub">20%</div></div>
+          <div class="card"><div class="card-title">CEX & Marketing</div><div class="card-sub">12%</div></div>
+          <div class="card"><div class="card-title">Liquidity</div><div class="card-sub">12%</div></div>
+          <div class="card"><div class="card-title">Team</div><div class="card-sub">11%</div></div>
+          <div class="card"><div class="card-title">Advisors</div><div class="card-sub">5%</div></div>
+          <div class="card"><div class="card-title">Referral</div><div class="card-sub">5%</div></div>
+        </div>
+      </div>
+
+      <div class="foot">Table → donut + cards (mobile-friendly).</div>
+    </div>
+  </section>
+
+  <!-- 10 / 12 — Vesting -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">10 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Vesting</div>
+      <h2>Unlocks designed for stability.</h2>
+      <p class="lead">One simple chart: TGE unlock % by bucket.</p>
+
+      <div class="visual" aria-label="Vesting bar chart visual">
+        <div class="barlist">
+          <div class="bar"><div class="label">IDO</div><div class="value">25% at TGE</div><div class="track"><div class="fill" style="width: 25%;"></div></div></div>
+          <div class="bar"><div class="label">Liquidity</div><div class="value">35% at TGE</div><div class="track"><div class="fill" style="width: 35%;"></div></div></div>
+          <div class="bar"><div class="label">CEX & Marketing</div><div class="value">25% at TGE</div><div class="track"><div class="fill" style="width: 25%;"></div></div></div>
+          <div class="bar"><div class="label">Treasury</div><div class="value">5% at TGE</div><div class="track"><div class="fill" style="width: 5%;"></div></div></div>
+          <div class="bar"><div class="label">Team</div><div class="value">0% at TGE</div><div class="track"><div class="fill" style="width: 0%;"></div></div></div>
+          <div class="bar"><div class="label">Advisors</div><div class="value">0% at TGE</div><div class="track"><div class="fill" style="width: 0%;"></div></div></div>
+          <div class="bar"><div class="label">Referral</div><div class="value">0% at TGE</div><div class="track"><div class="fill" style="width: 0%;"></div></div></div>
+        </div>
+
+        <div class="card" style="margin-top: 18px;">
+          <div class="card-title">Milestones</div>
+          <div class="card-sub">16.95% circulating at TGE · 52.83% at Month 6 · 78.67% at Month 12</div>
+        </div>
+
+        <div class="card" style="margin-top: 12px;">
+          <div class="card-title">Vesting rules (high level)</div>
+          <div class="card-sub">IDO: 25% TGE + 8mo linear · Liquidity: 35% TGE + 18mo linear · CEX & Marketing: 25% TGE + 18mo linear · Treasury: 5% TGE + 24mo linear · Team: 4mo cliff + 24mo linear · Advisors: 4mo cliff + 12mo linear · Referral: 2mo cliff then Month 3 unlock</div>
+        </div>
+      </div>
+
+      <div class="foot">Complex table → clean bar chart + one milestone card.</div>
+    </div>
+  </section>
+
+  <!-- 11 / 12 — Roadmap -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">11 / 12</div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Roadmap</div>
+      <h2>Execution milestones.</h2>
+      <p class="lead">Roadmap from the GitBook whitepaper (Jan 2026).</p>
+
+      <div class="visual" aria-label="Roadmap timeline visual">
+        <div class="stack">
+          <div class="card"><div class="card-title">Phase 1 — Foundation ✅</div><div class="card-sub">Core aggregation engine · 1inch/KyberSwap/ParaSwap/OKX DEX · BSC mainnet · wallet connect · monitoring · balance updates · slippage · error handling</div></div>
+          <div class="card"><div class="card-title">Phase 2 — Enhancement (Q1 2026)</div><div class="card-sub">Multi-chain (Ethereum/Arbitrum/Polygon/Base) · analytics dashboard · advanced features (alerts, limit orders, favorites, token lists)</div></div>
+          <div class="card"><div class="card-title">Phase 3 — Advanced (Q2 2026)</div><div class="card-sub">Cross-chain swaps · automation (DCA/recurring/conditional) · portfolio tools (PnL/yield/tax) · mobile app</div></div>
+          <div class="card"><div class="card-title">Phase 4 — Ecosystem (Q3–Q4 2026)</div><div class="card-sub">Developer tools (public API, SDK, widget) · institutional features · governance (DAO, proposals, revenue sharing)</div></div>
+        </div>
+      </div>
+
+      <div class="foot">One idea: roadmap. One visual: stacked cards.</div>
+    </div>
+  </section>
+
+  <!-- 12 / 12 — CTA -->
+  <section class="slide">
+    <div class="noise"></div>
+    <div class="topbar">
+      <div class="brand"><div class="mark"><span>SP</span></div>SwapPilot</div>
+      <div class="meta">12 / 12</div>
+    </div>
+
+    <div class="content" style="justify-content:center;">
+      <div class="kicker">Call to Action</div>
+      <h1>See it live.<br><span class="accent">Verify everything</span>.</h1>
+      <p class="lead">Try the app, read the docs, and review tokenomics.</p>
+
+      <div class="visual" aria-label="CTA visual" style="min-height: 640px;">
+        <div class="card" style="text-align:left;">
+          <div class="card-title">Next steps</div>
+          <div class="card-sub">Direct links to app, docs, and open-source repo.</div>
+        </div>
+
+        <div class="cta-row">
+          <a class="cta primary" href="https://app-swappilot.xyz" target="_blank" rel="noreferrer">Open app →</a>
+          <a class="cta secondary" href="https://swappilot.gitbook.io/untitled" target="_blank" rel="noreferrer">Read docs →</a>
+          <a class="cta secondary" href="https://github.com/BacBacta/SwapPilot" target="_blank" rel="noreferrer">View GitHub →</a>
+        </div>
+
+        <div class="card" style="margin-top: 10px;">
+          <div class="card-sub" style="color: var(--muted2);">app-swappilot.xyz · swappilot-api.fly.dev · github.com/BacBacta/SwapPilot</div>
+        </div>
+      </div>
+
+      <div class="foot">Vertical 9:16 · Optimized for mobile reading.</div>
+    </div>
+  </section>
+
+</body>
+</html>
