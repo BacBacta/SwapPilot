@@ -5,7 +5,7 @@ import { useAccount } from "wagmi";
 import { type Address, erc20Abi, maxUint256 } from "viem";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { bsc } from "viem/chains";
-import { postQuotes } from "@/lib/api";
+import { getReceipt, postQuotes } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
@@ -1091,9 +1091,19 @@ export function LandioSwapController() {
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
 
-        // Store the receipt if available
+        // Store the receipt if available, otherwise fetch by receiptId (like the React swap UI)
         if (res.receipt) {
           setReceipt(res.receipt);
+        } else {
+          setReceipt(null);
+          try {
+            const fetched = await getReceipt({ id: res.receiptId, timeoutMs: 10_000 });
+            if (requestId === lastRequestIdRef.current) {
+              setReceipt(fetched);
+            }
+          } catch {
+            // Ignore receipt fetch failures (store might be ephemeral)
+          }
         }
         } catch {
           if (requestId !== lastRequestIdRef.current) return;
@@ -1511,19 +1521,19 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // Display receipt ID (click to copy) when available
   useEffect(() => {
-    const id = response?.receiptId;
-    if (!id) return;
-
-    setText("receiptId", id);
     const el = document.getElementById("receiptId");
     if (!el) return;
 
-    el.title = "Click to copy";
+    setText("receiptId", response?.receiptId ?? "—");
+
+    el.title = response?.receiptId ? "Click to copy" : "—";
     if (el.getAttribute("data-copy-bound") === "1") return;
     el.setAttribute("data-copy-bound", "1");
     el.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(id);
+        const currentId = (document.getElementById("receiptId")?.textContent ?? "").trim();
+        if (!currentId || currentId === "—") return;
+        await navigator.clipboard.writeText(currentId);
         toast.success("Copied", "Receipt ID copied to clipboard");
       } catch {
         toast.error("Copy failed", "Couldn't copy Receipt ID");
