@@ -223,6 +223,46 @@ img {
   }
 }
 
+/* Medium screens: optimize nav spacing */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .nav-inner {
+    padding: 10px 16px;
+  }
+  
+  .nav-links {
+    gap: 4px;
+  }
+  
+  .nav-links a {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .nav-right {
+    gap: 8px;
+  }
+  
+  .network-badge {
+    display: none;
+  }
+  
+  .btn-cta {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .logo {
+    font-size: 16px;
+    gap: 8px;
+  }
+  
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
 .network-dot {
   width: 6px;
   height: 6px;
