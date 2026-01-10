@@ -38,6 +38,19 @@ type QuoteResponse = {
   bestProviderId?: string;
 };
 
+type FeeInfo = {
+  feeApplies: boolean;
+  baseFeesBps: number;
+  discountPercent: number;
+  finalFeeBps: number;
+  freeThresholdUsd: number;
+  distribution: {
+    burnPercent: number;
+    treasuryPercent: number;
+    referralPercent: number;
+  };
+};
+
 function getApiBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ??
@@ -75,10 +88,11 @@ async function loadDynamicData(signal: AbortSignal): Promise<void> {
   const baseUrl = getApiBaseUrl();
 
   // Load all data in parallel
-  const [healthResult, providersResult, quoteResult] = await Promise.allSettled([
+  const [healthResult, providersResult, quoteResult, feeInfoResult] = await Promise.allSettled([
     fetchHealth(baseUrl, signal),
     fetchProviders(baseUrl, signal),
     fetchLiveQuote(baseUrl, signal),
+    fetchFeeInfo(baseUrl, signal),
   ]);
 
   // Update provider count in hero
@@ -86,6 +100,12 @@ async function loadDynamicData(signal: AbortSignal): Promise<void> {
     updateProviderCount(providersResult.value);
     updateIntegrationsSection(providersResult.value);
   }
+
+  // Ensure the FAQ content matches the deployed app (client-side, no caching surprises)
+  updateFaqSection({
+    providers: providersResult.status === "fulfilled" ? providersResult.value : null,
+    feeInfo: feeInfoResult.status === "fulfilled" ? feeInfoResult.value : null,
+  });
 
   // Update status indicator if health is available
   if (healthResult.status === "fulfilled") {
@@ -96,6 +116,108 @@ async function loadDynamicData(signal: AbortSignal): Promise<void> {
   if (quoteResult.status === "fulfilled") {
     updateLiveQuote(quoteResult.value);
     updateBEQDemo(quoteResult.value);
+  }
+}
+
+async function fetchFeeInfo(baseUrl: string, signal: AbortSignal): Promise<FeeInfo> {
+  const res = await fetch(`${baseUrl}/v1/fees/calculate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ swapValueUsd: 100 }),
+    signal,
+  });
+
+  if (!res.ok) {
+    throw new Error(`fees/calculate failed: HTTP ${res.status}`);
+  }
+
+  return (await res.json()) as FeeInfo;
+}
+
+function updateFaqSection({ providers, feeInfo }: { providers: ProviderStatusResponse | null; feeInfo: FeeInfo | null }): void {
+  const faqList = document.querySelector<HTMLElement>("#faq .faq-list");
+  if (!faqList) return;
+
+  const providersCount = providers?.providers?.length;
+  const feeBps = feeInfo?.baseFeesBps;
+  const freeThresholdUsd = feeInfo?.freeThresholdUsd;
+  const distribution = feeInfo?.distribution;
+
+  const feePercent = typeof feeBps === "number" ? (feeBps / 100).toFixed(2) : null;
+  const feeLine =
+    feePercent && typeof freeThresholdUsd === "number"
+      ? `SwapPilot charges <strong>${feePercent}%</strong> on swaps of <strong>$${freeThresholdUsd}</strong> or more. Swaps under $${freeThresholdUsd} are <strong>free</strong>.`
+      : "SwapPilot charges a low platform fee on eligible swaps.";
+
+  const distributionLine =
+    distribution
+      ? `Fee distribution: <strong>${distribution.burnPercent}%</strong> buy & burn PILOT, <strong>${distribution.treasuryPercent}%</strong> treasury, <strong>${distribution.referralPercent}%</strong> referral rewards.`
+      : "";
+
+  const providerLine = typeof providersCount === "number"
+    ? `SwapPilot compares quotes from <strong>${providersCount}</strong> integrated providers to find you the best execution on BNB Chain.`
+    : "SwapPilot compares quotes from multiple integrated providers to find you the best execution on BNB Chain.";
+
+  const items = [
+    {
+      q: "What is SwapPilot?",
+      a: `${providerLine} We rank quotes using our BEQ (Best Execution Quality) scoring.`,
+    },
+    {
+      q: "How does BEQ scoring work?",
+      a: `BEQ scores each quote on a 0–100 scale using: <strong>OutputScore × QualityMultiplier × RiskMultiplier</strong>. It prioritizes net output after gas and applies reliability and risk adjustments.`,
+    },
+    {
+      q: "What are the fees?",
+      a: `${feeLine} ${distributionLine}`.trim(),
+    },
+    {
+      q: "Is my wallet and funds secure?",
+      a: "Yes. SwapPilot is <strong>non-custodial</strong>: swaps are executed from your wallet, and you stay in control of approvals.",
+    },
+    {
+      q: "Which wallets are supported?",
+      a: "SwapPilot supports WalletConnect-compatible wallets and major wallets like MetaMask.",
+    },
+    {
+      q: "Which blockchain does SwapPilot support?",
+      a: "SwapPilot currently focuses on <strong>BNB Chain</strong> for best reliability and execution quality.",
+    },
+  ] as const;
+
+  faqList.innerHTML = items
+    .map(
+      (it) => `
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            ${it.q}
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>${it.a}</p>
+          </div>
+        </div>
+      `.trim(),
+    )
+    .join("\n");
+
+  // Bind accordion behavior once via event delegation (scripts are stripped from templates).
+  if (!faqList.dataset.faqBound) {
+    faqList.dataset.faqBound = "1";
+    faqList.addEventListener("click", (ev) => {
+      const target = ev.target as HTMLElement | null;
+      const button = target?.closest?.(".faq-question") as HTMLButtonElement | null;
+      if (!button) return;
+
+      const item = button.closest(".faq-item") as HTMLElement | null;
+      if (!item) return;
+
+      // close others
+      faqList.querySelectorAll<HTMLElement>(".faq-item.open").forEach((el) => {
+        if (el !== item) el.classList.remove("open");
+      });
+      item.classList.toggle("open");
+    });
   }
 }
 
