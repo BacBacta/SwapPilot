@@ -245,11 +245,11 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "okx-dex": {
       name: "OKX DEX",
-      logo: "/images/providers/OKX.jpg",
+      logo: "/images/providers/OKX.png",
     },
     "okx": {
       name: "OKX DEX",
-      logo: "/images/providers/OKX.jpg",
+      logo: "/images/providers/OKX.png",
     },
     "kyberswap": {
       name: "KyberSwap",
@@ -261,7 +261,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "paraswap": {
       name: "ParaSwap",
-      logo: "/images/providers/Paraswap.jpg",
+      logo: "/images/providers/Paraswap.png",
     },
     "dodo": {
       name: "DODO",
