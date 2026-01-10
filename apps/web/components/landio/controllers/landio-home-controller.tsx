@@ -245,11 +245,11 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "okx-dex": {
       name: "OKX DEX",
-      logo: "https://www.okx.com/cdn/assets/imgs/2112/ECAB6D09DE95637D.png",
+      logo: "/images/providers/okx.png",
     },
     "okx": {
       name: "OKX DEX",
-      logo: "https://www.okx.com/cdn/assets/imgs/2112/ECAB6D09DE95637D.png",
+      logo: "/images/providers/okx.png",
     },
     "kyberswap": {
       name: "KyberSwap",
