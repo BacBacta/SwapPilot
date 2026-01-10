@@ -333,7 +333,43 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   const { settings, updateSettings } = useSettings();
   const { resolveToken, tokens: allTokens } = useTokenRegistry();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, connector } = useAccount();
+
+  const getConnectedEip1193Provider = useCallback(async () => {
+    // Prefer the provider from the active wagmi connector (matches the wallet
+    // the user actually connected with via RainbowKit).
+    try {
+      const p = await connector?.getProvider?.();
+      if (p) return p as any;
+    } catch {
+      // fall through
+    }
+
+    const eth = (window as any).ethereum;
+    if (!eth) return undefined;
+
+    // Some browsers (e.g. Brave) expose multiple injected providers.
+    const providers = Array.isArray(eth.providers) ? eth.providers : undefined;
+    if (providers?.length) {
+      return (
+        providers.find((x: any) => x?.isMetaMask) ??
+        providers.find((x: any) => x?.isCoinbaseWallet) ??
+        providers[0]
+      );
+    }
+
+    return eth;
+  }, [connector]);
+
+  const withTimeout = useCallback(<T,>(p: Promise<T>, ms: number, label: string): Promise<T> => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      t = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+    });
+    return Promise.race([p, timeout]).finally(() => {
+      if (t) clearTimeout(t);
+    }) as Promise<T>;
+  }, []);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 2: TOKEN STATE
@@ -1225,24 +1261,29 @@ export function LandioSwapController() {
             setIsApproving(true);
 
             try {
-              // Create wallet client from window.ethereum
-              const ethereum = window.ethereum;
-              if (!ethereum) {
-                throw new Error("No wallet provider found");
-              }
+              // Create wallet client from the *connected* wallet provider.
+              // Using raw `window.ethereum` can silently pick the wrong injected provider
+              // and never open the wallet prompt.
+              const ethereum = await getConnectedEip1193Provider();
+              if (!ethereum) throw new Error("No wallet provider found");
+
               const walletClient = createWalletClient({
                 chain: bsc,
                 transport: custom(ethereum as Parameters<typeof custom>[0]),
               });
 
               // Send approval transaction
-              const approvalHash = await walletClient.writeContract({
-                address: fromTokenInfo.address as `0x${string}`,
-                abi: erc20Abi,
-                functionName: "approve",
-                args: [tx.approvalAddress as `0x${string}`, maxUint256],
-                account: address as `0x${string}`,
-              });
+              const approvalHash = await withTimeout(
+                walletClient.writeContract({
+                  address: fromTokenInfo.address as `0x${string}`,
+                  abi: erc20Abi,
+                  functionName: "approve",
+                  args: [tx.approvalAddress as `0x${string}`, maxUint256],
+                  account: address as `0x${string}`,
+                }),
+                60_000,
+                "Approval request",
+              );
 
               toast.updateToast(loadingToastId, {
                 type: "info",
@@ -1251,10 +1292,14 @@ export function LandioSwapController() {
               });
 
               // Wait for approval to be confirmed
-              await publicClient.waitForTransactionReceipt({
-                hash: approvalHash,
-                confirmations: 1,
-              });
+              await withTimeout(
+                publicClient.waitForTransactionReceipt({
+                  hash: approvalHash,
+                  confirmations: 1,
+                }),
+                120_000,
+                "Approval confirmation",
+              );
 
               toast.updateToast(loadingToastId, {
                 type: "success",
@@ -1316,6 +1361,7 @@ export function LandioSwapController() {
                 message: msg.includes("User rejected") ? "User rejected the request" : msg,
               });
               setIsApproving(false);
+              manualApprovalDoneRef.current = false;
               // Update tx history to failed
               setTxHistory((prev) => {
                 const updated = prev.map((t) => t.id === txId ? { ...t, status: "failed" as const } : t);
