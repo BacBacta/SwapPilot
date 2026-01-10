@@ -69,7 +69,7 @@ export function LandioFooter() {
             <span>Made by <a href="https://swappilot.io" target="_blank" rel="noopener">SwapPilot Team</a></span>
           </div>
           <div className="footer-bottom-right">
-            <a href="mailto:support@swappilot.io">support@swappilot.io</a>
+            <a href="mailto:swappilotdex@gmail.com">swappilotdex@gmail.com</a>
           </div>
         </div>
       </div>
