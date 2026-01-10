@@ -233,11 +233,11 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "zerox": {
       name: "0x",
-      logo: "https://raw.githubusercontent.com/0xProject/0x-launch-kit-frontend/master/src/assets/icons/zrx_icon.svg",
+      logo: "/images/providers/Ox.jpg",
     },
     "0x": {
       name: "0x",
-      logo: "https://raw.githubusercontent.com/0xProject/0x-launch-kit-frontend/master/src/assets/icons/zrx_icon.svg",
+      logo: "/images/providers/Ox.jpg",
     },
     "pancakeswap": {
       name: "PancakeSwap",
@@ -245,11 +245,11 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "okx-dex": {
       name: "OKX DEX",
-      logo: "/images/providers/okx.png",
+      logo: "/images/providers/OKX.jpg",
     },
     "okx": {
       name: "OKX DEX",
-      logo: "/images/providers/okx.png",
+      logo: "/images/providers/OKX.jpg",
     },
     "kyberswap": {
       name: "KyberSwap",
@@ -257,11 +257,11 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "openocean": {
       name: "OpenOcean",
-      logo: "https://raw.githubusercontent.com/openocean-finance/OpenOcean-API/main/logo/OpenOcean.png",
+      logo: "/images/providers/openocean.png",
     },
     "paraswap": {
       name: "ParaSwap",
-      logo: "https://raw.githubusercontent.com/paraswap/paraswap-brand-kit/main/logo/icon.svg",
+      logo: "/images/providers/Paraswap.jpg",
     },
     "dodo": {
       name: "DODO",
@@ -269,7 +269,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "odos": {
       name: "Odos",
-      logo: "https://assets.odos.xyz/icons/ODOS-logo.svg",
+      logo: "/images/providers/Odos.jpg",
     },
     "bebop": {
       name: "Bebop",
