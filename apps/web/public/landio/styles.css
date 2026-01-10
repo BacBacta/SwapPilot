@@ -383,10 +383,20 @@ img {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 16px;
+  z-index: 110;
   opacity: 0;
   transform: translateY(-10px);
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Backdrop for mobile menu (mounted by React) */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 99;
 }
 
 @media (max-width: 768px) {
@@ -2341,6 +2351,17 @@ img {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+
+  /* Keep the fixed navbar clear of iOS/PWA status bars and landscape insets */
+  .nav {
+    top: calc(16px + env(safe-area-inset-top)) !important;
+    left: calc(16px + env(safe-area-inset-left)) !important;
+    right: calc(16px + env(safe-area-inset-right)) !important;
+  }
+
+  .nav-scrolled {
+    top: calc(8px + env(safe-area-inset-top));
+  }
   
   .safe-bottom {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -2402,6 +2423,22 @@ html, body {
   }
 }
 
+/* Safe-area overrides for mobile nav + swap section spacing */
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 768px) {
+    .nav {
+      top: calc(8px + env(safe-area-inset-top)) !important;
+      left: calc(8px + env(safe-area-inset-left)) !important;
+      right: calc(8px + env(safe-area-inset-right)) !important;
+    }
+
+    /* Swap template relies on inline padding-top; add safe-area headroom for PWA */
+    .section[style*="padding-top: 100px"] {
+      padding-top: calc(72px + env(safe-area-inset-top)) !important;
+    }
+  }
+}
+
 /* ===== MOBILE CONTAINER & SECTIONS ===== */
 @media (max-width: 768px) {
   .container {
@@ -2415,6 +2452,33 @@ html, body {
   /* Swap page specific */
   .section[style*="padding-top: 100px"] {
     padding-top: 72px !important;
+  }
+}
+
+/* ===== MOBILE FORMS (Rewards / Status) ===== */
+@media (max-width: 768px) {
+  .referral-link-box,
+  .subscribe-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .referral-link-input,
+  .subscribe-form input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .copy-btn,
+  .subscribe-form .btn {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    white-space: nowrap;
   }
 }
 
@@ -2470,6 +2534,8 @@ html, body {
   .token-input-label {
     font-size: 11px;
     margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
   
   .token-input-row {
@@ -2485,6 +2551,7 @@ html, body {
     padding: 6px 10px 6px 6px;
     gap: 6px;
     flex-shrink: 0;
+    max-width: 52%;
     min-height: var(--touch-target-min);
   }
   
@@ -2496,6 +2563,11 @@ html, body {
   
   .token-name {
     font-size: 14px;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: bottom;
   }
   
   .token-dropdown-icon {
@@ -2512,6 +2584,28 @@ html, body {
     font-size: 11px;
     min-height: 28px;
   }
+}
+
+@media (max-width: 360px) {
+  .token-selector .token-name {
+    display: none;
+  }
+}
+
+/* Balance + receipt strings can be long; allow wrapping to prevent horizontal overflow */
+#fromBalanceLabel,
+#toBalanceLabel,
+#receiptId {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#fromBalanceLabel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* ===== MOBILE SWAP ARROW ===== */
@@ -2616,16 +2710,27 @@ html, body {
     font-size: 12px;
     margin-bottom: 8px;
   }
+
+  .providers-meta {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
   
   .provider-item {
     padding: 10px;
     border-radius: 10px;
     margin-bottom: 6px;
     min-height: var(--touch-target-comfortable);
+    gap: 10px;
   }
   
   .provider-left {
     gap: 10px;
+    min-width: 0;
+  }
+
+  .provider-left > div {
+    min-width: 0;
   }
   
   .provider-logo {
@@ -2637,18 +2742,37 @@ html, body {
   
   .provider-name {
     font-size: 12px;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .provider-rate {
     font-size: 10px;
+    max-width: 170px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .provider-output {
     font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .provider-savings {
     font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .provider-right {
+    min-width: 0;
+    max-width: 50%;
   }
 }
 

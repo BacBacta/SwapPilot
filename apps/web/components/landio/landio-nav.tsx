@@ -32,6 +32,16 @@ export function LandioNav() {
   // Always render the navigation structure - never return null
   // Only wallet-related features depend on `mounted` state
 
+  // Mobile UX: lock background scroll while menu is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
   const isLanding = pathname === "/";
 
   const links = isLanding
@@ -51,11 +61,19 @@ export function LandioNav() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav 
-      className={`nav ${scrolled ? "nav-scrolled" : ""}`}
-      role="navigation"
-      aria-label="Main navigation"
-    >
+    <>
+      {mobileMenuOpen && (
+        <div
+          className="mobile-menu-backdrop"
+          aria-hidden="true"
+          onClick={closeMobileMenu}
+        />
+      )}
+      <nav 
+        className={`nav ${scrolled ? "nav-scrolled" : ""}`}
+        role="navigation"
+        aria-label="Main navigation"
+      >
       <div className="nav-inner">
         {/* Logo */}
         <Link href="/" className="logo" aria-label="SwapPilot - Home">
@@ -193,6 +211,7 @@ export function LandioNav() {
           )}
         </ul>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }
