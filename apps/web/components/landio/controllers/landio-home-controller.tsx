@@ -88,7 +88,7 @@ export function LandioHomeController() {
 }
 
 function setupIntegrationsReveal(): (() => void) | null {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (typeof window === "undefined" || typeof document === "undefined") return null;
 
   // Respect reduced-motion users (keep everything static)
   const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
