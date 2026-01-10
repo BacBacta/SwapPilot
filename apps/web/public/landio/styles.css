@@ -76,7 +76,7 @@ img {
   transform: translateX(-50%);
   z-index: 100;
   width: calc(100% - 32px);
-  max-width: 900px;
+  max-width: 1200px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
