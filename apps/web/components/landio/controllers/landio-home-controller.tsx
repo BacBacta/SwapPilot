@@ -71,6 +71,8 @@ export function LandioHomeController() {
     if (mountedRef.current) return;
     mountedRef.current = true;
 
+    const teardownIntegrations = setupIntegrationsReveal();
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -78,10 +80,120 @@ export function LandioHomeController() {
 
     return () => {
       controller.abort();
+      teardownIntegrations?.();
     };
   }, []);
 
   return null;
+}
+
+function setupIntegrationsReveal(): (() => void) | null {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  // Respect reduced-motion users (keep everything static)
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  if (prefersReducedMotion) return null;
+
+  document.documentElement.classList.add("sp-motion");
+
+  const showcase = document.querySelector<HTMLElement>("#integrations .integrations-showcase");
+  if (!showcase) return null;
+
+  // Apple-like spotlight parallax: follows pointer (desktop) and drifts slightly on scroll (mobile).
+  const cleanupParallax = setupIntegrationsSpotlightParallax(showcase);
+
+  // If IntersectionObserver isn't available, just enable the final state.
+  if (typeof IntersectionObserver === "undefined") {
+    showcase.classList.add("sp-inview");
+    return cleanupParallax;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          (entry.target as HTMLElement).classList.add("sp-inview");
+          observer.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0.25, rootMargin: "0px 0px -10% 0px" },
+  );
+
+  observer.observe(showcase);
+
+  return () => {
+    try {
+      observer.unobserve(showcase);
+      observer.disconnect();
+    } catch {
+      // no-op
+    }
+    cleanupParallax();
+  };
+}
+
+function setupIntegrationsSpotlightParallax(showcase: HTMLElement): () => void {
+  let rafId: number | null = null;
+  let pendingX: number | null = null;
+  let pendingY: number | null = null;
+  let lastScrollY = window.scrollY;
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+  const apply = () => {
+    rafId = null;
+    if (pendingX !== null) showcase.style.setProperty("--sp-spot-x", pendingX.toFixed(2));
+    if (pendingY !== null) showcase.style.setProperty("--sp-spot-y", pendingY.toFixed(2));
+  };
+
+  const schedule = () => {
+    if (rafId !== null) return;
+    rafId = window.requestAnimationFrame(apply);
+  };
+
+  const onPointerMove = (ev: PointerEvent) => {
+    // Only react to fine pointers (mouse/trackpad). Touch scrolling is handled separately.
+    if (ev.pointerType && ev.pointerType !== "mouse" && ev.pointerType !== "pen") return;
+    const rect = showcase.getBoundingClientRect();
+    const x = ((ev.clientX - rect.left) / Math.max(1, rect.width)) * 100;
+    const y = ((ev.clientY - rect.top) / Math.max(1, rect.height)) * 60; // keep spotlight mostly near top
+    pendingX = clamp(x, 0, 100);
+    pendingY = clamp(y, 0, 60);
+    schedule();
+  };
+
+  const onPointerLeave = () => {
+    pendingX = 50;
+    pendingY = 0;
+    schedule();
+  };
+
+  const onScroll = () => {
+    const y = window.scrollY;
+    const delta = y - lastScrollY;
+    lastScrollY = y;
+
+    // Gentle drift; keep within [0, 24]
+    const current = Number.parseFloat(getComputedStyle(showcase).getPropertyValue("--sp-spot-y")) || 0;
+    pendingY = clamp(current + delta * 0.015, 0, 24);
+    schedule();
+  };
+
+  // Initialize
+  showcase.style.setProperty("--sp-spot-x", "50");
+  showcase.style.setProperty("--sp-spot-y", "0");
+
+  showcase.addEventListener("pointermove", onPointerMove, { passive: true });
+  showcase.addEventListener("pointerleave", onPointerLeave, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  return () => {
+    showcase.removeEventListener("pointermove", onPointerMove);
+    showcase.removeEventListener("pointerleave", onPointerLeave);
+    window.removeEventListener("scroll", onScroll);
+    if (rafId !== null) window.cancelAnimationFrame(rafId);
+  };
 }
 
 async function loadDynamicData(signal: AbortSignal): Promise<void> {

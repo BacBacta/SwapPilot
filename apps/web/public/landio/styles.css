@@ -1293,6 +1293,51 @@ img {
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
+  position: relative;
+  padding: 28px 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  --sp-spot-x: 50;
+  --sp-spot-y: 0;
+}
+
+.integrations-showcase::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  background:
+    radial-gradient(
+      480px 220px at calc(var(--sp-spot-x, 50) * 1%) calc(var(--sp-spot-y, 0) * 1%),
+      rgba(200, 255, 0, 0.16),
+      rgba(200, 255, 0, 0) 60%
+    ),
+    radial-gradient(
+      520px 260px at calc((var(--sp-spot-x, 50) * 1%) - 20%) calc((var(--sp-spot-y, 0) * 1%) + 40%),
+      rgba(56, 189, 248, 0.10),
+      rgba(56, 189, 248, 0) 62%
+    );
+  filter: blur(16px);
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+@keyframes sp-integr-logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .integration-logos {
@@ -1301,15 +1346,130 @@ img {
   justify-content: center;
   gap: 16px;
   margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
 }
 
 .integration-logo {
-  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  transform: translateY(0);
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.integration-logo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(240px 80px at 50% 0%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 70%);
+  opacity: 0;
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.integration-logo {
+  position: relative;
+}
+
+.integration-logo:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.34);
+  border-color: rgba(200, 255, 0, 0.30);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.integration-logo:hover::after {
+  opacity: 1;
+}
+
+.provider-img-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.provider-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: saturate(1.05);
+}
+
+.provider-initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(200, 255, 0, 0.16), rgba(56, 189, 248, 0.12));
+}
+
+.provider-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+  opacity: 0.92;
+}
+
+/* Apple-style reveal: progressive enhancement (only when controller adds .sp-motion) */
+.sp-motion #integrations .integrations-showcase.sp-inview::before {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo {
+  animation: sp-integr-logo-in 820ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(1) { animation-delay: 80ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(2) { animation-delay: 140ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(3) { animation-delay: 200ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(4) { animation-delay: 260ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(5) { animation-delay: 320ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(6) { animation-delay: 380ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(7) { animation-delay: 440ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(8) { animation-delay: 500ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(9) { animation-delay: 560ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(10) { animation-delay: 620ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(11) { animation-delay: 680ms; }
+.sp-motion #integrations .integrations-showcase.sp-inview .integration-logo:nth-child(12) { animation-delay: 740ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .integrations-showcase::before {
+    transition: none;
+    transform: none;
+  }
+  .sp-motion #integrations .integrations-showcase.sp-inview .integration-logo {
+    animation: none;
+  }
+  .integration-logo {
+    transition: none;
+  }
 }
 
 .integration-quote {
@@ -1318,6 +1478,8 @@ img {
   font-style: italic;
   max-width: 600px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== TESTIMONIALS ===== */
