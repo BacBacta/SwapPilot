@@ -72,10 +72,10 @@ img {
 .nav {
   position: fixed;
   top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
+  right: 16px;
+  margin: 0 auto;
   z-index: 100;
-  width: calc(100% - 32px);
   max-width: 1200px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -2205,9 +2205,8 @@ html, body {
 @media (max-width: 768px) {
   .nav {
     top: 8px;
-    width: calc(100% - 16px);
     left: 8px;
-    transform: none;
+    right: 8px;
   }
   
   .nav-inner {
