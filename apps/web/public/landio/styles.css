@@ -2939,6 +2939,602 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   MOBILE RESPONSIVE IMPROVEMENTS (Priority Order)
+   ========================================================================== */
+
+/* ===== 🔴 HIGH PRIORITY: FAQ Touch Targets & Mobile Layout ===== */
+@media (max-width: 768px) {
+  .faq-container {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .faq-sidebar {
+    order: 2; /* Move sidebar below FAQ on mobile */
+    padding: 24px;
+    text-align: center;
+  }
+  
+  .faq-sidebar h4 {
+    font-size: 16px;
+  }
+  
+  .faq-sidebar .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+  
+  .faq-list {
+    gap: 10px;
+  }
+  
+  .faq-question {
+    padding: 18px 16px;
+    min-height: 56px; /* Comfortable touch target */
+    font-size: 14px;
+    gap: 12px;
+  }
+  
+  .faq-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .faq-answer {
+    padding: 0 16px 18px;
+  }
+  
+  .faq-answer p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+}
+
+/* ===== 🔴 HIGH PRIORITY: Hero Section Mobile ===== */
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 16px 60px;
+    min-height: auto;
+  }
+  
+  .hero h1 {
+    font-size: clamp(28px, 8vw, 40px);
+    margin-bottom: 16px;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  
+  .hero-subtitle {
+    font-size: 15px;
+    margin-bottom: 28px;
+    padding: 0 8px;
+  }
+  
+  .hero-badge {
+    font-size: 10px;
+    padding: 5px 12px 5px 7px;
+    margin-bottom: 20px;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  
+  .hero-buttons .btn {
+    width: 100%;
+    min-height: 52px;
+    font-size: 15px;
+  }
+  
+  .hero-visual {
+    gap: 16px;
+  }
+  
+  .hero-card {
+    padding: 20px;
+  }
+  
+  .hero-card-header {
+    margin-bottom: 16px;
+  }
+  
+  .beq-demo {
+    padding: 0.75rem;
+  }
+  
+  .beq-score-circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .beq-score-value {
+    font-size: 1.5rem;
+  }
+  
+  .beq-factors {
+    gap: 6px;
+  }
+  
+  .beq-factor {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .swap-mock {
+    padding: 12px;
+  }
+  
+  .swap-row {
+    padding: 12px;
+  }
+  
+  .swap-token-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 10px;
+  }
+  
+  .swap-amount-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 26px;
+  }
+  
+  .hero-subtitle {
+    font-size: 14px;
+  }
+  
+  .beq-factors {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ===== 🔴 HIGH PRIORITY: All Buttons Touch Targets ===== */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 48px;
+    padding: 14px 24px;
+  }
+  
+  .btn-lg {
+    min-height: 52px;
+    padding: 16px 28px;
+    font-size: 15px;
+  }
+  
+  .btn-sm {
+    min-height: 44px;
+    padding: 12px 18px;
+  }
+  
+  .btn-icon {
+    min-width: 48px;
+    min-height: 48px;
+  }
+  
+  /* Process tabs */
+  .process-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .process-tab {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  
+  /* Pricing toggle */
+  .pricing-toggle button {
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+/* ===== 🟠 MEDIUM PRIORITY: Navigation CTA Mobile ===== */
+@media (max-width: 768px) {
+  .nav {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+  }
+  
+  .nav-inner {
+    padding: 10px 12px;
+  }
+  
+  .nav-right .btn-cta,
+  .nav-right .btn-primary {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+  
+  .mobile-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 4px;
+  }
+  
+  .hamburger {
+    width: 22px;
+    height: 16px;
+  }
+  
+  .mobile-menu {
+    padding: 20px 16px;
+  }
+  
+  .mobile-menu a {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+  
+  .mobile-menu .btn {
+    min-height: 52px;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    display: none;
+  }
+  
+  .nav-right .btn-cta,
+  .nav-right .btn-primary {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+/* ===== 🟠 MEDIUM PRIORITY: Integrations Logos Mobile ===== */
+@media (max-width: 768px) {
+  .integrations-showcase {
+    padding: 20px 16px;
+  }
+  
+  .integration-logos {
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  
+  .integration-logo {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  
+  .provider-img-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  
+  .provider-img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .provider-name {
+    font-size: 12px;
+  }
+  
+  .provider-initials {
+    font-size: 11px;
+  }
+  
+  .integration-quote {
+    font-size: 14px;
+    padding: 0 8px;
+  }
+  
+  /* Disable hover effects on touch */
+  .integration-logo:hover {
+    transform: none;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  }
+}
+
+@media (max-width: 480px) {
+  .integration-logos {
+    gap: 8px;
+  }
+  
+  .integration-logo {
+    padding: 8px 10px;
+  }
+  
+  .provider-img-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .provider-name {
+    font-size: 11px;
+  }
+}
+
+/* ===== 🟠 MEDIUM PRIORITY: Section Spacing Mobile ===== */
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 16px;
+  }
+  
+  .section-header {
+    margin-bottom: 40px;
+  }
+  
+  .section-title {
+    font-size: clamp(24px, 6vw, 32px);
+    margin-bottom: 12px;
+  }
+  
+  .section-subtitle {
+    font-size: 14px;
+    padding: 0 8px;
+  }
+  
+  .section-badge {
+    font-size: 10px;
+    padding: 5px 12px;
+    margin-bottom: 16px;
+  }
+}
+
+/* ===== 🟠 MEDIUM PRIORITY: Cards Mobile ===== */
+@media (max-width: 768px) {
+  .benefit-card,
+  .feature-card,
+  .bento-card,
+  .story-card,
+  .testimonial-card {
+    padding: 20px;
+  }
+  
+  .benefit-icon,
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .benefit-card h3,
+  .feature-card h3 {
+    font-size: 16px;
+  }
+  
+  .benefit-card p,
+  .feature-card p {
+    font-size: 13px;
+  }
+  
+  .bento-card h3 {
+    font-size: 18px;
+  }
+  
+  .bento-visual {
+    padding: 16px;
+    margin-top: 20px;
+  }
+  
+  .code-block {
+    font-size: 11px;
+    padding: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .code-line {
+    white-space: nowrap;
+  }
+}
+
+/* ===== 🟡 LOW PRIORITY: Footer Mobile ===== */
+@media (max-width: 768px) {
+  .footer {
+    padding: 48px 0 24px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 32px;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .footer-brand .logo {
+    justify-content: center;
+  }
+  
+  .footer-brand p {
+    max-width: 100%;
+    text-align: center;
+  }
+  
+  .footer-social {
+    justify-content: center;
+    gap: 16px;
+  }
+  
+  .footer-social a {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+  
+  .footer-social a svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 24px;
+  }
+  
+  .footer-links a {
+    font-size: 15px;
+    padding: 8px 4px; /* Bigger tap area */
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    padding-top: 24px;
+  }
+  
+  .footer-bottom-left {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* ===== 🟡 LOW PRIORITY: CTA Card Mobile ===== */
+@media (max-width: 768px) {
+  .cta-card {
+    padding: 48px 24px;
+    border-radius: var(--radius-xl);
+  }
+  
+  .cta-card h2 {
+    font-size: clamp(22px, 5vw, 28px);
+    margin-bottom: 12px;
+  }
+  
+  .cta-card p {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .cta-buttons .btn {
+    width: 100%;
+  }
+  
+  .cta-email {
+    font-size: 13px;
+    margin-top: 8px;
+  }
+}
+
+/* ===== 🟡 LOW PRIORITY: Animation Simplification Mobile ===== */
+@media (max-width: 768px) {
+  /* Reduce heavy transforms on mobile for performance */
+  .hero-card:hover,
+  .benefit-card:hover,
+  .feature-card:hover,
+  .bento-card:hover,
+  .testimonial-card:hover,
+  .story-card:hover,
+  .pricing-card:hover {
+    transform: none;
+  }
+  
+  /* Simplify backdrop-filter for low-end devices */
+  .nav-inner {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .mobile-menu {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* Disable floating animation on mobile */
+  .swap-mock,
+  .float-animation {
+    animation: none;
+  }
+  
+  /* Simplify integrations animations */
+  .sp-motion #integrations .integrations-showcase.sp-inview .integration-logo {
+    animation-duration: 500ms;
+  }
+}
+
+/* ===== 🟡 LOW PRIORITY: Page Header Mobile ===== */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 120px 16px 60px;
+  }
+  
+  .page-header h1 {
+    font-size: clamp(28px, 7vw, 40px);
+  }
+  
+  .page-header p {
+    font-size: 15px;
+  }
+}
+
+/* ===== 🟡 LOW PRIORITY: Contact & Blog Grids Mobile ===== */
+@media (max-width: 768px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .contact-info,
+  .contact-form {
+    padding: 24px;
+  }
+  
+  .contact-method {
+    padding: 16px 0;
+  }
+  
+  .contact-method-icon {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .blog-card {
+    border-radius: var(--radius-lg);
+  }
+  
+  .blog-image {
+    height: 160px;
+  }
+  
+  .blog-content {
+    padding: 20px;
+  }
+  
+  .blog-card h3 {
+    font-size: 16px;
+  }
+}
+
 /* ===== ACCESSIBILITY IMPROVEMENTS ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
