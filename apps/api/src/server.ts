@@ -347,6 +347,80 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     },
   );
 
+  // GET /v1/quotes - supports query parameters
+  api.get(
+    '/v1/quotes',
+    {
+      schema: {
+        querystring: QuoteRequestSchema,
+        response: {
+          200: QuoteResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const sellabilityDeps = config.sellability
+        ? {
+            multicall3Address: config.sellability.multicall3Address,
+            baseTokensBsc: config.sellability.baseTokensBsc,
+            pancake: {
+              v2Factory: config.pancakeswap.v2Factory,
+              v3Factory: config.pancakeswap.v3Factory,
+              wbnb: config.pancakeswap.wbnb,
+            },
+          }
+        : undefined;
+
+      const tokenSecurityDeps = config.tokenSecurity
+        ? {
+            enabled: config.tokenSecurity.enabled,
+            goPlusEnabled: config.tokenSecurity.goPlusEnabled,
+            goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
+            honeypotIsEnabled: config.tokenSecurity.honeypotIsEnabled,
+            honeypotIsBaseUrl: config.tokenSecurity.honeypotIsBaseUrl,
+            timeoutMs: config.tokenSecurity.timeoutMs,
+            cacheTtlMs: config.tokenSecurity.cacheTtlMs,
+            taxStrictMaxPercent: config.tokenSecurity.taxStrictMaxPercent,
+          }
+        : undefined;
+
+      const {
+        receiptId,
+        rankedQuotes,
+        bestRawQuotes,
+        bestExecutableQuoteProviderId,
+        bestRawOutputProviderId,
+        beqRecommendedProviderId,
+        receipt,
+      } = await buildQuotes(request.query, {
+        preflightClient,
+        riskEngine,
+        adapters,
+        quoteCache,
+        quoteCacheTtlSeconds: config.redis.quoteCacheTtlSeconds,
+        logger: request.log,
+        metrics,
+        providerHealth,
+        rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
+        ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
+        ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
+      });
+
+      await receiptStore.put(receipt);
+
+      return {
+        receiptId,
+        rankedQuotes,
+        bestRawQuotes,
+        bestExecutableQuoteProviderId,
+        bestRawOutputProviderId,
+        beqRecommendedProviderId,
+        receipt,
+      };
+    },
+  );
+
+  // POST /v1/quotes - supports JSON body
   api.post(
     '/v1/quotes',
     {
