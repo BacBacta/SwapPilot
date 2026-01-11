@@ -105,14 +105,16 @@ function addCard(slide, { x, y, w, h, title, body, emoji }) {
   });
   const titleText = emoji ? `${emoji}  ${title}` : title;
   slide.addText(titleText, {
-    x: x + 0.2, y: y + 0.15, w: w - 0.4, h: 0.35,
-    fontSize: 14, bold: true, color: COLORS.white,
+    x: x + 0.2, y: y + 0.15, w: w - 0.4, h: 0.4,
+    fontSize: 13, bold: true, color: COLORS.white,
+    shrinkText: true,
+    valign: 'middle',
   });
   if (body) {
     slide.addText(body, {
-      x: x + 0.2, y: y + 0.5, w: w - 0.4, h: h - 0.7,
-      fontSize: 12, color: COLORS.muted,
-      lineSpacing: 18,
+      x: x + 0.2, y: y + 0.55, w: w - 0.4, h: h - 0.75,
+      fontSize: 11, color: COLORS.muted,
+      lineSpacing: 16,
       valign: 'top',
     });
   }
@@ -797,13 +799,13 @@ function createDisclaimerSlide() {
   ];
 
   // Layout: 3 cards in first column, 2 cards in second column
-  // Card dimensions: w=2.9, h=1.6, gap between columns = 0.2
-  const cardW = 2.9;
-  const cardH = 1.6;
-  const startX = 6.5;
+  // Card dimensions: w=4.0, h=1.7, larger for text readability
+  const cardW = 4.0;
+  const cardH = 1.7;
+  const startX = 4.8;
   const startY = 1.3;
-  const rowGap = 1.7;
-  const colGap = 3.1;
+  const rowGap = 1.8;
+  const colGap = 4.2;
 
   disclaimers.forEach((d, i) => {
     const col = i < 3 ? 0 : 1;
