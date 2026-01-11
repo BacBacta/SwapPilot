@@ -25,6 +25,7 @@ const LINKS = {
   api: 'https://swappilot-api.fly.dev',
   github: 'https://github.com/BacBacta/SwapPilot',
   twitter: 'https://x.com/swappilotdex',
+  telegram: 'https://t.me/swapPilot',
 };
 
 // Slide dimensions (16:9)
@@ -311,14 +312,47 @@ function createCoverSlide() {
     x: 8.5, y: 1.35, w: 4, h: 0.25,
     fontSize: 10, color: COLORS.muted, align: 'center',
   });
-  slide.addText('[ App Screenshot ]', {
-    x: 7.2, y: 3.5, w: 5.4, h: 1,
-    fontSize: 14, color: '4A4A4A', align: 'center', valign: 'middle',
+  // App screenshot
+  slide.addImage({
+    path: './assets/hero-swap-wide.png',
+    x: 7.15, y: 1.7, w: 5.5, h: 4.9,
   });
 
-  slide.addText('app-swappilot.xyz  ·  x.com/swappilotdex  ·  github.com/BacBacta/SwapPilot', {
-    x: 0.5, y: 6.9, w: 12, h: 0.3,
+  // Clickable footer links
+  slide.addText('app-swappilot.xyz', {
+    x: 0.5, y: 6.9, w: 2.2, h: 0.3,
     fontSize: 10, color: COLORS.muted,
+    hyperlink: { url: LINKS.app },
+  });
+  slide.addText('·', {
+    x: 2.65, y: 6.9, w: 0.2, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('x.com/swappilotdex', {
+    x: 2.85, y: 6.9, w: 2.2, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    hyperlink: { url: LINKS.twitter },
+  });
+  slide.addText('·', {
+    x: 5.05, y: 6.9, w: 0.2, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('t.me/swapPilot', {
+    x: 5.25, y: 6.9, w: 1.8, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    hyperlink: { url: LINKS.telegram },
+  });
+  slide.addText('·', {
+    x: 7.05, y: 6.9, w: 0.2, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('github.com/BacBacta/SwapPilot', {
+    x: 7.25, y: 6.9, w: 5.2, h: 0.3,
+    fontSize: 10, color: COLORS.muted,
+    hyperlink: { url: LINKS.github },
   });
 }
 
@@ -623,13 +657,50 @@ function createCTASlide() {
     fontSize: 18, color: COLORS.muted, align: 'center', lineSpacing: 26,
   });
 
-  addCTA(slide, { x: 3.5, y: 5.3, w: 2, h: 0.55, text: 'Open app →', primary: true, hyperlink: LINKS.app });
-  addCTA(slide, { x: 5.7, y: 5.3, w: 2, h: 0.55, text: 'Read docs →', hyperlink: LINKS.docs });
-  addCTA(slide, { x: 7.9, y: 5.3, w: 2, h: 0.55, text: 'Follow us →', hyperlink: LINKS.twitter });
+  addCTA(slide, { x: 2.4, y: 5.3, w: 2, h: 0.55, text: 'Open app →', primary: true, hyperlink: LINKS.app });
+  addCTA(slide, { x: 4.6, y: 5.3, w: 2, h: 0.55, text: 'Read docs →', hyperlink: LINKS.docs });
+  addCTA(slide, { x: 6.8, y: 5.3, w: 2, h: 0.55, text: 'Twitter →', hyperlink: LINKS.twitter });
+  addCTA(slide, { x: 9.0, y: 5.3, w: 2, h: 0.55, text: 'Telegram →', hyperlink: LINKS.telegram });
 
-  slide.addText('app-swappilot.xyz  ·  x.com/swappilotdex  ·  github.com/BacBacta/SwapPilot', {
-    x: 0.5, y: 6.5, w: 12, h: 0.3,
-    fontSize: 11, color: COLORS.muted, align: 'center',
+  // Clickable footer links
+  slide.addText('app-swappilot.xyz', {
+    x: 1.1, y: 6.5, w: 2.2, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'left',
+    hyperlink: { url: LINKS.app },
+  });
+  slide.addText('·', {
+    x: 3.25, y: 6.5, w: 0.2, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('x.com/swappilotdex', {
+    x: 3.45, y: 6.5, w: 2.2, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'left',
+    hyperlink: { url: LINKS.twitter },
+  });
+  slide.addText('·', {
+    x: 5.65, y: 6.5, w: 0.2, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('t.me/swapPilot', {
+    x: 5.85, y: 6.5, w: 1.8, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'left',
+    hyperlink: { url: LINKS.telegram },
+  });
+  slide.addText('·', {
+    x: 7.65, y: 6.5, w: 0.2, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'center',
+  });
+  slide.addText('github.com/BacBacta/SwapPilot', {
+    x: 7.85, y: 6.5, w: 4.4, h: 0.3,
+    fontSize: 11, color: COLORS.muted,
+    align: 'left',
+    hyperlink: { url: LINKS.github },
   });
 }
 

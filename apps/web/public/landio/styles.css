@@ -3609,7 +3609,7 @@ html, body {
 /* ===== 🟡 LOW PRIORITY: Page Header Mobile ===== */
 @media (max-width: 768px) {
   .page-header {
-    padding: 120px 16px 60px;
+    padding: 100px 16px 48px;
   }
   
   .page-header h1 {
@@ -3618,6 +3618,15 @@ html, body {
   
   .page-header p {
     font-size: 15px;
+  }
+}
+
+/* Safe-area aware page-header for PWA */
+@supports (padding: env(safe-area-inset-top)) {
+  @media (max-width: 768px) {
+    .page-header {
+      padding-top: calc(100px + env(safe-area-inset-top));
+    }
   }
 }
 
@@ -3677,5 +3686,62 @@ html, body {
     --border-light: rgba(255, 255, 255, 0.5);
     --text-muted: rgba(255, 255, 255, 0.7);
     --text-secondary: rgba(255, 255, 255, 0.85);
+  }
+}
+
+/* ===== DYNAMIC CONTROLLER ELEMENTS MOBILE ===== */
+@media (max-width: 768px) {
+  /* BEQ/RAW mode tabs */
+  .scoring-mode-tabs {
+    flex-wrap: nowrap;
+    gap: 4px !important;
+  }
+  
+  .scoring-mode-tabs .mode-tab {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+  
+  /* Safe/Balanced/Turbo presets */
+  .execution-presets {
+    gap: 6px !important;
+    flex-wrap: nowrap;
+  }
+  
+  .execution-presets .preset-btn {
+    padding: 8px 6px !important;
+    font-size: 11px !important;
+    gap: 2px !important;
+  }
+  
+  /* Stat cards grid */
+  .stat-cards-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .stat-cards-grid > div {
+    padding: 8px !important;
+  }
+  
+  .stat-cards-grid .stat-value {
+    font-size: 13px !important;
+  }
+  
+  .stat-cards-grid .stat-label {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Extra compact for tiny screens */
+  .execution-presets .preset-btn {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+  }
+  
+  .scoring-mode-tabs .mode-tab {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
   }
 }

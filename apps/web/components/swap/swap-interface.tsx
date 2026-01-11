@@ -1040,8 +1040,8 @@ export function SwapInterface() {
         </div>
       </CardDark>
 
-      {/* Mobile Sticky CTA - Fixed at bottom above nav */}
-      <div className="fixed bottom-[88px] left-0 right-0 z-40 px-4 md:hidden safe-bottom">
+      {/* Mobile Sticky CTA - Fixed at bottom with safe-area */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 md:hidden safe-bottom">
         <div className="mx-auto max-w-lg rounded-2xl border border-sp-accent/20 bg-sp-surface/98 p-4 shadow-2xl backdrop-blur-xl" style={{ boxShadow: '0 -8px 32px rgba(0,0,0,0.4), 0 0 24px rgba(247,201,72,0.1)' }}>
           {/* Summary row */}
           {topQuote && (
@@ -1096,7 +1096,7 @@ export function SwapInterface() {
       </div>
 
       {/* Spacer for mobile sticky CTA */}
-      <div className="h-40 md:hidden" />
+      <div className="h-48 md:hidden" />
 
       {/* Token Picker Modal */}
       <TokenPickerModal

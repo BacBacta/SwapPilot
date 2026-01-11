@@ -172,6 +172,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     },
   });
 
+  app.get('/', async () => {
+    return {
+      name: 'SwapPilot API',
+      version: '1.0.0',
+      status: 'ok',
+      docs: '/documentation',
+      health: '/health',
+    } as const;
+  });
+
   app.get('/health', async () => {
     return { status: 'ok' } as const;
   });

@@ -1,8 +1,9 @@
-import { loadLandioTemplate } from "@/lib/landio/templates";
-import { LandioTemplate } from "@/components/landio";
-import { DynamicSwapController } from "@/components/landio/controllers/client-controllers";
+import { SwapInterface } from "@/components/swap/swap-interface";
 
 export default async function Page() {
-  const tpl = await loadLandioTemplate("swap.html");
-  return <LandioTemplate {...tpl} after={<DynamicSwapController />} />;
+  return (
+    <div className="mx-auto max-w-5xl px-4 pt-28 pb-28 md:px-6 md:pt-32">
+      <SwapInterface />
+    </div>
+  );
 }
