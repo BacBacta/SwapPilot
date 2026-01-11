@@ -470,7 +470,7 @@ function createProofSlide() {
   addLead(slide, 'Public app + public API. Every quote run returns detailed decision data for full auditability.');
 
   addCard(slide, {
-    x: 0.5, y: 3.6, w: 5.5, h: 1.4,
+    x: 0.5, y: 3.4, w: 5.5, h: 1.3,
     emoji: '📋',
     title: 'Decision data includes',
     body: 'rankedQuotes · beqRecommendedProviderId · whyWinner · warnings · ranking.mode · preflight signals',
@@ -485,14 +485,15 @@ function createProofSlide() {
     { label: 'Build TX', value: '/v1/build-tx' },
   ];
 
+  // 3x2 grid - reduced height and gap to fit in slide
   metrics.forEach((m, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
+    const col = i % 3;
+    const row = Math.floor(i / 3);
     addMetric(slide, {
-      x: 6.5 + col * 3.3,
-      y: 1.3 + row * 1.8,
-      w: 3.1,
-      h: 1.6,
+      x: 6.3 + col * 2.3,
+      y: 1.3 + row * 1.5,
+      w: 2.1,
+      h: 1.3,
       ...m,
     });
   });
@@ -795,24 +796,21 @@ function createDisclaimerSlide() {
     { emoji: '📉', title: 'No guarantees', body: 'PILOT token value may fluctuate. Past performance is not indicative of future results.' },
     { emoji: '⚖️', title: 'Regulatory uncertainty', body: 'Cryptocurrency regulations vary by jurisdiction and are subject to change.' },
     { emoji: '🔧', title: 'Technology risks', body: 'Smart contracts carry inherent risks including bugs and exploits.' },
-    { emoji: '🔮', title: 'Forward-looking statements', body: 'Roadmap and projections are subject to change.' },
+    { emoji: '🔮', title: 'Forward-looking', body: 'Roadmap and projections are subject to change without notice.' },
   ];
 
-  // Layout: 3 cards in first column, 2 cards in second column
-  // Card dimensions: w=4.0, h=1.7, larger for text readability
-  const cardW = 4.0;
-  const cardH = 1.7;
-  const startX = 4.8;
+  // Layout: 2x2 grid on the right side, 5th card below
+  // Wider cards for better text fit
+  const cardW = 5.8;
+  const cardH = 1.4;
+  const startX = 6.8;
   const startY = 1.3;
-  const rowGap = 1.8;
-  const colGap = 4.2;
+  const rowGap = 1.55;
 
   disclaimers.forEach((d, i) => {
-    const col = i < 3 ? 0 : 1;
-    const row = i < 3 ? i : i - 3;
     addCard(slide, { 
-      x: startX + col * colGap, 
-      y: startY + row * rowGap, 
+      x: startX, 
+      y: startY + i * rowGap, 
       w: cardW, 
       h: cardH, 
       ...d 
