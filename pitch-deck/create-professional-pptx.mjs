@@ -440,9 +440,18 @@ function createCoverageSlide() {
   addBackground(slide);
   addHeader(slide, 5, TOTAL_SLIDES);
   
-  addKicker(slide, 'Coverage');
-  addTitle(slide, 'Providers on\nBNB Chain');
-  addLead(slide, 'Top aggregators and DEX routers. BEQ prioritizes executability over the best-looking number.', 2.5);
+  addKicker(slide, 'Coverage', 1.1);
+  // Titre plus simple et plus compact
+  slide.addText('BNB Chain Coverage', {
+    x: 0.5, y: 1.5, w: 6, h: 0.6,
+    fontSize: 32, bold: true, color: COLORS.white,
+  });
+  // Lead avec plus d'espace
+  slide.addText('Top aggregators and DEX routers. BEQ prioritizes executability over the best-looking number.', {
+    x: 0.5, y: 2.2, w: 5.5, h: 0.8,
+    fontSize: 15, color: COLORS.muted,
+    lineSpacing: 22,
+  });
 
   const features = [
     { emoji: '🔗', title: '10+ Providers', body: 'PancakeSwap · 1inch · OKX DEX · KyberSwap · ParaSwap · Odos · OpenOcean · 0x · Uniswap V2 · Uniswap V3' },
@@ -454,7 +463,7 @@ function createCoverageSlide() {
   features.forEach((f, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    addCard(slide, { x: 7 + col * 3, y: 1.3 + row * 2.8, w: 2.8, h: 2.5, ...f });
+    addCard(slide, { x: 7 + col * 3, y: 1.4 + row * 2.7, w: 2.8, h: 2.5, ...f });
   });
 }
 
@@ -528,8 +537,12 @@ function createDistributionSlide() {
   addBackground(slide);
   addHeader(slide, 8, TOTAL_SLIDES);
   
-  addKicker(slide, 'Distribution');
-  addTitle(slide, 'Token allocation', 1.8);
+  addKicker(slide, 'Distribution', 1.0);
+  // Titre plus compact pour éviter l'overlay avec le donut
+  slide.addText('Token Allocation', {
+    x: 0.5, y: 1.3, w: 4, h: 0.4,
+    fontSize: 28, bold: true, color: COLORS.white,
+  });
   
   // Allocation data with distinct, contrasting colors matching legend exactly
   const allocations = [
@@ -542,7 +555,7 @@ function createDistributionSlide() {
     { color: 'B0BEC5', label: 'Referral', value: 5, pct: '5%' },
   ];
 
-  // Doughnut chart - colors will match legend order
+  // Doughnut chart - réduit et commence après le titre (1.3 + 0.4 = 1.7 + marge)
   slide.addChart(pptx.ChartType.doughnut, [
     {
       name: 'Allocation',
@@ -551,9 +564,9 @@ function createDistributionSlide() {
     },
   ], {
     x: 0.5,
-    y: 2.4,
-    w: 4.2,
-    h: 4.2,
+    y: 1.85,
+    w: 3.8,
+    h: 3.8,
     holeSize: 60,
     showLegend: false,
     showValue: false,
@@ -565,21 +578,21 @@ function createDistributionSlide() {
     plotArea: { fill: { color: COLORS.bg } },
   });
 
-  // Center label inside donut
+  // Center label inside donut - ajusté pour le nouveau y du donut
   slide.addText('1B', {
-    x: 0.5, y: 4.0, w: 4.2, h: 0.6,
-    fontSize: 36, bold: true, color: COLORS.white,
+    x: 0.5, y: 3.3, w: 3.8, h: 0.5,
+    fontSize: 32, bold: true, color: COLORS.white,
     align: 'center',
   });
   slide.addText('PILOT', {
-    x: 0.5, y: 4.55, w: 4.2, h: 0.35,
-    fontSize: 12, bold: true, color: COLORS.muted,
+    x: 0.5, y: 3.75, w: 3.8, h: 0.3,
+    fontSize: 11, bold: true, color: COLORS.muted,
     align: 'center',
   });
   
   slide.addText('Fixed supply · No inflation · No mint function', {
-    x: 0.3, y: 6.7, w: 4.6, h: 0.3,
-    fontSize: 11, color: COLORS.muted, align: 'center',
+    x: 0.3, y: 6.0, w: 4.0, h: 0.3,
+    fontSize: 10, color: COLORS.muted, align: 'center',
   });
 
   // Legend panel on the right
@@ -796,30 +809,34 @@ function createDisclaimerSlide() {
     { emoji: '📉', title: 'No guarantees', body: 'PILOT token value may fluctuate. Past performance is not indicative of future results.' },
     { emoji: '⚖️', title: 'Regulatory uncertainty', body: 'Cryptocurrency regulations vary by jurisdiction and are subject to change.' },
     { emoji: '🔧', title: 'Technology risks', body: 'Smart contracts carry inherent risks including bugs and exploits.' },
-    { emoji: '🔮', title: 'Forward-looking', body: 'Roadmap and projections are subject to change without notice.' },
   ];
 
-  // Layout: 2x2 grid on the right side, 5th card below
-  // Wider cards for better text fit
+  // Layout: 2x2 grid on the right side
+  // Cards: (0,1 in row 0), (2,3 in row 1)
+  // Row 0: y=1.3, Row 1: y=1.3+1.45=2.75, ends at 2.75+1.3=4.05
   const cardW = 5.8;
-  const cardH = 1.4;
+  const cardH = 1.3;
   const startX = 6.8;
   const startY = 1.3;
-  const rowGap = 1.55;
+  const colGap = 0; // single column
+  const rowGap = 1.45;
 
   disclaimers.forEach((d, i) => {
+    const row = i;
     addCard(slide, { 
       x: startX, 
-      y: startY + i * rowGap, 
+      y: startY + row * rowGap, 
       w: cardW, 
       h: cardH, 
       ...d 
     });
   });
 
+  // Footer bien en-dessous des cartes
+  // Cards end at: 1.3 + 3*1.45 + 1.3 = 6.95
   slide.addText('By participating in the Public Sale, you acknowledge that you have read and understood these disclosures.', {
     x: 0.5, y: 6.8, w: 12, h: 0.3,
-    fontSize: 10, color: COLORS.muted,
+    fontSize: 9, color: COLORS.muted,
   });
 }
 
