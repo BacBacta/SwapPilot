@@ -80,7 +80,7 @@ function addKicker(slide, text, y = 1.2) {
 // Helper: Main title
 function addTitle(slide, text, y = 1.55) {
   slide.addText(text, {
-    x: 0.5, y: y, w: 6, h: 1.35,
+    x: 0.5, y: y, w: 6, h: 1,
     fontSize: 36, bold: true, color: COLORS.white,
     lineSpacing: 42,
   });
@@ -119,7 +119,7 @@ function addCard(slide, { x, y, w, h, title, body, emoji }) {
 }
 
 // Helper: Data metric box
-function addMetric(slide, { x, y, w, h, label, value, valueFontSize }) {
+function addMetric(slide, { x, y, w, h, label, value }) {
   slide.addShape('roundRect', {
     x, y, w, h,
     fill: { color: COLORS.bgLight },
@@ -132,40 +132,10 @@ function addMetric(slide, { x, y, w, h, label, value, valueFontSize }) {
     charSpacing: 1,
   });
   slide.addText(value, {
-    x: x + 0.15, y: y + 0.38, w: w - 0.3, h: Math.max(0.6, h - 0.55),
-    fontSize: valueFontSize ?? 22, bold: true, color: COLORS.white,
+    x: x + 0.15, y: y + 0.4, w: w - 0.3, h: h - 0.55,
+    fontSize: 18, bold: true, color: COLORS.white,
+    valign: 'top',
   });
-}
-
-// Helper: Allocation donut chart (true doughnut, colors match legend)
-function addAllocationDonut(slide, x, y, size, allocations) {
-  const labels = allocations.map((a) => a.label);
-  const values = allocations.map((a) => a.value);
-  const chartColors = allocations.map((a) => a.color);
-
-  slide.addChart(
-    pptx.ChartType.doughnut,
-    [
-      {
-        labels,
-        values,
-      },
-    ],
-    {
-      x,
-      y,
-      w: size,
-      h: size,
-      showLegend: false,
-      dataNoEffects: true,
-      holeSize: 70,
-      chartColors,
-      chartColorsOpacity: 100,
-      // Make sure chart background matches deck background.
-      chartArea: { fill: { color: COLORS.bg } },
-      plotArea: { fill: { color: COLORS.bg } },
-    },
-  );
 }
 
 // Helper: CTA button
@@ -419,7 +389,7 @@ function createSolutionSlide() {
   
   addKicker(slide, 'Solution');
   addTitle(slide, 'One flow that\noptimizes & explains.');
-  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.', 2.9);
+  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.');
 
   const solutions = [
     { emoji: '🏆', title: 'BEQ (Best Executable Quote)', body: 'Optimizes for executability first — then for output. Not just the highest number, but the safest path.' },
@@ -495,10 +465,10 @@ function createProofSlide() {
   
   addKicker(slide, 'Proof');
   addTitle(slide, 'A working system.');
-  addLead(slide, 'Public app + public API. Every quote run returns detailed decision data for full auditability.', 2.5);
+  addLead(slide, 'Public app + public API. Every quote run returns detailed decision data for full auditability.');
 
   addCard(slide, {
-    x: 0.5, y: 3.5, w: 5.5, h: 1.5,
+    x: 0.5, y: 3.6, w: 5.5, h: 1.4,
     emoji: '📋',
     title: 'Decision data includes',
     body: 'rankedQuotes · beqRecommendedProviderId · whyWinner · warnings · ranking.mode · preflight signals',
@@ -513,16 +483,14 @@ function createProofSlide() {
     { label: 'Build TX', value: '/v1/build-tx' },
   ];
 
-  // Wider columns + smaller font to avoid wrapping/overlap in PDF export.
   metrics.forEach((m, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
     addMetric(slide, {
-      x: 6.7 + col * 3.25,
-      y: 1.3 + row * 1.7,
-      w: 3.0,
-      h: 1.5,
-      valueFontSize: 18,
+      x: 6.5 + col * 3.3,
+      y: 1.3 + row * 1.8,
+      w: 3.1,
+      h: 1.6,
       ...m,
     });
   });
@@ -570,25 +538,47 @@ function createDistributionSlide() {
     { color: '3A3A3A', label: 'Referral', value: 5, pct: '5%' },
   ];
 
-  // Donut chart on the left — colors match legend.
-  addAllocationDonut(slide, 0.85, 2.15, 4.0, allocations);
-  // Center label inside donut.
+  // Use PptxGenJS doughnut chart with correct data order
+  slide.addChart(pptx.ChartType.doughnut, [
+    {
+      name: 'Allocation',
+      labels: allocations.map(a => a.label),
+      values: allocations.map(a => a.value),
+    },
+  ], {
+    x: 0.5,
+    y: 2.0,
+    w: 4.5,
+    h: 4.5,
+    holeSize: 65,
+    showLegend: false,
+    showValue: false,
+    showPercent: false,
+    showLabel: false,
+    chartColors: allocations.map(a => a.color),
+    dataBorder: { pt: 1, color: COLORS.bg },
+    chartArea: { fill: { color: COLORS.bg }, roundedCorners: false },
+    plotArea: { fill: { color: COLORS.bg } },
+  });
+
+  // Center label inside donut
   slide.addText('1B', {
-    x: 0.85, y: 3.55, w: 4.0, h: 0.5,
-    fontSize: 34, bold: true, color: COLORS.white,
+    x: 0.5, y: 3.7, w: 4.5, h: 0.6,
+    fontSize: 36, bold: true, color: COLORS.white,
     align: 'center',
   });
   slide.addText('PILOT', {
-    x: 0.85, y: 4.05, w: 4.0, h: 0.3,
+    x: 0.5, y: 4.25, w: 4.5, h: 0.35,
     fontSize: 12, bold: true, color: COLORS.muted,
     align: 'center',
   });
   
   slide.addText('Fixed supply · No inflation · No mint function', {
-    x: 0.5, y: 5.6, w: 4.5, h: 0.3,
-    fontSize: 12, color: COLORS.muted, align: 'center',
+    x: 0.3, y: 6.6, w: 5, h: 0.3,
+    fontSize: 11, color: COLORS.muted, align: 'center',
   });
 
+  // Legend panel on the right
   slide.addShape('roundRect', {
     x: 6.5, y: 1.3, w: 6.3, h: 5.5,
     fill: { color: COLORS.bgLight },
@@ -786,10 +776,25 @@ function createDisclaimerSlide() {
     { emoji: '🔮', title: 'Forward-looking statements', body: 'Roadmap and projections are subject to change.' },
   ];
 
+  // Layout: 3 cards in first column, 2 cards in second column
+  // Card dimensions: w=2.9, h=1.6, gap between columns = 0.2
+  const cardW = 2.9;
+  const cardH = 1.6;
+  const startX = 6.5;
+  const startY = 1.3;
+  const rowGap = 1.7;
+  const colGap = 3.1;
+
   disclaimers.forEach((d, i) => {
     const col = i < 3 ? 0 : 1;
     const row = i < 3 ? i : i - 3;
-    addCard(slide, { x: 7 + col * 3, y: 1.3 + row * 1.7, w: 2.8, h: 1.5, ...d });
+    addCard(slide, { 
+      x: startX + col * colGap, 
+      y: startY + row * rowGap, 
+      w: cardW, 
+      h: cardH, 
+      ...d 
+    });
   });
 
   slide.addText('By participating in the Public Sale, you acknowledge that you have read and understood these disclosures.', {
