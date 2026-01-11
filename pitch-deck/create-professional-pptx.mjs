@@ -80,7 +80,7 @@ function addKicker(slide, text, y = 1.2) {
 // Helper: Main title
 function addTitle(slide, text, y = 1.55) {
   slide.addText(text, {
-    x: 0.5, y: y, w: 6, h: 1,
+    x: 0.5, y: y, w: 6, h: 1.35,
     fontSize: 36, bold: true, color: COLORS.white,
     lineSpacing: 42,
   });
@@ -119,7 +119,7 @@ function addCard(slide, { x, y, w, h, title, body, emoji }) {
 }
 
 // Helper: Data metric box
-function addMetric(slide, { x, y, w, h, label, value }) {
+function addMetric(slide, { x, y, w, h, label, value, valueFontSize }) {
   slide.addShape('roundRect', {
     x, y, w, h,
     fill: { color: COLORS.bgLight },
@@ -132,9 +132,40 @@ function addMetric(slide, { x, y, w, h, label, value }) {
     charSpacing: 1,
   });
   slide.addText(value, {
-    x: x + 0.15, y: y + 0.4, w: w - 0.3, h: 0.5,
-    fontSize: 22, bold: true, color: COLORS.white,
+    x: x + 0.15, y: y + 0.38, w: w - 0.3, h: Math.max(0.6, h - 0.55),
+    fontSize: valueFontSize ?? 22, bold: true, color: COLORS.white,
   });
+}
+
+// Helper: Allocation donut chart (true doughnut, colors match legend)
+function addAllocationDonut(slide, x, y, size, allocations) {
+  const labels = allocations.map((a) => a.label);
+  const values = allocations.map((a) => a.value);
+  const chartColors = allocations.map((a) => a.color);
+
+  slide.addChart(
+    pptx.ChartType.doughnut,
+    [
+      {
+        labels,
+        values,
+      },
+    ],
+    {
+      x,
+      y,
+      w: size,
+      h: size,
+      showLegend: false,
+      dataNoEffects: true,
+      holeSize: 70,
+      chartColors,
+      chartColorsOpacity: 100,
+      // Make sure chart background matches deck background.
+      chartArea: { fill: { color: COLORS.bg } },
+      plotArea: { fill: { color: COLORS.bg } },
+    },
+  );
 }
 
 // Helper: CTA button
@@ -259,6 +290,7 @@ const TOTAL_SLIDES = 13;
 // SLIDE 1: Cover
 function createCoverSlide() {
   const slide = pptx.addSlide();
+  slide.name = '01 Cover';
   addBackground(slide);
   addHeader(slide, 1, TOTAL_SLIDES);
 
@@ -359,6 +391,7 @@ function createCoverSlide() {
 // SLIDE 2: Problem
 function createProblemSlide() {
   const slide = pptx.addSlide();
+  slide.name = '02 Problem';
   addBackground(slide);
   addHeader(slide, 2, TOTAL_SLIDES);
   
@@ -380,12 +413,13 @@ function createProblemSlide() {
 // SLIDE 3: Solution
 function createSolutionSlide() {
   const slide = pptx.addSlide();
+  slide.name = '03 Solution';
   addBackground(slide);
   addHeader(slide, 3, TOTAL_SLIDES);
   
   addKicker(slide, 'Solution');
   addTitle(slide, 'One flow that\noptimizes & explains.');
-  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.');
+  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.', 2.9);
 
   const solutions = [
     { emoji: '🏆', title: 'BEQ (Best Executable Quote)', body: 'Optimizes for executability first — then for output. Not just the highest number, but the safest path.' },
@@ -401,6 +435,7 @@ function createSolutionSlide() {
 // SLIDE 4: How It Works
 function createHowItWorksSlide() {
   const slide = pptx.addSlide();
+  slide.name = '04 How It Works';
   addBackground(slide);
   addHeader(slide, 4, TOTAL_SLIDES);
   
@@ -429,6 +464,7 @@ function createHowItWorksSlide() {
 // SLIDE 5: Coverage
 function createCoverageSlide() {
   const slide = pptx.addSlide();
+  slide.name = '05 Coverage';
   addBackground(slide);
   addHeader(slide, 5, TOTAL_SLIDES);
   
@@ -453,6 +489,7 @@ function createCoverageSlide() {
 // SLIDE 6: Proof
 function createProofSlide() {
   const slide = pptx.addSlide();
+  slide.name = '06 Proof';
   addBackground(slide);
   addHeader(slide, 6, TOTAL_SLIDES);
   
@@ -476,16 +513,25 @@ function createProofSlide() {
     { label: 'Build TX', value: '/v1/build-tx' },
   ];
 
+  // Wider columns + smaller font to avoid wrapping/overlap in PDF export.
   metrics.forEach((m, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    addMetric(slide, { x: 7 + col * 3, y: 1.3 + row * 1.7, w: 2.8, h: 1.5, ...m });
+    addMetric(slide, {
+      x: 6.7 + col * 3.25,
+      y: 1.3 + row * 1.7,
+      w: 3.0,
+      h: 1.5,
+      valueFontSize: 18,
+      ...m,
+    });
   });
 }
 
 // SLIDE 7: Business Model
 function createBusinessModelSlide() {
   const slide = pptx.addSlide();
+  slide.name = '07 Business Model';
   addBackground(slide);
   addHeader(slide, 7, TOTAL_SLIDES);
   
@@ -507,28 +553,41 @@ function createBusinessModelSlide() {
 // SLIDE 8: Distribution
 function createDistributionSlide() {
   const slide = pptx.addSlide();
+  slide.name = '08 Distribution';
   addBackground(slide);
   addHeader(slide, 8, TOTAL_SLIDES);
   
   addKicker(slide, 'Distribution');
   addTitle(slide, 'Token allocation');
   
-  addDonutChart(slide, 1.5, 2.5, 2.8);
+  const allocations = [
+    { color: 'B6FF6A', label: 'Public Sale', value: 35, pct: '35%' },
+    { color: '8FCC55', label: 'Treasury', value: 20, pct: '20%' },
+    { color: '7DD3FC', label: 'CEX & Marketing', value: 12, pct: '12%' },
+    { color: '5AAFDC', label: 'Liquidity', value: 12, pct: '12%' },
+    { color: '5A5A5A', label: 'Team', value: 11, pct: '11%' },
+    { color: '4A4A4A', label: 'Advisors', value: 5, pct: '5%' },
+    { color: '3A3A3A', label: 'Referral', value: 5, pct: '5%' },
+  ];
+
+  // Donut chart on the left — colors match legend.
+  addAllocationDonut(slide, 0.85, 2.15, 4.0, allocations);
+  // Center label inside donut.
+  slide.addText('1B', {
+    x: 0.85, y: 3.55, w: 4.0, h: 0.5,
+    fontSize: 34, bold: true, color: COLORS.white,
+    align: 'center',
+  });
+  slide.addText('PILOT', {
+    x: 0.85, y: 4.05, w: 4.0, h: 0.3,
+    fontSize: 12, bold: true, color: COLORS.muted,
+    align: 'center',
+  });
   
   slide.addText('Fixed supply · No inflation · No mint function', {
     x: 0.5, y: 5.6, w: 4.5, h: 0.3,
     fontSize: 12, color: COLORS.muted, align: 'center',
   });
-
-  const allocations = [
-    { color: 'B6FF6A', label: 'Public Sale', pct: '35%' },
-    { color: '8FCC55', label: 'Treasury', pct: '20%' },
-    { color: '7DD3FC', label: 'CEX & Marketing', pct: '12%' },
-    { color: '5AAFDC', label: 'Liquidity', pct: '12%' },
-    { color: '5A5A5A', label: 'Team', pct: '11%' },
-    { color: '4A4A4A', label: 'Advisors', pct: '5%' },
-    { color: '3A3A3A', label: 'Referral', pct: '5%' },
-  ];
 
   slide.addShape('roundRect', {
     x: 6.5, y: 1.3, w: 6.3, h: 5.5,
@@ -545,6 +604,7 @@ function createDistributionSlide() {
 // SLIDE 9: Tokenomics
 function createTokenomicsSlide() {
   const slide = pptx.addSlide();
+  slide.name = '09 Tokenomics';
   addBackground(slide);
   addHeader(slide, 9, TOTAL_SLIDES);
   
@@ -575,6 +635,7 @@ function createTokenomicsSlide() {
 // SLIDE 10: Vesting
 function createVestingSlide() {
   const slide = pptx.addSlide();
+  slide.name = '10 Vesting';
   addBackground(slide);
   addHeader(slide, 10, TOTAL_SLIDES);
   
@@ -614,6 +675,7 @@ function createVestingSlide() {
 // SLIDE 11: Roadmap
 function createRoadmapSlide() {
   const slide = pptx.addSlide();
+  slide.name = '11 Roadmap';
   addBackground(slide);
   addHeader(slide, 11, TOTAL_SLIDES);
   
@@ -638,6 +700,7 @@ function createRoadmapSlide() {
 // SLIDE 12: CTA
 function createCTASlide() {
   const slide = pptx.addSlide();
+  slide.name = '12 CTA';
   addBackground(slide);
   addHeader(slide, 12, TOTAL_SLIDES);
 
@@ -707,8 +770,9 @@ function createCTASlide() {
 // SLIDE 13: Disclaimer
 function createDisclaimerSlide() {
   const slide = pptx.addSlide();
+  slide.name = '13 Disclaimer';
   addBackground(slide);
-  addHeader(slide, 'Disclaimer', TOTAL_SLIDES);
+  addHeader(slide, 13, TOTAL_SLIDES);
 
   addKicker(slide, 'Legal Notice');
   addTitle(slide, 'Important\ndisclosures');
