@@ -526,19 +526,20 @@ function createDistributionSlide() {
   addHeader(slide, 8, TOTAL_SLIDES);
   
   addKicker(slide, 'Distribution');
-  addTitle(slide, 'Token allocation');
+  addTitle(slide, 'Token allocation', 1.8);
   
+  // Allocation data with distinct, contrasting colors matching legend exactly
   const allocations = [
-    { color: 'B6FF6A', label: 'Public Sale', value: 35, pct: '35%' },
-    { color: '8FCC55', label: 'Treasury', value: 20, pct: '20%' },
-    { color: '7DD3FC', label: 'CEX & Marketing', value: 12, pct: '12%' },
-    { color: '5AAFDC', label: 'Liquidity', value: 12, pct: '12%' },
-    { color: '5A5A5A', label: 'Team', value: 11, pct: '11%' },
-    { color: '4A4A4A', label: 'Advisors', value: 5, pct: '5%' },
-    { color: '3A3A3A', label: 'Referral', value: 5, pct: '5%' },
+    { color: '9AE66E', label: 'Public Sale', value: 35, pct: '35%' },
+    { color: '4CAF50', label: 'Treasury', value: 20, pct: '20%' },
+    { color: '42A5F5', label: 'CEX & Marketing', value: 12, pct: '12%' },
+    { color: '64B5F6', label: 'Liquidity', value: 12, pct: '12%' },
+    { color: '78909C', label: 'Team', value: 11, pct: '11%' },
+    { color: '90A4AE', label: 'Advisors', value: 5, pct: '5%' },
+    { color: 'B0BEC5', label: 'Referral', value: 5, pct: '5%' },
   ];
 
-  // Use PptxGenJS doughnut chart with correct data order
+  // Doughnut chart - colors will match legend order
   slide.addChart(pptx.ChartType.doughnut, [
     {
       name: 'Allocation',
@@ -547,47 +548,66 @@ function createDistributionSlide() {
     },
   ], {
     x: 0.5,
-    y: 2.0,
-    w: 4.5,
-    h: 4.5,
-    holeSize: 65,
+    y: 2.4,
+    w: 4.2,
+    h: 4.2,
+    holeSize: 60,
     showLegend: false,
     showValue: false,
     showPercent: false,
     showLabel: false,
     chartColors: allocations.map(a => a.color),
-    dataBorder: { pt: 1, color: COLORS.bg },
+    dataBorder: { pt: 2, color: COLORS.bg },
     chartArea: { fill: { color: COLORS.bg }, roundedCorners: false },
     plotArea: { fill: { color: COLORS.bg } },
   });
 
   // Center label inside donut
   slide.addText('1B', {
-    x: 0.5, y: 3.7, w: 4.5, h: 0.6,
+    x: 0.5, y: 4.0, w: 4.2, h: 0.6,
     fontSize: 36, bold: true, color: COLORS.white,
     align: 'center',
   });
   slide.addText('PILOT', {
-    x: 0.5, y: 4.25, w: 4.5, h: 0.35,
+    x: 0.5, y: 4.55, w: 4.2, h: 0.35,
     fontSize: 12, bold: true, color: COLORS.muted,
     align: 'center',
   });
   
   slide.addText('Fixed supply · No inflation · No mint function', {
-    x: 0.3, y: 6.6, w: 5, h: 0.3,
+    x: 0.3, y: 6.7, w: 4.6, h: 0.3,
     fontSize: 11, color: COLORS.muted, align: 'center',
   });
 
   // Legend panel on the right
   slide.addShape('roundRect', {
-    x: 6.5, y: 1.3, w: 6.3, h: 5.5,
+    x: 5.8, y: 1.6, w: 7, h: 5.2,
     fill: { color: COLORS.bgLight },
     line: { color: '2A2A2A', width: 0.5 },
     rectRadius: 0.15,
   });
 
+  // Legend items with matching color squares
   allocations.forEach((a, i) => {
-    addLegendItem(slide, { x: 6.8, y: 1.7 + i * 0.7, ...a });
+    const y = 2.0 + i * 0.65;
+    // Color square
+    slide.addShape('roundRect', {
+      x: 6.1, y: y + 0.08, w: 0.28, h: 0.28,
+      fill: { color: a.color },
+      rectRadius: 0.05,
+    });
+    // Label
+    slide.addText(a.label, {
+      x: 6.5, y: y, w: 3.5, h: 0.4,
+      fontSize: 14, color: COLORS.white,
+      valign: 'middle',
+    });
+    // Percentage
+    slide.addText(a.pct, {
+      x: 10.5, y: y, w: 1.8, h: 0.4,
+      fontSize: 14, bold: true, color: COLORS.white,
+      align: 'right', valign: 'middle',
+    });
   });
 }
 
