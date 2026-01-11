@@ -388,8 +388,8 @@ function createSolutionSlide() {
   addHeader(slide, 3, TOTAL_SLIDES);
   
   addKicker(slide, 'Solution');
-  addTitle(slide, 'One flow that\noptimizes & explains.', 1.6);
-  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.', 3.1);
+  addTitle(slide, 'One flow that\noptimizes & explains.', 1.8);
+  addLead(slide, 'SwapPilot separates "best raw output" from "best executable" and documents every decision transparently.', 3.4);
 
   const solutions = [
     { emoji: '🏆', title: 'BEQ (Best Executable Quote)', body: 'Optimizes for executability first — then for output. Not just the highest number, but the safest path.' },
