@@ -470,8 +470,8 @@ function createProofSlide() {
   const metrics = [
     { label: 'Live App', value: 'app-swappilot.xyz' },
     { label: 'Public API', value: 'swappilot-api.fly.dev' },
-    { label: 'Swagger UI', value: '/docs' },
-    { label: 'OpenAPI Spec', value: '/docs/json' },
+    { label: 'Swagger UI', value: '/documentation' },
+    { label: 'OpenAPI Spec', value: '/documentation/json' },
     { label: 'Quotes', value: '/v1/quotes' },
     { label: 'Build TX', value: '/v1/build-tx' },
   ];
