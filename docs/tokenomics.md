@@ -4,12 +4,12 @@
 
 | Metric | Value |
 |--------|-------|
-| **Token Name** | SwapPilot |
-| **Token Symbol** | SWAP |
-| **Total Supply** | 1,000,000,000 SWAP |
+| **Token Name** | PILOT Token |
+| **Token Symbol** | PILOT |
+| **Total Supply** | 1,000,000,000 PILOT |
 | **IDO Price** | $0.0057 |
 | **Fully Diluted Valuation (FDV)** | $5,700,000 |
-| **TGE Circulating Supply** | 169,500,000 SWAP (16.95%) |
+| **TGE Circulating Supply** | 169,500,000 PILOT (16.95%) |
 | **TGE Market Cap** | $966,150 |
 
 ## TGE Circulating Supply Breakdown
@@ -23,7 +23,7 @@
 | Team (11%) | 110,000,000 | 0% | 0 |
 | Advisors (5%) | 50,000,000 | 0% | 0 |
 | Referral (5%) | 50,000,000 | 0% | 0 |
-| **Total** | **1,000,000,000** | **16.95%** | **169,500,000** |
+| **Total** | **1,000,000,000 PILOT** | **16.95%** | **169,500,000 PILOT** |
 
 ## Token Distribution
 
@@ -52,22 +52,22 @@
 ## Vesting Details
 
 ### IDO (35%)
-- **TGE**: 25% unlocked immediately (87,500,000 SWAP)
+- **TGE**: 25% unlocked immediately (87,500,000 PILOT)
 - **Vesting**: Remaining 75% released linearly over 8 months
 - **Purpose**: Early supporters and public sale participants
 
 ### CEX Listing & Marketing (12%)
-- **TGE**: 25% unlocked immediately (30,000,000 SWAP)
+- **TGE**: 25% unlocked immediately (30,000,000 PILOT)
 - **Vesting**: Remaining 75% released linearly over 18 months
 - **Purpose**: Exchange listings, partnerships, and marketing initiatives
 
 ### Liquidity (12%)
-- **TGE**: 35% unlocked immediately (42,000,000 SWAP)
+- **TGE**: 35% unlocked immediately (42,000,000 PILOT)
 - **Vesting**: Remaining 65% released linearly over 18 months
 - **Purpose**: DEX liquidity pools and market making
 
 ### Treasury (20%)
-- **TGE**: 5% unlocked immediately (10,000,000 SWAP)
+- **TGE**: 5% unlocked immediately (10,000,000 PILOT)
 - **Vesting**: Remaining 95% released linearly over 24 months
 - **Purpose**: Protocol development, grants, and operational costs
 
@@ -116,9 +116,9 @@
 │                    TOKEN METRICS                        │
 ├─────────────────────────────────────────────────────────┤
 │  IDO Price:              $0.0057                        │
-│  Total Supply:           1,000,000,000 SWAP             │
+│  Total Supply:           1,000,000,000 PILOT            │
 │  FDV:                    $5,700,000                     │
-│  TGE Circulating:        169,500,000 SWAP (16.95%)      │
+│  TGE Circulating:        169,500,000 PILOT (16.95%)     │
 │  TGE Market Cap:         $966,150                       │
 │  Initial MC/FDV Ratio:   16.95%                         │
 └─────────────────────────────────────────────────────────┘
