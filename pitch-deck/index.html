@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwapPilot Pitch Deck</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #07080B;
+      --bg-light: #0D1117;
+      --accent: #B6FF6A;
+      --accent2: #7DD3FC;
+      --white: #FFFFFF;
+      --muted: #A0A0A0;
+      --dark: #1A1A1A;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: var(--bg);
+      color: var(--white);
+      overflow-x: hidden;
+    }
+
+    .slide {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 3rem 5%;
+      position: relative;
+      background: var(--bg);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .logo-icon {
+      width: 45px;
+      height: 45px;
+      background: var(--bg-light);
+      border: 1px solid var(--muted);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .slide-number {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .kicker {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .kicker::before {
+      content: '';
+      width: 35px;
+      height: 4px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      max-width: 800px;
+    }
+
+    .lead {
+      font-size: 1.2rem;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 700px;
+      margin-bottom: 3rem;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: var(--bg-light);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .metric {
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(182, 255, 106, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-light);
+      color: var(--white);
+      border: 1px solid var(--muted);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .allocation-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .allocation-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .allocation-bar {
+      flex: 1;
+      height: 40px;
+      background: var(--bg-light);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .allocation-fill {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding-left: 1rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .allocation-label {
+      min-width: 150px;
+      font-weight: 600;
+    }
+
+    .allocation-percent {
+      min-width: 60px;
+      text-align: right;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .roadmap-item h3 {
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .roadmap-item ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .roadmap-item li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+      color: var(--muted);
+    }
+
+    .roadmap-item li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .slide {
+        padding: 2rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .highlight {
+      color: var(--accent);
+    }
+
+    .cover-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle at 50% 50%, rgba(182, 255, 106, 0.1) 0%, var(--bg) 50%);
+    }
+
+    .cover-slide h1 {
+      font-size: clamp(3rem, 8vw, 5rem);
+      margin-bottom: 1rem;
+    }
+
+    .cover-slide .tagline {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin-bottom: 3rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    th {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    .disclaimer {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 2rem;
+      padding: 1rem;
+      background: var(--bg-light);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Cover -->
+  <div class="slide cover-slide">
+    <div class="content">
+      <h1>SwapPilot</h1>
+      <p class="tagline">DEX Aggregator for BNB Smart Chain</p>
+      <p class="lead" style="max-width: 600px; margin: 0 auto;">
+        Best execution across 10+ providers. One interface, maximum savings.
+      </p>
+      <div class="cta-buttons" style="justify-content: center;">
+        <a href="https://app-swappilot.xyz" class="btn btn-primary" target="_blank">Launch App</a>
+        <a href="https://swappilot.gitbook.io/untitled" class="btn btn-secondary" target="_blank">Documentation</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 2: Problem -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">02 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Problem</div>
+      <h1>Liquidity is fragmented on BNB Chain</h1>
+      <p class="lead">
+        Traders manually check multiple DEXs to find the best price. This is time-consuming and often results in suboptimal execution.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🔀</div>
+          <h3>Fragmented Liquidity</h3>
+          <p>10+ major DEX protocols with separate liquidity pools mean no single source has the best price.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⏱️</div>
+          <h3>Manual Comparison</h3>
+          <p>Users waste time switching between multiple platforms to compare quotes and find optimal rates.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">💸</div>
+          <h3>Value Leakage</h3>
+          <p>Traders lose 1-5% on average by not finding the best execution path across all available liquidity.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">❓</div>
+          <h3>Trust Issues</h3>
+          <p>Honeypots, rug pulls, and high-slippage tokens create risk. No unified protection layer exists.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: Solution -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">03 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Solution</div>
+      <h1>One interface, best execution across 10+ providers</h1>
+      <p class="lead">
+        SwapPilot aggregates quotes from all major DEXs and aggregators, ranks them by Best Execution Quality (BEQ), and delivers optimal swaps with built-in risk protection.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <h3>Unified Aggregation</h3>
+          <p>Single API call fetches quotes from PancakeSwap, 1inch, KyberSwap, ParaSwap, OKX DEX, Odos, and more.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏆</div>
+          <h3>Best Execution Quality</h3>
+          <p>Proprietary BEQ scoring prioritizes executability over marketing numbers. Real rates, not fake quotes.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <h3>Risk Protection</h3>
+          <p>Integrated token security checks (GoPlus, Honeypot.is) + revert risk analysis + MEV exposure scoring.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h3>Fast & Non-custodial</h3>
+          <p>No KYC. No custody. Users sign in their wallet. Sub-second quote aggregation across all sources.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: How It Works -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">04 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">How it works</div>
+      <h1>Simple 3-step process</h1>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">1️⃣</div>
+          <h3>Select tokens & amount</h3>
+          <p>Choose your input token, output token, and amount. Connect your wallet (MetaMask, WalletConnect, etc.).</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">2️⃣</div>
+          <h3>SwapPilot fetches quotes</h3>
+          <p>Our engine queries 10+ providers in parallel, scores them by BEQ, and displays the best ranked options.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">3️⃣</div>
+          <h3>Execute & save</h3>
+          <p>Approve the transaction in your wallet. SwapPilot routes to the best provider. Done in seconds.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Coverage -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">05 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Coverage</div>
+      <h1>BNB Chain Coverage</h1>
+      <p class="lead">
+        Top aggregators and DEX routers. BEQ prioritizes executability over the best-looking number.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <h3>10+ Providers</h3>
+          <p>PancakeSwap · 1inch · OKX DEX · KyberSwap · ParaSwap · Odos · OpenOcean · 0x · Uniswap V2 · Uniswap V3</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚙️</div>
+          <h3>Capabilities</h3>
+          <p>Quotes + ranking · buildTx where supported · deep-links as fallback · health endpoint /v1/providers/status</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <h3>Risk signals</h3>
+          <p>Sellability · revert risk · MEV exposure · churn · optional token security (GoPlus / Honeypot.is)</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔐</div>
+          <h3>Non-custodial</h3>
+          <p>Users sign in their wallet. SwapPilot does not hold keys or funds. Your keys, your crypto.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Proof -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">06 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Proof</div>
+      <h1>Live on BSC Mainnet</h1>
+      <p class="lead">
+        SwapPilot is operational and processing real swaps. All contracts deployed and verified.
+      </p>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-value">10+</div>
+          <div class="metric-label">DEX Integrations</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">100%</div>
+          <div class="metric-label">Uptime</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">&lt;500ms</div>
+          <div class="metric-label">Avg Quote Time</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">Live</div>
+          <div class="metric-label">on BSC Mainnet</div>
+        </div>
+      </div>
+      <div class="cta-buttons">
+        <a href="https://app-swappilot.xyz" class="btn btn-primary" target="_blank">Try SwapPilot Now</a>
+        <a href="https://swappilot-api.fly.dev" class="btn btn-secondary" target="_blank">API Docs</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Revenue -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">07 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Revenue Model</div>
+      <h1>Sustainable fee structure with PILOT discounts</h1>
+      <p class="lead">
+        Base fee: 0.1% on swaps ≥ $50. Free tier for swaps &lt; $50. PILOT holders get up to 20% discount.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <h3>💰 Base Fee</h3>
+          <p><strong>0.1% (10 bps)</strong> on swaps ≥ $50<br>
+          <strong>$0 fee</strong> on swaps &lt; $50</p>
+        </div>
+        <div class="card">
+          <h3>🎁 PILOT Discounts</h3>
+          <p>
+            100+ PILOT → 10% off<br>
+            1,000+ PILOT → 15% off<br>
+            10,000+ PILOT → 20% off
+          </p>
+        </div>
+        <div class="card">
+          <h3>📊 Fee Distribution</h3>
+          <p>
+            15% → Buy & Burn PILOT<br>
+            80% → Treasury<br>
+            5% → Referral Pool
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: Token Allocation -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">08 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Distribution</div>
+      <h1>Token Allocation</h1>
+      <p class="lead" style="margin-bottom: 1rem;">
+        1 Billion PILOT · Fixed supply · No inflation · No mint function
+      </p>
+      <div class="allocation-chart">
+        <div class="allocation-item">
+          <div class="allocation-label">Public Sale</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 35%; background: #9AE66E;">35%</div>
+          </div>
+          <div class="allocation-percent">350M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">Treasury</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 20%; background: #4CAF50;">20%</div>
+          </div>
+          <div class="allocation-percent">200M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">CEX & Marketing</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 12%; background: #42A5F5;">12%</div>
+          </div>
+          <div class="allocation-percent">120M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">Liquidity</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 12%; background: #64B5F6;">12%</div>
+          </div>
+          <div class="allocation-percent">120M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">Team</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 11%; background: #78909C;">11%</div>
+          </div>
+          <div class="allocation-percent">110M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">Advisors</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 5%; background: #90A4AE;">5%</div>
+          </div>
+          <div class="allocation-percent">50M</div>
+        </div>
+        <div class="allocation-item">
+          <div class="allocation-label">Referral</div>
+          <div class="allocation-bar">
+            <div class="allocation-fill" style="width: 5%; background: #B0BEC5;">5%</div>
+          </div>
+          <div class="allocation-percent">50M</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 9: Tokenomics -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">09 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Tokenomics</div>
+      <h1>Key Metrics</h1>
+      <p class="lead">Clear, investor-ready figures from the tokenomics documentation.</p>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-value">1B</div>
+          <div class="metric-label">Total Supply</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">$0.0057</div>
+          <div class="metric-label">Public Sale Price</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">$5.7M</div>
+          <div class="metric-label">Fully Diluted Valuation</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">$966K</div>
+          <div class="metric-label">Initial Market Cap</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>TGE Unlock</th>
+            <th>Vesting</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Public Sale (35%)</td>
+            <td>25%</td>
+            <td>8 months linear</td>
+          </tr>
+          <tr>
+            <td>Liquidity (12%)</td>
+            <td>35%</td>
+            <td>18 months linear</td>
+          </tr>
+          <tr>
+            <td>CEX & Marketing (12%)</td>
+            <td>25%</td>
+            <td>18 months linear</td>
+          </tr>
+          <tr>
+            <td>Treasury (20%)</td>
+            <td>5%</td>
+            <td>24 months linear</td>
+          </tr>
+          <tr>
+            <td>Team (11%)</td>
+            <td>0%</td>
+            <td>4-month cliff, 24 months</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Slide 10: Roadmap -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">10 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Roadmap</div>
+      <h1>2026 Milestones</h1>
+      <div class="roadmap">
+        <div class="roadmap-item">
+          <h3>Q1 2026</h3>
+          <ul>
+            <li>IDO Launch</li>
+            <li>CEX Listings (Tier 2)</li>
+            <li>Marketing Push</li>
+            <li>Community Building</li>
+          </ul>
+        </div>
+        <div class="roadmap-item">
+          <h3>Q2 2026</h3>
+          <ul>
+            <li>Mobile App (iOS/Android)</li>
+            <li>More DEX Integrations</li>
+            <li>Enhanced Analytics</li>
+            <li>Partnerships</li>
+          </ul>
+        </div>
+        <div class="roadmap-item">
+          <h3>Q3 2026</h3>
+          <ul>
+            <li>Multi-chain Expansion</li>
+            <li>Governance Launch</li>
+            <li>Staking Program</li>
+            <li>DAO Tools</li>
+          </ul>
+        </div>
+        <div class="roadmap-item">
+          <h3>Q4 2026</h3>
+          <ul>
+            <li>Limit Orders</li>
+            <li>DCA Features</li>
+            <li>NFT Integration</li>
+            <li>Aggregator Aggregation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 11: Team -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">11 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Team</div>
+      <h1>Built by DeFi veterans</h1>
+      <p class="lead">
+        Experienced blockchain developers, smart contract auditors, and DeFi protocol experts.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <h3>🧑‍💻 Core Development</h3>
+          <p>Full-stack engineers with expertise in Solidity, TypeScript, Next.js, and blockchain infrastructure.</p>
+        </div>
+        <div class="card">
+          <h3>🔐 Security Team</h3>
+          <p>Smart contract security specialists with audit experience across multiple DeFi protocols.</p>
+        </div>
+        <div class="card">
+          <h3>📊 Product & Design</h3>
+          <p>UX designers and product managers focused on creating intuitive DeFi experiences.</p>
+        </div>
+        <div class="card">
+          <h3>🤝 Advisors</h3>
+          <p>DeFi protocol founders, crypto fund managers, and blockchain security experts.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 12: Investment Opportunity -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">12 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Investment</div>
+      <h1>Join the IDO</h1>
+      <p class="lead">
+        Public sale on ESESE Launchpad. Fair launch, transparent tokenomics, long-term value creation.
+      </p>
+      <div class="metrics" style="margin-bottom: 2rem;">
+        <div class="metric">
+          <div class="metric-value">$0.0057</div>
+          <div class="metric-label">IDO Price</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">$1.995M</div>
+          <div class="metric-label">Hard Cap</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">350M</div>
+          <div class="metric-label">PILOT for Sale</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">16.95%</div>
+          <div class="metric-label">TGE Circulating</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>✅ Working Product</h3>
+          <p>Already live on BSC mainnet with 10+ DEX integrations and real users.</p>
+        </div>
+        <div class="card">
+          <h3>🔥 Deflationary</h3>
+          <p>15% of fees buy & burn PILOT tokens, reducing supply over time.</p>
+        </div>
+        <div class="card">
+          <h3>🎯 Clear Roadmap</h3>
+          <p>Multi-chain expansion, mobile app, governance, and advanced features planned.</p>
+        </div>
+        <div class="card">
+          <h3>💎 Fair Launch</h3>
+          <p>Team tokens have 4-month cliff. No pre-sale dumps. Community-first approach.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 13: Disclaimer -->
+  <div class="slide">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">SP</div>
+        <div class="logo-text">SwapPilot</div>
+      </div>
+      <div class="slide-number">13 / 13</div>
+    </div>
+    <div class="content">
+      <div class="kicker">Legal Notice</div>
+      <h1>Important Disclosures</h1>
+      <p class="lead">Please read carefully before participating in the Public Sale.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>⚠️ Not financial advice</h3>
+          <p>This document is for informational purposes only. Nothing herein constitutes investment advice.</p>
+        </div>
+        <div class="card">
+          <h3>📉 No guarantees</h3>
+          <p>PILOT token value may fluctuate. Past performance is not indicative of future results.</p>
+        </div>
+        <div class="card">
+          <h3>⚖️ Regulatory uncertainty</h3>
+          <p>Cryptocurrency regulations vary by jurisdiction and are subject to change.</p>
+        </div>
+        <div class="card">
+          <h3>🔧 Technology risks</h3>
+          <p>Smart contracts carry inherent risks including bugs and exploits.</p>
+        </div>
+      </div>
+      <div class="disclaimer">
+        By participating in the Public Sale, you acknowledge that you have read and understood these disclosures.
+      </div>
+      <div class="footer-links">
+        <a href="https://app-swappilot.xyz" target="_blank">🌐 App</a>
+        <a href="https://swappilot.gitbook.io/untitled" target="_blank">📚 Docs</a>
+        <a href="https://x.com/swappilotdex" target="_blank">🐦 Twitter</a>
+        <a href="https://github.com/BacBacta/SwapPilot" target="_blank">💻 GitHub</a>
+        <a href="mailto:contact@swappilot.xyz">📧 Contact</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
