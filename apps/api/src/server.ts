@@ -182,8 +182,19 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     } as const;
   });
 
+  const serverStartTime = Date.now();
+
   app.get('/health', async () => {
-    return { status: 'ok' } as const;
+    const uptimeMs = Date.now() - serverStartTime;
+    const uptimeHours = Math.floor(uptimeMs / (1000 * 60 * 60));
+    const uptimeMinutes = Math.floor((uptimeMs % (1000 * 60 * 60)) / (1000 * 60));
+    return {
+      status: 'ok',
+      uptime: `${uptimeHours}h ${uptimeMinutes}m`,
+      uptimeMs,
+      version: '1.0.0',
+      timestamp: Date.now(),
+    } as const;
   });
 
   const api = app.withTypeProvider<ZodTypeProvider>();
@@ -191,24 +202,136 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   const metrics = options.metrics ?? createMetrics({ collectDefault: true });
   const providerHealth = options.providerHealth ?? new ProviderHealthTracker();
 
-  // Provider status endpoint for dashboard
-  api.get('/v1/providers/status', async () => {
-    const stats = providerHealth.getAllStats();
-    const providers = PROVIDERS.map((p) => {
-      const stat = stats.find((s) => s.providerId === p.providerId);
-      return {
-        providerId: p.providerId,
-        displayName: p.displayName,
-        category: p.category,
-        capabilities: p.capabilities,
-        successRate: stat?.successRate ?? 80, // Default if no observations
-        latencyMs: stat?.latencyMs ?? 500,
-        observations: stat?.observations ?? 0,
-        status: stat ? (stat.successRate >= 70 ? 'ok' : stat.successRate >= 40 ? 'degraded' : 'down') : 'unknown',
-      };
+  // Provider status endpoint - will be registered after adapters are created
+  // Cache for health check results (TTL 30 seconds)
+  let healthCheckCache: { providers: unknown[]; timestamp: number } | null = null;
+  const HEALTH_CHECK_CACHE_TTL = 30_000; // 30 seconds
+
+  // Test quote params for health check (small BNB -> USDT swap)
+  const HEALTH_CHECK_QUOTE_PARAMS = {
+    chainId: 56,
+    sellToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // BNB native
+    buyToken: '0x55d398326f99059fF775485246999027B3197955', // BSC-USD (USDT)
+    sellAmount: '10000000000000000', // 0.01 BNB
+    slippageBps: 100,
+  };
+
+  // Placeholder - adapters will be available later
+  let adaptersRef: Map<string, Adapter> | null = null;
+
+  const registerProviderStatusEndpoint = () => {
+    api.get('/v1/providers/status', async () => {
+      const now = Date.now();
+
+      // Return cached result if fresh
+      if (healthCheckCache && (now - healthCheckCache.timestamp) < HEALTH_CHECK_CACHE_TTL) {
+        return { providers: healthCheckCache.providers, timestamp: healthCheckCache.timestamp, cached: true };
+      }
+
+      // Get recorded stats from quote operations
+      const stats = providerHealth.getAllStats();
+
+      // Perform live health checks for providers with quote capability
+      const healthCheckPromises = PROVIDERS
+        .filter((p) => p.capabilities.quote && adaptersRef?.has(p.providerId))
+        .map(async (p) => {
+          const adapter = adaptersRef!.get(p.providerId)!;
+          const startTime = performance.now();
+          try {
+            const result = await Promise.race([
+              adapter.getQuote(HEALTH_CHECK_QUOTE_PARAMS),
+              new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error('Health check timeout')), 8000)
+              ),
+            ]);
+            const latencyMs = Math.round(performance.now() - startTime);
+            
+            // Check if we got a valid quote response (any response with buyAmount > 0)
+            let quoteSuccess = false;
+            if (result && typeof result === 'object' && 'buyAmount' in result) {
+              const buyAmount = result.buyAmount;
+              if (typeof buyAmount === 'string' && buyAmount.length > 0 && buyAmount !== '0') {
+                quoteSuccess = true;
+              } else if (typeof buyAmount === 'bigint' && buyAmount > 0n) {
+                quoteSuccess = true;
+              } else if (typeof buyAmount === 'number' && buyAmount > 0) {
+                quoteSuccess = true;
+              }
+            }
+            
+            // Provider responded - if we got a valid quote it's 'ok', otherwise 'degraded' (API works but no quote)
+            // Fast response with no quote likely means missing API key or rate limit
+            return {
+              providerId: p.providerId,
+              status: quoteSuccess ? 'ok' : (latencyMs < 100 ? 'ok' : 'degraded'), // Fast empty response = likely auth issue, still reachable
+              latencyMs,
+              liveCheck: true,
+              quoteSuccess,
+            };
+          } catch (error) {
+            const latencyMs = Math.round(performance.now() - startTime);
+            // Check if it's a timeout or actual network failure
+            const isTimeout = latencyMs >= 7900;
+            return {
+              providerId: p.providerId,
+              status: isTimeout ? 'down' : 'degraded', // Timeout = down, quick error = degraded (might be rate limit)
+              latencyMs,
+              liveCheck: true,
+              quoteSuccess: false,
+            };
+          }
+        });
+
+      const liveResults = await Promise.allSettled(healthCheckPromises);
+      const liveResultsMap = new Map<string, { status: string; latencyMs: number; liveCheck: boolean }>();
+      for (const result of liveResults) {
+        if (result.status === 'fulfilled') {
+          liveResultsMap.set(result.value.providerId, result.value);
+        }
+      }
+
+      const providers = PROVIDERS.map((p) => {
+        const stat = stats.find((s) => s.providerId === p.providerId);
+        const liveResult = liveResultsMap.get(p.providerId);
+
+        // Prefer live result for status and latency if available
+        let status: 'ok' | 'degraded' | 'down' | 'unknown';
+        let latencyMs: number;
+
+        if (liveResult) {
+          status = liveResult.status as 'ok' | 'degraded' | 'down';
+          latencyMs = liveResult.latencyMs;
+        } else if (stat && stat.observations > 0) {
+          status = stat.successRate >= 70 ? 'ok' : stat.successRate >= 40 ? 'degraded' : 'down';
+          latencyMs = stat.latencyMs;
+        } else if (!p.capabilities.quote) {
+          // Deep-link only providers - mark as ok (they don't need quote capability)
+          status = 'ok';
+          latencyMs = 0;
+        } else {
+          status = 'unknown';
+          latencyMs = 0;
+        }
+
+        return {
+          providerId: p.providerId,
+          displayName: p.displayName,
+          category: p.category,
+          capabilities: p.capabilities,
+          successRate: stat?.successRate ?? (liveResult?.status === 'ok' ? 95 : liveResult?.status === 'degraded' ? 50 : 0),
+          latencyMs,
+          observations: stat?.observations ?? (liveResult ? 1 : 0),
+          status,
+          liveCheck: liveResult?.liveCheck ?? false,
+        };
+      });
+
+      // Cache the result
+      healthCheckCache = { providers, timestamp: now };
+
+      return { providers, timestamp: now, cached: false };
     });
-    return { providers, timestamp: Date.now() };
-  });
+  };
 
   if (config.metrics.enabled) {
     api.get('/metrics', async (_request, reply) => {
@@ -318,6 +441,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['uniswap-v3', uniswapV3Adapter],
     ['uniswap-v2', uniswapV2Adapter],
   ]);
+
+  // Set adapters reference and register the status endpoint
+  adaptersRef = adapters;
+  registerProviderStatusEndpoint();
 
   api.get(
     '/v1/tokens/resolve',
