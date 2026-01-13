@@ -12,3 +12,6 @@ export * from './openOceanAdapter';
 export * from './zeroXAdapter';
 export * from './uniswapV3Adapter';
 export * from './uniswapV2Adapter';
+export * from './squadSwapAdapter';
+export * from './thenaAdapter';
+export * from './fstSwapAdapter';

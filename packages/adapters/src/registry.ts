@@ -120,6 +120,33 @@ export const PROVIDERS: ProviderMeta[] = [
     integrationConfidence: 0.85,
     notes: 'Uniswap V2 on-chain quote via Router.getAmountsOut.',
   },
+  {
+    providerId: 'squadswap',
+    displayName: 'SquadSwap',
+    category: 'dex',
+    homepageUrl: 'https://squadswap.com',
+    capabilities: { quote: true, buildTx: true, deepLink: true },
+    integrationConfidence: 0.75,
+    notes: 'SquadSwap on-chain quote via V2 Router on BNB Chain.',
+  },
+  {
+    providerId: 'thena',
+    displayName: 'THENA',
+    category: 'dex',
+    homepageUrl: 'https://thena.fi',
+    capabilities: { quote: true, buildTx: true, deepLink: true },
+    integrationConfidence: 0.8,
+    notes: 'THENA ve(3,3) DEX on BNB Chain. Leading liquidity layer with multiple AMM types.',
+  },
+  {
+    providerId: 'fstswap',
+    displayName: 'FstSwap',
+    category: 'dex',
+    homepageUrl: 'https://fstswap.io',
+    capabilities: { quote: true, buildTx: true, deepLink: true },
+    integrationConfidence: 0.7,
+    notes: 'FstSwap on-chain quote via V2 Router on BNB Chain.',
+  },
 ];
 
 export function listProviders(): ProviderMeta[] {

@@ -38,6 +38,9 @@ import {
   ZeroXAdapter,
   UniswapV3Adapter,
   UniswapV2Adapter,
+  SquadSwapAdapter,
+  ThenaAdapter,
+  FstSwapAdapter,
   PROVIDERS,
   type Adapter,
 } from '@swappilot/adapters';
@@ -428,6 +431,24 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     quoteTimeoutMs: 5000,
   });
 
+  const squadSwapAdapter = new SquadSwapAdapter({
+    chainId: 56,
+    rpcUrl: config.rpc.bscUrls[0] ?? null,
+    quoteTimeoutMs: 5000,
+  });
+
+  const thenaAdapter = new ThenaAdapter({
+    chainId: 56,
+    rpcUrl: config.rpc.bscUrls[0] ?? null,
+    quoteTimeoutMs: 5000,
+  });
+
+  const fstSwapAdapter = new FstSwapAdapter({
+    chainId: 56,
+    rpcUrl: config.rpc.bscUrls[0] ?? null,
+    quoteTimeoutMs: 5000,
+  });
+
   // Create adapters map for the mock quote builder
   const adapters = new Map<string, Adapter>([
     ['pancakeswap', pancakeSwapAdapter],
@@ -440,6 +461,9 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['0x', zeroXAdapter],
     ['uniswap-v3', uniswapV3Adapter],
     ['uniswap-v2', uniswapV2Adapter],
+    ['squadswap', squadSwapAdapter],
+    ['thena', thenaAdapter],
+    ['fstswap', fstSwapAdapter],
   ]);
 
   // Set adapters reference and register the status endpoint
