@@ -442,8 +442,8 @@ export function SwapInterface() {
   const handleSwapConfirm = async (quote: RankedQuote) => {
     if (isSecurityUncertain) {
       toast.warning(
-        "Potentially unsafe token",
-        "A security source flagged this token. Switch to Expert Mode to continue.",
+        "Token may be unsafe",
+        "A security source may have flagged this token. Switch to Expert Mode to continue.",
       );
       return;
     }
@@ -969,7 +969,7 @@ export function SwapInterface() {
                     disabled
                     variant="destructive"
                   >
-                    Potentially unsafe token
+                    Token may be unsafe
                   </Button>
                 ) : (
                   <Button 
@@ -986,9 +986,9 @@ export function SwapInterface() {
 
               {isSecurityUncertain && (
                 <div className="mt-3 rounded-lg border border-sp-bad/40 bg-sp-bad/10 p-3 text-caption text-sp-bad">
-                  <div className="font-semibold">Potentially unsafe token</div>
+                  <div className="font-semibold">Token may be unsafe</div>
                   <div className="mt-1 text-sp-bad/90">
-                    A security source flagged this token. Execution is blocked as a precaution.
+                    A security source may have flagged this token. Execution is blocked as a precaution.
                   </div>
                   <button
                     className="mt-2 rounded-md bg-sp-bad/20 px-3 py-1 text-[11px] font-semibold text-sp-bad transition hover:bg-sp-bad/30"
@@ -1124,7 +1124,7 @@ export function SwapInterface() {
             </Button>
           ) : isSecurityUncertain ? (
             <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
-              Potentially unsafe token
+              Token may be unsafe
             </Button>
           ) : (
             <Button 

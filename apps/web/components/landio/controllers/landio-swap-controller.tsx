@@ -1152,8 +1152,8 @@ export function LandioSwapController() {
             warning.style.cssText =
               "margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.08);color:#ff6b6b;font-size:12px;";
             warning.innerHTML =
-              "<div class=\"token-security-title\" style=\"font-weight:600;\">Potentially unsafe token</div>" +
-              "<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">A security source flagged this token. Execution is blocked as a precaution.</div>" +
+              "<div class=\"token-security-title\" style=\"font-weight:600;\">Token may be unsafe</div>" +
+              "<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">A security source may have flagged this token. Execution is blocked as a precaution.</div>" +
               "<button id=\"tokenSecurityOverride\" class=\"token-security-override\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continue in Expert Mode</button>";
             swapContainer?.appendChild(warning);
             const overrideBtn = document.getElementById("tokenSecurityOverride") as HTMLButtonElement | null;
@@ -1169,7 +1169,7 @@ export function LandioSwapController() {
               };
             }
           }
-          setSwapBtnText("Potentially unsafe token");
+          setSwapBtnText("Token may be unsafe");
           setDisabled("swapBtn", true);
         } else {
           if (existingWarning) existingWarning.remove();
@@ -1757,8 +1757,8 @@ export function LandioSwapController() {
     const body = warning.querySelector<HTMLElement>(".token-security-body");
     const button = warning.querySelector<HTMLButtonElement>(".token-security-override");
 
-    if (title) title.textContent = "Potentially unsafe token";
-    if (body) body.textContent = "A security source flagged this token. Execution is blocked as a precaution.";
+    if (title) title.textContent = "Token may be unsafe";
+    if (body) body.textContent = "A security source may have flagged this token. Execution is blocked as a precaution.";
     if (button) button.textContent = "Continue in Expert Mode";
   }, [settings.mode, selected, toTokenSymbol]);
 
