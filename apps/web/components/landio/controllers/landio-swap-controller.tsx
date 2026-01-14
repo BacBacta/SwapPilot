@@ -209,6 +209,7 @@ function renderProviders(
   showAll: boolean,
   setSelected: (q: RankedQuote) => void,
   onShowMore?: () => void,
+  scoringMode: "BEQ" | "RAW" = "BEQ",
 ) {
   // Find or create providers list container
   let listContainer = container.querySelector("#providersList") as HTMLElement | null;
@@ -242,7 +243,9 @@ function renderProviders(
     
     const buyAmount = toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount);
     const out = formatAmount(q.normalized.buyAmount ?? q.raw.buyAmount, toTokenInfo.decimals);
-    const beq = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : null;
+    const beq = scoringMode === "BEQ" && typeof q.score?.beqScore === "number"
+      ? Math.round(q.score.beqScore)
+      : null;
     
     // Calculate delta % vs best
     let deltaPercent = "";
@@ -407,7 +410,8 @@ export function LandioSwapController() {
     toTokenInfo: TokenInfo | null;
     effectiveSlippageBps: number;
     settings: typeof settings;
-  }>({ fromTokenInfo: null, toTokenInfo: null, effectiveSlippageBps: 50, settings });
+    scoringMode: "BEQ" | "RAW";
+  }>({ fromTokenInfo: null, toTokenInfo: null, effectiveSlippageBps: 50, settings, scoringMode: "BEQ" });
   
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 5: API RESPONSE STATE (Quotes)
@@ -592,8 +596,9 @@ export function LandioSwapController() {
       toTokenInfo: toTokenInfo ?? null,
       effectiveSlippageBps,
       settings,
+      scoringMode,
     };
-  }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings]);
+  }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings, scoringMode]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 18: INITIALIZATION EFFECTS
@@ -888,6 +893,7 @@ export function LandioSwapController() {
         // Use captured values and ref for slippage (which may have changed)
         const currentSlippageBps = currentParamsRef.current.effectiveSlippageBps;
         const currentSettings = currentParamsRef.current.settings;
+        const currentScoringMode = currentParamsRef.current.scoringMode;
 
         try {
           const res = await postQuotes({
@@ -912,7 +918,11 @@ export function LandioSwapController() {
         if (requestId !== lastRequestIdRef.current) return;
 
         setResponse(res);
-        const best = (res.rankedQuotes ?? [])[0] ?? null;
+        const activeQuotes =
+          currentScoringMode === "RAW"
+            ? (res.bestRawQuotes && res.bestRawQuotes.length > 0 ? res.bestRawQuotes : res.rankedQuotes ?? [])
+            : (res.rankedQuotes ?? []);
+        const best = activeQuotes[0] ?? null;
         setSelected(best);
 
         // Update UI
@@ -974,21 +984,22 @@ export function LandioSwapController() {
         // Fill provider list dynamically (respects showAllProviders)
         // This initial render shows top 3, the showAllProviders effect will re-render
         const container = document.getElementById("providersContainer");
-        if (container && res.rankedQuotes) {
+        if (container && activeQuotes.length > 0) {
           renderProviders(
             container, 
-            res.rankedQuotes, 
+            activeQuotes, 
             toTokenInfo, 
             toTokenSymbol, 
             false, 
             setSelected,
-            () => setShowAllProviders(true)
+            () => setShowAllProviders(true),
+            currentScoringMode
           );
         }
 
         // BEQ details + route + transaction details
         const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
-        const allBuys = (res.rankedQuotes ?? [])
+        const allBuys = activeQuotes
           .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
           .filter((x): x is bigint => x !== null);
         const maxBuy = allBuys.length ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
@@ -1648,25 +1659,49 @@ export function LandioSwapController() {
 
   // Re-render providers when showAllProviders changes
   useEffect(() => {
-    if (!response?.rankedQuotes || !toTokenInfo) return;
+    if (!response || !toTokenInfo) return;
+    const activeQuotes =
+      scoringMode === "RAW"
+        ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
+        : (response.rankedQuotes ?? []);
+    if (activeQuotes.length === 0) return;
     
     const container = document.getElementById("providersContainer");
     if (!container) return;
 
     renderProviders(
       container, 
-      response.rankedQuotes, 
+      activeQuotes, 
       toTokenInfo, 
       toTokenSymbol, 
       showAllProviders, 
       setSelected,
-      () => setShowAllProviders(true)
+      () => setShowAllProviders(true),
+      scoringMode
     );
-  }, [showAllProviders, response, toTokenInfo, toTokenSymbol]);
+  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode]);
+
+  // Re-select top quote when scoring mode changes
+  useEffect(() => {
+    if (!response) return;
+    const activeQuotes =
+      scoringMode === "RAW"
+        ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
+        : (response.rankedQuotes ?? []);
+    const best = activeQuotes[0] ?? null;
+    if (best && (!selected || selected.providerId !== best.providerId)) {
+      setSelected(best);
+    }
+  }, [scoringMode, response, selected]);
 
   // Update BEQ panel when selected quote changes
   useEffect(() => {
-    if (!selected || !response?.rankedQuotes || !toTokenInfo) return;
+    if (!selected || !response || !toTokenInfo) return;
+    const activeQuotes =
+      scoringMode === "RAW"
+        ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
+        : (response.rankedQuotes ?? []);
+    if (activeQuotes.length === 0) return;
 
     // BEQ Score for selected quote
     const score = selected.score?.beqScore;
@@ -1679,7 +1714,7 @@ export function LandioSwapController() {
     }
 
     // Calculate max buy amount across all quotes for Price Impact comparison
-    const allBuys = response.rankedQuotes
+    const allBuys = activeQuotes
       .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
       .filter((x): x is bigint => x !== null);
     const maxBuy = allBuys.length > 0 ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
@@ -1770,7 +1805,7 @@ export function LandioSwapController() {
         : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
     setHtml("#routeContainer .route-path", routeHtml);
 
-  }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken]);
+  }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken, scoringMode]);
 
   // Update swap button state based on approval, balance, and connection
   useEffect(() => {
