@@ -578,6 +578,8 @@ export function LandioSwapController() {
     setToAmountValue(0);
     setResponse(null);
     setSelected(null);
+    const existingWarning = document.getElementById("tokenSecurityWarning");
+    if (existingWarning) existingWarning.remove();
     setDisplay("beqContainer", "none");
     setDisplay("routeContainer", "none");
     setDisplay("providersContainer", "none");
@@ -1150,9 +1152,9 @@ export function LandioSwapController() {
             warning.style.cssText =
               "margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.08);color:#ff6b6b;font-size:12px;";
             warning.innerHTML =
-              "<div style=\"font-weight:600;\">Token potentiellement non sécurisé</div>" +
-              "<div style=\"margin-top:4px;opacity:0.9;\">Une source de sécurité a signalé ce token. Nous bloquons l’exécution par précaution.</div>" +
-              "<button id=\"tokenSecurityOverride\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continuer en mode expert</button>";
+              "<div class=\"token-security-title\" style=\"font-weight:600;\">Potentially unsafe token</div>" +
+              "<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">A security source flagged this token. Execution is blocked as a precaution.</div>" +
+              "<button id=\"tokenSecurityOverride\" class=\"token-security-override\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continue in Expert Mode</button>";
             swapContainer?.appendChild(warning);
             const overrideBtn = document.getElementById("tokenSecurityOverride") as HTMLButtonElement | null;
             if (overrideBtn) {
@@ -1167,7 +1169,7 @@ export function LandioSwapController() {
               };
             }
           }
-          setSwapBtnText("Token potentiellement non sécurisé");
+          setSwapBtnText("Potentially unsafe token");
           setDisabled("swapBtn", true);
         } else {
           if (existingWarning) existingWarning.remove();
@@ -1730,6 +1732,35 @@ export function LandioSwapController() {
       setSelected(best);
     }
   }, [scoringMode, response, selected]);
+
+  // Update/remove token security warning when mode or token changes
+  useEffect(() => {
+    const warning = document.getElementById("tokenSecurityWarning");
+    if (!warning) return;
+
+    if (settings.mode !== "SAFE") {
+      warning.remove();
+      return;
+    }
+
+    const sellability = selected?.signals?.sellability;
+    const reasons = sellability?.reasons ?? [];
+    const tokenSecurityReasons = reasons.filter((r) => r.startsWith("token_security:"));
+    const isSecurityUncertain = tokenSecurityReasons.length > 0 && sellability?.status !== "OK";
+
+    if (!isSecurityUncertain) {
+      warning.remove();
+      return;
+    }
+
+    const title = warning.querySelector<HTMLElement>(".token-security-title");
+    const body = warning.querySelector<HTMLElement>(".token-security-body");
+    const button = warning.querySelector<HTMLButtonElement>(".token-security-override");
+
+    if (title) title.textContent = "Potentially unsafe token";
+    if (body) body.textContent = "A security source flagged this token. Execution is blocked as a precaution.";
+    if (button) button.textContent = "Continue in Expert Mode";
+  }, [settings.mode, selected, toTokenSymbol]);
 
   // Update BEQ panel when selected quote changes
   useEffect(() => {
