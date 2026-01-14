@@ -1135,8 +1135,45 @@ export function LandioSwapController() {
           }
         }
 
-        setSwapBtnText("Swap");
-        setDisabled("swapBtn", false);
+        const sellability = best?.signals?.sellability;
+        const reasons = sellability?.reasons ?? [];
+        const tokenSecurityReasons = reasons.filter((r) => r.startsWith("token_security:"));
+        const isSecurityUncertain =
+          currentSettings.mode === "SAFE" && tokenSecurityReasons.length > 0 && sellability?.status !== "OK";
+
+        const warningId = "tokenSecurityWarning";
+        const existingWarning = document.getElementById(warningId);
+        if (isSecurityUncertain) {
+          if (!existingWarning && swapContainer) {
+            const warning = document.createElement("div");
+            warning.id = warningId;
+            warning.style.cssText =
+              "margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.08);color:#ff6b6b;font-size:12px;";
+            warning.innerHTML =
+              "<div style=\"font-weight:600;\">Token potentiellement non sécurisé</div>" +
+              "<div style=\"margin-top:4px;opacity:0.9;\">Une source de sécurité a signalé ce token. Nous bloquons l’exécution par précaution.</div>" +
+              "<button id=\"tokenSecurityOverride\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continuer en mode expert</button>";
+            swapContainer?.appendChild(warning);
+            const overrideBtn = document.getElementById("tokenSecurityOverride") as HTMLButtonElement | null;
+            if (overrideBtn) {
+              overrideBtn.onclick = () => {
+                updateSettings({ mode: "DEGEN" });
+                const fromAmountInput = document.getElementById("fromAmount") as HTMLInputElement | null;
+                if (fromAmountInput && fromAmountInput.value) {
+                  setTimeout(() => {
+                    fromAmountInput.dispatchEvent(new Event("input", { bubbles: true }));
+                  }, 100);
+                }
+              };
+            }
+          }
+          setSwapBtnText("Token potentiellement non sécurisé");
+          setDisabled("swapBtn", true);
+        } else {
+          if (existingWarning) existingWarning.remove();
+          setSwapBtnText("Swap");
+          setDisabled("swapBtn", false);
+        }
 
         // Store the receipt if available, otherwise fetch by receiptId (like the React swap UI)
         if (res.receipt) {

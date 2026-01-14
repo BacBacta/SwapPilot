@@ -371,6 +371,16 @@ export function SwapInterface() {
   // Best quote for display
   const topQuote = mode === "BEQ" ? bestExecutableQuote : bestRawQuote;
 
+  // SAFE mode soft-block when token security is uncertain
+  const isSafeMode = settings.mode === "SAFE";
+  const sellability = topQuote?.signals?.sellability;
+  const tokenSecurityReasons = sellability?.reasons?.filter((r) => r.startsWith("token_security:")) ?? [];
+  const isSecurityUncertain =
+    isSafeMode &&
+    Boolean(topQuote) &&
+    tokenSecurityReasons.length > 0 &&
+    sellability?.status !== "OK";
+
   // Handlers
   const handleSwapDirection = useCallback(() => {
     setFromToken(toToken);
@@ -430,6 +440,13 @@ export function SwapInterface() {
 
   // Handle real swap execution
   const handleSwapConfirm = async (quote: RankedQuote) => {
+    if (isSecurityUncertain) {
+      toast.warning(
+        "Token potentiellement non sécurisé",
+        "Une source de sécurité a signalé ce token. Passez en mode expert pour continuer.",
+      );
+      return;
+    }
     console.groupCollapsed("[swap][ui] confirm", quote.providerId);
     console.info("[swap][ui] context", {
       fromToken,
@@ -945,6 +962,15 @@ export function SwapInterface() {
                   >
                     Insufficient balance
                   </Button>
+                ) : isSecurityUncertain ? (
+                  <Button
+                    className="mt-5 h-12 w-full text-body"
+                    size="lg"
+                    disabled
+                    variant="destructive"
+                  >
+                    Token potentiellement non sécurisé
+                  </Button>
                 ) : (
                   <Button 
                     className="mt-5 h-12 w-full text-body" 
@@ -957,6 +983,21 @@ export function SwapInterface() {
                   </Button>
                 )}
               </div>
+
+              {isSecurityUncertain && (
+                <div className="mt-3 rounded-lg border border-sp-bad/40 bg-sp-bad/10 p-3 text-caption text-sp-bad">
+                  <div className="font-semibold">Token potentiellement non sécurisé</div>
+                  <div className="mt-1 text-sp-bad/90">
+                    Une source de sécurité a signalé ce token. Nous bloquons l’exécution par précaution.
+                  </div>
+                  <button
+                    className="mt-2 rounded-md bg-sp-bad/20 px-3 py-1 text-[11px] font-semibold text-sp-bad transition hover:bg-sp-bad/30"
+                    onClick={() => updateSettings({ mode: "DEGEN" })}
+                  >
+                    Continuer en mode expert
+                  </button>
+                </div>
+              )}
 
               <p className="mt-3 text-center text-micro text-sp-muted2">
                 {mode === "BEQ" 
@@ -1080,6 +1121,10 @@ export function SwapInterface() {
           ) : insufficientBalance ? (
             <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
               Insufficient Balance
+            </Button>
+          ) : isSecurityUncertain ? (
+            <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
+              Token potentiellement non sécurisé
             </Button>
           ) : (
             <Button 
