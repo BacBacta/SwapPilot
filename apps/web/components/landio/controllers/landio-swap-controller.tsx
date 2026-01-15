@@ -1142,18 +1142,26 @@ export function LandioSwapController() {
         const tokenSecurityReasons = reasons.filter((r) => r.startsWith("token_security:"));
         const isSecurityUncertain =
           currentSettings.mode === "SAFE" && tokenSecurityReasons.length > 0 && sellability?.status !== "OK";
+        const isSellabilityUncertain =
+          currentSettings.mode === "SAFE" && sellability?.status === "UNCERTAIN";
+        const isRiskBlocked = isSecurityUncertain || isSellabilityUncertain;
+        const sellabilityWarningBody = reasons.some((r) => r.includes("no_txRequest_available"))
+          ? "Simulation isn’t available, so sellability can’t be confirmed. We’ve paused execution to keep you safe."
+          : reasons.some((r) => r.includes("preflight"))
+            ? "Simulation signals elevated risk, so sellability is uncertain. We’ve paused execution to protect you."
+            : "Sellability is uncertain. We’ve paused execution to protect you.";
 
         const warningId = "tokenSecurityWarning";
         const existingWarning = document.getElementById(warningId);
-        if (isSecurityUncertain) {
+        if (isRiskBlocked) {
           if (!existingWarning && swapContainer) {
             const warning = document.createElement("div");
             warning.id = warningId;
             warning.style.cssText =
               "margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.08);color:#ff6b6b;font-size:12px;";
             warning.innerHTML =
-              "<div class=\"token-security-title\" style=\"font-weight:600;\">Token may be unsafe</div>" +
-              "<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">A security source may have flagged this token. Execution is blocked as a precaution.</div>" +
+              `<div class=\"token-security-title\" style=\"font-weight:600;\">${isSecurityUncertain ? "Token risk detected" : "Sellability uncertain"}</div>` +
+              `<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">${isSecurityUncertain ? "A security source flagged elevated risk. We’ve paused execution to protect you." : sellabilityWarningBody}</div>` +
               "<button id=\"tokenSecurityOverride\" class=\"token-security-override\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continue in Expert Mode</button>";
             swapContainer?.appendChild(warning);
             const overrideBtn = document.getElementById("tokenSecurityOverride") as HTMLButtonElement | null;
@@ -1169,7 +1177,7 @@ export function LandioSwapController() {
               };
             }
           }
-          setSwapBtnText("Token may be unsafe");
+          setSwapBtnText(isSecurityUncertain ? "Token risk detected" : "Sellability uncertain");
           setDisabled("swapBtn", true);
         } else {
           if (existingWarning) existingWarning.remove();
@@ -1747,8 +1755,15 @@ export function LandioSwapController() {
     const reasons = sellability?.reasons ?? [];
     const tokenSecurityReasons = reasons.filter((r) => r.startsWith("token_security:"));
     const isSecurityUncertain = tokenSecurityReasons.length > 0 && sellability?.status !== "OK";
+    const isSellabilityUncertain = sellability?.status === "UNCERTAIN";
+    const isRiskBlocked = isSecurityUncertain || isSellabilityUncertain;
+    const sellabilityWarningBody = reasons.some((r) => r.includes("no_txRequest_available"))
+      ? "Simulation isn’t available, so sellability can’t be confirmed. We’ve paused execution to keep you safe."
+      : reasons.some((r) => r.includes("preflight"))
+        ? "Simulation signals elevated risk, so sellability is uncertain. We’ve paused execution to protect you."
+        : "Sellability is uncertain. We’ve paused execution to protect you.";
 
-    if (!isSecurityUncertain) {
+    if (!isRiskBlocked) {
       warning.remove();
       return;
     }
@@ -1757,8 +1772,12 @@ export function LandioSwapController() {
     const body = warning.querySelector<HTMLElement>(".token-security-body");
     const button = warning.querySelector<HTMLButtonElement>(".token-security-override");
 
-    if (title) title.textContent = "Token may be unsafe";
-    if (body) body.textContent = "A security source may have flagged this token. Execution is blocked as a precaution.";
+    if (title) title.textContent = isSecurityUncertain ? "Token risk detected" : "Sellability uncertain";
+    if (body) {
+      body.textContent = isSecurityUncertain
+        ? "A security source flagged elevated risk. We’ve paused execution to protect you."
+        : sellabilityWarningBody;
+    }
     if (button) button.textContent = "Continue in Expert Mode";
   }, [settings.mode, selected, toTokenSymbol]);
 
@@ -2241,8 +2260,6 @@ export function LandioSwapController() {
       `;
       tab.onclick = () => {
         setScoringMode(mode.key);
-        // Update settings mode for API
-        updateSettings({ mode: mode.key === "RAW" ? "DEGEN" : "NORMAL" });
         // Trigger re-quote
         const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
         if (fromAmountInput && fromAmountInput.value) {

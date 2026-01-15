@@ -380,6 +380,17 @@ export function SwapInterface() {
     Boolean(topQuote) &&
     tokenSecurityReasons.length > 0 &&
     sellability?.status !== "OK";
+  const sellabilityReasons = sellability?.reasons ?? [];
+  const isSellabilityUncertain =
+    isSafeMode &&
+    Boolean(topQuote) &&
+    sellability?.status === "UNCERTAIN";
+  const isRiskBlocked = isSecurityUncertain || isSellabilityUncertain;
+  const sellabilityWarningBody = sellabilityReasons.some((r) => r.includes("no_txRequest_available"))
+    ? "Simulation isn’t available, so sellability can’t be confirmed. We’ve paused execution to keep you safe."
+    : sellabilityReasons.some((r) => r.includes("preflight"))
+      ? "Simulation signals elevated risk, so sellability is uncertain. We’ve paused execution to protect you."
+      : "Sellability is uncertain. We’ve paused execution to protect you.";
 
   // Handlers
   const handleSwapDirection = useCallback(() => {
@@ -440,11 +451,12 @@ export function SwapInterface() {
 
   // Handle real swap execution
   const handleSwapConfirm = async (quote: RankedQuote) => {
-    if (isSecurityUncertain) {
-      toast.warning(
-        "Token may be unsafe",
-        "A security source may have flagged this token. Switch to Expert Mode to continue.",
-      );
+    if (isRiskBlocked) {
+      const title = isSecurityUncertain ? "Token risk detected" : "Sellability uncertain";
+      const message = isSecurityUncertain
+        ? "A security source flagged elevated risk. Enable Expert Mode to proceed."
+        : "We can’t confidently confirm sellability. Enable Expert Mode to proceed.";
+      toast.warning(title, message);
       return;
     }
     console.groupCollapsed("[swap][ui] confirm", quote.providerId);
@@ -962,14 +974,14 @@ export function SwapInterface() {
                   >
                     Insufficient balance
                   </Button>
-                ) : isSecurityUncertain ? (
+                ) : isRiskBlocked ? (
                   <Button
                     className="mt-5 h-12 w-full text-body"
                     size="lg"
                     disabled
                     variant="destructive"
                   >
-                    Token may be unsafe
+                    {isSecurityUncertain ? "Token risk detected" : "Sellability uncertain"}
                   </Button>
                 ) : (
                   <Button 
@@ -984,11 +996,13 @@ export function SwapInterface() {
                 )}
               </div>
 
-              {isSecurityUncertain && (
+              {isRiskBlocked && (
                 <div className="mt-3 rounded-lg border border-sp-bad/40 bg-sp-bad/10 p-3 text-caption text-sp-bad">
-                  <div className="font-semibold">Token may be unsafe</div>
+                  <div className="font-semibold">{isSecurityUncertain ? "Token risk detected" : "Sellability uncertain"}</div>
                   <div className="mt-1 text-sp-bad/90">
-                    A security source may have flagged this token. Execution is blocked as a precaution.
+                    {isSecurityUncertain
+                      ? "A security source flagged elevated risk. We’ve paused execution to protect you."
+                      : sellabilityWarningBody}
                   </div>
                   <button
                     className="mt-2 rounded-md bg-sp-bad/20 px-3 py-1 text-[11px] font-semibold text-sp-bad transition hover:bg-sp-bad/30"
@@ -1122,9 +1136,9 @@ export function SwapInterface() {
             <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
               Insufficient Balance
             </Button>
-          ) : isSecurityUncertain ? (
+          ) : isRiskBlocked ? (
             <Button className="h-14 w-full text-body font-bold" size="xl" disabled variant="destructive">
-              Token may be unsafe
+              {isSecurityUncertain ? "Token risk detected" : "Sellability uncertain"}
             </Button>
           ) : (
             <Button 
