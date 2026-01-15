@@ -28,6 +28,19 @@ const UNIVERSAL_ROUTER_ADDRESS: Address = "0x5Dc88340E1c5c6366864Ee415d6034cadd1
 // Transaction history storage key
 const TX_HISTORY_KEY = "swappilot_tx_history";
 
+// Gas reserve for native token swaps (0.005 BNB ~ enough for multiple transactions)
+const GAS_RESERVE_WEI = 5000000000000000n; // 0.005 in wei (18 decimals)
+
+// Native token addresses
+const NATIVE_ADDRESSES = new Set([
+  "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "0x0000000000000000000000000000000000000000",
+]);
+
+function isNativeTokenAddress(address: string): boolean {
+  return NATIVE_ADDRESSES.has(address.toLowerCase());
+}
+
 // Get token logo URL - uses TOKEN_ICONS, then Trust Wallet, then fallback
 function getTokenLogoUrl(token: TokenInfo | null | undefined): string | null {
   if (!token) return null;
@@ -704,8 +717,18 @@ export function LandioSwapController() {
     const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
     const handleMax = () => {
       if (fromAmountInput && fromTokenInfo && isConnected) {
-        const balance = getBalanceFormatted(fromTokenInfo);
-        fromAmountInput.value = balance;
+        const balanceRaw = getBalance(fromTokenInfo);
+        if (!balanceRaw) return;
+        
+        let maxWei = BigInt(balanceRaw);
+        
+        // Reserve gas for native tokens (BNB)
+        if (isNativeTokenAddress(fromTokenInfo.address)) {
+          maxWei = maxWei > GAS_RESERVE_WEI ? maxWei - GAS_RESERVE_WEI : 0n;
+        }
+        
+        const formatted = (Number(maxWei) / 10 ** (fromTokenInfo.decimals ?? 18)).toString();
+        fromAmountInput.value = formatted;
         fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
     };
@@ -714,7 +737,7 @@ export function LandioSwapController() {
     return () => {
       maxBtn?.removeEventListener('click', handleMax);
     };
-  }, [isConnected, isLoadingBalances, getBalanceFormatted, fromTokenInfo, toTokenInfo]);
+  }, [isConnected, isLoadingBalances, getBalanceFormatted, getBalance, fromTokenInfo, toTokenInfo]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 20: DOM SYNC EFFECTS - Settings Modal

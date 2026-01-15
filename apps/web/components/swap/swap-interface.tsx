@@ -38,6 +38,19 @@ import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import type { RankedQuote } from "@swappilot/shared";
 import type { Address } from "viem";
 
+// Gas reserve for native token swaps (0.005 BNB/ETH ~ enough for multiple transactions)
+const GAS_RESERVE_WEI = 5000000000000000n; // 0.005 in wei (18 decimals)
+
+// Native token addresses
+const NATIVE_ADDRESSES = new Set([
+  "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "0x0000000000000000000000000000000000000000",
+]);
+
+function isNativeTokenAddress(address: string): boolean {
+  return NATIVE_ADDRESSES.has(address.toLowerCase());
+}
+
 /* ========================================
    PROVIDER ROW (API Version)
    ======================================== */
@@ -829,9 +842,19 @@ export function SwapInterface() {
                 onTokenClick={() => openTokenPicker("from")}
                 onMaxClick={() => {
                   if (!fromTokenInfo) return;
-                  setFromAmount(getBalanceFormatted(fromTokenInfo));
-                  // Store the exact wei amount to avoid precision loss
-                  setFromAmountRawWei(getBalance(fromTokenInfo));
+                  const balanceWei = getBalance(fromTokenInfo);
+                  if (!balanceWei) return;
+                  
+                  let maxWei = BigInt(balanceWei);
+                  
+                  // Reserve gas for native tokens (BNB/ETH)
+                  if (isNativeTokenAddress(fromTokenInfo.address)) {
+                    maxWei = maxWei > GAS_RESERVE_WEI ? maxWei - GAS_RESERVE_WEI : 0n;
+                  }
+                  
+                  const formatted = (Number(maxWei) / 10 ** (fromTokenInfo.decimals ?? 18)).toString();
+                  setFromAmount(formatted);
+                  setFromAmountRawWei(maxWei.toString());
                 }}
               />
 
@@ -850,7 +873,14 @@ export function SwapInterface() {
                         const bal = getBalance(fromTokenInfo);
                         if (!bal) return;
                         // Convert bal from string to bigint for calculation
-                        const balBigInt = BigInt(bal);
+                        let balBigInt = BigInt(bal);
+                        
+                        // Reserve gas for native tokens when using MAX (100%)
+                        const isNative = isNativeTokenAddress(fromTokenInfo.address);
+                        if (isNative && pct === 1) {
+                          balBigInt = balBigInt > GAS_RESERVE_WEI ? balBigInt - GAS_RESERVE_WEI : 0n;
+                        }
+                        
                         const pctAmount = (balBigInt * BigInt(Math.floor(pct * 100))) / 100n;
                         const formatted = (Number(pctAmount) / 10 ** (fromTokenInfo.decimals ?? 18)).toString();
                         setFromAmount(formatted);
