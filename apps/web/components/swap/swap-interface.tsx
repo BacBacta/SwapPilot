@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 import { CardDark } from "@/components/ui/surfaces";
 import { Button, Pill, Badge } from "@/components/ui/primitives";
@@ -292,12 +292,29 @@ export function SwapInterface() {
   // NOTE: We use settings.slippageBps (not effectiveSlippageBps) to avoid
   // a dependency cycle where dynamic slippage changes trigger new quotes,
   // which change the signals, which change dynamic slippage again.
+  const prevModeRef = useRef(settings.mode);
   useEffect(() => {
     // Don't fetch if tokens are the same or amount is invalid
     if (fromToken === toToken) return;
     const amountNum = parseFloat(fromAmount.replace(/,/g, "") || "0");
     if (amountNum <= 0 || Number.isNaN(amountNum)) return;
     if (!fromTokenInfo || !toTokenInfo) return;
+
+    // Check if only the mode changed
+    const modeChanged = prevModeRef.current !== settings.mode;
+    prevModeRef.current = settings.mode;
+
+    // If only mode changed, fetch immediately without debounce
+    if (modeChanged) {
+      fetchQuotes({
+        sellToken: fromToken,
+        buyToken: toToken,
+        sellAmount: fromAmount,
+        slippageBps: settings.slippageBps,
+        mode: settings.mode,
+      });
+      return;
+    }
 
     // Debounce to avoid too many API calls while typing
     const timeoutId = setTimeout(() => {

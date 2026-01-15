@@ -617,6 +617,86 @@ export function LandioSwapController() {
   }, [fromTokenInfo, toTokenInfo, effectiveSlippageBps, settings, scoringMode]);
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 17B: IMMEDIATE RE-FETCH ON MODE CHANGE
+  // ═══════════════════════════════════════════════════════════════════════════
+  // When the mode changes (SAFE/NORMAL/DEGEN), immediately re-fetch quotes
+  // without waiting for the normal debounce. This ensures the UI updates instantly.
+  const prevModeRef = useRef(settings.mode);
+  useEffect(() => {
+    // Skip on first render
+    if (prevModeRef.current === settings.mode) return;
+    prevModeRef.current = settings.mode;
+    
+    // Only re-fetch if we have valid tokens and a non-zero amount
+    if (!fromTokenInfo || !toTokenInfo) return;
+    if (!fromAmountWei || fromAmountWei === "0") return;
+    
+    // Cancel any pending debounced fetch
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    
+    // Show loading state
+    const swapContainer = document.querySelector<HTMLElement>(".swap-container");
+    swapContainer?.classList.add("analyzing-state");
+    setSwapBtnText("Refreshing...");
+    setDisabled("swapBtn", true);
+    
+    // Immediately fetch with new mode (no debounce)
+    const requestId = ++lastRequestIdRef.current;
+    
+    postQuotes({
+      request: {
+        chainId: 56,
+        sellToken: fromTokenInfo.address,
+        buyToken: toTokenInfo.address,
+        sellAmount: fromAmountWei,
+        slippageBps: effectiveSlippageBps,
+        mode: settings.mode,
+        scoringOptions: {
+          sellabilityCheck: settings.sellabilityCheck,
+          mevAwareScoring: settings.mevAwareScoring,
+          canonicalPoolsOnly: settings.canonicalPoolsOnly,
+        },
+        sellTokenDecimals: fromTokenInfo.decimals,
+        buyTokenDecimals: toTokenInfo.decimals,
+      },
+      timeoutMs: 12_000,
+    }).then((res) => {
+      if (requestId !== lastRequestIdRef.current) return;
+      
+      setResponse(res);
+      const activeQuotes = scoringMode === "RAW"
+        ? (res.bestRawQuotes?.length > 0 ? res.bestRawQuotes : res.rankedQuotes ?? [])
+        : (res.rankedQuotes ?? []);
+      const best = activeQuotes[0] ?? null;
+      setSelected(best);
+      
+      // Update output display
+      const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
+      if (toAmountInput && best) {
+        const rawBuyAmount = best.normalized.buyAmount ?? best.raw.buyAmount;
+        const formatted = formatAmount(rawBuyAmount, toTokenInfo.decimals);
+        toAmountInput.value = formatted === "—" ? "" : formatted;
+      }
+      
+      swapContainer?.classList.remove("analyzing-state");
+      if (isConnected) {
+        setSwapBtnText("Swap");
+        setDisabled("swapBtn", false);
+      }
+    }).catch(() => {
+      // Keep previous data on error
+      swapContainer?.classList.remove("analyzing-state");
+      if (isConnected && response) {
+        setSwapBtnText("Swap");
+        setDisabled("swapBtn", false);
+      }
+    });
+  }, [settings.mode, fromTokenInfo, toTokenInfo, fromAmountWei, effectiveSlippageBps, settings.sellabilityCheck, settings.mevAwareScoring, settings.canonicalPoolsOnly, scoringMode, isConnected, response]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 18: INITIALIZATION EFFECTS
   // ═══════════════════════════════════════════════════════════════════════════
   // Load transaction history from localStorage
@@ -2199,13 +2279,7 @@ export function LandioSwapController() {
       };
       btn.onclick = () => {
         updateSettings({ mode: mode.key });
-        // Trigger a re-quote if there's an amount
-        const fromAmountInput = document.getElementById('fromAmount') as HTMLInputElement | null;
-        if (fromAmountInput && fromAmountInput.value) {
-          setTimeout(() => {
-            fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
-          }, 100);
-        }
+        // The useEffect in SECTION 17B will automatically trigger a re-fetch
       };
       presetsContainer.appendChild(btn);
     });
