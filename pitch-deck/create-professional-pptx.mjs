@@ -546,13 +546,14 @@ function createDistributionSlide() {
   
   // Allocation data with distinct, contrasting colors matching legend exactly
   const allocations = [
-    { color: '9AE66E', label: 'Public Sale', value: 35, pct: '35%' },
+    { color: '9AE66E', label: 'Public Sale', value: 30, pct: '30%' },
     { color: '4CAF50', label: 'Treasury', value: 20, pct: '20%' },
     { color: '42A5F5', label: 'CEX & Marketing', value: 12, pct: '12%' },
     { color: '64B5F6', label: 'Liquidity', value: 12, pct: '12%' },
     { color: '78909C', label: 'Team', value: 11, pct: '11%' },
     { color: '90A4AE', label: 'Advisors', value: 5, pct: '5%' },
     { color: 'B0BEC5', label: 'Referral', value: 5, pct: '5%' },
+    { color: 'FFD54F', label: 'Incentives & Airdrop', value: 5, pct: '5%' },
   ];
 
   // Doughnut chart - réduit et commence après le titre (1.3 + 0.4 = 1.7 + marge)

@@ -16,7 +16,8 @@
 
 | Bucket | Allocation | TGE Unlock | Tokens at TGE |
 |--------|------------|------------|---------------|
-| IDO (35%) | 350,000,000 | 25% | 87,500,000 |
+| IDO (30%) | 300,000,000 | 25% | 75,000,000 |
+| Incentives & Airdrop (5%) | 50,000,000 | 25% | 12,500,000 |
 | CEX Listing & Marketing (12%) | 120,000,000 | 25% | 30,000,000 |
 | Liquidity (12%) | 120,000,000 | 35% | 42,000,000 |
 | Treasury (20%) | 200,000,000 | 5% | 10,000,000 |
@@ -29,7 +30,8 @@
 
 | Bucket | Allocation | Description |
 |--------|------------|-------------|
-| **IDO** | 35% | Public sale participants |
+| **IDO** | 30% | Public sale participants |
+| **Incentives & Airdrop** | 5% | Community incentives and airdrop campaigns |
 | **CEX Listing & Marketing** | 12% | Exchange listings and marketing campaigns |
 | **Liquidity** | 12% | DEX liquidity pools and market making |
 | **Treasury** | 20% | Protocol development and operations |
@@ -41,7 +43,8 @@
 
 | Bucket | TGE Unlock | Vesting Period |
 |--------|------------|----------------|
-| **IDO (35%)** | 25% | Linear over 8 months |
+| **IDO (30%)** | 25% | Linear over 8 months |
+| **Incentives & Airdrop (5%)** | 25% | Linear over 4 months |
 | **CEX Listing & Marketing (12%)** | 25% | Linear over 18 months |
 | **Liquidity (12%)** | 35% | Linear over 18 months |
 | **Treasury (20%)** | 5% | Linear over 24 months |
@@ -51,10 +54,15 @@
 
 ## Vesting Details
 
-### IDO (35%)
-- **TGE**: 25% unlocked immediately (87,500,000 PILOT)
+### IDO (30%)
+- **TGE**: 25% unlocked immediately (75,000,000 PILOT)
 - **Vesting**: Remaining 75% released linearly over 8 months
 - **Purpose**: Early supporters and public sale participants
+
+### Incentives & Airdrop (5%)
+- **TGE**: 25% unlocked immediately (12,500,000 PILOT)
+- **Vesting**: Remaining 75% released linearly over 4 months
+- **Purpose**: Community incentives, trading rewards, and airdrop campaigns
 
 ### CEX Listing & Marketing (12%)
 - **TGE**: 25% unlocked immediately (30,000,000 PILOT)
@@ -129,6 +137,6 @@
 1. **Aligned Incentives**: Team and advisor tokens have cliffs to ensure long-term commitment
 2. **Gradual Release**: Linear vesting prevents market dumps
 3. **Liquidity First**: 35% of liquidity allocation available at TGE for healthy trading
-4. **Community Focus**: 35% allocated to public IDO participants
+4. **Community Focus**: 30% allocated to public IDO participants + 5% for incentives & airdrops
 5. **Sustainable Growth**: Treasury funds protocol development over 2+ years
 6. **Moderate Initial Float**: ~16.95% circulating at TGE balances liquidity and sell pressure

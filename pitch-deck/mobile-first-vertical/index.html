@@ -474,14 +474,15 @@
       border-radius: 50%;
       background:
         conic-gradient(
-          /* Allocation (degrees) based on: 35 / 20 / 12 / 12 / 11 / 5 / 5 */
-          rgba(182,255,106,0.95) 0deg 126deg,       /* IDO 35% */
-          rgba(182,255,106,0.52) 126deg 198deg,     /* Treasury 20% */
-          rgba(125,211,252,0.74) 198deg 241.2deg,   /* CEX & Marketing 12% */
-          rgba(125,211,252,0.46) 241.2deg 284.4deg, /* Liquidity 12% */
-          rgba(255,255,255,0.22) 284.4deg 324deg,   /* Team 11% */
-          rgba(255,255,255,0.15) 324deg 342deg,     /* Advisors 5% */
-          rgba(255,255,255,0.10) 342deg 360deg      /* Referral 5% */
+          /* Allocation (degrees) based on: 30 / 20 / 12 / 12 / 11 / 5 / 5 / 5 */
+          rgba(182,255,106,0.95) 0deg 108deg,       /* IDO 30% */
+          rgba(182,255,106,0.52) 108deg 180deg,     /* Treasury 20% */
+          rgba(125,211,252,0.74) 180deg 223.2deg,   /* CEX & Marketing 12% */
+          rgba(125,211,252,0.46) 223.2deg 266.4deg, /* Liquidity 12% */
+          rgba(255,255,255,0.22) 266.4deg 306deg,   /* Team 11% */
+          rgba(255,255,255,0.15) 306deg 324deg,     /* Advisors 5% */
+          rgba(255,255,255,0.10) 324deg 342deg,     /* Referral 5% */
+          rgba(255,213,79,0.70) 342deg 360deg       /* Incentives & Airdrop 5% */
         );
       display: flex;
       align-items: center;
@@ -802,7 +803,8 @@
         </div>
 
         <div class="stack" style="margin-top: 18px;">
-          <div class="card"><div class="card-title">IDO</div><div class="card-sub">35%</div></div>
+          <div class="card"><div class="card-title">IDO</div><div class="card-sub">30%</div></div>
+          <div class="card"><div class="card-title">Incentives & Airdrop</div><div class="card-sub">5%</div></div>
           <div class="card"><div class="card-title">Treasury</div><div class="card-sub">20%</div></div>
           <div class="card"><div class="card-title">CEX & Marketing</div><div class="card-sub">12%</div></div>
           <div class="card"><div class="card-title">Liquidity</div><div class="card-sub">12%</div></div>
@@ -832,6 +834,7 @@
       <div class="visual" aria-label="Vesting bar chart visual">
         <div class="barlist">
           <div class="bar"><div class="label">IDO</div><div class="value">25% at TGE</div><div class="track"><div class="fill" style="width: 25%;"></div></div></div>
+          <div class="bar"><div class="label">Incentives & Airdrop</div><div class="value">25% at TGE</div><div class="track"><div class="fill" style="width: 25%;"></div></div></div>
           <div class="bar"><div class="label">Liquidity</div><div class="value">35% at TGE</div><div class="track"><div class="fill" style="width: 35%;"></div></div></div>
           <div class="bar"><div class="label">CEX & Marketing</div><div class="value">25% at TGE</div><div class="track"><div class="fill" style="width: 25%;"></div></div></div>
           <div class="bar"><div class="label">Treasury</div><div class="value">5% at TGE</div><div class="track"><div class="fill" style="width: 5%;"></div></div></div>
@@ -847,7 +850,7 @@
 
         <div class="card" style="margin-top: 12px;">
           <div class="card-title">Vesting rules (high level)</div>
-          <div class="card-sub">IDO: 25% TGE + 8mo linear · Liquidity: 35% TGE + 18mo linear · CEX & Marketing: 25% TGE + 18mo linear · Treasury: 5% TGE + 24mo linear · Team: 4mo cliff + 24mo linear · Advisors: 4mo cliff + 12mo linear · Referral: 2mo cliff then Month 3 unlock</div>
+          <div class="card-sub">IDO: 25% TGE + 8mo linear · Incentives & Airdrop: 25% TGE + 4mo linear · Liquidity: 35% TGE + 18mo linear · CEX & Marketing: 25% TGE + 18mo linear · Treasury: 5% TGE + 24mo linear · Team: 4mo cliff + 24mo linear · Advisors: 4mo cliff + 12mo linear · Referral: 2mo cliff then Month 3 unlock</div>
         </div>
       </div>
 
