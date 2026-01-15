@@ -693,6 +693,42 @@ export function LandioSwapController() {
       const best = activeQuotes[0] ?? null;
       setSelected(best);
       
+      // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
+      if (activeQuotes.length === 0) {
+        // Clear output
+        if (toAmountInput) {
+          toAmountInput.value = "";
+          toAmountInput.title = "";
+          toAmountInput.style.color = "";
+        }
+        
+        // Reset BEQ stats
+        setText("beqScore", "—");
+        setWidth("beqProgress", "0%");
+        setText("gasCost", "—");
+        setText("mevRisk", "—");
+        setText("netOutput", "—");
+        setText("priceImpact", "—");
+        
+        // Show "no quotes" message in providers container
+        const container = document.getElementById("providersContainer");
+        if (container) {
+          const modeLabel = capturedMode === "SAFE" ? "Safe" : capturedMode === "DEGEN" ? "Turbo" : "Balanced";
+          container.innerHTML = `
+            <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
+              <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
+              <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
+              <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+            </div>
+          `;
+        }
+        
+        swapContainer?.classList.remove("analyzing-state");
+        setSwapBtnText("No quotes available");
+        setDisabled("swapBtn", true);
+        return;
+      }
+      
       // ── Update DOM directly (same as in the debounced fetch) ──
       
       // Update output amount
@@ -1140,6 +1176,43 @@ export function LandioSwapController() {
             : (res.rankedQuotes ?? []);
         const best = activeQuotes[0] ?? null;
         setSelected(best);
+
+        // Remove analyzing state
+        swapContainer?.classList.remove("analyzing-state");
+
+        // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
+        if (activeQuotes.length === 0) {
+          // Clear output
+          if (toAmountInput) {
+            toAmountInput.value = "";
+            toAmountInput.title = "";
+            toAmountInput.style.color = "";
+          }
+          setToAmountValue(0);
+          
+          // Hide panels
+          setDisplay("beqContainer", "none");
+          setDisplay("routeContainer", "none");
+          setDisplay("detailsToggle", "none");
+          
+          // Show "no quotes" message in providers container
+          const container = document.getElementById("providersContainer");
+          if (container) {
+            const modeLabel = currentSettings.mode === "SAFE" ? "Safe" : currentSettings.mode === "DEGEN" ? "Turbo" : "Balanced";
+            container.innerHTML = `
+              <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
+                <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
+                <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+              </div>
+            `;
+            setDisplay("providersContainer", "block");
+          }
+          
+          setSwapBtnText("No quotes available");
+          setDisabled("swapBtn", true);
+          return;
+        }
 
         // Update UI
         setDisplay("beqContainer", "block");
