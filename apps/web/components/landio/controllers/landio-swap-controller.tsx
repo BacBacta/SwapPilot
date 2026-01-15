@@ -621,11 +621,19 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // When the mode changes (SAFE/NORMAL/DEGEN), immediately re-fetch quotes
   // without waiting for the normal debounce. This ensures the UI updates instantly.
-  const prevModeRef = useRef(settings.mode);
+  const [prevMode, setPrevMode] = useState<typeof settings.mode | null>(null);
   useEffect(() => {
-    // Skip on first render
-    if (prevModeRef.current === settings.mode) return;
-    prevModeRef.current = settings.mode;
+    // Initialize prevMode on first render
+    if (prevMode === null) {
+      setPrevMode(settings.mode);
+      return;
+    }
+    
+    // Skip if mode hasn't actually changed
+    if (prevMode === settings.mode) return;
+    
+    // Update prevMode immediately
+    setPrevMode(settings.mode);
     
     // Only re-fetch if we have valid tokens and a non-zero amount
     if (!fromTokenInfo || !toTokenInfo) return;
@@ -643,42 +651,144 @@ export function LandioSwapController() {
     setSwapBtnText("Refreshing...");
     setDisabled("swapBtn", true);
     
+    // Clear current output to show loading state
+    const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
+    if (toAmountInput) {
+      toAmountInput.value = "...";
+    }
+    
     // Immediately fetch with new mode (no debounce)
     const requestId = ++lastRequestIdRef.current;
+    const capturedMode = settings.mode;
+    const capturedScoringMode = scoringMode;
+    const capturedFromTokenInfo = fromTokenInfo;
+    const capturedToTokenInfo = toTokenInfo;
+    const capturedFromAmountWei = fromAmountWei;
     
     postQuotes({
       request: {
         chainId: 56,
-        sellToken: fromTokenInfo.address,
-        buyToken: toTokenInfo.address,
-        sellAmount: fromAmountWei,
+        sellToken: capturedFromTokenInfo.address,
+        buyToken: capturedToTokenInfo.address,
+        sellAmount: capturedFromAmountWei,
         slippageBps: effectiveSlippageBps,
-        mode: settings.mode,
+        mode: capturedMode,
         scoringOptions: {
           sellabilityCheck: settings.sellabilityCheck,
           mevAwareScoring: settings.mevAwareScoring,
           canonicalPoolsOnly: settings.canonicalPoolsOnly,
         },
-        sellTokenDecimals: fromTokenInfo.decimals,
-        buyTokenDecimals: toTokenInfo.decimals,
+        sellTokenDecimals: capturedFromTokenInfo.decimals,
+        buyTokenDecimals: capturedToTokenInfo.decimals,
       },
       timeoutMs: 12_000,
     }).then((res) => {
       if (requestId !== lastRequestIdRef.current) return;
       
+      // Update React state
       setResponse(res);
-      const activeQuotes = scoringMode === "RAW"
+      const activeQuotes = capturedScoringMode === "RAW"
         ? (res.bestRawQuotes?.length > 0 ? res.bestRawQuotes : res.rankedQuotes ?? [])
         : (res.rankedQuotes ?? []);
       const best = activeQuotes[0] ?? null;
       setSelected(best);
       
-      // Update output display
-      const toAmountInput = document.getElementById("toAmount") as HTMLInputElement | null;
+      // ── Update DOM directly (same as in the debounced fetch) ──
+      
+      // Update output amount
       if (toAmountInput && best) {
+        const tokenTax = extractTokenTax(best?.signals);
+        const buyTaxPercent = tokenTax.buyTax ?? 0;
         const rawBuyAmount = best.normalized.buyAmount ?? best.raw.buyAmount;
-        const formatted = formatAmount(rawBuyAmount, toTokenInfo.decimals);
-        toAmountInput.value = formatted === "—" ? "" : formatted;
+        let displayBuyAmount = rawBuyAmount;
+        
+        if (rawBuyAmount && buyTaxPercent > 0) {
+          try {
+            const rawBigInt = BigInt(rawBuyAmount);
+            const adjustedBigInt = (rawBigInt * BigInt(Math.round((100 - buyTaxPercent) * 100))) / 10000n;
+            displayBuyAmount = adjustedBigInt.toString();
+          } catch { /* keep original */ }
+        }
+        
+        const formatted = displayBuyAmount ? formatAmount(displayBuyAmount, capturedToTokenInfo.decimals) : "—";
+        if (buyTaxPercent > 0) {
+          toAmountInput.value = formatted === "—" ? "" : `~${formatted}`;
+          toAmountInput.title = `After ${buyTaxPercent.toFixed(1)}% token buy tax`;
+          toAmountInput.style.color = "#f59e0b";
+        } else {
+          toAmountInput.value = formatted === "—" ? "" : formatted;
+          toAmountInput.title = "";
+          toAmountInput.style.color = "";
+        }
+      }
+      
+      // Update BEQ Score
+      const score = best?.score?.beqScore;
+      if (typeof score === "number") {
+        setText("beqScore", `${Math.round(score)}/100`);
+        setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
+      }
+      
+      // Update providers list
+      const container = document.getElementById("providersContainer");
+      if (container && activeQuotes.length > 0) {
+        renderProviders(
+          container,
+          activeQuotes,
+          capturedToTokenInfo,
+          toTokenSymbol,
+          showAllProviders,
+          setSelected,
+          () => setShowAllProviders(true),
+          capturedScoringMode
+        );
+      }
+      
+      // Update Gas & MEV
+      const gasUsdRaw = parseFloat(best?.normalized.estimatedGasUsd ?? "");
+      const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
+        ? `$${gasUsdRaw.toFixed(2)}`
+        : "$—";
+      setText("gasCost", formattedGas);
+      setText("mevRisk", best?.signals?.mevExposure?.level 
+        ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") 
+        : "—");
+      
+      // Update Net Output
+      const tokenTax = extractTokenTax(best?.signals);
+      const taxPercent = tokenTax.buyTax ?? 0;
+      const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
+      const adjustedBestBuy = bestBuy !== null && taxPercent > 0
+        ? (bestBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
+        : bestBuy;
+      
+      if (adjustedBestBuy !== null) {
+        const outFormatted = formatAmount(adjustedBestBuy.toString(), capturedToTokenInfo.decimals);
+        if (taxPercent > 0) {
+          setText("netOutput", `~${outFormatted} ${toTokenSymbol}`);
+        } else {
+          setText("netOutput", `+${outFormatted} ${toTokenSymbol}`);
+        }
+      } else {
+        setText("netOutput", "—");
+      }
+      
+      // Update Price Impact
+      const allBuys = activeQuotes
+        .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
+        .filter((x): x is bigint => x !== null);
+      const maxBuy = allBuys.length ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
+      
+      if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
+        const ratio = Number(bestBuy) / Number(maxBuy);
+        const pct = (1 - ratio) * 100;
+        if (pct < 0.01) {
+          setText("priceImpact", "0.00%");
+        } else {
+          setText("priceImpact", `-${formatPercent(clamp(pct, 0, 99.99), 2)}`);
+        }
+      } else {
+        setText("priceImpact", "—");
       }
       
       swapContainer?.classList.remove("analyzing-state");
@@ -687,14 +797,14 @@ export function LandioSwapController() {
         setDisabled("swapBtn", false);
       }
     }).catch(() => {
-      // Keep previous data on error
       swapContainer?.classList.remove("analyzing-state");
-      if (isConnected && response) {
+      if (isConnected) {
         setSwapBtnText("Swap");
         setDisabled("swapBtn", false);
       }
     });
-  }, [settings.mode, fromTokenInfo, toTokenInfo, fromAmountWei, effectiveSlippageBps, settings.sellabilityCheck, settings.mevAwareScoring, settings.canonicalPoolsOnly, scoringMode, isConnected, response]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.mode]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 18: INITIALIZATION EFFECTS
