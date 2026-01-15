@@ -2592,10 +2592,9 @@ html, body {
   }
 }
 
-/* Balance + receipt strings can be long; allow wrapping to prevent horizontal overflow */
+/* Balance strings can be long; allow wrapping to prevent horizontal overflow */
 #fromBalanceLabel,
-#toBalanceLabel,
-#receiptId {
+#toBalanceLabel {
   overflow-wrap: anywhere;
   word-break: break-word;
 }

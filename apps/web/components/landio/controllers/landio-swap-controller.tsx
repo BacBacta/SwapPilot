@@ -1912,56 +1912,6 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 23: DOM SYNC EFFECTS - Providers & Details Display
   // ═══════════════════════════════════════════════════════════════════════════
-  // Display receipt ID (click to copy) when available
-  useEffect(() => {
-    let el = document.getElementById("receiptId");
-
-    // If the template HTML doesn't include the receipt element (cached/static build), create it.
-    if (!el) {
-      const container = document.getElementById("providersContainer");
-      if (container) {
-        const existing = container.querySelector<HTMLElement>(".providers-meta");
-        if (!existing) {
-          const meta = document.createElement("div");
-          meta.className = "providers-meta";
-          meta.style.cssText =
-            "font-size: 12px; opacity: 0.75; margin-top: 6px; display: flex; gap: 8px; align-items: center;";
-          meta.innerHTML =
-            '<span>Receipt</span><span id="receiptId" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \'Liberation Mono\', \'Courier New\', monospace; cursor: pointer; user-select: text;" title="Click to copy">—</span>';
-
-          const header = container.querySelector<HTMLElement>(".providers-header");
-          const providersList = container.querySelector<HTMLElement>("#providersList");
-          if (providersList) {
-            // Insert just before the list so it's always visible.
-            providersList.parentElement?.insertBefore(meta, providersList);
-          } else if (header?.nextSibling) {
-            header.parentElement?.insertBefore(meta, header.nextSibling);
-          } else {
-            container.appendChild(meta);
-          }
-        }
-        el = document.getElementById("receiptId");
-      }
-    }
-
-    if (!el) return;
-
-    setText("receiptId", response?.receiptId ?? "—");
-    el.title = response?.receiptId ? "Click to copy" : "—";
-
-    if (el.getAttribute("data-copy-bound") === "1") return;
-    el.setAttribute("data-copy-bound", "1");
-    el.addEventListener("click", async () => {
-      try {
-        const currentId = (document.getElementById("receiptId")?.textContent ?? "").trim();
-        if (!currentId || currentId === "—") return;
-        await navigator.clipboard.writeText(currentId);
-        toast.success("Copied", "Receipt ID copied to clipboard");
-      } catch {
-        toast.error("Copy failed", "Couldn't copy Receipt ID");
-      }
-    });
-  }, [response?.receiptId, toast]);
 
   // Display receipt info (whyWinner) when available
   useEffect(() => {
