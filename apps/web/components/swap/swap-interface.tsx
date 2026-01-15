@@ -38,8 +38,9 @@ import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import type { RankedQuote } from "@swappilot/shared";
 import type { Address } from "viem";
 
-// Gas reserve for native token swaps (0.005 BNB/ETH ~ enough for multiple transactions)
-const GAS_RESERVE_WEI = 5000000000000000n; // 0.005 in wei (18 decimals)
+// Gas reserve for native token swaps (0.001 BNB ~ enough for 2-3 transactions on BSC)
+// BSC gas per swap: ~0.0003-0.0005 BNB
+const GAS_RESERVE_WEI = 1000000000000000n; // 0.001 in wei (18 decimals)
 
 // Native token addresses
 const NATIVE_ADDRESSES = new Set([
