@@ -672,6 +672,8 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     sellAmount: z.string(),
     slippageBps: z.number().int().min(1).max(5000).default(100),
     account: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    sellTokenDecimals: z.number().int().min(0).max(36).optional(),
+    buyTokenDecimals: z.number().int().min(0).max(36).optional(),
     // Optional: pass the exact quote selected in the UI so we can build the tx
     // without re-quoting (more reliable, avoids "no valid quote" on transient outages).
     quoteRaw: ProviderQuoteRawSchema.optional(),
@@ -709,6 +711,8 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         sellAmount,
         slippageBps,
         account,
+        sellTokenDecimals,
+        buyTokenDecimals,
         quoteRaw,
         quoteNormalized,
       } = request.body;
@@ -732,6 +736,8 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         slippageBps,
         account,
         mode: 'NORMAL' as const,
+        ...(sellTokenDecimals !== undefined ? { sellTokenDecimals } : {}),
+        ...(buyTokenDecimals !== undefined ? { buyTokenDecimals } : {}),
       };
 
       const placeholderSignals = (reason: string): RiskSignals => ({

@@ -13,6 +13,8 @@ export type SwapParams = {
   buyToken: string;
   sellAmount: string;
   slippageBps: number;
+  sellTokenDecimals?: number;
+  buyTokenDecimals?: number;
   quoteRaw?: ProviderQuoteRaw;
   quoteNormalized?: ProviderQuoteNormalized;
 };
@@ -194,6 +196,8 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
         buyToken: params.buyToken,
         sellAmount: params.sellAmount,
         slippageBps: params.slippageBps,
+        sellTokenDecimals: params.sellTokenDecimals,
+        buyTokenDecimals: params.buyTokenDecimals,
         hasQuoteRaw: Boolean(params.quoteRaw),
       });
 
@@ -209,6 +213,8 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
           sellAmount: params.sellAmount,
           slippageBps: params.slippageBps,
           account: userAddress,
+          sellTokenDecimals: params.sellTokenDecimals,
+          buyTokenDecimals: params.buyTokenDecimals,
           quoteRaw: params.quoteRaw,
           quoteNormalized: params.quoteNormalized,
         }),

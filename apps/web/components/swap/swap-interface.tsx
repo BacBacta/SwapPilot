@@ -537,6 +537,8 @@ export function SwapInterface() {
         buyToken: toTokenInfo.address,
         sellAmount: sellAmountWei.toString(),
         slippageBps: effectiveSlippageBps, // Use dynamic slippage
+        sellTokenDecimals: fromTokenInfo.decimals,
+        buyTokenDecimals: toTokenInfo.decimals,
         quoteRaw: quote.raw,
         quoteNormalized: quote.normalized,
       });

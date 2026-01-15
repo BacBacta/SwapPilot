@@ -1273,6 +1273,8 @@ export function LandioSwapController() {
           buyToken: toTokenInfo.address,
           sellAmount: sellAmountWei,
           slippageBps: effectiveSlippageBps, // Use dynamic slippage
+          sellTokenDecimals: fromTokenInfo.decimals,
+          buyTokenDecimals: toTokenInfo.decimals,
           quoteRaw: selected.raw,
           quoteNormalized: selected.normalized,
         });
