@@ -135,10 +135,11 @@ export class OkxDexAdapter implements Adapter {
 
       const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
       
-      // OKX DEX Aggregator API (v6)
-      const path = '/api/v6/dex/aggregator/quote';
+      // OKX DEX Aggregator API
+      // Note: OKX uses 'chainIndex' instead of 'chainId' as the parameter name
+      const path = '/api/v5/dex/aggregator/quote';
       const queryParams = new URLSearchParams({
-        chainId: chainIdStr,
+        chainIndex: chainIdStr,
         fromTokenAddress: this.normalizeNativeToken(request.sellToken),
         toTokenAddress: this.normalizeNativeToken(request.buyToken),
         amount: request.sellAmount,
@@ -253,10 +254,10 @@ export class OkxDexAdapter implements Adapter {
     const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
     const slippage = String((request.slippageBps ?? 50) / 10000);
 
-    // OKX DEX Aggregator API (v6)
-    const path = '/api/v6/dex/aggregator/swap';
+    // OKX DEX Aggregator API (v5)
+    const path = '/api/v5/dex/aggregator/swap';
     const queryParams = new URLSearchParams({
-      chainId: chainIdStr,
+      chainIndex: chainIdStr,
       fromTokenAddress: this.normalizeNativeToken(request.sellToken),
       toTokenAddress: this.normalizeNativeToken(request.buyToken),
       amount: request.sellAmount,

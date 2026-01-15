@@ -11,10 +11,18 @@ import { decodeFunctionResult, encodeFunctionData, isAddress } from 'viem';
  * Router Address (V2): 0xd4ae6eCA985340Dd434D38F470aCCce4DC78D109
  * Router Address (Fusion/CL): 0x327Df1E6de05895d2ab08513aaDD9313Fe505d86
  * 
- * For simplicity, we use the V2-compatible interface which works with most pairs.
+ * THENA uses a custom router interface with "route" structs instead of simple address arrays.
+ * Each route specifies: from, to, stable (bool for stable/volatile pool type)
  */
 
-// Thena Router ABI (V2-compatible with stable/volatile distinction)
+// Route struct type for THENA
+type ThenaRoute = {
+  from: `0x${string}`;
+  to: `0x${string}`;
+  stable: boolean;
+};
+
+// Thena Router ABI - uses route structs with stable/volatile flag
 const THENA_ROUTER_ABI = [
   {
     type: 'function',
@@ -22,30 +30,54 @@ const THENA_ROUTER_ABI = [
     stateMutability: 'view',
     inputs: [
       { name: 'amountIn', type: 'uint256' },
-      { name: 'path', type: 'address[]' },
+      { 
+        name: 'routes', 
+        type: 'tuple[]',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'stable', type: 'bool' },
+        ],
+      },
     ],
     outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
   {
     type: 'function',
-    name: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
+    name: 'swapExactTokensForTokens',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'amountIn', type: 'uint256' },
       { name: 'amountOutMin', type: 'uint256' },
-      { name: 'path', type: 'address[]' },
+      { 
+        name: 'routes', 
+        type: 'tuple[]',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'stable', type: 'bool' },
+        ],
+      },
       { name: 'to', type: 'address' },
       { name: 'deadline', type: 'uint256' },
     ],
-    outputs: [],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
   {
     type: 'function',
-    name: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
+    name: 'swapExactETHForTokens',
     stateMutability: 'payable',
     inputs: [
       { name: 'amountOutMin', type: 'uint256' },
-      { name: 'path', type: 'address[]' },
+      { 
+        name: 'routes', 
+        type: 'tuple[]',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'stable', type: 'bool' },
+        ],
+      },
       { name: 'to', type: 'address' },
       { name: 'deadline', type: 'uint256' },
     ],
@@ -53,16 +85,24 @@ const THENA_ROUTER_ABI = [
   },
   {
     type: 'function',
-    name: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
+    name: 'swapExactTokensForETH',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'amountIn', type: 'uint256' },
       { name: 'amountOutMin', type: 'uint256' },
-      { name: 'path', type: 'address[]' },
+      { 
+        name: 'routes', 
+        type: 'tuple[]',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'stable', type: 'bool' },
+        ],
+      },
       { name: 'to', type: 'address' },
       { name: 'deadline', type: 'uint256' },
     ],
-    outputs: [],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }],
   },
 ] as const;
 
@@ -251,28 +291,80 @@ export class ThenaAdapter implements Adapter {
     }
 
     try {
-      const path = [tokenIn, tokenOut] as `0x${string}`[];
+      // THENA uses route structs: { from, to, stable }
+      // Try volatile pool first (most common), then stable if volatile fails
+      const volatileRoute: ThenaRoute[] = [{ 
+        from: tokenIn as `0x${string}`, 
+        to: tokenOut as `0x${string}`, 
+        stable: false 
+      }];
+      
+      const stableRoute: ThenaRoute[] = [{ 
+        from: tokenIn as `0x${string}`, 
+        to: tokenOut as `0x${string}`, 
+        stable: true 
+      }];
 
-      const callData = encodeFunctionData({
-        abi: THENA_ROUTER_ABI,
-        functionName: 'getAmountsOut',
-        args: [BigInt(request.sellAmount), path],
-      });
+      let bestAmountOut = 0n;
+      let bestIsStable = false;
 
-      const result = await this.ethCall({
-        to: this.routerAddress!,
-        data: callData,
-      });
+      // Try volatile pool
+      try {
+        const callData = encodeFunctionData({
+          abi: THENA_ROUTER_ABI,
+          functionName: 'getAmountsOut',
+          args: [BigInt(request.sellAmount), volatileRoute],
+        });
 
-      const decoded = decodeFunctionResult({
-        abi: THENA_ROUTER_ABI,
-        functionName: 'getAmountsOut',
-        data: result,
-      }) as bigint[];
+        const result = await this.ethCall({
+          to: this.routerAddress!,
+          data: callData,
+        });
 
-      const amountOut = decoded[decoded.length - 1] ?? 0n;
+        const decoded = decodeFunctionResult({
+          abi: THENA_ROUTER_ABI,
+          functionName: 'getAmountsOut',
+          data: result,
+        }) as bigint[];
 
-      if (amountOut === 0n) {
+        const amountOut = decoded[decoded.length - 1] ?? 0n;
+        if (amountOut > bestAmountOut) {
+          bestAmountOut = amountOut;
+          bestIsStable = false;
+        }
+      } catch {
+        // Volatile pool doesn't exist, try stable
+      }
+
+      // Try stable pool
+      try {
+        const callData = encodeFunctionData({
+          abi: THENA_ROUTER_ABI,
+          functionName: 'getAmountsOut',
+          args: [BigInt(request.sellAmount), stableRoute],
+        });
+
+        const result = await this.ethCall({
+          to: this.routerAddress!,
+          data: callData,
+        });
+
+        const decoded = decodeFunctionResult({
+          abi: THENA_ROUTER_ABI,
+          functionName: 'getAmountsOut',
+          data: result,
+        }) as bigint[];
+
+        const amountOut = decoded[decoded.length - 1] ?? 0n;
+        if (amountOut > bestAmountOut) {
+          bestAmountOut = amountOut;
+          bestIsStable = true;
+        }
+      } catch {
+        // Stable pool doesn't exist either
+      }
+
+      if (bestAmountOut === 0n) {
         return {
           ...base,
           warnings: ['No liquidity found'],
@@ -294,10 +386,11 @@ export class ThenaAdapter implements Adapter {
 
       const raw = {
         sellAmount: request.sellAmount,
-        buyAmount: amountOut.toString(),
-        estimatedGas: 150000, // Thena may use slightly more gas due to ve(3,3) logic
-        feeBps: 20, // Variable fees, typically 0.2% for volatile pairs
+        buyAmount: bestAmountOut.toString(),
+        estimatedGas: 180000, // Thena uses slightly more gas due to ve(3,3) logic
+        feeBps: bestIsStable ? 4 : 20, // 0.04% for stable, 0.2% for volatile
         route: [request.sellToken, request.buyToken],
+        isStable: bestIsStable, // Store for buildTx
       };
 
       return {
@@ -343,9 +436,14 @@ export class ThenaAdapter implements Adapter {
     const sellTokenIsNative = this.isNativeToken(request.sellToken);
     const buyTokenIsNative = this.isNativeToken(request.buyToken);
 
-    const tokenIn = this.normalizeToken(request.sellToken);
-    const tokenOut = this.normalizeToken(request.buyToken);
-    const path = [tokenIn, tokenOut] as `0x${string}`[];
+    const tokenIn = this.normalizeToken(request.sellToken) as `0x${string}`;
+    const tokenOut = this.normalizeToken(request.buyToken) as `0x${string}`;
+    
+    // Get stable flag from quote, default to volatile (false)
+    const isStable = (quote.raw as { isStable?: boolean }).isStable ?? false;
+    
+    // Build route struct for THENA
+    const routes: ThenaRoute[] = [{ from: tokenIn, to: tokenOut, stable: isStable }];
 
     const amountIn = BigInt(request.sellAmount);
     const slippageBps = request.slippageBps ?? 200;
@@ -359,22 +457,22 @@ export class ThenaAdapter implements Adapter {
     if (sellTokenIsNative) {
       data = encodeFunctionData({
         abi: THENA_ROUTER_ABI,
-        functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
-        args: [amountOutMin, path, to, deadline],
+        functionName: 'swapExactETHForTokens',
+        args: [amountOutMin, routes, to, deadline],
       });
       value = amountIn.toString();
     } else if (buyTokenIsNative) {
       data = encodeFunctionData({
         abi: THENA_ROUTER_ABI,
-        functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
-        args: [amountIn, amountOutMin, path, to, deadline],
+        functionName: 'swapExactTokensForETH',
+        args: [amountIn, amountOutMin, routes, to, deadline],
       });
       value = '0';
     } else {
       data = encodeFunctionData({
         abi: THENA_ROUTER_ABI,
-        functionName: 'swapExactTokensForTokensSupportingFeeOnTransferTokens',
-        args: [amountIn, amountOutMin, path, to, deadline],
+        functionName: 'swapExactTokensForTokens',
+        args: [amountIn, amountOutMin, routes, to, deadline],
       });
       value = '0';
     }
@@ -383,7 +481,7 @@ export class ThenaAdapter implements Adapter {
       to: this.routerAddress!,
       data,
       value,
-      gas: '400000', // Higher gas for ve(3,3) mechanics
+      gas: '350000', // THENA gas usage
     };
 
     if (!sellTokenIsNative) {

@@ -91,13 +91,14 @@ export type UniswapV3AdapterConfig = {
 };
 
 // Known Uniswap V3 Quoter addresses by chain
+// For BSC, we use PancakeSwap V3 QuoterV2 which has the same interface
 const QUOTER_ADDRESSES: Record<number, string> = {
-  1: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',   // Ethereum
-  56: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',  // BSC (PancakeSwap V3 Quoter)
-  137: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // Polygon
-  42161: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // Arbitrum
-  10: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',  // Optimism
-  8453: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a', // Base
+  1: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',   // Ethereum (Uniswap QuoterV2)
+  56: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',  // BSC (PancakeSwap V3 QuoterV2)
+  137: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e', // Polygon (Uniswap QuoterV2)
+  42161: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e', // Arbitrum (Uniswap QuoterV2)
+  10: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',  // Optimism (Uniswap QuoterV2)
+  8453: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a', // Base (Uniswap QuoterV2)
 };
 
 // Known Uniswap V3 SwapRouter addresses by chain
