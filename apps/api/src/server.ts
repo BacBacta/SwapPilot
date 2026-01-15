@@ -250,9 +250,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
             const latencyMs = Math.round(performance.now() - startTime);
             
             // Check if we got a valid quote response (any response with buyAmount > 0)
+            // AdapterQuote format: { raw: { buyAmount: string }, normalized: { buyAmount: string }, ... }
             let quoteSuccess = false;
-            if (result && typeof result === 'object' && 'buyAmount' in result) {
-              const buyAmount = result.buyAmount;
+            if (result && typeof result === 'object') {
+              // Check raw.buyAmount (AdapterQuote format)
+              const rawBuyAmount = (result as { raw?: { buyAmount?: string | number | bigint } }).raw?.buyAmount;
+              // Also check normalized.buyAmount
+              const normalizedBuyAmount = (result as { normalized?: { buyAmount?: string } }).normalized?.buyAmount;
+              
+              const buyAmount = rawBuyAmount ?? normalizedBuyAmount;
+              
               if (typeof buyAmount === 'string' && buyAmount.length > 0 && buyAmount !== '0') {
                 quoteSuccess = true;
               } else if (typeof buyAmount === 'bigint' && buyAmount > 0n) {
@@ -262,11 +269,12 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
               }
             }
             
-            // Provider responded - if we got a valid quote it's 'ok', otherwise 'degraded' (API works but no quote)
-            // Fast response with no quote likely means missing API key or rate limit
+            // Provider responded without throwing - it's operational
+            // quoteSuccess false just means no liquidity for this specific pair, not a provider issue
+            // Mark as 'ok' if provider responds, 'degraded' only for very slow responses (possible issues)
             return {
               providerId: p.providerId,
-              status: quoteSuccess ? 'ok' : (latencyMs < 100 ? 'ok' : 'degraded'), // Fast empty response = likely auth issue, still reachable
+              status: latencyMs > 6000 ? 'degraded' : 'ok', // Only degraded if extremely slow (6s+)
               latencyMs,
               liveCheck: true,
               quoteSuccess,
@@ -286,7 +294,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         });
 
       const liveResults = await Promise.allSettled(healthCheckPromises);
-      const liveResultsMap = new Map<string, { status: string; latencyMs: number; liveCheck: boolean }>();
+      const liveResultsMap = new Map<string, { status: string; latencyMs: number; liveCheck: boolean; quoteSuccess: boolean }>();
       for (const result of liveResults) {
         if (result.status === 'fulfilled') {
           liveResultsMap.set(result.value.providerId, result.value);
@@ -321,7 +329,9 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           displayName: p.displayName,
           category: p.category,
           capabilities: p.capabilities,
-          successRate: stat?.successRate ?? (liveResult?.status === 'ok' ? 95 : liveResult?.status === 'degraded' ? 50 : 0),
+          // successRate: use recorded stats if available, otherwise estimate from live check
+          // 95% if got valid quote, 80% if provider responded (no quote = just no liquidity for test pair), 0% if down
+          successRate: stat?.successRate ?? (liveResult?.quoteSuccess ? 95 : liveResult?.status === 'ok' ? 80 : 0),
           latencyMs,
           observations: stat?.observations ?? (liveResult ? 1 : 0),
           status,
