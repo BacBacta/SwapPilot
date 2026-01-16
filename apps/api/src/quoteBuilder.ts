@@ -450,14 +450,14 @@ async function buildQuotesImpl(
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
               }
 
-              // SAFE mode: token security UNCERTAIN also blocks OK (fail-closed policy).
-              if (mode === 'SAFE' && tokenSecuritySellability?.status === 'UNCERTAIN') {
-                return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons };
-              }
-
               // Onchain FAIL with good confidence = definitive FAIL
               if (onchainSellability.status === 'FAIL' && onchainSellability.confidence >= 0.8) {
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
+              // SAFE mode: token security UNCERTAIN also blocks OK (fail-closed policy).
+              if (mode === 'SAFE' && tokenSecuritySellability?.status === 'UNCERTAIN') {
+                return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons };
               }
 
               // SAFE mode: require token security OK for full OK (multi-oracle + tax check)
