@@ -24,7 +24,7 @@ const LINKS = {
   docs: 'https://swappilot.gitbook.io/untitled',
   api: 'https://swappilot-api.fly.dev',
   github: 'https://github.com/BacBacta/SwapPilot',
-  twitter: 'https://x.com/swappilotdex',
+  twitter: 'https://x.com/PilotSwap',
   telegram: 'https://t.me/swapPilot',
 };
 
@@ -333,7 +333,7 @@ function createCoverSlide() {
     fontSize: 10, color: COLORS.muted,
     align: 'center',
   });
-  slide.addText('x.com/swappilotdex', {
+  slide.addText('x.com/PilotSwap', {
     x: 2.85, y: 6.9, w: 2.2, h: 0.3,
     fontSize: 10, color: COLORS.muted,
     hyperlink: { url: LINKS.twitter },
@@ -764,7 +764,7 @@ function createCTASlide() {
     fontSize: 11, color: COLORS.muted,
     align: 'center',
   });
-  slide.addText('x.com/swappilotdex', {
+  slide.addText('x.com/PilotSwap', {
     x: 3.45, y: 6.5, w: 2.2, h: 0.3,
     fontSize: 11, color: COLORS.muted,
     align: 'left',

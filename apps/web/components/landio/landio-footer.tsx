@@ -43,7 +43,7 @@ export function LandioFooter() {
               confidence.
             </p>
             <div className="footer-social">
-              <a href="https://x.com/swappilotdex" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X" title="Follow us on X">
+              <a href="https://x.com/PilotSwap" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X" title="Follow us on X">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
               <a href="https://t.me/swappilot" target="_blank" rel="noopener noreferrer" aria-label="Join our Telegram" title="Join Telegram">
@@ -69,7 +69,7 @@ export function LandioFooter() {
             <span>Made by <a href="https://swappilot.io" target="_blank" rel="noopener">SwapPilot Team</a></span>
           </div>
           <div className="footer-bottom-right">
-            <a href="mailto:swappilotdex@gmail.com">swappilotdex@gmail.com</a>
+            <a href="mailto:swappilot.exchange@gmail.com">swappilot.exchange@gmail.com</a>
           </div>
         </div>
       </div>
