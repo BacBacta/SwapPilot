@@ -344,6 +344,22 @@ function renderProviders(
   }
 }
 
+function selectActiveQuotes(params: {
+  response: QuoteResponse;
+  scoringMode: "BEQ" | "RAW";
+  mode: QuoteMode;
+}): RankedQuote[] {
+  const ranked = params.response.rankedQuotes ?? [];
+  const raw = params.response.bestRawQuotes ?? [];
+  if (params.mode === "SAFE") {
+    return ranked;
+  }
+  if (params.scoringMode === "RAW") {
+    return raw.length > 0 ? raw : ranked;
+  }
+  return ranked;
+}
+
 export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 1: GLOBAL SETTINGS & CONTEXT PROVIDERS
@@ -687,9 +703,11 @@ export function LandioSwapController() {
       
       // Update React state
       setResponse(res);
-      const activeQuotes = capturedScoringMode === "RAW"
-        ? (res.bestRawQuotes?.length > 0 ? res.bestRawQuotes : res.rankedQuotes ?? [])
-        : (res.rankedQuotes ?? []);
+      const activeQuotes = selectActiveQuotes({
+        response: res,
+        scoringMode: capturedScoringMode,
+        mode: capturedMode,
+      });
       const best = activeQuotes[0] ?? null;
       setSelected(best);
       
@@ -1946,10 +1964,11 @@ export function LandioSwapController() {
   // Re-render providers when showAllProviders changes
   useEffect(() => {
     if (!response || !toTokenInfo) return;
-    const activeQuotes =
-      scoringMode === "RAW"
-        ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
-        : (response.rankedQuotes ?? []);
+    const activeQuotes = selectActiveQuotes({
+      response,
+      scoringMode,
+      mode: settings.mode,
+    });
     if (activeQuotes.length === 0) return;
     
     const container = document.getElementById("providersContainer");
@@ -1965,20 +1984,21 @@ export function LandioSwapController() {
       () => setShowAllProviders(true),
       scoringMode
     );
-  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode]);
+  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode]);
 
   // Re-select top quote when scoring mode changes
   useEffect(() => {
     if (!response) return;
-    const activeQuotes =
-      scoringMode === "RAW"
-        ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
-        : (response.rankedQuotes ?? []);
+    const activeQuotes = selectActiveQuotes({
+      response,
+      scoringMode,
+      mode: settings.mode,
+    });
     const best = activeQuotes[0] ?? null;
     if (best && (!selected || selected.providerId !== best.providerId)) {
       setSelected(best);
     }
-  }, [scoringMode, response, selected]);
+  }, [scoringMode, response, selected, settings.mode]);
 
   // Update/remove token security warning when mode or token changes
   useEffect(() => {
