@@ -465,7 +465,8 @@ export async function assessOnchainSellability(params: {
     if (lowLiquidityBases.size > 0) {
       for (const b of lowLiquidityBases) reasons.push(`onchain_sellability:pcs_low_liquidity:${normalizeAddress(b)}`);
       reasons.push('onchain_sellability:liquidity_below_minimum_threshold');
-      return { status: 'FAIL', confidence: clamp01(0.75), reasons };
+      // High confidence FAIL - we definitively know liquidity is too low to trade safely
+      return { status: 'FAIL', confidence: clamp01(0.85), reasons };
     }
 
     // If pairs/pools exist but liquidity looks empty, keep it uncertain (could still be sellable elsewhere).
