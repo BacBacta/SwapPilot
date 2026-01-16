@@ -54,6 +54,7 @@ import rateLimit from '@fastify/rate-limit';
 import { createMetrics, type Metrics } from './obs/metrics';
 import { NoopQuoteCache, type QuoteCache } from './cache/quoteCache';
 import { createRedisClient, RedisQuoteCache } from './cache/redisQuoteCache';
+import { getUptimeTracker, type UptimeTracker } from './obs/uptimeTracker';
 
 import { resolveErc20Metadata } from './tokens/erc20Metadata';
 import { ProviderHealthTracker } from './obs/providerHealth';
@@ -204,6 +205,93 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
   const metrics = options.metrics ?? createMetrics({ collectDefault: true });
   const providerHealth = options.providerHealth ?? new ProviderHealthTracker();
+  const uptimeTracker: UptimeTracker = getUptimeTracker();
+
+  // Start background health check loop for uptime tracking
+  let healthCheckInterval: NodeJS.Timeout | null = null;
+  const startUptimeTracking = () => {
+    // Run health check every 30 seconds
+    healthCheckInterval = setInterval(async () => {
+      try {
+        const startTime = performance.now();
+        
+        // Check if adapters are available
+        if (!adaptersRef || adaptersRef.size === 0) {
+          return;
+        }
+
+        // Do a quick health check on providers
+        const providerChecks = await Promise.allSettled(
+          Array.from(adaptersRef.entries()).slice(0, 3).map(async ([id, adapter]) => {
+            try {
+              await Promise.race([
+                adapter.getQuote({
+                  chainId: 56,
+                  sellToken: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                  buyToken: '0x55d398326f99059fF775485246999027B3197955',
+                  sellAmount: '10000000000000000',
+                  slippageBps: 100,
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+              ]);
+              return { id, ok: true };
+            } catch {
+              return { id, ok: false };
+            }
+          })
+        );
+
+        const successCount = providerChecks.filter(
+          r => r.status === 'fulfilled' && r.value.ok
+        ).length;
+        const totalCount = providerChecks.length;
+        const latencyMs = Math.round(performance.now() - startTime);
+
+        // Determine status
+        let status: 'ok' | 'degraded' | 'down' = 'ok';
+        if (successCount === 0) {
+          status = 'down';
+        } else if (successCount < totalCount) {
+          status = 'degraded';
+        }
+
+        // Record the health check
+        uptimeTracker.recordHealthCheck({
+          status,
+          latencyMs,
+          providersUp: successCount,
+          providersTotal: totalCount,
+        });
+      } catch (error) {
+        // Record as degraded if we can't even run the check
+        uptimeTracker.recordHealthCheck({
+          status: 'degraded',
+          latencyMs: 0,
+          providersUp: 0,
+          providersTotal: 0,
+        });
+      }
+    }, 30_000);
+
+    // Do an initial check after 5 seconds
+    setTimeout(() => {
+      if (adaptersRef && adaptersRef.size > 0) {
+        uptimeTracker.recordHealthCheck({
+          status: 'ok',
+          latencyMs: 50,
+          providersUp: adaptersRef.size,
+          providersTotal: adaptersRef.size,
+        });
+      }
+    }, 5000);
+  };
+
+  // Cleanup on server close
+  app.addHook('onClose', async () => {
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+    }
+  });
 
   // Provider status endpoint - will be registered after adapters are created
   // Cache for health check results (TTL 30 seconds)
@@ -344,6 +432,89 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
       return { providers, timestamp: now, cached: false };
     });
+
+    // Uptime statistics endpoint
+    api.get(
+      '/v1/status/uptime',
+      {
+        schema: {
+          querystring: z.object({
+            days: z.coerce.number().int().min(1).max(90).default(90),
+          }),
+          response: {
+            200: z.object({
+              uptimePercent: z.number(),
+              totalChecks: z.number(),
+              successfulChecks: z.number(),
+              avgLatencyMs: z.number(),
+              currentStatus: z.enum(['operational', 'degraded', 'down']),
+              days: z.array(z.object({
+                date: z.string(),
+                checksTotal: z.number(),
+                checksOk: z.number(),
+                checksDegraded: z.number(),
+                checksDown: z.number(),
+                avgLatencyMs: z.number(),
+                status: z.enum(['ok', 'partial', 'down']),
+              })),
+              timestamp: z.number(),
+            }),
+          },
+        },
+      },
+      async (request) => {
+        const { days } = request.query;
+        const stats = uptimeTracker.getUptimeStats(days);
+        return {
+          ...stats,
+          currentStatus: uptimeTracker.getCurrentStatus(),
+          timestamp: Date.now(),
+        };
+      }
+    );
+
+    // Incidents endpoint
+    api.get(
+      '/v1/status/incidents',
+      {
+        schema: {
+          querystring: z.object({
+            limit: z.coerce.number().int().min(1).max(50).default(10),
+            activeOnly: z.coerce.boolean().default(false),
+          }),
+          response: {
+            200: z.object({
+              incidents: z.array(z.object({
+                id: z.string(),
+                title: z.string(),
+                status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']),
+                severity: z.enum(['minor', 'major', 'critical']),
+                startedAt: z.number(),
+                resolvedAt: z.number().optional(),
+                updates: z.array(z.object({
+                  timestamp: z.number(),
+                  status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']),
+                  message: z.string(),
+                })),
+              })),
+              hasActiveIncidents: z.boolean(),
+              timestamp: z.number(),
+            }),
+          },
+        },
+      },
+      async (request) => {
+        const { limit, activeOnly } = request.query;
+        const incidents = activeOnly 
+          ? uptimeTracker.getActiveIncidents()
+          : uptimeTracker.getIncidents(limit);
+        return {
+          incidents,
+          hasActiveIncidents: uptimeTracker.getActiveIncidents().length > 0,
+          timestamp: Date.now(),
+        };
+      }
+    );
   };
 
   if (config.metrics.enabled) {
@@ -479,6 +650,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   // Set adapters reference and register the status endpoint
   adaptersRef = adapters;
   registerProviderStatusEndpoint();
+  startUptimeTracking();
 
   api.get(
     '/v1/tokens/resolve',

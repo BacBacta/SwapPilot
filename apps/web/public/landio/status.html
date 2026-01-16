@@ -439,6 +439,29 @@
       color: var(--text-secondary);
     }
 
+    /* Uptime Placeholder */
+    .uptime-placeholder {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .uptime-placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .uptime-placeholder-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .uptime-placeholder-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
     /* No Incidents */
     .no-incidents {
       text-align: center;
@@ -788,59 +811,14 @@
         <div class="uptime-section">
           <div class="uptime-header">
             <h3>90-Day Uptime</h3>
-            <div class="uptime-value">99.98%</div>
+            <div class="uptime-value">—</div>
           </div>
           <div class="uptime-chart">
-            <!-- Generate 90 bars for uptime visualization -->
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar partial"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-            <div class="uptime-bar ok"></div>
-          </div>
-          <div class="uptime-labels">
-            <span>90 days ago</span>
-            <span>Today</span>
+            <div class="uptime-placeholder">
+              <div class="uptime-placeholder-icon">📊</div>
+              <div class="uptime-placeholder-text">Uptime monitoring not connected</div>
+              <div class="uptime-placeholder-subtext">Historical data will be available soon</div>
+            </div>
           </div>
         </div>
 
@@ -851,48 +829,10 @@
             <p>History of service disruptions and maintenance</p>
           </div>
 
-          <div class="incident-item">
-            <div class="incident-header">
-              <div>
-                <div class="incident-title">Elevated Quote Latency</div>
-                <div class="incident-date">December 15, 2024</div>
-              </div>
-              <span class="incident-status resolved">Resolved</span>
-            </div>
-            <div class="incident-timeline">
-              <div class="incident-update resolved">
-                <div class="incident-update-time">15:45 UTC</div>
-                <div class="incident-update-text">Issue resolved. All systems back to normal operation.</div>
-              </div>
-              <div class="incident-update">
-                <div class="incident-update-time">15:20 UTC</div>
-                <div class="incident-update-text">Identified the root cause as increased traffic from 1inch provider. Implementing rate limiting.</div>
-              </div>
-              <div class="incident-update">
-                <div class="incident-update-time">15:00 UTC</div>
-                <div class="incident-update-text">Investigating increased latency in quote responses. Some users may experience slower quotes.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="incident-item">
-            <div class="incident-header">
-              <div>
-                <div class="incident-title">Scheduled Maintenance</div>
-                <div class="incident-date">December 10, 2024</div>
-              </div>
-              <span class="incident-status resolved">Completed</span>
-            </div>
-            <div class="incident-timeline">
-              <div class="incident-update resolved">
-                <div class="incident-update-time">04:00 UTC</div>
-                <div class="incident-update-text">Maintenance completed successfully. All services restored.</div>
-              </div>
-              <div class="incident-update">
-                <div class="incident-update-time">02:00 UTC</div>
-                <div class="incident-update-text">Scheduled maintenance window. Quote service temporarily unavailable.</div>
-              </div>
-            </div>
+          <div class="no-incidents">
+            <div class="no-incidents-icon">✅</div>
+            <h4>No incident feed connected</h4>
+            <p>Incident history will be displayed here when available.</p>
           </div>
         </div>
 

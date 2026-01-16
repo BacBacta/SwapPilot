@@ -1,5 +1,39 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+type UptimeDay = {
+  date: string;
+  checksTotal: number;
+  checksOk: number;
+  status: "ok" | "partial" | "down";
+};
+
+type UptimeData = {
+  uptimePercent: number;
+  totalChecks: number;
+  currentStatus: "operational" | "degraded" | "down";
+  days: UptimeDay[];
+};
+
+type Incident = {
+  id: string;
+  title: string;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  severity: "minor" | "major" | "critical";
+  startedAt: number;
+  resolvedAt?: number;
+  updates: { timestamp: number; status: string; message: string }[];
+};
+
+function getApiBaseUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    (process.env.NODE_ENV === "production" ? "https://swappilot-api.fly.dev" : "http://localhost:3001");
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+}
+
 const styles = {
   container: {
     maxWidth: "800px",
@@ -154,6 +188,41 @@ const styles = {
 };
 
 export function LandioStatus() {
+  const [uptimeData, setUptimeData] = useState<UptimeData | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const baseUrl = getApiBaseUrl();
+
+    const fetchData = async () => {
+      try {
+        const [uptimeRes, incidentsRes] = await Promise.all([
+          fetch(`${baseUrl}/v1/status/uptime?days=90`, { cache: "no-store" }),
+          fetch(`${baseUrl}/v1/status/incidents?limit=10`, { cache: "no-store" }),
+        ]);
+
+        if (uptimeRes.ok) {
+          const data = await uptimeRes.json();
+          setUptimeData(data);
+        }
+
+        if (incidentsRes.ok) {
+          const data = await incidentsRes.json();
+          setIncidents(data.incidents || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch status data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+    const interval = setInterval(fetchData, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   const services = [
     { name: "Quote Engine", desc: "Multi-aggregator quotes", icon: "⚡", status: "Operational" },
     { name: "BEQ Scoring", desc: "Best execution quality", icon: "📊", status: "Operational" },
@@ -170,8 +239,113 @@ export function LandioStatus() {
     { name: "OpenOcean", latency: "201ms", percent: 80 },
   ];
 
-  // Generate 90 days of uptime data
-  const uptimeData = Array.from({ length: 90 }, () => Math.random() > 0.02);
+  const renderUptimeChart = () => {
+    if (loading) {
+      return (
+        <div style={{ padding: "24px 0", textAlign: "center" as const, color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "14px" }}>Loading uptime data...</div>
+        </div>
+      );
+    }
+
+    if (!uptimeData || uptimeData.totalChecks === 0) {
+      return (
+        <div style={{ padding: "24px 0", textAlign: "center" as const, color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>📊</div>
+          <div style={{ fontSize: "14px", marginBottom: "8px" }}>Building uptime history...</div>
+          <div style={{ fontSize: "12px", opacity: 0.7 }}>Data will appear as the system is monitored</div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div style={styles.uptimeGrid}>
+          {uptimeData.days.map((day, i) => (
+            <div
+              key={i}
+              title={`${day.date}: ${day.checksOk}/${day.checksTotal} OK`}
+              style={{
+                ...styles.uptimeDay,
+                background: day.status === "ok" ? "var(--ok)" : day.status === "partial" ? "var(--warning)" : "var(--bad)",
+              }}
+            />
+          ))}
+        </div>
+        <div style={styles.uptimeLegend}>
+          <span>{uptimeData.days.length} days ago</span>
+          <span>Today</span>
+        </div>
+      </>
+    );
+  };
+
+  const renderIncidents = () => {
+    if (loading) {
+      return (
+        <div style={{ padding: "24px 0", textAlign: "center" as const, color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "14px" }}>Loading incidents...</div>
+        </div>
+      );
+    }
+
+    if (incidents.length === 0) {
+      return (
+        <div style={{ padding: "24px 0", textAlign: "center" as const, color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>✅</div>
+          <div style={{ fontSize: "14px", marginBottom: "8px" }}>No recent incidents</div>
+          <div style={{ fontSize: "12px", opacity: 0.7 }}>All systems have been operating normally</div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column" as const, gap: "16px" }}>
+        {incidents.slice(0, 5).map((incident) => (
+          <div
+            key={incident.id}
+            style={{
+              padding: "16px",
+              background: "var(--bg-card-inner)",
+              borderRadius: "12px",
+              borderLeft: `4px solid ${
+                incident.severity === "critical" ? "var(--bad)" : 
+                incident.severity === "major" ? "var(--warning)" : "var(--ok)"
+              }`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                  {incident.severity === "critical" ? "🔴" : incident.severity === "major" ? "🟠" : "🟡"} {incident.title}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {new Date(incident.startedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </div>
+              </div>
+              <span
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  background: incident.status === "resolved" ? "rgba(34, 197, 94, 0.2)" : "rgba(234, 179, 8, 0.2)",
+                  color: incident.status === "resolved" ? "var(--ok)" : "var(--warning)",
+                }}
+              >
+                {incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+              </span>
+            </div>
+            {incident.updates.length > 0 && incident.updates[0] && (
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "8px" }}>
+                {incident.updates[0].message}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div style={styles.container}>
@@ -230,22 +404,16 @@ export function LandioStatus() {
 
       {/* Uptime Chart */}
       <div style={styles.card}>
-        <h2 style={styles.cardTitle}>90-Day Uptime: 99.8%</h2>
-        <div style={styles.uptimeGrid}>
-          {uptimeData.map((up, i) => (
-            <div
-              key={i}
-              style={{
-                ...styles.uptimeDay,
-                background: up ? "var(--ok)" : "var(--bad)",
-              }}
-            />
-          ))}
-        </div>
-        <div style={styles.uptimeLegend}>
-          <span>90 days ago</span>
-          <span>Today</span>
-        </div>
+        <h2 style={styles.cardTitle}>
+          90-Day Uptime{uptimeData && uptimeData.totalChecks > 0 ? `: ${uptimeData.uptimePercent}%` : ""}
+        </h2>
+        {renderUptimeChart()}
+      </div>
+
+      {/* Recent Incidents */}
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Recent Incidents</h2>
+        {renderIncidents()}
       </div>
     </div>
   );

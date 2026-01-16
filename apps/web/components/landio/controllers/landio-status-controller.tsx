@@ -28,6 +28,48 @@ type HealthResponse = {
   timestamp?: number;
 };
 
+type UptimeDay = {
+  date: string;
+  checksTotal: number;
+  checksOk: number;
+  checksDegraded: number;
+  checksDown: number;
+  avgLatencyMs: number;
+  status: "ok" | "partial" | "down";
+};
+
+type UptimeResponse = {
+  uptimePercent: number;
+  totalChecks: number;
+  successfulChecks: number;
+  avgLatencyMs: number;
+  currentStatus: "operational" | "degraded" | "down";
+  days: UptimeDay[];
+  timestamp: number;
+};
+
+type IncidentUpdate = {
+  timestamp: number;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  message: string;
+};
+
+type Incident = {
+  id: string;
+  title: string;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  severity: "minor" | "major" | "critical";
+  startedAt: number;
+  resolvedAt?: number;
+  updates: IncidentUpdate[];
+};
+
+type IncidentsResponse = {
+  incidents: Incident[];
+  hasActiveIncidents: boolean;
+  timestamp: number;
+};
+
 function getApiBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ??
@@ -295,27 +337,110 @@ export function LandioStatusController() {
       } else {
         providersSection.appendChild(frag);
       }
+    };
 
-      // Uptime & incidents sections are demo-only in the template; replace with honest placeholders.
+    const applyUptime = (data: UptimeResponse) => {
       const uptime = document.querySelector<HTMLElement>(".uptime-section");
-      if (uptime) {
-        const valueEl = uptime.querySelector<HTMLElement>(".uptime-value");
-        if (valueEl) valueEl.textContent = "—";
-        const chart = uptime.querySelector<HTMLElement>(".uptime-chart");
-        if (chart) {
-          chart.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; padding: 8px 0;">Uptime history not connected</div>';
+      if (!uptime) return;
+
+      const valueEl = uptime.querySelector<HTMLElement>(".uptime-value");
+      if (valueEl) {
+        valueEl.textContent = data.totalChecks > 0 ? `${data.uptimePercent}%` : "—";
+      }
+
+      const chart = uptime.querySelector<HTMLElement>(".uptime-chart");
+      if (chart) {
+        if (data.days.length === 0 || data.totalChecks === 0) {
+          chart.innerHTML = `
+            <div class="uptime-placeholder">
+              <div class="uptime-placeholder-icon">📊</div>
+              <div class="uptime-placeholder-text">Building uptime history...</div>
+              <div class="uptime-placeholder-subtext">Data will appear as the system is monitored</div>
+            </div>
+          `;
+        } else {
+          // Render uptime bars
+          const bars = data.days.map((day) => {
+            const statusClass = day.status === "ok" ? "ok" : day.status === "partial" ? "partial" : "down";
+            const tooltip = `${day.date}: ${day.checksOk}/${day.checksTotal} checks OK`;
+            return `<div class="uptime-bar ${statusClass}" title="${tooltip}"></div>`;
+          }).join("");
+          
+          chart.innerHTML = bars;
         }
       }
 
+      // Update labels
+      const labels = uptime.querySelector<HTMLElement>(".uptime-labels");
+      if (labels && data.days.length > 0) {
+        labels.innerHTML = `<span>${data.days.length} days ago</span><span>Today</span>`;
+      }
+    };
+
+    const applyIncidents = (data: IncidentsResponse) => {
       const incidents = document.querySelector<HTMLElement>(".incidents-section");
-      if (incidents) {
-        const header = incidents.querySelector<HTMLElement>(".incidents-header");
-        incidents.innerHTML = "";
-        if (header) incidents.appendChild(header);
+      if (!incidents) return;
+
+      const header = incidents.querySelector<HTMLElement>(".incidents-header");
+      incidents.innerHTML = "";
+      if (header) incidents.appendChild(header);
+
+      if (data.incidents.length === 0) {
         const empty = document.createElement("div");
         empty.className = "no-incidents";
-        empty.innerHTML = '<div class="no-incidents-icon">i</div><h4>No incident feed connected</h4><p>Live incident history is not available yet.</p>';
+        empty.innerHTML = `
+          <div class="no-incidents-icon">✅</div>
+          <h4>No recent incidents</h4>
+          <p>All systems have been operating normally.</p>
+        `;
         incidents.appendChild(empty);
+        return;
+      }
+
+      // Render incidents
+      for (const incident of data.incidents.slice(0, 5)) {
+        const item = document.createElement("div");
+        item.className = "incident-item";
+        
+        const startDate = new Date(incident.startedAt);
+        const statusClass = incident.status === "resolved" ? "resolved" : "active";
+        const statusText = incident.status.charAt(0).toUpperCase() + incident.status.slice(1);
+        const severityIcon = incident.severity === "critical" ? "🔴" : incident.severity === "major" ? "🟠" : "🟡";
+
+        let updatesHtml = "";
+        for (const update of incident.updates.slice(0, 3)) {
+          const updateTime = new Date(update.timestamp).toLocaleTimeString("en-US", { 
+            hour: "2-digit", 
+            minute: "2-digit",
+            timeZoneName: "short"
+          });
+          const updateClass = update.status === "resolved" ? "resolved" : "";
+          updatesHtml += `
+            <div class="incident-update ${updateClass}">
+              <div class="incident-update-time">${updateTime}</div>
+              <div class="incident-update-text">${update.message}</div>
+            </div>
+          `;
+        }
+
+        item.innerHTML = `
+          <div class="incident-header">
+            <div>
+              <div class="incident-title">${severityIcon} ${incident.title}</div>
+              <div class="incident-date">${startDate.toLocaleDateString("en-US", { 
+                month: "long", 
+                day: "numeric", 
+                year: "numeric" 
+              })}</div>
+            </div>
+            <span class="incident-status ${statusClass}">${statusText}</span>
+          </div>
+          <div class="incident-timeline">
+            ${updatesHtml}
+          </div>
+        `;
+        
+        incidents.appendChild(item);
       }
     };
 
@@ -333,9 +458,24 @@ export function LandioStatusController() {
 
         // Fetch providers status
         const res = await fetch(`${baseUrl}/v1/providers/status`, { cache: "no-store" });
-        if (!res.ok) return;
-        const json = (await res.json()) as ProviderStatusResponse;
-        apply(json);
+        if (res.ok) {
+          const json = (await res.json()) as ProviderStatusResponse;
+          apply(json);
+        }
+
+        // Fetch uptime data
+        const uptimeRes = await fetch(`${baseUrl}/v1/status/uptime?days=90`, { cache: "no-store" });
+        if (uptimeRes.ok) {
+          const uptimeJson = (await uptimeRes.json()) as UptimeResponse;
+          applyUptime(uptimeJson);
+        }
+
+        // Fetch incidents
+        const incidentsRes = await fetch(`${baseUrl}/v1/status/incidents?limit=10`, { cache: "no-store" });
+        if (incidentsRes.ok) {
+          const incidentsJson = (await incidentsRes.json()) as IncidentsResponse;
+          applyIncidents(incidentsJson);
+        }
       } catch {
         // Update API card to show error state
         updateApiCard({ status: "down" }, 0);
