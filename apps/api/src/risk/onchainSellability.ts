@@ -471,7 +471,6 @@ export async function assessOnchainSellability(params: {
     // If pairs/pools exist but liquidity looks empty, keep it uncertain (could still be sellable elsewhere).
     reasons.push('onchain_sellability:pcs:pair_or_pool_exists_but_zero_liquidity');
     return { status: 'UNCERTAIN', confidence: clamp01(0.58), reasons };
-    return { status: 'UNCERTAIN', confidence: clamp01(0.58), reasons };
   } catch (e) {
     // Best-effort: never crash scoring; just mark uncertain.
     const msg = e instanceof Error ? e.message : String(e);

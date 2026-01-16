@@ -393,10 +393,11 @@ async function buildQuotesImpl(
       });
 
       // Best-effort on-chain heuristic: detects obvious non-contract/non-ERC20 tokens.
+      // Check sellToken sellability - we need to verify the token being sold has sufficient liquidity
       const onchainSellability = rpc
         ? await assessOnchainSellability({
             chainId: parsed.chainId,
-            buyToken: parsed.buyToken,
+            buyToken: parsed.sellToken, // Check sellToken, not buyToken - we're assessing if sellToken is sellable
             rpcUrls: rpc.bscUrls,
             timeoutMs: rpc.timeoutMs,
             multicall3Address: sellability?.multicall3Address ?? null,
@@ -408,7 +409,7 @@ async function buildQuotesImpl(
       const tokenSecuritySellability = tokenSecurity
         ? await assessTokenSecuritySellability({
             chainId: parsed.chainId,
-            token: parsed.buyToken,
+            token: parsed.sellToken, // Check sellToken, not buyToken - we're assessing if sellToken is safe to sell
             mode: parsed.mode ?? 'NORMAL',
             config: {
               enabled: tokenSecurity.enabled,
