@@ -15,6 +15,9 @@ primary_region = "fra"
   PORT = "3001"
   RECEIPT_STORE = "memory"
   METRICS_ENABLED = "true"
+  DEXSCREENER_ENABLED = "true"
+  DEXSCREENER_BASE_URL = "https://api.dexscreener.com"
+  DEXSCREENER_MIN_LIQUIDITY_USD = "100"
   # Redis, RPC URLs, etc. should be set via fly secrets
 
 [http_service]
