@@ -13,6 +13,14 @@ const MULTICALL3_DEFAULT = '0xcA11bde05977b3631167028862bE2a173976CA11' as const
 const PCS_V2_FACTORY_BSC = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73' as const;
 const PCS_V3_FACTORY_BSC = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' as const;
 
+// Minimum liquidity thresholds (in base token units, 18 decimals)
+// For WBNB at ~$600, 100$ minimum = 0.17 WBNB = 1.7e17 wei
+// We use a conservative threshold of 0.05 WBNB (~$30) to catch dust liquidity
+const MIN_LIQUIDITY_THRESHOLD = 50_000_000_000_000_000n; // 0.05 base token (e.g., WBNB)
+
+// For V3, liquidity is a different scale - use a minimum of 1e15
+const MIN_V3_LIQUIDITY_THRESHOLD = 1_000_000_000_000_000n;
+
 const MULTICALL3_ABI = [
   {
     type: 'function',
@@ -417,17 +425,33 @@ export async function assessOnchainSellability(params: {
     }
 
     const okBases = new Set<string>();
+    const lowLiquidityBases = new Set<string>();
 
     for (const [, v] of v2ByPair) {
       if (!v.reserves || !v.token0) continue;
       if (v.reserves.r0 > 0n && v.reserves.r1 > 0n) {
-        okBases.add(v.base);
+        // Determine which reserve is the base token
+        const isToken0Base = normalizeAddress(v.token0) === normalizeAddress(v.base);
+        const baseReserve = isToken0Base ? v.reserves.r0 : v.reserves.r1;
+        
+        // Check if base token reserve meets minimum threshold
+        if (baseReserve >= MIN_LIQUIDITY_THRESHOLD) {
+          okBases.add(v.base);
+        } else {
+          // Liquidity exists but is below minimum threshold (dust liquidity)
+          lowLiquidityBases.add(v.base);
+        }
       }
     }
 
     for (const [, v] of v3ByPool) {
       if (typeof v.liquidity === 'bigint' && v.liquidity > 0n) {
-        okBases.add(v.base);
+        // Check if V3 liquidity meets minimum threshold
+        if (v.liquidity >= MIN_V3_LIQUIDITY_THRESHOLD) {
+          okBases.add(v.base);
+        } else {
+          lowLiquidityBases.add(v.base);
+        }
       }
     }
 
@@ -437,8 +461,16 @@ export async function assessOnchainSellability(params: {
       return { status: 'OK', confidence: conf, reasons };
     }
 
+    // Pairs/pools exist but liquidity is below minimum threshold
+    if (lowLiquidityBases.size > 0) {
+      for (const b of lowLiquidityBases) reasons.push(`onchain_sellability:pcs_low_liquidity:${normalizeAddress(b)}`);
+      reasons.push('onchain_sellability:liquidity_below_minimum_threshold');
+      return { status: 'FAIL', confidence: clamp01(0.75), reasons };
+    }
+
     // If pairs/pools exist but liquidity looks empty, keep it uncertain (could still be sellable elsewhere).
     reasons.push('onchain_sellability:pcs:pair_or_pool_exists_but_zero_liquidity');
+    return { status: 'UNCERTAIN', confidence: clamp01(0.58), reasons };
     return { status: 'UNCERTAIN', confidence: clamp01(0.58), reasons };
   } catch (e) {
     // Best-effort: never crash scoring; just mark uncertain.
