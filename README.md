@@ -12,7 +12,7 @@ SwapPilot is a decentralized exchange (DEX) aggregator that optimizes token swap
 | 📚 **Documentation** | [GitBook](https://swappilot.gitbook.io/untitled) |
 | 🔌 **API** | [https://swappilot-api.fly.dev](https://swappilot-api.fly.dev) |
 | 💻 **GitHub** | [https://github.com/BacBacta/SwapPilot](https://github.com/BacBacta/SwapPilot) |
-| 🐦 **Twitter** | [https://x.com/PilotSwap](https://x.com/PilotSwap) |
+| 🐦 **Twitter** | [https://x.com/swappilot_dex](https://x.com/swappilot_dex) |
 
 ## ✨ Features
 

@@ -24,7 +24,7 @@ const LINKS = {
   docs: 'https://swappilot.gitbook.io/untitled',
   api: 'https://swappilot-api.fly.dev',
   github: 'https://github.com/BacBacta/SwapPilot',
-  twitter: 'https://x.com/PilotSwap',
+  twitter: 'https://x.com/swappilot_dex',
   telegram: 'https://t.me/swapPilot',
 };
 

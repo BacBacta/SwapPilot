@@ -717,6 +717,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           }
         : undefined;
 
+      const dexScreenerDeps = config.dexScreener
+        ? {
+            enabled: config.dexScreener.enabled,
+            baseUrl: config.dexScreener.baseUrl,
+            timeoutMs: config.dexScreener.timeoutMs,
+            cacheTtlMs: config.dexScreener.cacheTtlMs,
+            minLiquidityUsd: config.dexScreener.minLiquidityUsd,
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -737,6 +747,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
         ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
+        ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
       });
 
       await receiptStore.put(receipt);
@@ -790,6 +801,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           }
         : undefined;
 
+      const dexScreenerDeps = config.dexScreener
+        ? {
+            enabled: config.dexScreener.enabled,
+            baseUrl: config.dexScreener.baseUrl,
+            timeoutMs: config.dexScreener.timeoutMs,
+            cacheTtlMs: config.dexScreener.cacheTtlMs,
+            minLiquidityUsd: config.dexScreener.minLiquidityUsd,
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -810,6 +831,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
         ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
+        ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
       });
 
       await receiptStore.put(receipt);

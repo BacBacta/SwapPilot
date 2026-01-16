@@ -94,6 +94,13 @@ export const EnvSchema = z.object({
   TOKEN_SECURITY_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(15 * 60 * 1000),
   // Ultra-secure (SAFE) strict max tax percent (buy/sell/transfer) before failing.
   TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT: z.coerce.number().min(0).max(100).default(5),
+
+  // DexScreener liquidity checks
+  DEXSCREENER_ENABLED: z.coerce.boolean().default(true),
+  DEXSCREENER_BASE_URL: z.string().default('https://api.dexscreener.com'),
+  DEXSCREENER_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1_200),
+  DEXSCREENER_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(2 * 60 * 1000),
+  DEXSCREENER_MIN_LIQUIDITY_USD: z.coerce.number().min(0).max(10_000_000).default(100),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -148,6 +155,13 @@ export type AppConfig = {
     timeoutMs: number;
     cacheTtlMs: number;
     taxStrictMaxPercent: number;
+  };
+  dexScreener: {
+    enabled: boolean;
+    baseUrl: string;
+    timeoutMs: number;
+    cacheTtlMs: number;
+    minLiquidityUsd: number;
   };
 };
 
@@ -217,6 +231,13 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       timeoutMs: env.TOKEN_SECURITY_TIMEOUT_MS,
       cacheTtlMs: env.TOKEN_SECURITY_CACHE_TTL_MS,
       taxStrictMaxPercent: env.TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT,
+    },
+    dexScreener: {
+      enabled: env.NODE_ENV === 'test' ? false : env.DEXSCREENER_ENABLED,
+      baseUrl: env.DEXSCREENER_BASE_URL.trim(),
+      timeoutMs: env.DEXSCREENER_TIMEOUT_MS,
+      cacheTtlMs: env.DEXSCREENER_CACHE_TTL_MS,
+      minLiquidityUsd: env.DEXSCREENER_MIN_LIQUIDITY_USD,
     },
   };
 }

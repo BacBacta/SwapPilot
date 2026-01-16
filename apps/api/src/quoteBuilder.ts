@@ -22,6 +22,7 @@ import type { QuoteCache } from './cache/quoteCache';
 import { ProviderHealthTracker } from './obs/providerHealth';
 import { getProviderConcurrencyLimiter } from './obs/providerConcurrency';
 import { assessOnchainSellability } from './risk/onchainSellability';
+import { assessDexScreenerSellability } from './risk/dexScreener';
 import { assessTokenSecuritySellability } from './risk/tokenSecurity';
 
 type Logger = {
@@ -66,6 +67,13 @@ export function buildQuotes(
       timeoutMs: number;
       cacheTtlMs: number;
       taxStrictMaxPercent: number;
+    };
+    dexScreener?: {
+      enabled: boolean;
+      baseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+      minLiquidityUsd: number;
     };
   },
 ): Promise<{
@@ -127,6 +135,7 @@ async function buildQuotesImpl(
   const rpc = deps.rpc;
   const sellability = deps.sellability;
   const tokenSecurity = deps.tokenSecurity;
+  const dexScreener = deps.dexScreener;
   const quoteCache = deps.quoteCache;
   const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
@@ -406,6 +415,20 @@ async function buildQuotesImpl(
           })
         : null;
 
+      const dexScreenerSellability = dexScreener
+        ? await assessDexScreenerSellability({
+            chainId: parsed.chainId,
+            token: parsed.sellToken,
+            config: {
+              enabled: dexScreener.enabled,
+              baseUrl: dexScreener.baseUrl,
+              timeoutMs: dexScreener.timeoutMs,
+              cacheTtlMs: dexScreener.cacheTtlMs,
+              minLiquidityUsd: dexScreener.minLiquidityUsd,
+            },
+          })
+        : null;
+
       const tokenSecuritySellability = tokenSecurity
         ? await assessTokenSecuritySellability({
             chainId: parsed.chainId,
@@ -437,11 +460,13 @@ async function buildQuotesImpl(
               const reasons = [
                 ...riskSignals.sellability.reasons,
                 ...onchainSellability.reasons,
+                ...(dexScreenerSellability?.reasons ?? []),
                 ...(tokenSecuritySellability?.reasons ?? []),
               ];
               const maxConfidence = Math.max(
                 riskSignals.sellability.confidence,
                 onchainSellability.confidence,
+                dexScreenerSellability?.confidence ?? 0,
                 tokenSecuritySellability?.confidence ?? 0,
               );
 
@@ -455,6 +480,11 @@ async function buildQuotesImpl(
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
               }
 
+              // DexScreener FAIL with good confidence = definitive FAIL
+              if (dexScreenerSellability?.status === 'FAIL' && dexScreenerSellability.confidence >= 0.8) {
+                return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
               // SAFE mode: token security UNCERTAIN also blocks OK (fail-closed policy).
               if (mode === 'SAFE' && tokenSecuritySellability?.status === 'UNCERTAIN') {
                 return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons };
@@ -462,7 +492,10 @@ async function buildQuotesImpl(
 
               // SAFE mode: require token security OK for full OK (multi-oracle + tax check)
               if (mode === 'SAFE') {
-                if (tokenSecuritySellability?.status === 'OK' && onchainSellability.status === 'OK') {
+                if (
+                  tokenSecuritySellability?.status === 'OK' &&
+                  (onchainSellability.status === 'OK' || dexScreenerSellability?.status === 'OK')
+                ) {
                   return { status: 'OK' as const, confidence: maxConfidence, reasons };
                 }
                 // If on-chain OK but token security not OK or missing, UNCERTAIN
@@ -473,6 +506,11 @@ async function buildQuotesImpl(
 
               // Onchain OK with good confidence = trust it (real liquidity detected)
               if (onchainSellability.status === 'OK' && onchainSellability.confidence >= 0.7) {
+                return { status: 'OK' as const, confidence: maxConfidence, reasons };
+              }
+
+              // DexScreener OK with good confidence = trust it (liquidity detected)
+              if (dexScreenerSellability?.status === 'OK' && dexScreenerSellability.confidence >= 0.7) {
                 return { status: 'OK' as const, confidence: maxConfidence, reasons };
               }
 
