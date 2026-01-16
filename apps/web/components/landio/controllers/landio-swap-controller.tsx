@@ -17,7 +17,7 @@ import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/li
 import { useToast } from "@/components/ui/toast";
 import { TOKEN_ICONS } from "@/components/ui/token-image";
 import { BASE_TOKENS, type TokenInfo, isAddress } from "@/lib/tokens";
-import type { QuoteResponse, RankedQuote, DecisionReceipt } from "@swappilot/shared";
+import type { QuoteResponse, RankedQuote, DecisionReceipt, QuoteMode } from "@swappilot/shared";
 
 // Debounce delay for quote fetching (ms)
 const QUOTE_DEBOUNCE_MS = 500;
