@@ -420,6 +420,7 @@ export function LandioSwapController() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isResolvingToken, setIsResolvingToken] = useState(false);
   const [showAllProviders, setShowAllProviders] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
@@ -565,16 +566,35 @@ export function LandioSwapController() {
       t.address.toLowerCase().includes(q)
     );
     
-    // If no results and query looks like an address, try to resolve it
-    if (filtered.length === 0 && isAddress(q)) {
-      const resolved = resolveToken(q);
-      if (resolved) {
-        return [resolved];
-      }
+    // If no results and query looks like an address, it will be resolved via useEffect
+    return filtered;
+  }, [allTokens, searchQuery]);
+
+  // Effect to resolve unknown token addresses
+  useEffect(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!isAddress(q)) {
+      setIsResolvingToken(false);
+      return;
     }
     
-    return filtered;
-  }, [allTokens, searchQuery, resolveToken]);
+    // Check if already in registry
+    const existing = allTokens.find(t => t.address.toLowerCase() === q);
+    if (existing && existing.symbol !== 'Loading...') {
+      setIsResolvingToken(false);
+      return;
+    }
+    
+    // Start resolution
+    setIsResolvingToken(true);
+    const resolved = resolveToken(q);
+    
+    // The resolveToken triggers async update to customTokens
+    // When it completes, allTokens will update and this effect will re-run
+    if (resolved && resolved.symbol !== 'Loading...') {
+      setIsResolvingToken(false);
+    }
+  }, [searchQuery, allTokens, resolveToken]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 16: HANDLERS (useCallback)
@@ -3097,7 +3117,23 @@ export function LandioSwapController() {
             </div>
           );
           })}
-          {filteredTokens.length === 0 && (
+          {filteredTokens.length === 0 && isResolvingToken && (
+            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted, #888)' }}>
+              <div style={{ 
+                display: 'inline-block',
+                width: '20px',
+                height: '20px',
+                border: '2px solid var(--accent, #00ff88)',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                marginBottom: '8px',
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div>Loading token info...</div>
+            </div>
+          )}
+          {filteredTokens.length === 0 && !isResolvingToken && (
             <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted, #888)' }}>
               No tokens found
             </div>
