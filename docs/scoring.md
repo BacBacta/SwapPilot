@@ -17,6 +17,9 @@
 - revert risk level
 - MEV exposure level
 - churn level
+- liquidity risk level (depth/availability)
+- slippage risk level (estimated)
+- protocol risk domains (security, compliance, financial, technology, operations, governance)
 - preflight simulation output (optional, but required for SAFE mode)
 
 ## Normalization assumptions (current)
@@ -58,7 +61,7 @@ $$
 Where:
 - $OutputScore \in [0,100]$ is the net-output ratio relative to the best net quote.
 - $QualityMultiplier \in [0,1]$ captures integration reliability and sellability confidence.
-- $RiskMultiplier \in [0,1]$ captures revert/MEV/churn risk and preflight results.
+- $RiskMultiplier \in [0,1]$ captures revert/MEV/churn risk, liquidity/slippage risk, protocol risk, and preflight results.
 
 ### Net output
 We score output on *net received amount* (not raw `buyAmount`):
@@ -81,6 +84,9 @@ OutputScore = \text{clamp}\left(100\times\frac{NetBuyAmount}{\max(NetBuyAmount)}
 $$
 
 If the best-net denominator is not available, we fall back to `maxBuyAmount`.
+
+## Dynamic risk weights
+Risk weights can be overridden per request via `scoringOptions.riskWeights` and `scoringOptions.protocolRiskWeights`. This enables user- or portfolio-specific calibration while keeping the scoring deterministic and reproducible.
 
 Receipts must include an explainable `whyWinner` list that describes which rules were applied.
 

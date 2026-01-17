@@ -2,6 +2,8 @@ import type { PreflightResult, RiskSignals } from '@swappilot/shared';
 
 import type { RiskConfig, RiskEngine, RiskInput, TokenClassification } from './types';
 
+import { getProtocolRiskLevels } from './protocolRisk';
+
 function normalizeAddress(addr: string): string {
   return addr.toLowerCase();
 }
@@ -57,6 +59,34 @@ function sellabilityFrom(params: {
   return { status: 'UNCERTAIN', confidence: 0.5, reasons: ['token_class:known', 'preflight_uncertain'] };
 }
 
+function maxLevel(a: 'LOW' | 'MEDIUM' | 'HIGH', b: 'LOW' | 'MEDIUM' | 'HIGH'): 'LOW' | 'MEDIUM' | 'HIGH' {
+  if (a === 'HIGH' || b === 'HIGH') return 'HIGH';
+  if (a === 'MEDIUM' || b === 'MEDIUM') return 'MEDIUM';
+  return 'LOW';
+}
+
+function protocolRiskFrom(params: { providerId: string; isDeepLinkOnly: boolean }): RiskSignals['protocolRisk'] {
+  const base = getProtocolRiskLevels(params.providerId);
+
+  const operations = params.isDeepLinkOnly ? maxLevel(base.operations, 'MEDIUM') : base.operations;
+  const technology = params.isDeepLinkOnly ? maxLevel(base.technology, 'MEDIUM') : base.technology;
+
+  return {
+    security: { level: base.security, reasons: [`protocol_registry:${params.providerId}`] },
+    compliance: { level: base.compliance, reasons: [`protocol_registry:${params.providerId}`] },
+    financial: { level: base.financial, reasons: [`protocol_registry:${params.providerId}`] },
+    technology: {
+      level: technology,
+      reasons: [`protocol_registry:${params.providerId}`, ...(params.isDeepLinkOnly ? ['protocol:deeplink_only'] : [])],
+    },
+    operations: {
+      level: operations,
+      reasons: [`protocol_registry:${params.providerId}`, ...(params.isDeepLinkOnly ? ['protocol:deeplink_only'] : [])],
+    },
+    governance: { level: base.governance, reasons: [`protocol_registry:${params.providerId}`] },
+  };
+}
+
 export function createRiskEngine(config: RiskConfig): RiskEngine {
   return {
     classifyToken({ token }): TokenClassification {
@@ -83,11 +113,25 @@ export function createRiskEngine(config: RiskConfig): RiskEngine {
         reasons: ['heuristic_placeholder'],
       };
 
+      const liquidity: RiskSignals['liquidity'] = {
+        level: 'LOW',
+        reasons: ['heuristic_placeholder'],
+      };
+
+      const slippage: RiskSignals['slippage'] = {
+        level: 'LOW',
+        reasons: ['heuristic_placeholder'],
+      };
+      const protocolRisk = protocolRiskFrom({ providerId: input.quote.providerId, isDeepLinkOnly });
+
       return {
         sellability,
         revertRisk,
         mevExposure,
         churn,
+        liquidity,
+        slippage,
+        protocolRisk,
         preflight: input.preflight,
       };
     },

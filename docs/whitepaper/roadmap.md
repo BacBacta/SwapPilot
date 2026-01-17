@@ -40,6 +40,11 @@
 - [ ] Favorite tokens
 - [ ] Custom token lists
 
+### Risk & Scoring Enhancements
+- [ ] MEV-aware execution (private RPC / intent routing where available)
+- [ ] Adversarial preflight simulation (sandwich/slippage scenarios)
+- [ ] Independent signal validation (on-chain success-rate + oracle cross-checks)
+
 ---
 
 ## Phase 3: Advanced Features
@@ -49,6 +54,10 @@
 - [ ] Bridge integrations
 - [ ] Cross-chain routing
 - [ ] Unified liquidity
+
+### Cross-Chain Risk
+- [ ] Bridge risk factor in BEQ scoring
+- [ ] Confirmation latency risk adjustments
 
 ### Automation
 - [ ] DCA (Dollar Cost Averaging)
@@ -89,6 +98,10 @@
 - [ ] DAO formation
 - [ ] Community proposals
 - [ ] Revenue sharing
+
+### Security & Audits
+- [ ] Third-party audit of scoring engine
+- [ ] Regular scoring reviews and transparency reports
 
 ---
 

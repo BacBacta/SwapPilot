@@ -154,6 +154,16 @@ export function defaultPlaceholderSignals(params: {
     revertRisk: { level: 'MEDIUM', reasons: ['stub_only'] },
     mevExposure: { level: 'MEDIUM', reasons: ['stub_only'] },
     churn: { level: 'LOW', reasons: ['registry_based'] },
+    liquidity: { level: 'LOW', reasons: ['stub_only'] },
+    slippage: { level: 'LOW', reasons: ['stub_only'] },
+    protocolRisk: {
+      security: { level: 'LOW', reasons: ['stub_only'] },
+      compliance: { level: 'LOW', reasons: ['stub_only'] },
+      financial: { level: 'LOW', reasons: ['stub_only'] },
+      technology: { level: 'LOW', reasons: ['stub_only'] },
+      operations: { level: 'LOW', reasons: ['stub_only'] },
+      governance: { level: 'LOW', reasons: ['stub_only'] },
+    },
     preflight: { ok: true, pRevert: 0.5, confidence: 0, reasons: ['preflight_not_run_stub'] },
   };
 }

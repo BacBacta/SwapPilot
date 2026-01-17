@@ -41,6 +41,64 @@ const noopLogger: Logger = {
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+function extractDexScreenerLiquidityUsd(reasons: string[]): number | null {
+  const match = reasons.find((r) => r.startsWith('dexscreener:liquidity_usd:max:'));
+  if (!match) return null;
+  const raw = match.split(':').pop();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function deriveLiquidityRisk(params: {
+  reasons: string[];
+  minLiquidityUsd?: number;
+}): { level: 'LOW' | 'MEDIUM' | 'HIGH'; reasons: string[] } {
+  const reasons = [...params.reasons];
+  const hasLowLiquidityReason = reasons.some((r) =>
+    r.includes('liquidity_below_minimum_threshold') ||
+    r.includes('pcs_low_liquidity') ||
+    r.startsWith('dexscreener:liquidity_below_min') ||
+    r === 'dexscreener:no_pairs',
+  );
+
+  if (hasLowLiquidityReason) {
+    return { level: 'HIGH', reasons: [...reasons, 'liquidity:risk:high'] };
+  }
+
+  const liquidityUsd = extractDexScreenerLiquidityUsd(reasons);
+  const minLiquidityUsd = params.minLiquidityUsd ?? 0;
+  if (liquidityUsd !== null && minLiquidityUsd > 0) {
+    if (liquidityUsd >= minLiquidityUsd * 5) {
+      return { level: 'LOW', reasons: [...reasons, `liquidity:risk:low:usd:${liquidityUsd}`] };
+    }
+    if (liquidityUsd >= minLiquidityUsd) {
+      return { level: 'MEDIUM', reasons: [...reasons, `liquidity:risk:medium:usd:${liquidityUsd}`] };
+    }
+    return { level: 'HIGH', reasons: [...reasons, `liquidity:risk:high:usd:${liquidityUsd}`] };
+  }
+
+  if (reasons.some((r) => r.includes('liquidity_ok'))) {
+    return { level: 'LOW', reasons: [...reasons, 'liquidity:risk:low:onchain_ok'] };
+  }
+
+  return { level: 'MEDIUM', reasons: [...reasons, 'liquidity:risk:unknown'] };
+}
+
+function deriveSlippageRisk(params: {
+  liquidityLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  slippageBps: number;
+}): { level: 'LOW' | 'MEDIUM' | 'HIGH'; reasons: string[] } {
+  const reasons = [`slippage:requested_bps:${params.slippageBps}`];
+  if (params.liquidityLevel === 'HIGH') {
+    return { level: 'HIGH', reasons: [...reasons, 'slippage:risk:high:low_liquidity'] };
+  }
+  if (params.liquidityLevel === 'MEDIUM' || params.slippageBps >= 200) {
+    return { level: 'MEDIUM', reasons: [...reasons, 'slippage:risk:medium'] };
+  }
+  return { level: 'LOW', reasons: [...reasons, 'slippage:risk:low'] };
+}
+
 export function buildQuotes(
   request: QuoteRequest,
   deps: {
@@ -114,6 +172,13 @@ async function buildQuotesImpl(
       timeoutMs: number;
       cacheTtlMs: number;
       taxStrictMaxPercent: number;
+    };
+    dexScreener?: {
+      enabled: boolean;
+      baseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+      minLiquidityUsd: number;
     };
   },
 ): Promise<{
@@ -530,13 +595,39 @@ async function buildQuotesImpl(
           }
         : riskSignals;
 
+      const liquidityRisk = deriveLiquidityRisk({
+        reasons: mergedSignals.sellability.reasons,
+        minLiquidityUsd: dexScreener?.minLiquidityUsd,
+      });
+
+      const slippageRisk = deriveSlippageRisk({
+        liquidityLevel: liquidityRisk.level,
+        slippageBps: parsed.slippageBps,
+      });
+
+      const enrichedSignals = {
+        ...mergedSignals,
+        liquidity: liquidityRisk,
+        slippage: slippageRisk,
+        protocolRisk:
+          mergedSignals.protocolRisk ??
+          ({
+            security: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+            compliance: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+            financial: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+            technology: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+            operations: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+            governance: { level: 'LOW', reasons: ['protocol_risk:placeholder'] },
+          } as const),
+      };
+
       return {
         providerId: item.provider.providerId,
         sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
         capabilities: item.capabilities,
         raw: item.raw,
         normalized: item.normalized,
-        signals: mergedSignals,
+        signals: enrichedSignals,
         score: { beqScore: 0, rawOutputRank: 0 },
         deepLink: item.deepLink.url,
       };

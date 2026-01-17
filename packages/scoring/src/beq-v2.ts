@@ -55,6 +55,12 @@ export type BeqV2Components = {
   sellabilityFactor: number;
   /** 0-1: Risk-adjusted multiplier (revert + MEV + churn) */
   riskFactor: number;
+  /** 0-1: Liquidity risk factor */
+  liquidityFactor?: number;
+  /** 0-1: Slippage risk factor */
+  slippageFactor?: number;
+  /** 0-1: Protocol multi-domain risk factor */
+  protocolFactor?: number;
   /** 0-1: Preflight success factor */
   preflightFactor: number;
   /** Combined quality multiplier = reliability × sellability */
@@ -176,6 +182,27 @@ function calculateOutputScore(netBuyAmount: bigint, maxBuyAmount: bigint): numbe
   return clamp(ratio, 0, 100);
 }
 
+function normalizeWeights<T extends Record<string, number>>(weights: T): T {
+  const sum = Object.values(weights).reduce((acc, v) => acc + v, 0);
+  if (sum <= 0) return weights;
+  const normalized = Object.entries(weights).reduce((acc, [key, value]) => {
+    acc[key as keyof T] = value / sum;
+    return acc;
+  }, {} as T);
+  return normalized;
+}
+
+function levelToScore(level: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+  switch (level) {
+    case 'LOW':
+      return 1.0;
+    case 'MEDIUM':
+      return 0.85;
+    case 'HIGH':
+      return 0.6;
+  }
+}
+
 /**
  * Calculate sellability factor based on status and mode
  */
@@ -213,6 +240,46 @@ function calculateSellabilityFactor(
   return { factor, disqualified: false, reason: `Sellability FAIL (penalized to ${(factor * 100).toFixed(0)}%)` };
 }
 
+function calculateProtocolFactor(
+  signals: RiskSignals,
+  options?: ScoringOptions,
+): { factor: number; reason: string } {
+  const protocolRisk = signals.protocolRisk;
+  if (!protocolRisk) {
+    return { factor: 1, reason: 'Protocol risk: not available (neutral)' };
+  }
+
+  const defaultWeights = normalizeWeights({
+    security: 0.3,
+    compliance: 0.1,
+    financial: 0.15,
+    technology: 0.15,
+    operations: 0.15,
+    governance: 0.15,
+  });
+
+  const overrides = options?.protocolRiskWeights ?? {};
+  const weights = normalizeWeights({
+    security: overrides.security ?? defaultWeights.security,
+    compliance: overrides.compliance ?? defaultWeights.compliance,
+    financial: overrides.financial ?? defaultWeights.financial,
+    technology: overrides.technology ?? defaultWeights.technology,
+    operations: overrides.operations ?? defaultWeights.operations,
+    governance: overrides.governance ?? defaultWeights.governance,
+  });
+
+  const factor =
+    levelToScore(protocolRisk.security.level) * weights.security +
+    levelToScore(protocolRisk.compliance.level) * weights.compliance +
+    levelToScore(protocolRisk.financial.level) * weights.financial +
+    levelToScore(protocolRisk.technology.level) * weights.technology +
+    levelToScore(protocolRisk.operations.level) * weights.operations +
+    levelToScore(protocolRisk.governance.level) * weights.governance;
+
+  const reason = `Protocol risk: sec=${protocolRisk.security.level}, comp=${protocolRisk.compliance.level}, fin=${protocolRisk.financial.level}, tech=${protocolRisk.technology.level}, ops=${protocolRisk.operations.level}, gov=${protocolRisk.governance.level}`;
+  return { factor: clamp(factor, 0, 1), reason };
+}
+
 /**
  * Calculate risk factor based on revert/MEV/churn signals
  */
@@ -220,43 +287,63 @@ function calculateRiskFactor(
   signals: RiskSignals,
   mode: QuoteMode,
   options?: ScoringOptions,
-): { factor: number; reason: string } {
+): { factor: number; reason: string; liquidityFactor: number; slippageFactor: number; protocolFactor: number } {
   const revertLevel = signals.revertRisk.level;
   const mevLevel = options?.mevAwareScoring === false ? 'LOW' : signals.mevExposure.level;
   const churnLevel = signals.churn.level;
-
-  // Convert levels to numeric penalties
-  const levelToScore = (level: 'LOW' | 'MEDIUM' | 'HIGH'): number => {
-    switch (level) {
-      case 'LOW': return 1.0;
-      case 'MEDIUM': return 0.85;
-      case 'HIGH': return 0.6;
-    }
-  };
+  const liquidityLevel = signals.liquidity?.level ?? 'LOW';
+  const slippageLevel = signals.slippage?.level ?? 'LOW';
 
   const revertScore = levelToScore(revertLevel);
   const mevScore = levelToScore(mevLevel);
   const churnScore = levelToScore(churnLevel);
+  const liquidityScore = levelToScore(liquidityLevel);
+  const slippageScore = levelToScore(slippageLevel);
 
-  // Weighted average: revert is most important, then MEV, then churn
-  const weights = mode === 'SAFE' 
-    ? { revert: 0.5, mev: 0.35, churn: 0.15 }
+  const protocol = calculateProtocolFactor(signals, options);
+
+  const defaultWeights = mode === 'SAFE'
+    ? { revert: 0.35, mev: 0.25, churn: 0.1, liquidity: 0.15, slippage: 0.1, protocol: 0.05 }
     : mode === 'DEGEN'
-      ? { revert: 0.4, mev: 0.3, churn: 0.3 }
-      : { revert: 0.45, mev: 0.35, churn: 0.2 };
+      ? { revert: 0.25, mev: 0.2, churn: 0.2, liquidity: 0.15, slippage: 0.1, protocol: 0.1 }
+      : { revert: 0.3, mev: 0.25, churn: 0.15, liquidity: 0.15, slippage: 0.1, protocol: 0.05 };
 
-  const factor = (revertScore * weights.revert) + (mevScore * weights.mev) + (churnScore * weights.churn);
-  
+  const overrides = options?.riskWeights ?? {};
+  const weights = normalizeWeights({
+    revert: overrides.revert ?? defaultWeights.revert,
+    mev: overrides.mev ?? defaultWeights.mev,
+    churn: overrides.churn ?? defaultWeights.churn,
+    liquidity: overrides.liquidity ?? defaultWeights.liquidity,
+    slippage: overrides.slippage ?? defaultWeights.slippage,
+    protocol: overrides.protocol ?? defaultWeights.protocol,
+  });
+
+  const factor =
+    revertScore * weights.revert +
+    mevScore * weights.mev +
+    churnScore * weights.churn +
+    liquidityScore * weights.liquidity +
+    slippageScore * weights.slippage +
+    protocol.factor * weights.protocol;
+
   const risks = [];
   if (revertLevel !== 'LOW') risks.push(`Revert:${revertLevel}`);
   if (mevLevel !== 'LOW') risks.push(`MEV:${mevLevel}`);
   if (churnLevel !== 'LOW') risks.push(`Churn:${churnLevel}`);
-  
-  const reason = risks.length === 0 
-    ? 'All risk signals LOW' 
-    : `Risk factors: ${risks.join(', ')}`;
+  if (liquidityLevel !== 'LOW') risks.push(`Liquidity:${liquidityLevel}`);
+  if (slippageLevel !== 'LOW') risks.push(`Slippage:${slippageLevel}`);
 
-  return { factor: clamp(factor, 0, 1), reason };
+  const reason = risks.length === 0
+    ? `All risk signals LOW; ${protocol.reason}`
+    : `Risk factors: ${risks.join(', ')}; ${protocol.reason}`;
+
+  return {
+    factor: clamp(factor, 0, 1),
+    reason,
+    liquidityFactor: clamp(liquidityScore, 0, 1),
+    slippageFactor: clamp(slippageScore, 0, 1),
+    protocolFactor: clamp(protocol.factor, 0, 1),
+  };
 }
 
 /**
@@ -422,6 +509,9 @@ export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
       reliabilityFactor: Math.round(reliabilityFactor * 1000) / 1000,
       sellabilityFactor: Math.round(sellabilityFactor * 1000) / 1000,
       riskFactor: Math.round(riskFactor * 1000) / 1000,
+      liquidityFactor: Math.round(risk.liquidityFactor * 1000) / 1000,
+      slippageFactor: Math.round(risk.slippageFactor * 1000) / 1000,
+      protocolFactor: Math.round(risk.protocolFactor * 1000) / 1000,
       preflightFactor: Math.round(preflightFactor * 1000) / 1000,
       qualityMultiplier: Math.round(qualityMultiplier * 1000) / 1000,
       riskMultiplier: Math.round(riskMultiplier * 1000) / 1000,

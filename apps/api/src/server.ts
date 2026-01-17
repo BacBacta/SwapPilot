@@ -949,6 +949,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         revertRisk: { level: 'LOW', reasons: [reason] },
         mevExposure: { level: 'LOW', reasons: [reason] },
         churn: { level: 'LOW', reasons: [reason] },
+        liquidity: { level: 'LOW', reasons: [reason] },
+        slippage: { level: 'LOW', reasons: [reason] },
+        protocolRisk: {
+          security: { level: 'LOW', reasons: [reason] },
+          compliance: { level: 'LOW', reasons: [reason] },
+          financial: { level: 'LOW', reasons: [reason] },
+          technology: { level: 'LOW', reasons: [reason] },
+          operations: { level: 'LOW', reasons: [reason] },
+          governance: { level: 'LOW', reasons: [reason] },
+        },
         preflight: { ok: true, pRevert: 0, confidence: 1, reasons: [reason] },
       });
 

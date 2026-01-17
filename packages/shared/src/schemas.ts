@@ -29,6 +29,26 @@ export const ScoringOptionsSchema = z.object({
   sellabilityCheck: z.boolean().optional(),
   mevAwareScoring: z.boolean().optional(),
   canonicalPoolsOnly: z.boolean().optional(),
+  riskWeights: z
+    .object({
+      revert: z.number().min(0).max(1).optional(),
+      mev: z.number().min(0).max(1).optional(),
+      churn: z.number().min(0).max(1).optional(),
+      liquidity: z.number().min(0).max(1).optional(),
+      slippage: z.number().min(0).max(1).optional(),
+      protocol: z.number().min(0).max(1).optional(),
+    })
+    .optional(),
+  protocolRiskWeights: z
+    .object({
+      security: z.number().min(0).max(1).optional(),
+      compliance: z.number().min(0).max(1).optional(),
+      financial: z.number().min(0).max(1).optional(),
+      technology: z.number().min(0).max(1).optional(),
+      operations: z.number().min(0).max(1).optional(),
+      governance: z.number().min(0).max(1).optional(),
+    })
+    .optional(),
 });
 
 export type ScoringOptions = z.infer<typeof ScoringOptionsSchema>;
@@ -99,6 +119,18 @@ export const RiskSignalsSchema = z.object({
   revertRisk: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
   mevExposure: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
   churn: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+  liquidity: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }).optional(),
+  slippage: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }).optional(),
+  protocolRisk: z
+    .object({
+      security: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+      compliance: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+      financial: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+      technology: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+      operations: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+      governance: z.object({ level: RiskLevelSchema, reasons: z.array(z.string()) }),
+    })
+    .optional(),
   preflight: PreflightResultSchema.optional(),
 });
 
@@ -114,6 +146,12 @@ export const BeqV2ComponentsSchema = z.object({
   sellabilityFactor: z.number().min(0).max(1),
   /** Risk factor: 0-1, aggregated from revert/MEV/churn risk */
   riskFactor: z.number().min(0).max(1),
+  /** Liquidity factor: 0-1, based on depth and liquidity risk */
+  liquidityFactor: z.number().min(0).max(1).optional(),
+  /** Slippage factor: 0-1, based on estimated slippage risk */
+  slippageFactor: z.number().min(0).max(1).optional(),
+  /** Protocol risk factor: 0-1, multi-domain protocol risk */
+  protocolFactor: z.number().min(0).max(1).optional(),
   /** Preflight factor: 0-1, based on simulation result */
   preflightFactor: z.number().min(0).max(1),
   /** Combined quality multiplier = reliability × sellability */

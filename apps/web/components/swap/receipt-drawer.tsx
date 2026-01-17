@@ -390,6 +390,27 @@ function BeqScoreBreakdown({ details }: { details: BeqV2DetailsType }) {
           value={components.riskFactor}
           tooltip="Risk assessment (revert, MEV, churn)"
         />
+        {components.liquidityFactor !== undefined && (
+          <ScoreFactorPill
+            label="Liquidity"
+            value={components.liquidityFactor}
+            tooltip="Liquidity depth risk factor"
+          />
+        )}
+        {components.slippageFactor !== undefined && (
+          <ScoreFactorPill
+            label="Slippage"
+            value={components.slippageFactor}
+            tooltip="Estimated slippage risk factor"
+          />
+        )}
+        {components.protocolFactor !== undefined && (
+          <ScoreFactorPill
+            label="Protocol"
+            value={components.protocolFactor}
+            tooltip="Protocol risk (security, compliance, ops)"
+          />
+        )}
         <ScoreFactorPill 
           label="Preflight" 
           value={components.preflightFactor}
