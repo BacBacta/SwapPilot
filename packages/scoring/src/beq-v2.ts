@@ -185,11 +185,9 @@ function calculateOutputScore(netBuyAmount: bigint, maxBuyAmount: bigint): numbe
 function normalizeWeights<T extends Record<string, number>>(weights: T): T {
   const sum = Object.values(weights).reduce((acc, v) => acc + v, 0);
   if (sum <= 0) return weights;
-  const normalized = Object.entries(weights).reduce((acc, [key, value]) => {
-    acc[key as keyof T] = value / sum;
-    return acc;
-  }, {} as T);
-  return normalized;
+  return Object.fromEntries(
+    Object.entries(weights).map(([key, value]) => [key, value / sum]),
+  ) as T;
 }
 
 function levelToScore(level: 'LOW' | 'MEDIUM' | 'HIGH'): number {
