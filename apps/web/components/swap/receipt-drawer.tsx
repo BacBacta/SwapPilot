@@ -340,6 +340,9 @@ interface BeqV2DetailsType {
     reliabilityFactor: number;
     sellabilityFactor: number;
     riskFactor: number;
+    liquidityFactor?: number | undefined;
+    slippageFactor?: number | undefined;
+    protocolFactor?: number | undefined;
     preflightFactor: number;
     qualityMultiplier?: number | undefined;
     riskMultiplier?: number | undefined;
