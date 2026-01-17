@@ -733,6 +733,17 @@ export function LandioSwapController() {
       
       // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
       if (activeQuotes.length === 0) {
+        const diagnostics = (() => {
+          const raw = res.bestRawQuotes ?? [];
+          if (raw.length === 0) return ['No providers returned a quote'];
+          const disqualified = raw.filter((q) => q.score?.v2Details?.disqualified);
+          if (disqualified.length === 0) return ['No executable quotes after filtering'];
+          const reasons = disqualified
+            .map((q) => q.score?.v2Details?.disqualifiedReason || 'Disqualified')
+            .filter(Boolean);
+          const unique = Array.from(new Set(reasons));
+          return unique.slice(0, 3);
+        })();
         // Clear output
         if (toAmountInput) {
           toAmountInput.value = "";
@@ -757,6 +768,12 @@ export function LandioSwapController() {
               <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
               <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
               <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+              <div style="font-size: 11px; margin-top: 10px; text-align: left; display: inline-block; color: var(--text-muted, #777);">
+                <div style="font-weight: 600; margin-bottom: 4px;">Why blocked:</div>
+                <ul style="margin: 0; padding-left: 16px;">
+                  ${diagnostics.map((r) => `<li>${r}</li>`).join('')}
+                </ul>
+              </div>
             </div>
           `;
         }
@@ -1224,6 +1241,17 @@ export function LandioSwapController() {
 
         // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
         if (activeQuotes.length === 0) {
+          const diagnostics = (() => {
+            const raw = res.bestRawQuotes ?? [];
+            if (raw.length === 0) return ['No providers returned a quote'];
+            const disqualified = raw.filter((q) => q.score?.v2Details?.disqualified);
+            if (disqualified.length === 0) return ['No executable quotes after filtering'];
+            const reasons = disqualified
+              .map((q) => q.score?.v2Details?.disqualifiedReason || 'Disqualified')
+              .filter(Boolean);
+            const unique = Array.from(new Set(reasons));
+            return unique.slice(0, 3);
+          })();
           // Clear output
           if (toAmountInput) {
             toAmountInput.value = "";
@@ -1246,6 +1274,12 @@ export function LandioSwapController() {
                 <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
                 <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
                 <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+                <div style="font-size: 11px; margin-top: 10px; text-align: left; display: inline-block; color: var(--text-muted, #777);">
+                  <div style="font-weight: 600; margin-bottom: 4px;">Why blocked:</div>
+                  <ul style="margin: 0; padding-left: 16px;">
+                    ${diagnostics.map((r) => `<li>${r}</li>`).join('')}
+                  </ul>
+                </div>
               </div>
             `;
             setDisplay("providersContainer", "block");
