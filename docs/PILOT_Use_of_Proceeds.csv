@@ -1,0 +1,85 @@
+USE OF PROCEEDS - PILOT IDO
+
+===========================================
+SECTION 1: IDO FUNDRAISE SUMMARY
+===========================================
+Metric,Value
+IDO Allocation,30% of supply
+IDO Tokens,"300,000,000 PILOT"
+IDO Price,$0.0057
+Hardcap (Maximum Raise),"$1,710,000"
+
+===========================================
+SECTION 2: USE OF PROCEEDS (HARDCAP SCENARIO)
+===========================================
+Category,Percentage,Amount (USD),Purpose
+Liquidity Provision,35%,"$598,500",DEX liquidity pools (PILOT/BNB on PancakeSwap)
+Development,25%,"$427,500",Smart contract development / Multi-chain expansion / Security audits
+Marketing & Community,20%,"$342,000",Influencer campaigns / Trading competitions / Airdrops / PR
+Operations,10%,"$171,000",Infrastructure / Team salaries / Legal / Tools
+Reserve,10%,"$171,000",Emergency fund / Unexpected opportunities
+TOTAL,100%,"$1,710,000",
+
+===========================================
+SECTION 3: USE OF PROCEEDS (50% RAISE SCENARIO)
+===========================================
+Category,Percentage,Amount (USD),Purpose
+Liquidity Provision,35%,"$299,250",DEX liquidity pools
+Development,25%,"$213,750",Core development priorities
+Marketing & Community,20%,"$171,000",Focused campaigns
+Operations,10%,"$85,500",Lean operations
+Reserve,10%,"$85,500",Buffer
+TOTAL,100%,"$855,000",
+
+===========================================
+SECTION 4: USE OF PROCEEDS (MINIMUM VIABLE - 10% RAISE)
+===========================================
+Category,Percentage,Amount (USD),Purpose
+Liquidity Provision,40%,"$68,400",Minimum viable liquidity
+Development,20%,"$34,200",Essential maintenance only
+Marketing & Community,25%,"$42,750",Organic + referral focus
+Operations,15%,"$25,650",Minimal infrastructure
+Reserve,0%,$0,No buffer
+TOTAL,100%,"$171,000",
+
+===========================================
+SECTION 5: LIQUIDITY BREAKDOWN
+===========================================
+Item,Details
+Initial Liquidity Pool,PILOT/BNB on PancakeSwap V2
+Target Liquidity,"$100,000 - $200,000"
+LP Lock Period,12-18 months
+MC/Liquidity Ratio Target,5-10x
+
+===========================================
+SECTION 6: DEVELOPMENT PRIORITIES
+===========================================
+Priority,Timeline,Estimated Cost
+Multi-chain (Ethereum),Q1 2026,"$50,000 - $100,000"
+Multi-chain (Arbitrum/Polygon/Base),Q2 2026,"$75,000 - $150,000"
+Mobile App (iOS/Android),Q2-Q3 2026,"$100,000 - $200,000"
+Security Audit (Tier 1),Q1 2026,"$30,000 - $50,000"
+Cross-chain Swaps,Q3 2026,"$50,000 - $100,000"
+
+===========================================
+SECTION 7: MARKETING BUDGET ALLOCATION
+===========================================
+Channel,% of Marketing Budget,Monthly Estimate (at Hardcap)
+Influencer Marketing,30%,"$8,550"
+Trading Competitions,25%,"$7,125"
+Paid Ads (Twitter/Google),15%,"$4,275"
+Community Management,15%,"$4,275"
+PR & Media,10%,"$2,850"
+Tools & Analytics,5%,"$1,425"
+TOTAL Monthly,100%,"$28,500"
+
+===========================================
+SECTION 8: OPERATIONAL COSTS
+===========================================
+Item,Monthly Cost,Annual Cost
+Infrastructure (Fly.io / Vercel / RPC),~$500,"$6,000"
+Team Compensation,Variable,From Treasury vesting
+Legal & Compliance,~$1,000,"$12,000"
+Tools & Software,~$500,"$6,000"
+Miscellaneous,~$500,"$6,000"
+TOTAL,~$2,500,"$30,000"
