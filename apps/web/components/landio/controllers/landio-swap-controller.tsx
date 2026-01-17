@@ -992,7 +992,11 @@ export function LandioSwapController() {
           maxWei = maxWei > GAS_RESERVE_WEI ? maxWei - GAS_RESERVE_WEI : 0n;
         }
         
-        const formatted = (Number(maxWei) / 10 ** (fromTokenInfo.decimals ?? 18)).toString();
+        const decimals = fromTokenInfo.decimals ?? 18;
+        const rawValue = Number(maxWei) / 10 ** decimals;
+        // Limit decimals: 4 for values >= 1, 6 for smaller values
+        const maxDecimals = rawValue >= 1 ? 4 : 6;
+        const formatted = rawValue.toFixed(maxDecimals).replace(/\.?0+$/, '');
         fromAmountInput.value = formatted;
         fromAmountInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
