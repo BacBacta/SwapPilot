@@ -738,11 +738,30 @@ export function LandioSwapController() {
           if (raw.length === 0) return ['No providers returned a quote'];
           const disqualified = raw.filter((q) => q.score?.v2Details?.disqualified);
           if (disqualified.length === 0) return ['No executable quotes after filtering'];
-          const reasons = disqualified
-            .map((q) => q.score?.v2Details?.disqualifiedReason || 'Disqualified')
-            .filter(Boolean);
-          const unique = Array.from(new Set(reasons));
-          return unique.slice(0, 3);
+
+          const reasonSet = new Set<string>();
+          for (const q of disqualified) {
+            const baseReason = q.score?.v2Details?.disqualifiedReason || 'Disqualified';
+            if (baseReason === 'Sellability check failed') {
+              const sellReasons = q.signals?.sellability?.reasons ?? [];
+              if (sellReasons.length > 0) {
+                reasonSet.add(`Sellability: ${sellReasons.slice(0, 4).join(', ')}`);
+              } else {
+                reasonSet.add(baseReason);
+              }
+            } else if (baseReason === 'Preflight simulation failed') {
+              const preflightReasons = q.signals?.preflight?.reasons ?? [];
+              if (preflightReasons.length > 0) {
+                reasonSet.add(`Preflight: ${preflightReasons.slice(0, 4).join(', ')}`);
+              } else {
+                reasonSet.add(baseReason);
+              }
+            } else {
+              reasonSet.add(baseReason);
+            }
+          }
+
+          return Array.from(reasonSet).slice(0, 3);
         })();
         // Clear output
         if (toAmountInput) {
@@ -1246,11 +1265,30 @@ export function LandioSwapController() {
             if (raw.length === 0) return ['No providers returned a quote'];
             const disqualified = raw.filter((q) => q.score?.v2Details?.disqualified);
             if (disqualified.length === 0) return ['No executable quotes after filtering'];
-            const reasons = disqualified
-              .map((q) => q.score?.v2Details?.disqualifiedReason || 'Disqualified')
-              .filter(Boolean);
-            const unique = Array.from(new Set(reasons));
-            return unique.slice(0, 3);
+
+            const reasonSet = new Set<string>();
+            for (const q of disqualified) {
+              const baseReason = q.score?.v2Details?.disqualifiedReason || 'Disqualified';
+              if (baseReason === 'Sellability check failed') {
+                const sellReasons = q.signals?.sellability?.reasons ?? [];
+                if (sellReasons.length > 0) {
+                  reasonSet.add(`Sellability: ${sellReasons.slice(0, 4).join(', ')}`);
+                } else {
+                  reasonSet.add(baseReason);
+                }
+              } else if (baseReason === 'Preflight simulation failed') {
+                const preflightReasons = q.signals?.preflight?.reasons ?? [];
+                if (preflightReasons.length > 0) {
+                  reasonSet.add(`Preflight: ${preflightReasons.slice(0, 4).join(', ')}`);
+                } else {
+                  reasonSet.add(baseReason);
+                }
+              } else {
+                reasonSet.add(baseReason);
+              }
+            }
+
+            return Array.from(reasonSet).slice(0, 3);
           })();
           // Clear output
           if (toAmountInput) {
