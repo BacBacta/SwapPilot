@@ -31,6 +31,11 @@ export const EnvSchema = z.object({
     }, z.boolean())
     .default(true),
 
+  // Sentry error tracking
+  SENTRY_DSN: z.string().default(''),
+  // Logtail (BetterStack) for log aggregation
+  LOGTAIL_TOKEN: z.string().default(''),
+
   // RPC / Preflight
   // Comma-separated list of BSC (BNB Chain) JSON-RPC endpoints.
   BSC_RPC_URLS: z.string().default('https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io,https://bsc-dataseed1.ninicoin.io'),
@@ -130,6 +135,10 @@ export type AppConfig = {
   metrics: {
     enabled: boolean;
   };
+  observability: {
+    sentryDsn: string | null;
+    logtailToken: string | null;
+  };
   rpc: {
     bscUrls: string[];
     quorum: number;
@@ -206,6 +215,10 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     metrics: {
       enabled: env.METRICS_ENABLED,
+    },
+    observability: {
+      sentryDsn: env.SENTRY_DSN.trim().length > 0 ? env.SENTRY_DSN.trim() : null,
+      logtailToken: env.LOGTAIL_TOKEN.trim().length > 0 ? env.LOGTAIL_TOKEN.trim() : null,
     },
     rpc: {
       bscUrls: splitCsv(env.BSC_RPC_URLS),

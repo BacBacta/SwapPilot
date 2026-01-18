@@ -59,6 +59,10 @@ import { getUptimeTracker, type UptimeTracker } from './obs/uptimeTracker';
 import { resolveErc20Metadata } from './tokens/erc20Metadata';
 import { ProviderHealthTracker } from './obs/providerHealth';
 
+// Observability
+import { initSentry, captureException, Sentry } from './obs/sentry';
+import { initLogger, logError, type AppLogger } from './obs/logger';
+
 export type CreateServerOptions = {
   logger?: boolean;
   config?: AppConfig;
@@ -73,6 +77,14 @@ export type CreateServerOptions = {
 
 export function createServer(options: CreateServerOptions = {}): FastifyInstance {
   const config = options.config ?? loadConfig(process.env);
+
+  // Initialize observability
+  initSentry(config.observability.sentryDsn ?? undefined, config.nodeEnv);
+  const appLogger = initLogger({
+    environment: config.nodeEnv,
+    logtailToken: config.observability.logtailToken ?? undefined,
+  });
+
   const receiptStore =
     options.receiptStore ??
     (config.receiptStore.type === 'memory'
@@ -134,6 +146,38 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
       'request.end',
     );
+  });
+
+  // Global error handler with Sentry reporting
+  app.setErrorHandler((error, request, reply) => {
+    // Log error
+    logError(appLogger, error, {
+      requestId: request.id,
+      method: request.method,
+      url: request.url,
+    });
+
+    // Report to Sentry (skip expected errors)
+    const isExpectedError = 
+      error.statusCode === 400 || 
+      error.statusCode === 404 ||
+      error.statusCode === 429;
+
+    if (!isExpectedError) {
+      captureException(error, {
+        requestId: request.id,
+        method: request.method,
+        url: request.url,
+      });
+    }
+
+    // Send response
+    const statusCode = error.statusCode ?? 500;
+    reply.status(statusCode).send({
+      error: error.name,
+      message: error.message,
+      statusCode,
+    });
   });
 
   // CORS - allow frontend to call API

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -63,4 +64,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry configuration - only apply if env vars are set
+function wrapWithSentry(config: NextConfig): NextConfig {
+  const org = process.env.SENTRY_ORG;
+  const project = process.env.SENTRY_PROJECT;
+  const authToken = process.env.SENTRY_AUTH_TOKEN;
+
+  // Only wrap with Sentry if we have the required config
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN || !org || !project || !authToken) {
+    return config;
+  }
+
+  return withSentryConfig(config, {
+    silent: true,
+    org,
+    project,
+    authToken,
+  });
+}
+
+export default wrapWithSentry(nextConfig);
