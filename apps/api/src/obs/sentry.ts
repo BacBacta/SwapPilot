@@ -1,13 +1,13 @@
 import * as Sentry from '@sentry/node';
 
+// Default DSN - same Sentry project as frontend (can be overridden via SENTRY_DSN env var)
+const DEFAULT_DSN = 'https://4a02392b17dabe691cec9e062975ce35@o4510733389201408.ingest.de.sentry.io/4510733402177616';
+
 export function initSentry(dsn: string | undefined, environment: string) {
-  if (!dsn) {
-    console.log('[Sentry] No DSN provided, skipping initialization');
-    return;
-  }
+  const effectiveDsn = dsn || DEFAULT_DSN;
 
   Sentry.init({
-    dsn,
+    dsn: effectiveDsn,
     environment,
     // Performance monitoring
     tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
