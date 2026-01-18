@@ -488,15 +488,15 @@ async function buildQuotesImpl(
         preflight: preflightResult,
       });
 
-      // Best-effort on-chain heuristic: detects obvious non-contract/non-ERC20 tokens.
-      // Check sellToken sellability - we need to verify the token being sold has sufficient liquidity
-      // For DexScreener and token security APIs, convert native sentinel to WBNB
-      const tokenForSecurityCheck = resolveTokenForSecurityCheck(parsed.sellToken, parsed.chainId);
+      // Best-effort security checks for the TOKEN BEING PURCHASED (buyToken).
+      // When buying a token, we need to verify it's not a honeypot and can be sold later.
+      // For DexScreener and token security APIs, convert native sentinel to WBNB.
+      const buyTokenForSecurityCheck = resolveTokenForSecurityCheck(parsed.buyToken, parsed.chainId);
       
       const onchainSellability = rpc
         ? await assessOnchainSellability({
             chainId: parsed.chainId,
-            buyToken: parsed.sellToken, // Keep original for onchain check (handles native sentinel internally)
+            buyToken: parsed.buyToken, // Check buyToken - can we sell it after buying?
             rpcUrls: rpc.bscUrls,
             timeoutMs: rpc.timeoutMs,
             multicall3Address: sellability?.multicall3Address ?? null,
@@ -508,7 +508,7 @@ async function buildQuotesImpl(
       const dexScreenerSellability = dexScreener
         ? await assessDexScreenerSellability({
             chainId: parsed.chainId,
-            token: tokenForSecurityCheck, // Use WBNB for native sentinel
+            token: buyTokenForSecurityCheck, // Check buyToken liquidity
             config: {
               enabled: dexScreener.enabled,
               baseUrl: dexScreener.baseUrl,
@@ -522,7 +522,7 @@ async function buildQuotesImpl(
       const tokenSecuritySellability = tokenSecurity
         ? await assessTokenSecuritySellability({
             chainId: parsed.chainId,
-            token: tokenForSecurityCheck, // Use WBNB for native sentinel
+            token: buyTokenForSecurityCheck, // Check buyToken for honeypots/taxes
             mode: parsed.mode ?? 'NORMAL',
             config: {
               enabled: tokenSecurity.enabled,
