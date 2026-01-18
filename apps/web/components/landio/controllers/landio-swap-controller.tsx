@@ -787,12 +787,6 @@ export function LandioSwapController() {
               <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
               <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
               <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
-              <div style="font-size: 11px; margin-top: 10px; text-align: left; display: inline-block; color: var(--text-muted, #777);">
-                <div style="font-weight: 600; margin-bottom: 4px;">Why blocked:</div>
-                <ul style="margin: 0; padding-left: 16px;">
-                  ${diagnostics.map((r) => `<li>${r}</li>`).join('')}
-                </ul>
-              </div>
             </div>
           `;
         }
@@ -1312,12 +1306,6 @@ export function LandioSwapController() {
                 <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
                 <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
                 <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
-                <div style="font-size: 11px; margin-top: 10px; text-align: left; display: inline-block; color: var(--text-muted, #777);">
-                  <div style="font-weight: 600; margin-bottom: 4px;">Why blocked:</div>
-                  <ul style="margin: 0; padding-left: 16px;">
-                    ${diagnostics.map((r) => `<li>${r}</li>`).join('')}
-                  </ul>
-                </div>
               </div>
             `;
             setDisplay("providersContainer", "block");
