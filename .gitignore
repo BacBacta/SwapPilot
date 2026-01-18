@@ -34,3 +34,6 @@ dist
 # Temporary files
 swappilot-figma-ui.zip
 temp-ui-kit/
+
+# Sentry Config File
+.env.sentry-build-plugin
