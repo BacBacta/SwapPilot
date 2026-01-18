@@ -9,11 +9,19 @@ type TokenSecurityConfig = {
   honeypotIsEnabled: boolean;
   /** Base URL for Honeypot.is API, e.g. https://api.honeypot.is */
   honeypotIsBaseUrl: string;
+  /** Enable BscScan contract verification checks */
+  bscScanEnabled: boolean;
+  /** Base URL for BscScan API, e.g. https://api.bscscan.com */
+  bscScanBaseUrl: string;
+  /** Optional BscScan API key (recommended for higher rate limits) */
+  bscScanApiKey: string;
   timeoutMs: number;
   /** Cache TTL to avoid hammering the API */
   cacheTtlMs: number;
   /** Strict max tax percent (SAFE mode). */
   taxStrictMaxPercent: number;
+  /** SAFE fallback: minimum liquidity to treat unknown tokens as OK */
+  fallbackMinLiquidityUsd: number;
 };
 
 type CacheEntry = { expiresAt: number; value: RiskSignals['sellability'] };
@@ -209,6 +217,61 @@ async function assessHoneypotIs(params: {
   };
 }
 
+async function assessBscScanVerification(params: {
+  chainId: number;
+  token: string;
+  baseUrl: string;
+  apiKey: string;
+  timeoutMs: number;
+}): Promise<OracleAssessment> {
+  const { chainId, token, baseUrl, apiKey, timeoutMs } = params;
+  if (chainId !== 56) {
+    return {
+      sellability: { status: 'UNCERTAIN', confidence: 0.2, reasons: ['token_security:bscscan:unsupported_chain'] },
+      maxTaxPercent: null,
+    };
+  }
+
+  const address = normalizeAddress(token);
+  const base = baseUrl.replace(/\/$/, '');
+  const keyPart = apiKey.trim().length > 0 ? `&apikey=${encodeURIComponent(apiKey.trim())}` : '';
+  const url = `${base}/api?module=contract&action=getsourcecode&address=${address}${keyPart}`;
+
+  const json = await fetchJsonWithTimeout(url, timeoutMs);
+  if (!isRecord(json)) {
+    return {
+      sellability: { status: 'UNCERTAIN', confidence: 0.25, reasons: ['token_security:bscscan:invalid_response'] },
+      maxTaxPercent: null,
+    };
+  }
+
+  const status = String(json.status ?? '0');
+  const result = Array.isArray(json.result) ? json.result[0] : undefined;
+  const sourceCode = isRecord(result) ? String(result.SourceCode ?? '') : '';
+  const abi = isRecord(result) ? String(result.ABI ?? '') : '';
+
+  if (status !== '1') {
+    const message = isRecord(json) && typeof json.message === 'string' ? json.message : 'not_ok';
+    return {
+      sellability: { status: 'UNCERTAIN', confidence: 0.25, reasons: ['token_security:bscscan:error', `token_security:bscscan:msg:${message}`] },
+      maxTaxPercent: null,
+    };
+  }
+
+  const isVerified = (sourceCode && sourceCode.trim().length > 0) || (abi && !abi.includes('Contract source code not verified'));
+  if (isVerified) {
+    return {
+      sellability: { status: 'OK', confidence: 0.5, reasons: ['token_security:bscscan:verified'] },
+      maxTaxPercent: null,
+    };
+  }
+
+  return {
+    sellability: { status: 'UNCERTAIN', confidence: 0.35, reasons: ['token_security:bscscan:not_verified'] },
+    maxTaxPercent: null,
+  };
+}
+
 /**
  * Best-effort token security check using GoPlus (BSC only).
  *
@@ -239,7 +302,7 @@ export async function assessTokenSecuritySellability(params: {
   if (cached && cached.expiresAt > now) return cached.value;
 
   try {
-    const assessments: Array<OracleAssessment & { oracle: 'goplus' | 'honeypotis' }> = [];
+    const assessments: Array<OracleAssessment & { oracle: 'goplus' | 'honeypotis' | 'bscscan' }> = [];
 
     if (config.goPlusEnabled) {
       const goPlus = await assessGoPlus({
@@ -261,6 +324,17 @@ export async function assessTokenSecuritySellability(params: {
       assessments.push({ ...honeypotIs, oracle: 'honeypotis' });
     }
 
+    if (config.bscScanEnabled) {
+      const bscscan = await assessBscScanVerification({
+        chainId,
+        token: address,
+        baseUrl: config.bscScanBaseUrl,
+        apiKey: config.bscScanApiKey,
+        timeoutMs: config.timeoutMs,
+      });
+      assessments.push({ ...bscscan, oracle: 'bscscan' });
+    }
+
     const reasons = assessments.flatMap((a) => a.sellability.reasons);
     const maxConfidence = Math.max(...assessments.map((a) => a.sellability.confidence), 0);
 
@@ -274,8 +348,8 @@ export async function assessTokenSecuritySellability(params: {
 
     // SAFE (ultra-secure): require multi-oracle agreement and strict tax threshold.
     if (mode === 'SAFE') {
-      const enabledOracleCount = Number(config.goPlusEnabled) + Number(config.honeypotIsEnabled);
-      if (enabledOracleCount < 2) {
+      const enabledSafetyOracleCount = Number(config.goPlusEnabled) + Number(config.honeypotIsEnabled);
+      if (enabledSafetyOracleCount < 2) {
         const value = {
           status: 'UNCERTAIN' as const,
           confidence: clamp01(Math.max(0.25, maxConfidence)),
@@ -285,7 +359,8 @@ export async function assessTokenSecuritySellability(params: {
         return value;
       }
 
-      const allOk = assessments.every((a) => a.sellability.status === 'OK');
+      const safetyAssessments = assessments.filter((a) => a.oracle === 'goplus' || a.oracle === 'honeypotis');
+      const allOk = safetyAssessments.every((a) => a.sellability.status === 'OK');
       if (!allOk) {
         const value = {
           status: 'UNCERTAIN' as const,
@@ -296,8 +371,8 @@ export async function assessTokenSecuritySellability(params: {
         return value;
       }
 
-      const taxes = assessments.map((a) => a.maxTaxPercent).filter((x): x is number => typeof x === 'number');
-      if (taxes.length < enabledOracleCount) {
+      const taxes = safetyAssessments.map((a) => a.maxTaxPercent).filter((x): x is number => typeof x === 'number');
+      if (taxes.length < enabledSafetyOracleCount) {
         const value = {
           status: 'UNCERTAIN' as const,
           confidence: clamp01(Math.max(0.3, maxConfidence)),

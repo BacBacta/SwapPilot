@@ -90,10 +90,16 @@ export const EnvSchema = z.object({
   TOKEN_SECURITY_GOPLUS_BASE_URL: z.string().default('https://api.gopluslabs.io'),
   TOKEN_SECURITY_HONEYPOTIS_ENABLED: z.coerce.boolean().default(true),
   TOKEN_SECURITY_HONEYPOTIS_BASE_URL: z.string().default('https://api.honeypot.is'),
+  // BscScan contract verification (optional, improves evidence when oracles are missing)
+  TOKEN_SECURITY_BSCSCAN_ENABLED: z.coerce.boolean().default(false),
+  TOKEN_SECURITY_BSCSCAN_BASE_URL: z.string().default('https://api.bscscan.com'),
+  TOKEN_SECURITY_BSCSCAN_API_KEY: z.string().default(''),
   TOKEN_SECURITY_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(800),
   TOKEN_SECURITY_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(15 * 60 * 1000),
   // Ultra-secure (SAFE) strict max tax percent (buy/sell/transfer) before failing.
   TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT: z.coerce.number().min(0).max(100).default(5),
+  // SAFE fallback: minimum liquidity to treat unknown tokens as OK when security oracles are missing.
+  TOKEN_SECURITY_FALLBACK_MIN_LIQUIDITY_USD: z.coerce.number().min(0).max(10_000_000).default(50_000),
 
   // DexScreener liquidity checks
   DEXSCREENER_ENABLED: z.coerce.boolean().default(true),
@@ -152,9 +158,13 @@ export type AppConfig = {
     goPlusBaseUrl: string;
     honeypotIsEnabled: boolean;
     honeypotIsBaseUrl: string;
+    bscScanEnabled: boolean;
+    bscScanBaseUrl: string;
+    bscScanApiKey: string;
     timeoutMs: number;
     cacheTtlMs: number;
     taxStrictMaxPercent: number;
+    fallbackMinLiquidityUsd: number;
   };
   dexScreener: {
     enabled: boolean;
@@ -228,9 +238,13 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       goPlusBaseUrl: env.TOKEN_SECURITY_GOPLUS_BASE_URL.trim(),
       honeypotIsEnabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_HONEYPOTIS_ENABLED,
       honeypotIsBaseUrl: env.TOKEN_SECURITY_HONEYPOTIS_BASE_URL.trim(),
+      bscScanEnabled: env.NODE_ENV === 'test' ? false : env.TOKEN_SECURITY_BSCSCAN_ENABLED,
+      bscScanBaseUrl: env.TOKEN_SECURITY_BSCSCAN_BASE_URL.trim(),
+      bscScanApiKey: env.TOKEN_SECURITY_BSCSCAN_API_KEY.trim(),
       timeoutMs: env.TOKEN_SECURITY_TIMEOUT_MS,
       cacheTtlMs: env.TOKEN_SECURITY_CACHE_TTL_MS,
       taxStrictMaxPercent: env.TOKEN_SECURITY_TAX_STRICT_MAX_PERCENT,
+      fallbackMinLiquidityUsd: env.TOKEN_SECURITY_FALLBACK_MIN_LIQUIDITY_USD,
     },
     dexScreener: {
       enabled: env.NODE_ENV === 'test' ? false : env.DEXSCREENER_ENABLED,

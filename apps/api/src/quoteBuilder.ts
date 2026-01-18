@@ -144,9 +144,13 @@ export function buildQuotes(
       goPlusBaseUrl: string;
       honeypotIsEnabled: boolean;
       honeypotIsBaseUrl: string;
+      bscScanEnabled: boolean;
+      bscScanBaseUrl: string;
+      bscScanApiKey: string;
       timeoutMs: number;
       cacheTtlMs: number;
       taxStrictMaxPercent: number;
+      fallbackMinLiquidityUsd: number;
     };
     dexScreener?: {
       enabled: boolean;
@@ -191,9 +195,13 @@ async function buildQuotesImpl(
       goPlusBaseUrl: string;
       honeypotIsEnabled: boolean;
       honeypotIsBaseUrl: string;
+      bscScanEnabled: boolean;
+      bscScanBaseUrl: string;
+      bscScanApiKey: string;
       timeoutMs: number;
       cacheTtlMs: number;
       taxStrictMaxPercent: number;
+      fallbackMinLiquidityUsd: number;
     };
     dexScreener?: {
       enabled: boolean;
@@ -530,9 +538,13 @@ async function buildQuotesImpl(
               goPlusBaseUrl: tokenSecurity.goPlusBaseUrl,
               honeypotIsEnabled: tokenSecurity.honeypotIsEnabled,
               honeypotIsBaseUrl: tokenSecurity.honeypotIsBaseUrl,
+              bscScanEnabled: tokenSecurity.bscScanEnabled,
+              bscScanBaseUrl: tokenSecurity.bscScanBaseUrl,
+              bscScanApiKey: tokenSecurity.bscScanApiKey,
               timeoutMs: tokenSecurity.timeoutMs,
               cacheTtlMs: tokenSecurity.cacheTtlMs,
               taxStrictMaxPercent: tokenSecurity.taxStrictMaxPercent,
+              fallbackMinLiquidityUsd: tokenSecurity.fallbackMinLiquidityUsd,
             },
           })
         : null;
@@ -577,6 +589,32 @@ async function buildQuotesImpl(
 
               // SAFE mode: token security UNCERTAIN also blocks OK (fail-closed policy).
               if (mode === 'SAFE' && tokenSecuritySellability?.status === 'UNCERTAIN') {
+                const tokenSecurityReasons = tokenSecuritySellability.reasons ?? [];
+                const hasExplicitSecurityRisk = tokenSecurityReasons.some((r) =>
+                  r.includes('tax_high') ||
+                  r.includes('tax_too_high') ||
+                  r.includes('is_honeypot') ||
+                  r.includes('simulation_failed') ||
+                  r.includes('oracle_not_ok'),
+                );
+                const hasBscScanVerified = tokenSecurityReasons.includes('token_security:bscscan:verified');
+                const dexLiquidityUsd = extractDexScreenerLiquidityUsd(reasons) ?? 0;
+                const fallbackMinLiquidityUsd = tokenSecurity?.fallbackMinLiquidityUsd ?? dexScreener?.minLiquidityUsd ?? 0;
+
+                if (
+                  !hasExplicitSecurityRisk &&
+                  onchainSellability.status === 'OK' &&
+                  onchainSellability.confidence >= 0.7 &&
+                  dexScreenerSellability?.status === 'OK' &&
+                  dexLiquidityUsd >= fallbackMinLiquidityUsd &&
+                  (hasBscScanVerified || fallbackMinLiquidityUsd === 0 || dexLiquidityUsd > 0)
+                ) {
+                  return {
+                    status: 'OK' as const,
+                    confidence: maxConfidence,
+                    reasons: [...reasons, 'safe_mode:fallback_liquidity_ok'],
+                  };
+                }
                 return { status: 'UNCERTAIN' as const, confidence: maxConfidence, reasons };
               }
 

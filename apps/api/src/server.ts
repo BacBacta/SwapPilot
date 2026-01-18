@@ -711,9 +711,13 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
             goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
             honeypotIsEnabled: config.tokenSecurity.honeypotIsEnabled,
             honeypotIsBaseUrl: config.tokenSecurity.honeypotIsBaseUrl,
+            bscScanEnabled: config.tokenSecurity.bscScanEnabled,
+            bscScanBaseUrl: config.tokenSecurity.bscScanBaseUrl,
+            bscScanApiKey: config.tokenSecurity.bscScanApiKey,
             timeoutMs: config.tokenSecurity.timeoutMs,
             cacheTtlMs: config.tokenSecurity.cacheTtlMs,
             taxStrictMaxPercent: config.tokenSecurity.taxStrictMaxPercent,
+            fallbackMinLiquidityUsd: config.tokenSecurity.fallbackMinLiquidityUsd,
           }
         : undefined;
 
@@ -795,9 +799,13 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
             goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
             honeypotIsEnabled: config.tokenSecurity.honeypotIsEnabled,
             honeypotIsBaseUrl: config.tokenSecurity.honeypotIsBaseUrl,
+            bscScanEnabled: config.tokenSecurity.bscScanEnabled,
+            bscScanBaseUrl: config.tokenSecurity.bscScanBaseUrl,
+            bscScanApiKey: config.tokenSecurity.bscScanApiKey,
             timeoutMs: config.tokenSecurity.timeoutMs,
             cacheTtlMs: config.tokenSecurity.cacheTtlMs,
             taxStrictMaxPercent: config.tokenSecurity.taxStrictMaxPercent,
+            fallbackMinLiquidityUsd: config.tokenSecurity.fallbackMinLiquidityUsd,
           }
         : undefined;
 
