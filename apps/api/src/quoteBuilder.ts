@@ -41,6 +41,28 @@ const noopLogger: Logger = {
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+// Native token sentinel address used by aggregators (not a real ERC20)
+const NATIVE_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+// Wrapped native tokens by chain (for security API lookups)
+const WRAPPED_NATIVE: Record<number, string> = {
+  56: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', // WBNB on BSC
+  1: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH on Ethereum
+};
+
+/**
+ * Convert native sentinel to wrapped native token for security API lookups.
+ * The sentinel (0xEeee...) is not a real ERC20 and APIs like GoPlus/DexScreener
+ * don't recognize it. WBNB is economically equivalent for security checks.
+ */
+function resolveTokenForSecurityCheck(token: string, chainId: number): string {
+  const normalized = token.toLowerCase();
+  if (normalized === NATIVE_SENTINEL) {
+    return WRAPPED_NATIVE[chainId] ?? token;
+  }
+  return token;
+}
+
 function extractDexScreenerLiquidityUsd(reasons: string[]): number | null {
   const match = reasons.find((r) => r.startsWith('dexscreener:liquidity_usd:max:'));
   if (!match) return null;
@@ -468,10 +490,13 @@ async function buildQuotesImpl(
 
       // Best-effort on-chain heuristic: detects obvious non-contract/non-ERC20 tokens.
       // Check sellToken sellability - we need to verify the token being sold has sufficient liquidity
+      // For DexScreener and token security APIs, convert native sentinel to WBNB
+      const tokenForSecurityCheck = resolveTokenForSecurityCheck(parsed.sellToken, parsed.chainId);
+      
       const onchainSellability = rpc
         ? await assessOnchainSellability({
             chainId: parsed.chainId,
-            buyToken: parsed.sellToken, // Check sellToken, not buyToken - we're assessing if sellToken is sellable
+            buyToken: parsed.sellToken, // Keep original for onchain check (handles native sentinel internally)
             rpcUrls: rpc.bscUrls,
             timeoutMs: rpc.timeoutMs,
             multicall3Address: sellability?.multicall3Address ?? null,
@@ -483,7 +508,7 @@ async function buildQuotesImpl(
       const dexScreenerSellability = dexScreener
         ? await assessDexScreenerSellability({
             chainId: parsed.chainId,
-            token: parsed.sellToken,
+            token: tokenForSecurityCheck, // Use WBNB for native sentinel
             config: {
               enabled: dexScreener.enabled,
               baseUrl: dexScreener.baseUrl,
@@ -497,7 +522,7 @@ async function buildQuotesImpl(
       const tokenSecuritySellability = tokenSecurity
         ? await assessTokenSecuritySellability({
             chainId: parsed.chainId,
-            token: parsed.sellToken, // Check sellToken, not buyToken - we're assessing if sellToken is safe to sell
+            token: tokenForSecurityCheck, // Use WBNB for native sentinel
             mode: parsed.mode ?? 'NORMAL',
             config: {
               enabled: tokenSecurity.enabled,
