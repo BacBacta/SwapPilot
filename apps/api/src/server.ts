@@ -16,6 +16,7 @@ import {
 import {
   DecisionReceiptSchema,
   QuoteRequestSchema,
+  QuoteRequestQuerySchema,
   QuoteResponseSchema,
   ProviderQuoteRawSchema,
   ProviderQuoteNormalizedSchema,
@@ -729,7 +730,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     '/v1/quotes',
     {
       schema: {
-        querystring: QuoteRequestSchema,
+        querystring: QuoteRequestQuerySchema,
         response: {
           200: QuoteResponseSchema,
         },

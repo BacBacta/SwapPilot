@@ -53,6 +53,7 @@ export const ScoringOptionsSchema = z.object({
 
 export type ScoringOptions = z.infer<typeof ScoringOptionsSchema>;
 
+// Base QuoteRequest schema for POST body (strict number types)
 export const QuoteRequestSchema = z.object({
   chainId: z.number().int().positive(),
   sellToken: AddressSchema,
@@ -68,6 +69,23 @@ export const QuoteRequestSchema = z.object({
   buyTokenDecimals: z.number().int().min(0).max(18).optional(),
   // Token price in USD for gas-adjusted BEQ scoring
   buyTokenPriceUsd: z.number().positive().optional(),
+});
+
+// Query string version - coerces string to number (HTTP query params are always strings)
+export const QuoteRequestQuerySchema = z.object({
+  chainId: z.coerce.number().int().positive(),
+  sellToken: AddressSchema,
+  buyToken: AddressSchema,
+  sellAmount: BigIntStringSchema,
+  slippageBps: z.coerce.number().int().min(0).max(5000),
+  account: AddressSchema.optional(),
+  providers: z.array(z.string().min(1)).optional(),
+  mode: QuoteModeSchema.optional(),
+  // Token decimals for accurate quote calculation
+  sellTokenDecimals: z.coerce.number().int().min(0).max(18).optional(),
+  buyTokenDecimals: z.coerce.number().int().min(0).max(18).optional(),
+  // Token price in USD for gas-adjusted BEQ scoring
+  buyTokenPriceUsd: z.coerce.number().positive().optional(),
 });
 
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>;
