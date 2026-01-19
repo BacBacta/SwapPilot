@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SettingsProvider } from "@/components/providers/settings-provider";
 import { TokenRegistryProvider } from "@/components/providers/token-registry-provider";
@@ -15,18 +16,29 @@ interface ClientLayoutProps {
 }
 
 export function ClientLayout({ children }: ClientLayoutProps) {
+  const pathname = usePathname();
+  const web3Enabled =
+    pathname === "/swap" ||
+    pathname === "/rewards" ||
+    pathname === "/referrals" ||
+    pathname === "/settings" ||
+    pathname === "/status" ||
+    pathname.startsWith("/providers");
+
+  const content = (
+    <ToastProvider>
+      <LandioNav />
+      <main>{children}</main>
+      <LandioFooter />
+    </ToastProvider>
+  );
+
   return (
     <PostHogProvider>
       <ThemeProvider>
         <SettingsProvider>
           <TokenRegistryProvider>
-            <Web3Provider>
-              <ToastProvider>
-                <LandioNav />
-                <main>{children}</main>
-                <LandioFooter />
-              </ToastProvider>
-            </Web3Provider>
+            {web3Enabled ? <Web3Provider>{content}</Web3Provider> : content}
           </TokenRegistryProvider>
         </SettingsProvider>
       </ThemeProvider>
