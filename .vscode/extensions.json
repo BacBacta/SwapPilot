@@ -1,0 +1,43 @@
+{
+  "recommendations": [
+    // TypeScript & JavaScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    
+    // React & Next.js
+    "bradlc.vscode-tailwindcss",
+    "styled-components.vscode-styled-components",
+    
+    // Solidity
+    "nomicfoundation.hardhat-solidity",
+    "juanblanco.solidity",
+    
+    // Git
+    "eamodio.gitlens",
+    
+    // Testing
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    
+    // Docker & Containers
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    
+    // Utilities
+    "christian-kohler.path-intellisense",
+    "christian-kohler.npm-intellisense",
+    "formulahendry.auto-rename-tag",
+    "wix.vscode-import-cost",
+    "streetsidesoftware.code-spell-checker",
+    
+    // Markdown
+    "yzhang.markdown-all-in-one",
+    
+    // YAML & Config
+    "redhat.vscode-yaml",
+    
+    // Monorepo
+    "arcanis.vscode-zipfs"
+  ],
+  "unwantedRecommendations": []
+}
