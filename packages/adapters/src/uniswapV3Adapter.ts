@@ -309,7 +309,6 @@ export class UniswapV3Adapter implements Adapter {
     if (bestBuyAmount === 0n) {
       return {
         ...base,
-        warnings: ['No liquidity found in any fee tier'],
         raw: {
           sellAmount: request.sellAmount,
           buyAmount: '0',

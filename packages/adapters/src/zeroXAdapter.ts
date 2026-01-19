@@ -148,6 +148,25 @@ export class ZeroXAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
+        if (res.status === 404 && /no route matched/i.test(text)) {
+          return {
+            ...base,
+            isStub: false,
+            raw: {
+              sellAmount: request.sellAmount,
+              buyAmount: '0',
+              estimatedGas: null,
+              feeBps: null,
+              route: [request.sellToken, request.buyToken],
+            },
+            normalized: {
+              buyAmount: '0',
+              effectivePrice: '0',
+              estimatedGasUsd: null,
+              feesUsd: null,
+            },
+          };
+        }
         throw new Error(`0x API error: ${res.status} - ${text}`);
       }
 

@@ -40,6 +40,8 @@ export type OkxDexAdapterConfig = {
   secretKey: string | null;
   passphrase: string | null;
   chainId: number;
+  apiBaseUrl?: string;
+  apiVersion?: string;
   timeoutMs?: number;
 };
 
@@ -59,6 +61,8 @@ export class OkxDexAdapter implements Adapter {
   private readonly secretKey: string | null;
   private readonly passphrase: string | null;
   private readonly chainId: number;
+  private readonly apiBaseUrl: string;
+  private readonly apiVersion: string;
   private readonly timeoutMs: number;
 
   constructor(config: OkxDexAdapterConfig) {
@@ -66,6 +70,8 @@ export class OkxDexAdapter implements Adapter {
     this.secretKey = config.secretKey;
     this.passphrase = config.passphrase;
     this.chainId = config.chainId;
+    this.apiBaseUrl = config.apiBaseUrl ?? 'https://www.okx.com';
+    this.apiVersion = config.apiVersion ?? 'v6';
     this.timeoutMs = config.timeoutMs ?? 10000;
   }
 
@@ -137,7 +143,7 @@ export class OkxDexAdapter implements Adapter {
       
       // OKX DEX Aggregator API
       // Note: OKX uses 'chainIndex' instead of 'chainId' as the parameter name
-      const path = '/api/v5/dex/aggregator/quote';
+      const path = `/api/${this.apiVersion}/dex/aggregator/quote`;
       const queryParams = new URLSearchParams({
         chainIndex: chainIdStr,
         fromTokenAddress: this.normalizeNativeToken(request.sellToken),
@@ -146,7 +152,7 @@ export class OkxDexAdapter implements Adapter {
         slippage: String((request.slippageBps ?? 50) / 10000),
       });
       
-      const url = `https://www.okx.com${path}?${queryParams.toString()}`;
+      const url = `${this.apiBaseUrl}${path}?${queryParams.toString()}`;
 
       // OKX requires HMAC-SHA256 signature
       const timestamp = new Date().toISOString();
@@ -172,7 +178,7 @@ export class OkxDexAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`OKX API error: ${res.status} - ${text}`);
+        throw new Error(`OKX ${this.apiVersion} API error: ${res.status} - ${text}`);
       }
 
       const json = await res.json() as {
@@ -185,7 +191,7 @@ export class OkxDexAdapter implements Adapter {
       };
 
       if (json.code !== '0' || !json.data?.[0]) {
-        throw new Error(`OKX API error: ${json.msg ?? 'No quote data'}`);
+        throw new Error(`OKX ${this.apiVersion} API error: ${json.msg ?? 'No quote data'}`);
       }
 
       const quoteData = json.data[0];
@@ -254,8 +260,8 @@ export class OkxDexAdapter implements Adapter {
     const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
     const slippage = String((request.slippageBps ?? 50) / 10000);
 
-    // OKX DEX Aggregator API (v5)
-    const path = '/api/v5/dex/aggregator/swap';
+    // OKX DEX Aggregator API
+    const path = `/api/${this.apiVersion}/dex/aggregator/swap`;
     const queryParams = new URLSearchParams({
       chainIndex: chainIdStr,
       fromTokenAddress: this.normalizeNativeToken(request.sellToken),
@@ -265,7 +271,7 @@ export class OkxDexAdapter implements Adapter {
       userWalletAddress: request.account,
     });
 
-    const url = `https://www.okx.com${path}?${queryParams.toString()}`;
+    const url = `${this.apiBaseUrl}${path}?${queryParams.toString()}`;
     const timestamp = new Date().toISOString();
     const preHashGet = timestamp + 'GET' + path + '?' + queryParams.toString();
     const signatureGet = createHmac('sha256', this.secretKey!).update(preHashGet).digest('base64');
@@ -308,7 +314,7 @@ export class OkxDexAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`OKX swap API error: ${res.status} - ${text}`);
+        throw new Error(`OKX ${this.apiVersion} swap API error: ${res.status} - ${text}`);
       }
 
       const json = (await res.json()) as {
@@ -333,7 +339,7 @@ export class OkxDexAdapter implements Adapter {
       };
 
       if (json.code !== '0' || !json.data?.[0]) {
-        throw new Error(`OKX swap API error: ${json.msg ?? 'No swap data'}`);
+        throw new Error(`OKX ${this.apiVersion} swap API error: ${json.msg ?? 'No swap data'}`);
       }
 
       const item = json.data[0];

@@ -246,6 +246,16 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     } as const;
   });
 
+  app.get('/debug/sentry', async (request, reply) => {
+    const token = config.observability.sentryTestToken;
+    const provided = request.headers['x-sentry-test-token'];
+    if (!token || provided !== token) {
+      reply.status(404).send({ error: 'Not Found' });
+      return;
+    }
+    throw new Error('sentry_test_error');
+  });
+
   const api = app.withTypeProvider<ZodTypeProvider>();
 
   const metrics = options.metrics ?? createMetrics({ collectDefault: true });
