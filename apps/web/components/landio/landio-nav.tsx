@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { guardedOpenConnect } from "@/lib/wallet/connect-guard";
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -141,7 +142,7 @@ export function LandioNav() {
                     {(() => {
                       if (!connected) {
                         return (
-                          <button onClick={openConnectModal} className="btn btn-primary btn-cta">
+                          <button onClick={() => guardedOpenConnect(openConnectModal)} className="btn btn-primary btn-cta">
                             Connect Wallet
                           </button>
                         );

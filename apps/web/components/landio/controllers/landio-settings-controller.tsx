@@ -4,14 +4,14 @@ import { useEffect } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTheme } from "@/components/providers/theme-provider";
+import { triggerRainbowKitConnect } from "@/lib/wallet/connect-guard";
 
 function shortAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 function clickRainbowKitConnect() {
-  const el = document.querySelector<HTMLElement>("[data-testid='rk-connect-button']");
-  el?.click();
+  triggerRainbowKitConnect();
 }
 
 function findSettingsRowByLabel(label: string): HTMLElement | null {

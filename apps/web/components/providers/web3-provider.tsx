@@ -14,10 +14,11 @@ import {
   trustWallet,
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, http, createConfig, fallback } from "wagmi";
+import { WagmiProvider, http, createConfig, fallback, useAccount } from "wagmi";
 import { bsc } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
+import { resetWalletConnectPending } from "@/lib/wallet/connect-guard";
 
 /* ========================================
    RELIABLE BSC RPC ENDPOINTS - with fallback support
@@ -32,30 +33,27 @@ const BSC_RPC_URLS = [
 /* ========================================
    WAGMI CONFIG - OPTIMIZED FOR FAST WALLET CONNECTION
    ======================================== */
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64";
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ?? "";
+const walletConnectEnabled = projectId.length > 0;
 
 // Only include essential wallets for faster modal loading
 const connectors = connectorsForWallets(
   [
     {
       groupName: "Popular",
-      wallets: [
-        metaMaskWallet,
-        trustWallet,
-        coinbaseWallet,
-      ],
+      wallets: [metaMaskWallet, trustWallet, coinbaseWallet],
     },
     {
       groupName: "Other",
       wallets: [
-        walletConnectWallet,
+        ...(walletConnectEnabled ? [walletConnectWallet] : []),
         injectedWallet,
       ],
     },
   ],
   {
     appName: "SwapPilot",
-    projectId,
+    projectId: walletConnectEnabled ? projectId : undefined,
   }
 );
 
@@ -185,6 +183,18 @@ function RainbowKitWrapper({ children }: Web3ProviderProps) {
   );
 }
 
+function WalletConnectGuard() {
+  const { status } = useAccount();
+
+  useEffect(() => {
+    if (status !== "connecting") {
+      resetWalletConnectPending();
+    }
+  }, [status]);
+
+  return null;
+}
+
 export function Web3Provider({ children }: Web3ProviderProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -204,6 +214,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitWrapper>
+          <WalletConnectGuard />
           {children}
         </RainbowKitWrapper>
       </QueryClientProvider>

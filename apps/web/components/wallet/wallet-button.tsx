@@ -3,6 +3,7 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { cn } from "@/lib/cn";
 import { ChainImage } from "@/components/ui/token-image";
+import { guardedOpenConnect } from "@/lib/wallet/connect-guard";
 
 /* ========================================
    CUSTOM CONNECT BUTTON
@@ -45,7 +46,7 @@ export function WalletButton({
               if (!connected) {
                 return (
                   <button
-                    onClick={openConnectModal}
+                    onClick={() => guardedOpenConnect(openConnectModal)}
                     className={cn(
                       "flex items-center gap-2 rounded-xl border border-sp-accent/30 bg-sp-accent/10 px-4 py-2.5 text-caption font-semibold text-sp-accent transition-all duration-200",
                       "hover:border-sp-accent/50 hover:bg-sp-accent/20 hover:shadow-glow",

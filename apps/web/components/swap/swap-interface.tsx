@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 import { CardDark } from "@/components/ui/surfaces";
 import { Button, Pill, Badge } from "@/components/ui/primitives";
+import { triggerRainbowKitConnect } from "@/lib/wallet/connect-guard";
 import { TokenInput, SwapDirectionButton } from "@/components/ui/token-input";
 import { Tabs, PresetButtons } from "@/components/ui/inputs";
 import { TokenPickerModal } from "@/components/swap/token-picker-modal";
@@ -981,10 +982,7 @@ export function SwapInterface() {
                     className="mt-5 h-12 w-full text-body" 
                     size="lg"
                     variant="primary"
-                    onClick={() => {
-                      // Trigger RainbowKit connect modal
-                      document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
-                    }}
+                    onClick={triggerRainbowKitConnect}
                   >
                     Connect Wallet
                   </Button>
@@ -1164,9 +1162,7 @@ export function SwapInterface() {
               className="h-14 w-full text-body font-bold shadow-glow" 
               size="xl"
               variant="primary"
-              onClick={() => {
-                document.querySelector<HTMLButtonElement>('[data-testid="rk-connect-button"]')?.click();
-              }}
+              onClick={triggerRainbowKitConnect}
             >
               Connect Wallet
             </Button>

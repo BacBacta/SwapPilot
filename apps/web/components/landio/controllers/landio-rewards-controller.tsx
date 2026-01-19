@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { usePilotTier, getTierDisplay } from "@/lib/hooks/use-fees";
+import { triggerRainbowKitConnect } from "@/lib/wallet/connect-guard";
 
 function clickRainbowKitConnect() {
-  const el = document.querySelector<HTMLElement>("[data-testid='rk-connect-button']");
-  el?.click();
+  triggerRainbowKitConnect();
 }
 
 function shortAddress(address: string): string {
