@@ -15,6 +15,28 @@ Sentry.init({
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  // Filter out non-critical wallet/provider errors that don't affect UX
+  beforeSend(event, hint) {
+    const error = hint?.originalException;
+    const errorMessage = typeof error === "string" ? error : error?.message || "";
+    
+    // Ignore wallet provider detection errors on mobile browsers
+    // These occur when injectedWallet tries to detect wallets on browsers
+    // with partial EIP-1193 support (e.g., mobile Chrome, Brave)
+    const ignoredPatterns = [
+      /Method not found/i,
+      /invoking post/i,
+      /User rejected/i, // User cancelled wallet action - not an error
+      /User denied/i,
+    ];
+    
+    if (ignoredPatterns.some(pattern => pattern.test(errorMessage))) {
+      return null; // Drop the event
+    }
+    
+    return event;
+  },
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
