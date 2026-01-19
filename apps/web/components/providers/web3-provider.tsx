@@ -35,6 +35,7 @@ const BSC_RPC_URLS = [
    ======================================== */
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ?? "";
 const walletConnectEnabled = projectId.length > 0;
+const walletConnectProjectId = walletConnectEnabled ? projectId : "";
 
 // Only include essential wallets for faster modal loading
 const connectors = connectorsForWallets(
@@ -53,7 +54,7 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: "SwapPilot",
-    projectId: walletConnectEnabled ? projectId : undefined,
+    projectId: walletConnectProjectId,
   }
 );
 
