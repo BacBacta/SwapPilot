@@ -61,6 +61,27 @@ function getTokenLogoUrl(token: TokenInfo | null | undefined): string | null {
   return null;
 }
 
+const ALLOWED_IMAGE_HOSTS = new Set([
+  "assets.coingecko.com",
+  "tokens.pancakeswap.finance",
+  "raw.githubusercontent.com",
+  "assets-cdn.trustwallet.com",
+]);
+
+function isAllowedImageHost(hostname: string): boolean {
+  return ALLOWED_IMAGE_HOSTS.has(hostname) || hostname.endsWith(".walletconnect.com");
+}
+
+function getOptimizedImageUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!isAllowedImageHost(parsed.hostname)) return null;
+    return `/_next/image?url=${encodeURIComponent(url)}&w=64&q=75`;
+  } catch {
+    return null;
+  }
+}
+
 // Transaction type for history
 type StoredTransaction = {
   id: string;
@@ -2894,10 +2915,11 @@ export function LandioSwapController() {
     const updateTokenIcon = (iconEl: Element | null, token: TokenInfo | null | undefined) => {
       if (!iconEl || !token) return;
       const logoUrl = getTokenLogoUrl(token);
+      const imageUrl = logoUrl ? getOptimizedImageUrl(logoUrl) : null;
       
-      if (logoUrl) {
+      if (imageUrl) {
         // Use image logo
-        iconEl.innerHTML = `<img src="${logoUrl}" alt="${token.symbol}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${token.symbol.slice(0, 2)}</span>`;
+        iconEl.innerHTML = `<img src="${imageUrl}" alt="${token.symbol}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${token.symbol.slice(0, 2)}</span>`;
         iconEl.className = 'token-icon';
         (iconEl as HTMLElement).style.cssText = 'width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;';
       } else {
@@ -3107,6 +3129,7 @@ export function LandioSwapController() {
         }}>
           {filteredTokens.map((token) => {
             const logoUrl = getTokenLogoUrl(token);
+            const imageUrl = logoUrl ? getOptimizedImageUrl(logoUrl) : null;
             return (
             <div
               key={token.address}
@@ -3133,10 +3156,10 @@ export function LandioSwapController() {
                   : 'transparent';
               }}
             >
-              {logoUrl ? (
+              {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- External token logos with onError fallback
                 <img
-                  src={logoUrl}
+                  src={imageUrl}
                   alt={token.symbol}
                   style={{
                     width: isMobile ? '40px' : '36px',
@@ -3158,7 +3181,7 @@ export function LandioSwapController() {
                 height: isMobile ? '40px' : '36px',
                 borderRadius: '50%',
                 background: 'var(--accent, #00ff88)',
-                display: logoUrl ? 'none' : 'flex',
+                display: imageUrl ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
