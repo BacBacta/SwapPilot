@@ -18,6 +18,14 @@ Repartition budget (previsionnel):
 - Design (logo/banniere/OAT/visuels): $100
 - Contingence: $51
 
+Systeme de recompenses (airdrops au TGE):
+- Bronze (500+ XP): entree raffle WL
+- Silver (1,500+ XP): WL garanti ($100 max)
+- Gold (3,000+ XP): WL garanti ($300 max)
+- Diamond (Top 50 XP): WL garanti ($500 max) + badge
+- OAT "Early Supporter": 1,000+ XP
+- Airdrops au TGE: Participation (OAT), Performance (Top 50), Early Bird (J1-J3)
+
 ==================================================================
 1) POINTS DEJA ACCOMPLIS
 ==================================================================
@@ -83,7 +91,7 @@ Checklist verification:
 3.2 Creer la campagne Galxe "SwapPilot Launch Quest"
 - Type: Quest Campaign
 - Duree: 21 jours
-- Reward: OAT "SwapPilot Early Supporter"
+- Reward: OAT "SwapPilot Early Supporter" + airdrops TGE
 - Chain OAT: BSC ou Polygon
 
 3.3 Quests Galxe (J1 - J15)

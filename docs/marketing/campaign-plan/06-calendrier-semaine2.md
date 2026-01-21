@@ -29,9 +29,9 @@ New quests just dropped:
 🧠 Master BEQ scoring
 🚀 Initiate your first swap
 📝 Share your feedback
-🐛 Bug hunting rewards
+🐛 Bug hunting bonus XP
 
-⚡ XP doubled this week! 2x rewards
+⚡ 2x XP on select quests this week!
 
 Grind now 👉 [ZEALY LINK]
 
@@ -107,6 +107,7 @@ Current tier distribution:
 🥉 Bronze: [X]
 🥈 Silver: [X]
 🥇 Gold: [X]
+💎 Diamond: [X]
 
 Keep grinding! Tokenomics drop this Friday 👀
 ```
@@ -141,9 +142,9 @@ Excited to partner with @KOL1 ! 🤝
 "[KOL QUOTE ABOUT SWAPPILOT]"
 
 Join our community campaign and earn:
-🎯 Presale WL
-🎁 Token allocation
-🏆 Exclusive rewards
+🎯 WL tiers (Bronze/Silver/Gold/Diamond)
+🏆 OAT “Early Supporter” (≥1,000 XP)
+🎁 TGE airdrops (Participation + Performance + Early Bird)
 
 Start here 👉 [ZEALY LINK]
 

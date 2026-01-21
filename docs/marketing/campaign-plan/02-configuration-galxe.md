@@ -23,7 +23,7 @@
 ```
 SwapPilot is a smart DEX aggregator for BNB Chain that compares quotes from 1inch, KyberSwap, ParaSwap, and OKX DEX in real-time. Our BEQ scoring system finds the best executable quote — not just the highest output — considering fees, gas, and risk factors.
 
-Join our community campaign to earn exclusive OAT rewards and presale whitelist access!
+Join our community campaign to earn OAT rewards, presale whitelist access, and TGE airdrops!
 ```
 
 ### Checklist
@@ -52,9 +52,9 @@ Join our community campaign to earn exclusive OAT rewards and presale whitelist 
 🚀 SwapPilot Community Quest — 3 Weeks
 
 Complete quests to earn:
-🏆 Exclusive OAT NFT
-🎯 Presale Whitelist access
-🎁 Token allocation rewards
+🏆 OAT "Early Supporter" (≥1,000 XP)
+🎯 WL tiers: Bronze/Silver/Gold/Diamond
+🎁 Airdrops distributed at TGE
 
 How to participate:
 ✅ Complete social tasks
@@ -63,6 +63,17 @@ How to participate:
 
 Campaign ends [DATE]. Don't miss out!
 ```
+
+---
+
+## ✅ REWARDS SYSTEM (GLOBAL)
+
+- **Bronze (500+ XP)** → Entrée raffle WL  
+- **Silver (1,500+ XP)** → WL garanti ($100 max)  
+- **Gold (3,000+ XP)** → WL garanti ($300 max)  
+- **Diamond (Top 50 XP)** → WL garanti ($500 max) + badge  
+- **OAT Early Supporter** → ≥1,000 XP  
+- **Airdrops (TGE)** → Participation (OAT), Performance (Top 50), Early Bird (J1–J3)
 
 ---
 
@@ -84,7 +95,7 @@ This OAT certifies that the holder participated in the SwapPilot Launch Quest ca
 Benefits:
 • Recognition as OG community member
 • Priority access to future features
-• Eligibility for airdrops
+• Eligibility for TGE airdrops
 • Exclusive Discord/Telegram role
 
 Thank you for being an early supporter! 🚀

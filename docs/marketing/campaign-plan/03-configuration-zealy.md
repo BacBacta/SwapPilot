@@ -33,9 +33,9 @@ Compare quotes from 4+ DEXs (1inch, KyberSwap, ParaSwap, OKX DEX) and get the be
 
 🎯 Complete quests to earn:
 • XP points
-• Presale Whitelist access
-• Token allocation
-• Exclusive rewards
+• Presale Whitelist access (tiers)
+• OAT "Early Supporter" (≥1,000 XP)
+• Airdrops distributed at TGE
 
 Join the pilot crew! ✈️
 ```
@@ -354,12 +354,21 @@ Link: https://t.me/swapPilot
 |------|-----------|--------|
 | 🥉 Bronze | 500+ | Raffle entry for WL |
 | 🥈 Silver | 1,500+ | Guaranteed WL ($100 max) |
-| 🥇 Gold | 3,000+ | Guaranteed WL ($500 max) |
-| 💎 Diamond | Top 50 | Guaranteed WL ($1,000 max) + Bonus |
+| 🥇 Gold | 3,000+ | Guaranteed WL ($300 max) |
+| 💎 Diamond | Top 50 | Guaranteed WL ($500 max) + Badge |
 
 ---
 
-## 6️⃣ PLANNING PUBLICATION
+## 6️⃣ BONUS OAT + AIRDROPS (TGE)
+
+- **OAT Early Supporter**: ≥1,000 XP  
+- **Airdrop Participation**: tous les holders OAT  
+- **Airdrop Performance**: Top 50 XP  
+- **Airdrop Early Bird**: participants actifs J1–J3  
+
+---
+
+## 7️⃣ PLANNING PUBLICATION
 
 | Jour | Quests à publier | Action |
 |------|------------------|--------|

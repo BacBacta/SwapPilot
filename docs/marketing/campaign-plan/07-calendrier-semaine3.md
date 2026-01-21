@@ -50,8 +50,9 @@ How it works:
 3️⃣ Earn 150 XP per friend who completes 5+ quests
 
 🏆 Top 10 referrers get:
-• Guaranteed presale allocation
-• Bonus token rewards
+• Bonus XP boost
+• Spotlight shoutout
+• Diamond WL tracking (final snapshot J21)
 
 Start inviting 👉 [ZEALY LINK]
 
@@ -241,12 +242,15 @@ How to get WL:
 
 🥇 Gold (3,000+ XP)
 → Guaranteed WL
-→ $500 max allocation
+→ $300 max allocation
 
 💎 Diamond (Top 50)
 → Guaranteed WL
-→ $1,000 max allocation
-→ Bonus token allocation
+→ $500 max allocation
+→ Bonus badge
+
+🏆 OAT “Early Supporter” (≥1,000 XP)
+🎁 TGE airdrops for OAT holders + Top 50 + Early Bird
 
 Check your XP 👉 [ZEALY LINK]
 
@@ -280,12 +284,21 @@ Check your XP 👉 [ZEALY LINK]
 
 🥇 GOLD (3,000+ XP)
 • Entry: Guaranteed WL
-• Allocation: $500 max
+• Allocation: $300 max
 
 💎 DIAMOND (Top 50)
 • Entry: Guaranteed WL
-• Allocation: $1,000 max
-• Bonus: Extra token allocation
+• Allocation: $500 max
+• Bonus: Badge
+
+🏆 OAT “Early Supporter”
+• Earned at 1,000+ XP
+• Eligible for TGE airdrops
+
+🎁 TGE AIRDROPS
+• Participation: all OAT holders
+• Performance: Top 50 XP
+• Early Bird: active J1–J3
 
 📸 SNAPSHOT
 • Date: Day 21 at 23:59 UTC
@@ -317,7 +330,7 @@ Q: What's the token price?
 A: $[PRICE]
 
 Q: Max allocation?
-A: $50-$1,000 depending on tier
+A: $50-$500 depending on tier
 
 Q: What chain?
 A: BSC (BEP-20)

@@ -74,7 +74,8 @@ Quick stats:
 
 What we offer:
 • $[40-60] for a tweet + 24h pin
-• Token allocation at presale price
+• WL tiers + presale allocation
+• OAT "Early Supporter" + TGE airdrops
 • Long-term partnership potential
 
 Interested? Let me know your rates and I can share more details!
@@ -116,7 +117,7 @@ Just discovered @swappilot_dex 👀
 
 A DEX aggregator for BSC that compares 4+ protocols to find the best swap rates.
 
-They're running a community campaign with presale WL rewards.
+They're running a community campaign with WL tiers, OAT rewards, and TGE airdrops.
 
 Check it out 👇
 [ZEALY LINK]

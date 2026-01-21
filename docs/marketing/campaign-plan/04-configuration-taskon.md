@@ -29,7 +29,7 @@ SwapPilot — DEX Aggregator for BNB Chain
 
 Compare quotes from 4+ DEXs and get the best swap rates with BEQ scoring.
 
-Complete tasks to earn rewards and join our presale whitelist!
+Complete tasks to earn XP, OAT rewards, and qualify for TGE airdrops!
 ```
 
 ---
@@ -43,7 +43,7 @@ Complete tasks to earn rewards and join our presale whitelist!
 | **Name** | SwapPilot Community Quest |
 | **Type** | Quest Campaign |
 | **Duration** | 21 jours |
-| **Reward** | Points + NFT (optionnel) |
+| **Reward** | Points + OAT (via Galxe) + Airdrops au TGE |
 
 ---
 

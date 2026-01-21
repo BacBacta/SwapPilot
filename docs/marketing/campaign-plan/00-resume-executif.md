@@ -54,6 +54,24 @@
 
 ---
 
+## 🎁 Système de récompenses (Airdrops au TGE)
+
+### Tiers XP
+- **Bronze (500+ XP)** → Entrée raffle WL
+- **Silver (1,500+ XP)** → WL garanti ($100 max)
+- **Gold (3,000+ XP)** → WL garanti ($300 max)
+- **Diamond (Top 50 XP)** → WL garanti ($500 max) + badge
+
+### Bonus commun
+- **OAT Early Supporter** pour ≥1,000 XP
+
+### Airdrops (distribués au TGE)
+- **Participation**: tous les holders OAT
+- **Performance**: Top 50 XP
+- **Early Bird**: participants actifs J1–J3
+
+---
+
 ## 📊 KPIs Clés
 
 | Semaine | Participants | Followers | TG Members |

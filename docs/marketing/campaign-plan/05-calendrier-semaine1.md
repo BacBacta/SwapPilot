@@ -24,7 +24,7 @@
 ```
 🚀 SwapPilot Community Campaign is LIVE!
 
-3 weeks. Massive rewards. Presale access.
+3 weeks. XP tiers, WL access, and TGE airdrops.
 
 Complete quests on:
 ✅ Zealy
@@ -32,10 +32,10 @@ Complete quests on:
 ✅ TaskOn
 
 🎁 What you can earn:
-• Guaranteed WL spots
-• $PILOT token allocation
-• Exclusive OAT NFT
-• $500+ in prizes
+• WL tiers (Bronze/Silver/Gold/Diamond)
+• OAT “Early Supporter” (≥1,000 XP)
+• TGE airdrops: Participation + Performance + Early Bird
+• $500+ in giveaways
 
 Start now 👇
 🔗 [ZEALY LINK]
@@ -69,9 +69,9 @@ Try it free 👉 https://app-swappilot.xyz
 ⚡ [X]+ pilots already joined in the first hours!
 
 Don't miss your chance to secure:
-🎯 Presale Whitelist
-🎁 Token allocation
-🏆 OAT NFT
+🎯 Presale Whitelist tiers
+🏆 OAT “Early Supporter”
+🎁 TGE airdrops
 
 Join the quest 👇
 🔗 [ZEALY LINK]
@@ -93,14 +93,14 @@ Our 3-week quest campaign is NOW LIVE!
 • TaskOn: [LINK]
 
 🎁 What's at stake:
-• Guaranteed Presale WL for top performers
-• $PILOT token allocation
-• Exclusive SwapPilot OAT
+• WL tiers (Bronze/Silver/Gold/Diamond)
+• OAT “Early Supporter” (≥1,000 XP)
+• TGE airdrops at launch
 • $500+ in giveaways
 
 ⏰ Campaign ends in 21 days
 
-🔥 BONUS: First 100 to complete all Week 1 quests get extra rewards!
+🔥 BONUS: Early Bird airdrop at TGE for active participants J1–J3!
 
 Start earning XP now! Questions? Drop them below 👇
 ```
@@ -543,7 +543,7 @@ Thanks to everyone who joined! Here's what we covered:
 
 🎁 SURPRISE
 • Partnership with [PARTNER]
-• Extra rewards for AMA attendees!
+• Bonus XP for AMA attendees!
 
 If you attended, DM "AMA" with your Zealy username for +200 XP bonus!
 ```
@@ -586,7 +586,7 @@ Stats:
 
 Week 2 starts TOMORROW with:
 ✅ Product quests
-✅ Bigger rewards
+✅ Higher XP opportunities
 ✅ Referral program
 
 Ready? 👇
@@ -629,7 +629,8 @@ TOP 10:
 9. @user9 — [X] XP
 10. @user10 — [X] XP
 
-🎁 Top 10 = GUARANTEED presale WL!
+🎁 Top 10 = leaderboard spotlight
+🎁 Top 50 on leaderboard are tracking for Diamond WL (final snapshot J21)
 
 📊 Week 1 Stats:
 • Total participants: [X]
@@ -658,6 +659,7 @@ Current tier thresholds:
 🥉 Bronze: 500 XP
 🥈 Silver: 1,500 XP
 🥇 Gold: 3,000 XP
+💎 Diamond: Top 50 XP
 
 See you tomorrow! GM 🌅
 ```
@@ -669,7 +671,7 @@ See you tomorrow! GM 🌅
 - [ ] Post TG #11 (preview) envoyé
 - [ ] Stats S1 calculées et archivées
 - [ ] Zealy S2 quests prêtes (draft)
-- [ ] Top 10 notés pour WL
+- [ ] Top 50 notés pour suivi Diamond
 
 ---
 

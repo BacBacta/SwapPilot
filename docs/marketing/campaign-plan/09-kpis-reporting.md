@@ -15,6 +15,7 @@
 | **Twitter Followers** | 1,200 | 2,500 | 4,000 |
 | **Telegram Members** | 1,000 | 2,200 | 3,500 |
 | **Wallets Connectés** | 500 | 1,500 | 3,000 |
+| **OAT Eligible (≥1,000 XP)** | 400 | 1,200 | 2,500 |
 
 ### Conversion Funnel
 
@@ -71,6 +72,7 @@ ENGAGEMENT:
 • Quests Completed: [X]
 • XP Distributed: [X]
 • Referrals: [X]
+• OAT Eligible (≥1,000 XP): [X]
 
 TOP 3:
 1. @user1 — [X] XP
@@ -123,6 +125,7 @@ TIER DISTRIBUTION:
 | Silver (1500+) | [X] | [X]% |
 | Bronze (500+) | [X] | [X]% |
 | Below Bronze | [X] | [X]% |
+| OAT Eligible (1000+) | [X] | [X]% |
 
 TOP 10 LEADERBOARD:
 1. @user1 — [X] XP
