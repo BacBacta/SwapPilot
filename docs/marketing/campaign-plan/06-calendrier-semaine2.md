@@ -109,7 +109,7 @@ Current tier distribution:
 🥇 Gold: [X]
 💎 Diamond: [X]
 
-Keep grinding! Tokenomics drop this Friday 👀
+Keep grinding! Product update drops this Friday 👀
 ```
 
 ### Checklist J8
@@ -131,7 +131,7 @@ Keep grinding! Tokenomics drop this Friday 👀
 | Heure | Action | Plateforme |
 |-------|--------|------------|
 | 09:00 | Tweet #18: KOL Collab #1 | Twitter |
-| 12:00 | Post TG #14: Tokenomics Teaser | Telegram |
+| 12:00 | Post TG #14: Product Update Teaser | Telegram |
 | 15:00 | Tweet #19: User Testimonial | Twitter |
 | 18:00 | Engager avec communauté | Twitter + TG |
 
@@ -168,19 +168,16 @@ Join [X]+ pilots 👉 [ZEALY LINK]
 
 ### Post Telegram #14 (12:00)
 ```
-📢 TOKENOMICS PREVIEW
+📢 PRODUCT UPDATE PREVIEW
 
-$PILOT Token — Coming Soon! 👀
+What’s coming this Friday 👀
 
-🔹 Total Supply: 100,000,000
-🔹 Community & Rewards: 30%
-🔹 Presale: 20%
-🔹 Liquidity: 15%
-🔹 Team (vested): 15%
-🔹 Development: 10%
-🔹 Marketing: 10%
+🔹 Smarter BEQ scoring UI
+🔹 Faster quote refresh
+🔹 Cleaner swap routing view
+🔹 Community feedback changes
 
-📄 Full tokenomics document drops FRIDAY!
+Full product update drops FRIDAY!
 
 Questions? Ask below 👇
 ```
@@ -341,41 +338,35 @@ More partnerships coming soon 👀
 
 ---
 
-## JOUR 12 (VENDREDI) — TOKENOMICS DROP
+## JOUR 12 (VENDREDI) — PRODUCT UPDATE DROP
 
 ### Horaires (UTC)
 
 | Heure | Action | Plateforme |
 |-------|--------|------------|
-| 09:00 | Tweet #24: Tokenomics | Twitter |
+| 09:00 | Tweet #24: Product Update | Twitter |
 | 10:00 | Ajouter Zealy Quests 20-21 | Zealy |
-| 12:00 | Post TG #17: Tokenomics Full | Telegram |
-| 15:00 | Mini-AMA Tokenomics (30 min) | Telegram |
+| 12:00 | Post TG #17: Product Update Full | Telegram |
+| 15:00 | Mini-AMA Product Update (30 min) | Telegram |
 | 18:00 | Tweet #25: Meme Winners | Twitter |
 | 21:00 | Post TG #18: Winners + Stats | Telegram |
 
-### Tweet #24 — Tokenomics (09:00)
+### Tweet #24 — Product Update (09:00)
 ```
-📄 TOKENOMICS REVEALED
+🚀 PRODUCT UPDATE LIVE
 
-$PILOT Token:
+What’s new on SwapPilot:
 
-📊 Total Supply: 100,000,000
-🔓 Circulating at TGE: 25,000,000
+✅ Faster quote refresh
+✅ Cleaner routing view
+✅ Improved BEQ scoring clarity
+✅ UX polish from community feedback
 
-Allocation:
-🟢 Community: 30%
-🔵 Presale: 20%
-🟡 Liquidity: 15%
-🔴 Team (2yr vest): 15%
-🟣 Dev Fund: 10%
-🟠 Marketing: 10%
-
-📄 Full document: [LINK]
+Check it out 👉 https://app-swappilot.xyz
 
 Presale details coming Week 3! 👀
 
-#SwapPilot #PILOT #Tokenomics
+#SwapPilot #DeFi
 ```
 
 ### Tweet #25 — Meme Winners (18:00)
@@ -398,29 +389,20 @@ More contests in Week 3! Stay tuned.
 
 ### Post Telegram #17 (12:00)
 ```
-📄 FULL TOKENOMICS — $PILOT
+📄 FULL PRODUCT UPDATE — SWAPPILOT
 
-🔢 SUPPLY
-• Total: 100,000,000 PILOT
-• Circulating at TGE: 25,000,000 (25%)
+🔧 PERFORMANCE
+• Faster quote updates
+• Cleaner swap routing display
+• Improved error handling
 
-📊 ALLOCATION
-• Community & Rewards: 30M (30%)
-• Presale: 20M (20%)
-• Liquidity: 15M (15%)
-• Team: 15M (15%) — 2 year vesting
-• Development: 10M (10%)
-• Marketing: 10M (10%)
+🧠 BEQ EXPERIENCE
+• Clearer score explanation
+• Better confidence signals
 
-🔒 VESTING
-• Team: 6 month cliff, 24 month linear
-• Presale: TGE unlock TBD
-• Community: Released over 24 months
-
-💰 UTILITY
-• Fee discounts on SwapPilot
-• Governance voting
-• Staking rewards (future)
+✨ COMMUNITY FEEDBACK
+• UX tweaks from testers
+• Cleaner flow to swap
 
 Questions? AMA at 15:00 UTC today!
 ```
@@ -450,12 +432,12 @@ Final push incoming! 💪
 ```
 
 ### Checklist J12
-- [ ] Tweet #24 (tokenomics) publié
+- [ ] Tweet #24 (product update) publié
 - [ ] Tweet #25 (meme winners) publié
 - [ ] Zealy quests 20-21 publiées
 - [ ] Post TG #17 envoyé
 - [ ] Post TG #18 envoyé
-- [ ] Mini-AMA tokenomics fait
+- [ ] Mini-AMA product update fait
 - [ ] Meme winners paid
 
 ---
@@ -668,6 +650,6 @@ This is it. The final stretch. Let's go! 💪
 - [ ] Tous posts TG envoyés (10 posts)
 - [ ] KOLs posts live
 - [ ] Meme contest terminé
-- [ ] Tokenomics publié
+- [ ] Product update publié
 - [ ] Stats archivées
 - [ ] S3 préparée

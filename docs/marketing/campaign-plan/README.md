@@ -82,7 +82,7 @@ SEMAINE 1 (J1-J7) — Awareness
 SEMAINE 2 (J8-J14) — Engagement
 ├── Quests produit
 ├── KOLs activés
-├── Tokenomics reveal
+├── Product update
 └── Meme contest
 
 SEMAINE 3 (J15-J21) — Conversion

@@ -276,11 +276,11 @@ Checklist:
 
 Jour 12
 - Publier Zealy J12 (quests 20-21)
-- Twitter: tokenomics drop
+- Twitter: product update
 
 Checklist:
 [ ] Form feedback en ligne
-[ ] Tokenomics en PDF publie
+[ ] Product update publie
 
 Jour 14
 - Recap semaine 2

@@ -16,7 +16,6 @@
 * [Security](whitepaper/security.md)
 * [User Experience](whitepaper/user-experience.md)
 * [Roadmap](whitepaper/roadmap.md)
-* [Tokenomics](tokenomics.md)
 
 ## Developers
 

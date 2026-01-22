@@ -628,22 +628,22 @@ function createDistributionSlide() {
   });
 }
 
-// SLIDE 9: Tokenomics
-function createTokenomicsSlide() {
+// SLIDE 9: Product Metrics
+function createProductMetricsSlide() {
   const slide = pptx.addSlide();
-  slide.name = '09 Tokenomics';
+  slide.name = '09 Product Metrics';
   addBackground(slide);
   addHeader(slide, 9, TOTAL_SLIDES);
   
-  addKicker(slide, 'Tokenomics');
-  addTitle(slide, 'Key metrics');
-  addLead(slide, 'Clear, investor-ready figures from the tokenomics documentation.');
+  addKicker(slide, 'Product Metrics');
+  addTitle(slide, 'Traction snapshot');
+  addLead(slide, 'Public, product-focused KPIs to track adoption and usage.');
 
   const metrics = [
-    { label: 'Total Supply', value: '1,000,000,000' },
-    { label: 'Public Sale Price', value: '$0.0057' },
-    { label: 'Fully Diluted Valuation', value: '$5.7M' },
-    { label: 'Initial Market Cap', value: '$966K' },
+    { label: 'Monthly Swaps', value: '[X]' },
+    { label: 'Active Wallets', value: '[X]' },
+    { label: 'Avg. Quote Latency', value: '[X] ms' },
+    { label: 'DEXs Aggregated', value: '4+' },
   ];
 
   metrics.forEach((m, i) => {
@@ -652,10 +652,10 @@ function createTokenomicsSlide() {
     addMetric(slide, { x: 7 + col * 3, y: 1.3 + row * 1.8, w: 2.8, h: 1.6, ...m });
   });
 
-  addCard(slide, { x: 7, y: 4.9, w: 5.8, h: 1.8, title: 'TGE Circulating Supply', body: '' });
-  slide.addText('169.5M tokens (16.95%)', {
+  addCard(slide, { x: 7, y: 4.9, w: 5.8, h: 1.8, title: 'Adoption Signals', body: '' });
+  slide.addText('Community growth + weekly product updates', {
     x: 7.2, y: 5.4, w: 5.4, h: 0.8,
-    fontSize: 28, bold: true, color: COLORS.white,
+    fontSize: 20, bold: true, color: COLORS.white,
   });
 }
 
@@ -742,7 +742,7 @@ function createCTASlide() {
     fontSize: 48, bold: true, lineSpacing: 56, align: 'center',
   });
 
-  slide.addText('Try the app, read the documentation, and review the tokenomics.\nEverything is public and verifiable.', {
+  slide.addText('Try the app, read the documentation, and follow product updates.\nEverything is public and verifiable.', {
     x: 2, y: 4.2, w: 9, h: 0.8,
     fontSize: 18, color: COLORS.muted, align: 'center', lineSpacing: 26,
   });
@@ -855,7 +855,7 @@ createCoverageSlide();
 createProofSlide();
 createBusinessModelSlide();
 createDistributionSlide();
-createTokenomicsSlide();
+createProductMetricsSlide();
 createVestingSlide();
 createRoadmapSlide();
 createCTASlide();
