@@ -22,6 +22,44 @@
 ## Phase 2: Enhancement
 **Timeline: Q1 2026**
 
+## 6-Month Execution Plan (21 Jan 2026 – 27 Jul 2026)
+
+**Goal:** Deliver Phase 2 (Q1 2026) and start Phase 3 (Q2 2026) with exact milestones.
+
+### 21 Jan – 09 Feb 2026
+- **Risk & Scoring Enhancements**: MEV-aware execution baseline, preflight simulation coverage
+- **Stability & UX polish**: error handling, wallet flow improvements
+
+### 10 Feb – 02 Mar 2026
+- **BEQ Experience**: clearer scoring explanations, faster quote refresh
+- **Performance**: lower latency and reliability improvements
+
+### 03 Mar – 23 Mar 2026
+- **Analytics Dashboard (MVP)**: trade history + performance metrics
+- **Gas savings tracker**: initial reporting
+
+### 24 Mar – 13 Apr 2026
+- **Advanced Features (Phase 2)**: price alerts + favorite tokens + custom lists
+
+### 14 Apr – 04 May 2026
+- **Multi-Chain Support (Phase 2)**: Ethereum + Arbitrum adapters (beta)
+
+### 05 May – 25 May 2026
+- **Multi-Chain Support (Phase 2)**: Polygon + Base adapters (beta)
+
+### 26 May – 15 Jun 2026
+- **Cross-Chain Swaps (Phase 3)**: bridge evaluation + routing POC
+- **Cross-Chain Risk**: preliminary risk factors in BEQ
+
+### 16 Jun – 06 Jul 2026
+- **Automation (Phase 3)**: DCA + recurring swaps spec and prototype
+- **Portfolio Tools (Phase 3)**: tracking + PnL MVP design
+
+### 07 Jul – 27 Jul 2026
+- **Mobile App (Phase 3)**: React Native prototype + push notifications POC
+
+---
+
 ### Multi-Chain Support
 - [ ] Ethereum Mainnet
 - [ ] Arbitrum One
