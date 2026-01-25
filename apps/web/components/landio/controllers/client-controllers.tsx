@@ -26,3 +26,8 @@ export const DynamicHomeController = dynamic(
   () => import("./landio-home-controller").then((m) => m.LandioHomeController),
   { ssr: false }
 );
+
+export const DynamicAnalyticsController = dynamic(
+  () => import("./landio-analytics-controller").then((m) => m.LandioAnalyticsController),
+  { ssr: false }
+);

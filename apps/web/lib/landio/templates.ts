@@ -17,6 +17,7 @@ function rewriteInternalLinks(html: string): string {
     .replaceAll('href="swap.html"', 'href="/swap"')
     .replaceAll('href="rewards.html"', 'href="/rewards"')
     .replaceAll('href="status.html"', 'href="/status"')
+    .replaceAll('href="analytics.html"', 'href="/analytics"')
     .replaceAll('href="settings.html"', 'href="/settings"')
     .replaceAll('href="blog.html"', 'href="/blog"')
     .replaceAll('href="contact.html"', 'href="/contact"')
