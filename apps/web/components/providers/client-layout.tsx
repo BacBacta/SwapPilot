@@ -23,6 +23,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     pathname === "/referrals" ||
     pathname === "/settings" ||
     pathname === "/status" ||
+    pathname === "/analytics" ||
     pathname.startsWith("/providers");
 
   const content = (
