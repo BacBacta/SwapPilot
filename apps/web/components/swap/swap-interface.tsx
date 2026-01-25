@@ -27,6 +27,7 @@ import {
   formatQuoteUsd,
 } from "@/lib/use-swap-quotes";
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
+import { postSwapLog, type SwapLogPayload } from "@/lib/api";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useSettings } from "@/components/providers/settings-provider";
@@ -207,6 +208,8 @@ export function SwapInterface() {
 
   // Transaction History Hook
   const { transactions, pendingCount, addTransaction, updateTransaction, clearHistory } = useTransactionHistory();
+
+  const swapLogRef = useRef<SwapLogPayload | null>(null);
 
   // Toast Hook
   const toast = useToast();
@@ -691,6 +694,21 @@ export function SwapInterface() {
         message: "Please confirm the transaction in your wallet",
       });
 
+      swapLogRef.current = {
+        chainId: 56,
+        txHash: "0x",
+        wallet: walletAddress ?? "",
+        providerId: quote.providerId,
+        sellToken: fromTokenInfo.address,
+        buyToken: toTokenInfo.address,
+        sellAmount: sellAmountWei.toString(),
+        buyAmount: quote.normalized.buyAmount,
+        amountUsd: fromUsdValue > 0 ? fromUsdValue.toFixed(2) : null,
+        timestamp: new Date().toISOString(),
+        status: "success",
+        source: "app",
+      };
+
       executeSwap(tx);
 
       // The rest is handled by useEffect watching txHash and swapStatus
@@ -718,6 +736,15 @@ export function SwapInterface() {
   // Watch for transaction completion
   useEffect(() => {
     if (isSwapSuccess && txHash) {
+      if (swapLogRef.current) {
+        void postSwapLog({
+          payload: {
+            ...swapLogRef.current,
+            txHash,
+          },
+        });
+        swapLogRef.current = null;
+      }
       toast.success("Swap successful!", `Transaction: ${txHash.slice(0, 10)}...`);
       // Update the most recent pending transaction
       const pendingTx = transactions.find(t => t.status === "pending");

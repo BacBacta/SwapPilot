@@ -37,6 +37,21 @@ export type ApiError = {
   status?: number;
 };
 
+export type SwapLogPayload = {
+  chainId: number;
+  txHash: string;
+  wallet: string;
+  providerId?: string;
+  sellToken: string;
+  buyToken: string;
+  sellAmount: string;
+  buyAmount: string;
+  amountUsd?: string | null;
+  timestamp: string;
+  status: 'success' | 'failed';
+  source?: 'app' | 'api' | 'relayer';
+};
+
 async function fetchJsonWithTimeout(input: string, init: RequestInit & { timeoutMs: number }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), init.timeoutMs);
@@ -218,6 +233,23 @@ export async function getReceipt(params: { id: string; timeoutMs?: number }): Pr
     return DecisionReceiptSchema.parse(json);
   } catch {
     throw { kind: 'invalid_response', message: 'Invalid receipt response from API' } satisfies ApiError;
+  }
+}
+
+export async function postSwapLog(params: { payload: SwapLogPayload; timeoutMs?: number }): Promise<void> {
+  const timeoutMs = params.timeoutMs ?? 6_000;
+  const baseUrl = getApiBaseUrl();
+  try {
+    const { res } = await fetchJsonWithTimeout(`${baseUrl}/v1/analytics/swaps`, {
+      method: 'POST',
+      body: JSON.stringify(params.payload),
+      timeoutMs,
+    });
+    if (!res.ok) {
+      console.warn('[API] swap log rejected', { status: res.status });
+    }
+  } catch (err) {
+    console.warn('[API] swap log failed', err);
   }
 }
 

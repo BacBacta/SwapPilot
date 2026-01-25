@@ -49,6 +49,8 @@ import {
 import { buildQuotes } from './quoteBuilder';
 import { FileReceiptStore } from './store/fileReceiptStore';
 import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
+import { FileSwapLogStore } from './store/fileSwapLogStore';
+import { MemorySwapLogStore, type SwapLogStore } from './store/swapLogStore';
 
 import rateLimit from '@fastify/rate-limit';
 
@@ -68,6 +70,7 @@ export type CreateServerOptions = {
   logger?: boolean;
   config?: AppConfig;
   receiptStore?: ReceiptStore;
+  swapLogStore?: SwapLogStore;
   preflightClient?: PreflightClient;
   riskEngine?: RiskEngine;
   pancakeSwapAdapter?: Adapter;
@@ -91,6 +94,12 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     (config.receiptStore.type === 'memory'
       ? new MemoryReceiptStore()
       : new FileReceiptStore(config.receiptStore.path));
+
+  const swapLogStore =
+    options.swapLogStore ??
+    (config.swapLogStore.type === 'memory'
+      ? new MemorySwapLogStore()
+      : new FileSwapLogStore(config.swapLogStore.path));
 
   const app = fastify({
     logger: options.logger ?? {
@@ -928,6 +937,119 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         return reply.code(404).send({ message: 'not_found' });
       }
       return receipt;
+    },
+  );
+
+  const SwapLogSchema = z.object({
+    chainId: z.number().int().positive(),
+    txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+    wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    providerId: z.string().optional(),
+    sellToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    buyToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    sellAmount: z.string(),
+    buyAmount: z.string(),
+    amountUsd: z.string().optional().nullable(),
+    timestamp: z.string().datetime().optional(),
+    status: z.enum(['success', 'failed']).default('success'),
+    source: z.enum(['app', 'api', 'relayer']).optional(),
+  });
+
+  const VolumeQuerySchema = z.object({
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    chainId: z.coerce.number().int().optional(),
+  });
+
+  api.post(
+    '/v1/analytics/swaps',
+    {
+      schema: {
+        body: SwapLogSchema,
+        response: {
+          200: z.object({ ok: z.literal(true) }),
+        },
+      },
+    },
+    async (request) => {
+      const payload = request.body;
+      const timestamp = payload.timestamp ?? new Date().toISOString();
+      await swapLogStore.append({ ...payload, timestamp });
+      return { ok: true } as const;
+    },
+  );
+
+  api.get(
+    '/v1/analytics/volume',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.object({
+            volumeUsd: z.number(),
+            swaps: z.number().int(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        status: 'success',
+      });
+      const volumeUsd = logs.reduce((sum, log) => {
+        const value = log.amountUsd ? Number(log.amountUsd) : 0;
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      return { volumeUsd, swaps: logs.length };
+    },
+  );
+
+  api.get(
+    '/v1/analytics/volume/daily',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.array(
+            z.object({
+              date: z.string(),
+              volumeUsd: z.number(),
+              swaps: z.number().int(),
+            }),
+          ),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        status: 'success',
+      });
+      const byDate = new Map<string, { volumeUsd: number; swaps: number }>();
+      for (const log of logs) {
+        const date = new Date(log.timestamp);
+        if (Number.isNaN(date.getTime())) continue;
+        const key = date.toISOString().slice(0, 10);
+        const current = byDate.get(key) ?? { volumeUsd: 0, swaps: 0 };
+        const value = log.amountUsd ? Number(log.amountUsd) : 0;
+        const safeValue = Number.isFinite(value) ? value : 0;
+        byDate.set(key, {
+          volumeUsd: current.volumeUsd + safeValue,
+          swaps: current.swaps + 1,
+        });
+      }
+      return Array.from(byDate.entries())
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([date, data]) => ({ date, ...data }));
     },
   );
 

@@ -12,6 +12,9 @@ export const EnvSchema = z.object({
   RECEIPT_STORE: z.enum(['memory', 'file']).default('file'),
   RECEIPT_STORE_PATH: z.string().default('./.data/receipts'),
 
+  SWAP_LOG_STORE: z.enum(['memory', 'file']).default('file'),
+  SWAP_LOG_STORE_PATH: z.string().default('./.data/swaps'),
+
   // Redis / caching
   REDIS_URL: z.string().default(''),
   QUOTE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(5),
@@ -125,6 +128,10 @@ export type AppConfig = {
     type: Env['RECEIPT_STORE'];
     path: string;
   };
+  swapLogStore: {
+    type: Env['SWAP_LOG_STORE'];
+    path: string;
+  };
   redis: {
     url: string | null;
     quoteCacheTtlSeconds: number;
@@ -206,6 +213,10 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
     receiptStore: {
       type: env.RECEIPT_STORE,
       path: env.RECEIPT_STORE_PATH,
+    },
+    swapLogStore: {
+      type: env.SWAP_LOG_STORE,
+      path: env.SWAP_LOG_STORE_PATH,
     },
     redis: {
       url: env.REDIS_URL.trim().length > 0 ? env.REDIS_URL.trim() : null,
