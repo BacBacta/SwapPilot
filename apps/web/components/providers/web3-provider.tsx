@@ -205,19 +205,17 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     setMounted(true);
   }, []);
 
-  // During SSR and initial hydration, render children without Web3 providers
-  // This prevents indexedDB errors from WalletConnect
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitWrapper>
-          <WalletConnectGuard />
-          {children}
-        </RainbowKitWrapper>
+        {mounted ? (
+          <RainbowKitWrapper>
+            <WalletConnectGuard />
+            {children}
+          </RainbowKitWrapper>
+        ) : (
+          <>{children}</>
+        )}
       </QueryClientProvider>
     </WagmiProvider>
   );
