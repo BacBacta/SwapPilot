@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local env
+.env
+.env.*
+
+# Local bot data
+swappilot.db
+*.db-journal
+
