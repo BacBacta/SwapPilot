@@ -29,10 +29,15 @@ Sentry.init({
       /invoking post/i,
       /User rejected/i, // User cancelled wallet action - not an error
       /User denied/i,
+      // MetaMask state / availability (environment issues, not app bugs)
+      /KeyRing is locked/i,
+      /MetaMask extension not found/i,
       // RainbowKit/React portal edge-case: harmless DOM cleanup error that can be triggered
       // when a modal is opened/closed during rapid re-renders.
       /Node\.removeChild/i,
       /The node to be removed is not a child of this node/i,
+      // Wallet extensions can conflict while injecting providers (TronLink / others)
+      /Cannot assign to read only property 'tronLink'/i,
     ];
     
     if (ignoredPatterns.some(pattern => pattern.test(errorMessage))) {

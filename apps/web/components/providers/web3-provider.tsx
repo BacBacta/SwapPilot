@@ -74,6 +74,9 @@ const config = createConfig({
   connectors,
   chains: [bsc],
   ssr: true,
+  // Avoid triggering background reconnection attempts when a wallet is locked.
+  // Users will explicitly click "Connect Wallet" instead.
+  autoConnect: false,
   transports: {
     [bsc.id]: fallback(bscTransports, {
       // NOTE: `rank: true` fans out every RPC to all endpoints (very noisy + slower).
