@@ -9,5 +9,8 @@ __pycache__/
 
 # Local bot data
 swappilot.db
+swappilot.db-*
 *.db-journal
+*.db-wal
+*.db-shm
 
