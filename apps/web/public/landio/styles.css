@@ -307,6 +307,29 @@ img {
   transform: translateX(3px);
 }
 
+/* Button Spinner */
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: btn-spin 0.8s linear infinite;
+  margin-right: 6px;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-cta:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 /* Wallet Button */
 .btn-wallet {
   display: flex;

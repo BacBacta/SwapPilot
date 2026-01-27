@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 import { guardedOpenConnect } from "@/lib/wallet/connect-guard";
 
 function shortAddress(address: string) {
@@ -15,6 +16,8 @@ export function LandioNav() {
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { status: accountStatus } = useAccount();
+  const isConnecting = accountStatus === "connecting" || accountStatus === "reconnecting";
 
   useEffect(() => {
     setMounted(true);
@@ -143,8 +146,19 @@ export function LandioNav() {
                     {(() => {
                       if (!connected) {
                         return (
-                          <button onClick={() => guardedOpenConnect(openConnectModal)} className="btn btn-primary btn-cta">
-                            Connect Wallet
+                          <button 
+                            onClick={() => guardedOpenConnect(openConnectModal)} 
+                            className="btn btn-primary btn-cta"
+                            disabled={isConnecting}
+                          >
+                            {isConnecting ? (
+                              <>
+                                <span className="btn-spinner" aria-hidden="true" />
+                                Connecting...
+                              </>
+                            ) : (
+                              "Connect Wallet"
+                            )}
                           </button>
                         );
                       }
@@ -170,7 +184,14 @@ export function LandioNav() {
             </ConnectButton.Custom>
           ) : (
             <button className="btn btn-primary btn-cta" disabled>
-              Connect Wallet
+              {isConnecting ? (
+                <>
+                  <span className="btn-spinner" aria-hidden="true" />
+                  Connecting...
+                </>
+              ) : (
+                "Connect Wallet"
+              )}
             </button>
           )}
 
