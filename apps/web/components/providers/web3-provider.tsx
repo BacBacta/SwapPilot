@@ -76,7 +76,9 @@ const config = createConfig({
   ssr: true,
   transports: {
     [bsc.id]: fallback(bscTransports, {
-      rank: true, // Automatically rank RPCs by latency
+      // NOTE: `rank: true` fans out every RPC to all endpoints (very noisy + slower).
+      // We prefer a primary RPC with fallback-on-failure.
+      rank: false,
       retryCount: 2, // Retry across fallback RPCs
     }),
   },
@@ -188,7 +190,9 @@ function WalletConnectGuard() {
   const { status } = useAccount();
 
   useEffect(() => {
-    if (status !== "connecting") {
+    // Only reset the "connect pending" guard once we're definitively out of a connect flow.
+    // (Avoid resetting while wagmi is `reconnecting`, which can cause double-open.)
+    if (status === "connected" || status === "disconnected") {
       resetWalletConnectPending();
     }
   }, [status]);

@@ -29,6 +29,10 @@ Sentry.init({
       /invoking post/i,
       /User rejected/i, // User cancelled wallet action - not an error
       /User denied/i,
+      // RainbowKit/React portal edge-case: harmless DOM cleanup error that can be triggered
+      // when a modal is opened/closed during rapid re-renders.
+      /Node\.removeChild/i,
+      /The node to be removed is not a child of this node/i,
     ];
     
     if (ignoredPatterns.some(pattern => pattern.test(errorMessage))) {
