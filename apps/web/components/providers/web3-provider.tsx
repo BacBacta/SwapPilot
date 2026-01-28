@@ -76,7 +76,7 @@ const config = createConfig({
   ssr: true,
   // Avoid triggering background reconnection attempts when a wallet is locked.
   // Users will explicitly click "Connect Wallet" instead.
-  autoConnect: false,
+  // Note: autoConnect is deprecated in Wagmi v2 - SSR mode disables auto-reconnect by default
   transports: {
     [bsc.id]: fallback(bscTransports, {
       // NOTE: `rank: true` fans out every RPC to all endpoints (very noisy + slower).

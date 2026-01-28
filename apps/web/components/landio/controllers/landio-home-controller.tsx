@@ -527,7 +527,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     },
     "metamask": {
       name: "MetaMask",
-      logo: "https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/SVG_MetaMask_Icon_Color.svg",
+      logo: "https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg",
     },
     "uniswap": {
       name: "Uniswap",
