@@ -750,7 +750,18 @@ export function LandioSwapController() {
         mode: capturedMode,
       });
       const best = activeQuotes[0] ?? null;
-      setSelected(best);
+      
+      // Preserve user's manual selection if it still exists in new quotes
+      if (selected) {
+        const stillExists = activeQuotes.find(q => q.providerId === selected.providerId);
+        if (stillExists) {
+          setSelected(stillExists); // Update to new data but keep same provider
+        } else {
+          setSelected(best); // Fallback to best if selection no longer exists
+        }
+      } else {
+        setSelected(best); // Initial selection
+      }
       
       // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
       if (activeQuotes.length === 0) {
@@ -1288,7 +1299,18 @@ export function LandioSwapController() {
             ? (res.bestRawQuotes && res.bestRawQuotes.length > 0 ? res.bestRawQuotes : res.rankedQuotes ?? [])
             : (res.rankedQuotes ?? []);
         const best = activeQuotes[0] ?? null;
-        setSelected(best);
+        
+        // Preserve user's manual selection if it still exists in new quotes
+        if (selected) {
+          const stillExists = activeQuotes.find(q => q.providerId === selected.providerId);
+          if (stillExists) {
+            setSelected(stillExists); // Update to new data but keep same provider
+          } else {
+            setSelected(best); // Fallback to best if selection no longer exists
+          }
+        } else {
+          setSelected(best); // Initial selection
+        }
 
         // Remove analyzing state
         swapContainer?.classList.remove("analyzing-state");
