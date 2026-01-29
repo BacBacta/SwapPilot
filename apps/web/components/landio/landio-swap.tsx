@@ -502,7 +502,7 @@ export function LandioSwap() {
               </div>
               <div style={styles.beqDetailItem}>
                 <div style={styles.beqDetailLabel}>MEV Risk</div>
-                <div style={{ ...styles.beqDetailValue, color: "var(--ok)" }}>Protected</div>
+                <div style={styles.beqDetailValue}>Protected</div>
               </div>
               <div style={styles.beqDetailItem}>
                 <div style={styles.beqDetailLabel}>Net Output</div>

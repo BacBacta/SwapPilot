@@ -799,6 +799,12 @@ export function LandioSwapController() {
         setText("netOutput", "—");
         setText("priceImpact", "—");
         
+        // Clear MEV Risk color classes
+        const mevEl = document.getElementById("mevRisk");
+        if (mevEl) {
+          mevEl.classList.remove("ok", "negative");
+        }
+        
         // Show "no quotes" message in providers container
         const container = document.getElementById("providersContainer");
         if (container) {
@@ -875,9 +881,23 @@ export function LandioSwapController() {
         ? `$${gasUsdRaw.toFixed(2)}`
         : "$—";
       setText("gasCost", formattedGas);
-      setText("mevRisk", best?.signals?.mevExposure?.level 
-        ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") 
-        : "—");
+      
+      const mevLevel = best?.signals?.mevExposure?.level;
+      const mevText = mevLevel 
+        ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
+        : "—";
+      setText("mevRisk", mevText);
+      
+      // Update MEV Risk color
+      const mevEl = document.getElementById("mevRisk");
+      if (mevEl) {
+        mevEl.classList.remove("ok", "negative");
+        if (mevLevel === "HIGH") {
+          mevEl.classList.add("negative");
+        } else if (mevLevel) {
+          mevEl.classList.add("ok");
+        }
+      }
       
       // Update Net Output
       const tokenTax = extractTokenTax(best?.signals);
@@ -1437,10 +1457,23 @@ export function LandioSwapController() {
           ? `$${gasUsdRaw.toFixed(2)}`
           : "$—";
         setText("gasCost", formattedGas);
-        setText(
-          "mevRisk",
-          best?.signals?.mevExposure?.level ? (best.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") : "—",
-        );
+        
+        const mevLevel = best?.signals?.mevExposure?.level;
+        const mevText = mevLevel 
+          ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
+          : "—";
+        setText("mevRisk", mevText);
+        
+        // Update MEV Risk color
+        const mevEl = document.getElementById("mevRisk");
+        if (mevEl) {
+          mevEl.classList.remove("ok", "negative");
+          if (mevLevel === "HIGH") {
+            mevEl.classList.add("negative");
+          } else if (mevLevel) {
+            mevEl.classList.add("ok");
+          }
+        }
 
         // Net Output: show actual expected output after token tax (if any)
         const tokenTax = extractTokenTax(best?.signals);
@@ -2192,12 +2225,22 @@ export function LandioSwapController() {
     setText("gasCost", formattedGas);
 
     // MEV Risk for selected quote
-    setText(
-      "mevRisk",
-      selected.signals?.mevExposure?.level 
-        ? (selected.signals.mevExposure.level === "HIGH" ? "Exposed" : "Protected") 
-        : "—",
-    );
+    const mevLevel = selected.signals?.mevExposure?.level;
+    const mevText = mevLevel 
+      ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
+      : "—";
+    setText("mevRisk", mevText);
+    
+    // Update MEV Risk color based on level
+    const mevEl = document.getElementById("mevRisk");
+    if (mevEl) {
+      mevEl.classList.remove("ok", "negative");
+      if (mevLevel === "HIGH") {
+        mevEl.classList.add("negative"); // Red for Exposed
+      } else if (mevLevel) {
+        mevEl.classList.add("ok"); // Green for Protected
+      }
+    }
 
     // Net Output: show expected output amount (and adjust for buy tax if present)
     const tokenTax = extractTokenTax(selected?.signals);
