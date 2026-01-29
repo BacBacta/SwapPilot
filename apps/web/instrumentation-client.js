@@ -21,6 +21,23 @@ Sentry.init({
     const error = hint?.originalException;
     const errorMessage = typeof error === "string" ? error : error?.message || "";
     
+    // Drop errors originating from browser extensions (wallets, ad-blockers, etc.)
+    // These are not actionable app bugs and can be very noisy in Sentry.
+    const hasExtensionFrame =
+      event?.exception?.values?.some((ex) =>
+        ex?.stacktrace?.frames?.some((frame) => {
+          const filename = frame?.filename || "";
+          return (
+            filename.startsWith("chrome-extension://") ||
+            filename.startsWith("moz-extension://") ||
+            filename.startsWith("safari-extension://")
+          );
+        })
+      ) ?? false;
+    if (hasExtensionFrame) {
+      return null;
+    }
+
     // Ignore wallet provider detection errors on mobile browsers
     // These occur when injectedWallet tries to detect wallets on browsers
     // with partial EIP-1193 support (e.g., mobile Chrome, Brave)
@@ -38,6 +55,11 @@ Sentry.init({
       /The node to be removed is not a child of this node/i,
       // Wallet extensions can conflict while injecting providers (TronLink / others)
       /Cannot assign to read only property 'tronLink'/i,
+      // Wallet extensions can conflict while injecting/overwriting EIP-1193 providers
+      /Cannot redefine property:\s*ethereum/i,
+      /Cannot set property ethereum/i,
+      /Failed to assign ethereum proxy/i,
+      /Invalid property descriptor/i,
     ];
     
     if (ignoredPatterns.some(pattern => pattern.test(errorMessage))) {
