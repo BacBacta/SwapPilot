@@ -471,6 +471,16 @@ export function LandioSwapController() {
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
   const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
+  const selectedProviderIdRef = useRef<string | null>(null);
+  const setSelectedQuote = useCallback((quote: RankedQuote | null) => {
+    if (!quote) {
+      selectedProviderIdRef.current = null;
+      setSelected(null);
+      return;
+    }
+    selectedProviderIdRef.current = quote.providerId ?? null;
+    setSelected(quote);
+  }, []);
   
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 6: TRANSACTION HISTORY STATE
@@ -648,7 +658,7 @@ export function LandioSwapController() {
     setFromAmountValue(0);
     setToAmountValue(0);
     setResponse(null);
-    setSelected(null);
+    setSelectedQuote(null);
     const existingWarning = document.getElementById("tokenSecurityWarning");
     if (existingWarning) existingWarning.remove();
     setDisplay("beqContainer", "none");
@@ -752,15 +762,18 @@ export function LandioSwapController() {
       const best = activeQuotes[0] ?? null;
       
       // Preserve user's manual selection if it still exists in new quotes
-      if (selected) {
-        const stillExists = activeQuotes.find(q => q.providerId === selected.providerId);
+      const selectedProviderId = selectedProviderIdRef.current;
+      if (selectedProviderId) {
+        const stillExists = activeQuotes.find(
+          (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
+        );
         if (stillExists) {
-          setSelected(stillExists); // Update to new data but keep same provider
+          setSelectedQuote(stillExists); // Update to new data but keep same provider
         } else {
-          setSelected(best); // Fallback to best if selection no longer exists
+          setSelectedQuote(best); // Fallback to best if selection no longer exists
         }
       } else {
-        setSelected(best); // Initial selection
+        setSelectedQuote(best); // Initial selection
       }
       
       // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
@@ -880,7 +893,7 @@ export function LandioSwapController() {
           capturedToTokenInfo,
           toTokenSymbol,
           showAllProviders,
-          setSelected,
+          setSelectedQuote,
           () => setShowAllProviders(true),
           capturedScoringMode
         );
@@ -1178,7 +1191,7 @@ export function LandioSwapController() {
       setRefreshCountdown(12);
 
       setResponse(null);
-      setSelected(null);
+      setSelectedQuote(null);
       setShowAllProviders(false);
 
       if (!amountInput || !toAmountInput || valueNum <= 0) {
@@ -1301,15 +1314,18 @@ export function LandioSwapController() {
         const best = activeQuotes[0] ?? null;
         
         // Preserve user's manual selection if it still exists in new quotes
-        if (selected) {
-          const stillExists = activeQuotes.find(q => q.providerId === selected.providerId);
+        const selectedProviderId = selectedProviderIdRef.current;
+        if (selectedProviderId) {
+          const stillExists = activeQuotes.find(
+            (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
+          );
           if (stillExists) {
-            setSelected(stillExists); // Update to new data but keep same provider
+            setSelectedQuote(stillExists); // Update to new data but keep same provider
           } else {
-            setSelected(best); // Fallback to best if selection no longer exists
+            setSelectedQuote(best); // Fallback to best if selection no longer exists
           }
         } else {
-          setSelected(best); // Initial selection
+          setSelectedQuote(best); // Initial selection
         }
 
         // Remove analyzing state
@@ -1445,7 +1461,7 @@ export function LandioSwapController() {
             toTokenInfo, 
             toTokenSymbol, 
             false, 
-            setSelected,
+            setSelectedQuote,
             () => setShowAllProviders(true),
             currentScoringMode
           );
@@ -2140,7 +2156,7 @@ export function LandioSwapController() {
       toTokenInfo, 
       toTokenSymbol, 
       showAllProviders, 
-      setSelected,
+      setSelectedQuote,
       () => setShowAllProviders(true),
       scoringMode
     );
@@ -2156,7 +2172,7 @@ export function LandioSwapController() {
     });
     const best = activeQuotes[0] ?? null;
     if (best && (!selected || selected.providerId !== best.providerId)) {
-      setSelected(best);
+      setSelectedQuote(best);
     }
   }, [scoringMode, response, selected, settings.mode]);
 
@@ -3054,7 +3070,7 @@ export function LandioSwapController() {
         setFromAmountValue(0);
         setToAmountValue(0);
         setResponse(null);
-        setSelected(null);
+        setSelectedQuote(null);
         setDisplay("beqContainer", "none");
         setDisplay("routeContainer", "none");
         setDisplay("providersContainer", "none");
