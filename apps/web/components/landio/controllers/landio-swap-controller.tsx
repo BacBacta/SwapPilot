@@ -323,6 +323,11 @@ function renderProviders(
     `;
 
     item.onclick = () => {
+      console.debug("[swap][select] provider click", {
+        providerId: q.providerId,
+        mev: q.signals?.mevExposure?.level ?? null,
+        slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+      });
       listContainer.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
       item.classList.add("selected");
       setSelected(q);
@@ -473,6 +478,11 @@ export function LandioSwapController() {
   const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
   const selectedProviderIdRef = useRef<string | null>(null);
   const setSelectedQuote = useCallback((quote: RankedQuote | null) => {
+    console.debug("[swap][select] setSelectedQuote", {
+      providerId: quote?.providerId ?? null,
+      mev: quote?.signals?.mevExposure?.level ?? null,
+      slippageBps: quote?.signals?.slippageRisk?.slippageBps ?? null,
+    });
     if (!quote) {
       selectedProviderIdRef.current = null;
       setSelected(null);
@@ -763,6 +773,14 @@ export function LandioSwapController() {
       
       // Preserve user's manual selection if it still exists in new quotes
       const selectedProviderId = selectedProviderIdRef.current;
+      console.debug("[swap][refresh] activeQuotes", {
+        selectedProviderId,
+        providers: activeQuotes.map((q) => ({
+          providerId: q.providerId,
+          mev: q.signals?.mevExposure?.level ?? null,
+          slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+        })),
+      });
       if (selectedProviderId) {
         const stillExists = activeQuotes.find(
           (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
@@ -1013,6 +1031,12 @@ export function LandioSwapController() {
     if (slippageDisplay) {
       const pct = effectiveSlippageBps / 100;
       const autoIndicator = dynamicSlippage.isAuto ? "⚡ " : "";
+      console.debug("[swap][slippage] display update", {
+        selectedProviderId: selectedProviderIdRef.current,
+        slippageBps: effectiveSlippageBps,
+        auto: dynamicSlippage.isAuto,
+        reason: dynamicSlippage.reason,
+      });
       slippageDisplay.textContent = `${autoIndicator}${pct.toFixed(pct % 1 === 0 ? 0 : 2)}%`;
       slippageDisplay.title = dynamicSlippage.reason;
     }
@@ -1315,6 +1339,14 @@ export function LandioSwapController() {
         
         // Preserve user's manual selection if it still exists in new quotes
         const selectedProviderId = selectedProviderIdRef.current;
+        console.debug("[swap][debounce] activeQuotes", {
+          selectedProviderId,
+          providers: activeQuotes.map((q) => ({
+            providerId: q.providerId,
+            mev: q.signals?.mevExposure?.level ?? null,
+            slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+          })),
+        });
         if (selectedProviderId) {
           const stillExists = activeQuotes.find(
             (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
@@ -2219,6 +2251,11 @@ export function LandioSwapController() {
   // Update BEQ panel when selected quote changes
   useEffect(() => {
     if (!selected || !response || !toTokenInfo) return;
+    console.debug("[swap][beq] update panel", {
+      providerId: selected.providerId,
+      mev: selected.signals?.mevExposure?.level ?? null,
+      slippageBps: selected.signals?.slippageRisk?.slippageBps ?? null,
+    });
     const activeQuotes =
       scoringMode === "RAW"
         ? (response.bestRawQuotes && response.bestRawQuotes.length > 0 ? response.bestRawQuotes : response.rankedQuotes ?? [])
