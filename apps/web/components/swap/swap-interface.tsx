@@ -409,13 +409,25 @@ export function SwapInterface() {
   // SAFE mode soft-block when token security is uncertain
   const isSafeMode = settings.mode === "SAFE";
   const sellability = topQuote?.signals?.sellability;
-  const tokenSecurityReasons = sellability?.reasons?.filter((r) => r.startsWith("token_security:")) ?? [];
+  const sellabilityReasons = sellability?.reasons ?? [];
+  
+  // Only flag as risky if there are actual dangerous security flags
+  const dangerousReasons = sellabilityReasons.filter((r) => 
+    r.includes("is_honeypot") ||
+    r.includes("is_scam") ||
+    r.includes("is_blacklisted") ||
+    r.includes("cannot_sell_all") ||
+    r.includes("simulation_failed") ||
+    // High tax rates (>10%) are concerning
+    (r.match(/buy_tax:(\d+)/) && parseFloat(r.match(/buy_tax:(\d+)/)?.[1] || "0") > 10) ||
+    (r.match(/sell_tax:(\d+)/) && parseFloat(r.match(/sell_tax:(\d+)/)?.[1] || "0") > 10)
+  );
+  
   const isSecurityUncertain =
     isSafeMode &&
     Boolean(topQuote) &&
-    tokenSecurityReasons.length > 0 &&
-    sellability?.status !== "OK";
-  const sellabilityReasons = sellability?.reasons ?? [];
+    dangerousReasons.length > 0 &&
+    sellability?.status === "FAIL"; // Only block on FAIL status with dangerous reasons
   const isSellabilityUncertain =
     isSafeMode &&
     Boolean(topQuote) &&

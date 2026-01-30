@@ -1674,9 +1674,24 @@ export function LandioSwapController() {
 
         const sellability = best?.signals?.sellability;
         const reasons = sellability?.reasons ?? [];
-        const tokenSecurityReasons = reasons.filter((r) => r.startsWith("token_security:"));
+        
+        // Only flag as risky if there are actual dangerous security flags
+        const dangerousReasons = reasons.filter((r) => 
+          r.includes("is_honeypot") ||
+          r.includes("is_scam") ||
+          r.includes("is_blacklisted") ||
+          r.includes("cannot_sell_all") ||
+          r.includes("simulation_failed") ||
+          // High tax rates (>10%) are concerning
+          (r.match(/buy_tax:(\d+)/) && parseFloat(r.match(/buy_tax:(\d+)/)?.[1] || "0") > 10) ||
+          (r.match(/sell_tax:(\d+)/) && parseFloat(r.match(/sell_tax:(\d+)/)?.[1] || "0") > 10)
+        );
+        
         const isSecurityUncertain =
-          currentSettings.mode === "SAFE" && tokenSecurityReasons.length > 0 && sellability?.status !== "OK";
+          currentSettings.mode === "SAFE" && 
+          dangerousReasons.length > 0 && 
+          sellability?.status === "FAIL"; // Only block on FAIL status with dangerous reasons
+        
         const isSellabilityUncertain =
           currentSettings.mode === "SAFE" && sellability?.status === "UNCERTAIN";
         const isRiskBlocked = isSecurityUncertain || isSellabilityUncertain;
