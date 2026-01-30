@@ -481,7 +481,7 @@ export function LandioSwapController() {
     console.debug("[swap][select] setSelectedQuote", {
       providerId: quote?.providerId ?? null,
       mev: quote?.signals?.mevExposure?.level ?? null,
-      slippageBps: quote?.signals?.slippageRisk?.slippageBps ?? null,
+      slippage: quote?.signals?.slippage?.level ?? null,
     });
     if (!quote) {
       selectedProviderIdRef.current = null;
