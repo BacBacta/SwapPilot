@@ -796,6 +796,10 @@ export function LandioSwapController() {
       
       // Preserve user's manual selection if it still exists in new quotes
       const selectedProviderId = selectedProviderIdRef.current;
+      const matchingQuote = selectedProviderId
+        ? activeQuotes.find((q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase())
+        : null;
+      const displayQuote = matchingQuote ?? best;
       console.debug("[swap][refresh] activeQuotes", {
         selectedProviderId,
         providers: activeQuotes.map((q) => ({
@@ -805,11 +809,8 @@ export function LandioSwapController() {
         })),
       });
       if (selectedProviderId) {
-        const stillExists = activeQuotes.find(
-          (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
-        );
-        if (stillExists) {
-          setSelectedQuote(stillExists); // Update to new data but keep same provider
+        if (matchingQuote) {
+          setSelectedQuote(matchingQuote); // Update to new data but keep same provider
         } else {
           setSelectedQuote(best); // Fallback to best if selection no longer exists
         }
@@ -892,10 +893,10 @@ export function LandioSwapController() {
       // ── Update DOM directly (same as in the debounced fetch) ──
       
       // Update output amount
-      if (toAmountInput && best) {
-        const tokenTax = extractTokenTax(best?.signals);
+      if (toAmountInput && displayQuote) {
+        const tokenTax = extractTokenTax(displayQuote?.signals);
         const buyTaxPercent = tokenTax.buyTax ?? 0;
-        const rawBuyAmount = best.normalized.buyAmount ?? best.raw.buyAmount;
+        const rawBuyAmount = displayQuote.normalized.buyAmount ?? displayQuote.raw.buyAmount;
         let displayBuyAmount = rawBuyAmount;
         
         if (rawBuyAmount && buyTaxPercent > 0) {
@@ -919,7 +920,7 @@ export function LandioSwapController() {
       }
       
       // Update BEQ Score
-      const score = best?.score?.beqScore;
+      const score = displayQuote?.score?.beqScore;
       if (typeof score === "number") {
         setText("beqScore", `${Math.round(score)}/100`);
         setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
@@ -941,13 +942,13 @@ export function LandioSwapController() {
       }
       
       // Update Gas & MEV
-      const gasUsdRaw = parseFloat(best?.normalized.estimatedGasUsd ?? "");
+      const gasUsdRaw = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
       const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
         ? `$${gasUsdRaw.toFixed(2)}`
         : "$—";
       setText("gasCost", formattedGas);
       
-      const mevLevel = best?.signals?.mevExposure?.level;
+      const mevLevel = displayQuote?.signals?.mevExposure?.level;
       const mevText = mevLevel 
         ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
         : "—";
@@ -965,15 +966,15 @@ export function LandioSwapController() {
       }
       
       // Update Net Output
-      const tokenTax = extractTokenTax(best?.signals);
+      const tokenTax = extractTokenTax(displayQuote?.signals);
       const taxPercent = tokenTax.buyTax ?? 0;
-      const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
-      const adjustedBestBuy = bestBuy !== null && taxPercent > 0
-        ? (bestBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
-        : bestBuy;
+      const displayBuy = toBigIntSafe(displayQuote?.normalized.buyAmount ?? displayQuote?.raw.buyAmount);
+      const adjustedDisplayBuy = displayBuy !== null && taxPercent > 0
+        ? (displayBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
+        : displayBuy;
       
-      if (adjustedBestBuy !== null) {
-        const outFormatted = formatAmount(adjustedBestBuy.toString(), capturedToTokenInfo.decimals);
+      if (adjustedDisplayBuy !== null) {
+        const outFormatted = formatAmount(adjustedDisplayBuy.toString(), capturedToTokenInfo.decimals);
         if (taxPercent > 0) {
           setText("netOutput", `~${outFormatted} ${toTokenSymbol}`);
         } else {
@@ -989,8 +990,8 @@ export function LandioSwapController() {
         .filter((x): x is bigint => x !== null);
       const maxBuy = allBuys.length ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
       
-      if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
-        const ratio = Number(bestBuy) / Number(maxBuy);
+      if (displayBuy !== null && maxBuy !== null && maxBuy > 0n) {
+        const ratio = Number(displayBuy) / Number(maxBuy);
         const pct = (1 - ratio) * 100;
         if (pct < 0.01) {
           setText("priceImpact", "0.00%");
