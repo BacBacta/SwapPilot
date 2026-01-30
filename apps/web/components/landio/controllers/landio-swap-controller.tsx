@@ -1363,25 +1363,27 @@ export function LandioSwapController() {
         
         // Preserve user's manual selection if it still exists in new quotes
         const selectedProviderId = selectedProviderIdRef.current;
+        const matchingQuote = selectedProviderId
+          ? activeQuotes.find((q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase())
+          : null;
+        // displayQuote is what we show in the UI - either the user's selection or best
+        const displayQuote = matchingQuote ?? best;
+        
         console.debug("[swap][debounce] activeQuotes", {
           selectedProviderId,
+          displayProvider: displayQuote?.providerId ?? null,
           providers: activeQuotes.map((q) => ({
             providerId: q.providerId,
             mev: q.signals?.mevExposure?.level ?? null,
             slippage: q.signals?.slippage?.level ?? null,
           })),
         });
-        if (selectedProviderId) {
-          const stillExists = activeQuotes.find(
-            (q) => (q.providerId ?? "").toLowerCase() === selectedProviderId.toLowerCase()
-          );
-          if (stillExists) {
-            setSelectedQuote(stillExists); // Update to new data but keep same provider
-          } else {
-            setSelectedQuote(best); // Fallback to best if selection no longer exists
-          }
+        
+        // Update selected quote state
+        if (matchingQuote) {
+          setSelectedQuote(matchingQuote); // Update to new data but keep same provider
         } else {
-          setSelectedQuote(best); // Initial selection
+          setSelectedQuote(best); // Fallback to best or initial selection
         }
 
         // Remove analyzing state
@@ -1457,11 +1459,11 @@ export function LandioSwapController() {
         setDisplay("providersContainer", "block");
         setDisplay("detailsToggle", "flex");
 
-        // Extract token tax and adjust displayed amount
-        const tokenTaxInfo = extractTokenTax(best?.signals);
+        // Extract token tax and adjust displayed amount (use displayQuote for user's selection)
+        const tokenTaxInfo = extractTokenTax(displayQuote?.signals);
         const buyTaxPercent = tokenTaxInfo.buyTax ?? 0;
         
-        const rawBuyAmount = best?.normalized.buyAmount ?? best?.raw.buyAmount;
+        const rawBuyAmount = displayQuote?.normalized.buyAmount ?? displayQuote?.raw.buyAmount;
         let displayBuyAmount = rawBuyAmount;
         
         // Adjust for buy tax if present
@@ -1501,7 +1503,8 @@ export function LandioSwapController() {
           setToAmountValue(0);
         }
 
-        const score = best?.score?.beqScore;
+        // BEQ Score (from user's selected quote or best)
+        const score = displayQuote?.score?.beqScore;
         if (typeof score === "number") {
           setText("beqScore", `${Math.round(score)}/100`);
           setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
@@ -1523,17 +1526,19 @@ export function LandioSwapController() {
           );
         }
 
-        // BEQ details + route + transaction details
-        const bestBuy = toBigIntSafe(best?.normalized.buyAmount ?? best?.raw.buyAmount);
+        // BEQ details + route + transaction details (use displayQuote = user's selection)
+        const selectedBuy = toBigIntSafe(displayQuote?.normalized.buyAmount ?? displayQuote?.raw.buyAmount);
         const allBuys = activeQuotes
           .map((q) => toBigIntSafe(q.normalized.buyAmount ?? q.raw.buyAmount))
           .filter((x): x is bigint => x !== null);
         const maxBuy = allBuys.length ? allBuys.reduce((a, b) => (b > a ? b : a), allBuys[0]!) : null;
         const worstBuy = allBuys.length > 1 ? allBuys.reduce((a, b) => (b < a ? b : a), allBuys[0]!) : null;
+        // bestBuy is needed for "You Save" calculation (best vs worst)
+        const bestBuy = maxBuy;
 
-        // Price Impact: use a quote-relative proxy (best vs best-raw)
-        if (bestBuy !== null && maxBuy !== null && maxBuy > 0n) {
-          const ratio = Number(bestBuy) / Number(maxBuy);
+        // Price Impact: ratio of selected vs max available
+        if (selectedBuy !== null && maxBuy !== null && maxBuy > 0n) {
+          const ratio = Number(selectedBuy) / Number(maxBuy);
           const pct = (1 - ratio) * 100;
           // Only show negative sign if there's actual impact, format nicely
           if (pct < 0.01) {
@@ -1545,41 +1550,49 @@ export function LandioSwapController() {
           setText("priceImpact", "—");
         }
 
-        // Gas & MEV - format gas USD properly
-        const gasUsdRaw = parseFloat(best?.normalized.estimatedGasUsd ?? "");
+        // Gas & MEV - format gas USD properly (use displayQuote)
+        const gasUsdRaw = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
         const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
           ? `$${gasUsdRaw.toFixed(2)}`
           : "$—";
         setText("gasCost", formattedGas);
         
-        const mevLevel = best?.signals?.mevExposure?.level;
-        const mevText = mevLevel 
-          ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
-          : "—";
+        const mevLevel = displayQuote?.signals?.mevExposure?.level;
+        let mevText = "—";
+        if (mevLevel === "HIGH") {
+          mevText = "Exposed";
+        } else if (mevLevel === "MEDIUM") {
+          mevText = "Moderate";
+        } else if (mevLevel === "LOW") {
+          mevText = "Protected";
+        }
         setText("mevRisk", mevText);
         
         // Update MEV Risk color
         const mevEl = document.getElementById("mevRisk");
         if (mevEl) {
           mevEl.classList.remove("ok", "negative");
+          mevEl.style.color = "";
           if (mevLevel === "HIGH") {
             mevEl.classList.add("negative");
-          } else if (mevLevel) {
+          } else if (mevLevel === "MEDIUM") {
+            mevEl.style.color = "var(--warning, #f0b90b)";
+          } else if (mevLevel === "LOW") {
             mevEl.classList.add("ok");
           }
         }
 
         // Net Output: show actual expected output after token tax (if any)
-        const tokenTax = extractTokenTax(best?.signals);
+        const tokenTax = extractTokenTax(displayQuote?.signals);
         const taxPercent = tokenTax.buyTax ?? 0;
         
         // Adjust buy amount for token tax
-        const adjustedBestBuy = bestBuy !== null && taxPercent > 0
-          ? (bestBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
-          : bestBuy;
+        const adjustedSelectedBuy = selectedBuy !== null && taxPercent > 0
+          ? (selectedBuy * BigInt(Math.round((100 - taxPercent) * 100))) / 10000n
+          : selectedBuy;
         
-        if (adjustedBestBuy !== null) {
-          const outFormatted = formatAmount(adjustedBestBuy.toString(), toTokenInfo.decimals);
+        if (adjustedSelectedBuy !== null) {
+          const outFormatted = formatAmount(adjustedSelectedBuy.toString(), toTokenInfo.decimals);
           if (taxPercent > 0) {
             // Show with tax warning
             setText("netOutput", `~${outFormatted} ${toTokenSymbol}`);
@@ -1601,8 +1614,8 @@ export function LandioSwapController() {
           setText("netOutput", "—");
         }
 
-        // Route: derive from quote route addresses when present
-        const routeAddrs = Array.isArray(best?.raw?.route) ? best!.raw!.route : [];
+        // Route: derive from quote route addresses when present (use displayQuote)
+        const routeAddrs = Array.isArray(displayQuote?.raw?.route) ? displayQuote!.raw!.route : [];
         const routeSymbols = routeAddrs
           .map((addr) => resolveToken(String(addr)))
           .filter((t): t is NonNullable<ReturnType<typeof resolveToken>> => Boolean(t))
@@ -1620,7 +1633,7 @@ export function LandioSwapController() {
         const routeHtml =
           `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p0.slice(0, 1)}</div><span class="route-token-name">${p0}</span></div></div>` +
           `<span class="route-arrow">→</span>` +
-          `<span class="route-dex">${best?.providerId ?? "—"}</span>` +
+          `<span class="route-dex">${displayQuote?.providerId ?? "—"}</span>` +
           `<span class="route-arrow">→</span>` +
           (path.length === 3
             ? `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1}</div><span class="route-token-name">${p1}</span></div></div><span class="route-arrow">→</span>` +
@@ -1628,10 +1641,10 @@ export function LandioSwapController() {
             : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
         setHtml("#routeContainer .route-path", routeHtml);
 
-        // Details accordion rows
+        // Details accordion rows (use selectedBuy from displayQuote)
         const detailsRows = Array.from(document.querySelectorAll<HTMLElement>("#detailsContent .detail-row"));
         const slippagePct = effectiveSlippageBps / 100;
-        const outHuman = bestBuy !== null ? Number(bestBuy) / 10 ** toTokenInfo.decimals : null;
+        const outHuman = selectedBuy !== null ? Number(selectedBuy) / 10 ** toTokenInfo.decimals : null;
         const rate = outHuman !== null && valueNum > 0 ? outHuman / valueNum : null;
         const minReceived = outHuman !== null ? outHuman * (1 - effectiveSlippageBps / 10_000) : null;
 
@@ -1674,7 +1687,7 @@ export function LandioSwapController() {
           }
         }
 
-        const sellability = best?.signals?.sellability;
+        const sellability = displayQuote?.signals?.sellability;
         const reasons = sellability?.reasons ?? [];
         
         // Only flag as risky if there are actual dangerous security flags
@@ -2233,19 +2246,24 @@ export function LandioSwapController() {
     );
   }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode]);
 
-  // Re-select top quote when scoring mode changes
+  // Re-select top quote ONLY when scoring mode changes (not when user selects a different provider)
+  const prevScoringModeRef = useRef(scoringMode);
   useEffect(() => {
-    if (!response) return;
-    const activeQuotes = selectActiveQuotes({
-      response,
-      scoringMode,
-      mode: settings.mode,
-    });
-    const best = activeQuotes[0] ?? null;
-    if (best && (!selected || selected.providerId !== best.providerId)) {
-      setSelectedQuote(best);
+    // Only reset selection if scoring mode actually changed (not on every render)
+    if (scoringMode !== prevScoringModeRef.current) {
+      prevScoringModeRef.current = scoringMode;
+      if (!response) return;
+      const activeQuotes = selectActiveQuotes({
+        response,
+        scoringMode,
+        mode: settings.mode,
+      });
+      const best = activeQuotes[0] ?? null;
+      if (best) {
+        setSelectedQuote(best);
+      }
     }
-  }, [scoringMode, response, selected, settings.mode]);
+  }, [scoringMode, response, settings.mode, setSelectedQuote]);
 
   // Update/remove token security warning when mode or token changes
   useEffect(() => {
