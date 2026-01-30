@@ -2331,25 +2331,46 @@ export function LandioSwapController() {
 
     // Gas Cost for selected quote
     const gasUsdRaw = parseFloat(selected.normalized.estimatedGasUsd ?? "");
-    const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
-      ? `$${gasUsdRaw.toFixed(2)}`
-      : "—";
+    let formattedGas = "—";
+    if (Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0) {
+      // Show gas cost with appropriate precision
+      if (gasUsdRaw < 0.01) {
+        formattedGas = "<$0.01";
+      } else if (gasUsdRaw < 10) {
+        formattedGas = `$${gasUsdRaw.toFixed(2)}`;
+      } else if (gasUsdRaw < 1000) {
+        formattedGas = `$${gasUsdRaw.toFixed(2)}`;
+      } else {
+        formattedGas = `$${gasUsdRaw.toFixed(0)}`;
+      }
+    }
     setText("gasCost", formattedGas);
 
     // MEV Risk for selected quote
     const mevLevel = selected.signals?.mevExposure?.level;
-    const mevText = mevLevel 
-      ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
-      : "—";
+    let mevText = "—";
+    if (mevLevel === "HIGH") {
+      mevText = "Exposed";
+    } else if (mevLevel === "MEDIUM") {
+      mevText = "Moderate";
+    } else if (mevLevel === "LOW") {
+      mevText = "Protected";
+    }
     setText("mevRisk", mevText);
     
     // Update MEV Risk color based on level
     const mevEl = document.getElementById("mevRisk");
     if (mevEl) {
       mevEl.classList.remove("ok", "negative");
+      // Remove any inline warning color
+      mevEl.style.color = "";
+      
       if (mevLevel === "HIGH") {
         mevEl.classList.add("negative"); // Red for Exposed
-      } else if (mevLevel) {
+      } else if (mevLevel === "MEDIUM") {
+        // Orange/yellow for Moderate
+        mevEl.style.color = "var(--warning, #f0b90b)";
+      } else if (mevLevel === "LOW") {
         mevEl.classList.add("ok"); // Green for Protected
       }
     }
@@ -2813,14 +2834,29 @@ export function LandioSwapController() {
       margin-bottom: 16px;
     `;
 
-    const slippagePct = effectiveSlippageBps / 100;
-    const slippageRisk = dynamicSlippage.riskLevel;
-    const slippageColor = slippageRisk === "high" ? "var(--error, #ff6b6b)" : slippageRisk === "medium" ? "var(--warning, #f0b90b)" : "var(--ok, #00ff88)";
-    const autoIndicator = dynamicSlippage.isAuto ? "⚡" : "";
+    // Get the selected quote to show its slippage risk
+    const selectedQuote = response.rankedQuotes.find((q: any) => 
+      selected && q.providerId === selected.providerId
+    ) || response.rankedQuotes[0];
+    
+    const quoteSlippageLevel = selectedQuote?.signals?.slippage?.level;
+    let slippageDisplay = "—";
+    let slippageColor = "var(--text-primary)";
+    
+    if (quoteSlippageLevel === "HIGH") {
+      slippageDisplay = "High";
+      slippageColor = "var(--error, #ff6b6b)";
+    } else if (quoteSlippageLevel === "MEDIUM") {
+      slippageDisplay = "Medium";
+      slippageColor = "var(--warning, #f0b90b)";
+    } else if (quoteSlippageLevel === "LOW") {
+      slippageDisplay = "Low";
+      slippageColor = "var(--ok, #00ff88)";
+    }
 
     const stats = [
       { label: "Network", value: "BSC", icon: "🔗" },
-      { label: "Slippage", value: `${autoIndicator}${slippagePct}%`, icon: "⚡", color: slippageColor, title: dynamicSlippage.reason },
+      { label: "Slippage", value: slippageDisplay, icon: "⚡", color: slippageColor, title: `Quote slippage risk: ${quoteSlippageLevel || 'Unknown'}` },
       { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "0.1%", icon: "💰" },
     ];
 
@@ -2842,7 +2878,7 @@ export function LandioSwapController() {
 
     // Insert before the BEQ container content
     beqContainer.insertBefore(statCardsContainer, beqContainer.firstChild);
-  }, [response, effectiveSlippageBps, dynamicSlippage, feeInfo]);
+  }, [response, selected, feeInfo]);
 
   // Add PILOT Tier Badge
   useEffect(() => {
