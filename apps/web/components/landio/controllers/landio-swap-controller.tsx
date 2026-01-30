@@ -326,7 +326,7 @@ function renderProviders(
       console.debug("[swap][select] provider click", {
         providerId: q.providerId,
         mev: q.signals?.mevExposure?.level ?? null,
-        slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+        slippage: q.signals?.slippage?.level ?? null,
       });
       listContainer.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
       item.classList.add("selected");
