@@ -245,6 +245,9 @@ function renderProviders(
   setSelected: (q: RankedQuote) => void,
   onShowMore?: () => void,
   scoringMode: "BEQ" | "RAW" = "BEQ",
+  compareMode: boolean = false,
+  compareProviderIds: string[] = [],
+  onToggleCompare?: (q: RankedQuote) => void,
 ) {
   // Find or create providers list container
   let listContainer = container.querySelector("#providersList") as HTMLElement | null;
@@ -329,6 +332,12 @@ function renderProviders(
       savingsText = formatSignedAmount(diff, toTokenInfo.decimals, toTokenSymbol);
     }
 
+    const providerIdLower = (q.providerId ?? "").toLowerCase();
+    const isCompareSelected = compareMode && compareProviderIds.includes(providerIdLower);
+    const compareButton = compareMode
+      ? `<button class="compare-toggle" data-provider="${q.providerId}" style="border: 1px solid ${isCompareSelected ? "var(--accent)" : "var(--border)"}; background: ${isCompareSelected ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${isCompareSelected ? "var(--accent)" : "var(--text-secondary)"}; border-radius: 8px; padding: 2px 8px; font-size: 11px; cursor: pointer;">${isCompareSelected ? "✓ Compared" : "+ Compare"}</button>`
+      : "";
+
     item.innerHTML = `
       <div class="provider-left">
         <div class="provider-logo">${rankBadge}</div>
@@ -339,10 +348,23 @@ function renderProviders(
         </div>
       </div>
       <div class="provider-right">
+        ${compareButton}
         <div class="provider-output">${out} ${toTokenSymbol}</div>
         <div class="provider-savings">${savingsText}</div>
       </div>
     `;
+
+    if (compareMode) {
+      const compareBtn = item.querySelector<HTMLButtonElement>(".compare-toggle");
+      if (compareBtn) {
+        compareBtn.onclick = (e) => {
+          e.stopPropagation();
+          onToggleCompare?.(q);
+        };
+      }
+      item.style.border = isCompareSelected ? "1px solid var(--accent)" : "1px solid transparent";
+      item.style.background = isCompareSelected ? "rgba(0,255,136,0.06)" : "";
+    }
 
     item.onclick = () => {
       console.debug("[swap][select] provider click", {
@@ -471,6 +493,8 @@ export function LandioSwapController() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isResolvingToken, setIsResolvingToken] = useState(false);
   const [showAllProviders, setShowAllProviders] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareProviderIds, setCompareProviderIds] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
   const [refreshCountdown, setRefreshCountdown] = useState(12);
@@ -514,6 +538,31 @@ export function LandioSwapController() {
     selectedProviderIdRef.current = quote.providerId ?? null;
     setSelected(quote);
   }, []);
+
+  const toggleCompareProvider = useCallback((quote: RankedQuote) => {
+    const providerId = (quote.providerId ?? "").toLowerCase();
+    if (!providerId) return;
+    setCompareProviderIds((prev) => {
+      if (prev.includes(providerId)) {
+        return prev.filter((id) => id !== providerId);
+      }
+      if (prev.length >= 3) {
+        return prev;
+      }
+      return [...prev, providerId];
+    });
+  }, []);
+
+  // Keep compare selections valid when quotes refresh
+  useEffect(() => {
+    if (!response?.rankedQuotes?.length) return;
+    const available = new Set(response.rankedQuotes.map((q) => (q.providerId ?? "").toLowerCase()));
+    setCompareProviderIds((prev) => {
+      const filtered = prev.filter((id) => available.has(id));
+      const unchanged = filtered.length === prev.length && filtered.every((id, i) => id === prev[i]);
+      return unchanged ? prev : filtered;
+    });
+  }, [response]);
   
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 6: TRANSACTION HISTORY STATE
@@ -937,7 +986,10 @@ export function LandioSwapController() {
           showAllProviders,
           setSelectedQuote,
           () => setShowAllProviders(true),
-          capturedScoringMode
+          capturedScoringMode,
+          compareMode,
+          compareProviderIds,
+          toggleCompareProvider
         );
       }
       
@@ -1532,7 +1584,10 @@ export function LandioSwapController() {
             false, 
             setSelectedQuote,
             () => setShowAllProviders(true),
-            currentScoringMode
+            currentScoringMode,
+            compareMode,
+            compareProviderIds,
+            toggleCompareProvider
           );
         }
 
@@ -2258,9 +2313,78 @@ export function LandioSwapController() {
       showAllProviders, 
       setSelectedQuote,
       () => setShowAllProviders(true),
-      scoringMode
+      scoringMode,
+      compareMode,
+      compareProviderIds,
+      toggleCompareProvider
     );
-  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode]);
+  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider]);
+
+  // Compare mode toolbar (toggle + selected providers)
+  useEffect(() => {
+    const container = document.getElementById("providersContainer");
+    if (!container) return;
+    const header = container.querySelector(".providers-header");
+    if (!header) return;
+
+    let bar = container.querySelector("#providersCompareBar") as HTMLElement | null;
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "providersCompareBar";
+      bar.style.cssText = `
+        margin: 8px 0 10px;
+        padding: 10px;
+        background: var(--bg-card-inner);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      `;
+      header.insertAdjacentElement("afterend", bar);
+    }
+
+    if (!response?.rankedQuotes?.length) {
+      bar.style.display = "none";
+      return;
+    }
+
+    bar.style.display = "block";
+
+    const selectedProviders = (response.rankedQuotes ?? []).filter((q) =>
+      compareProviderIds.includes((q.providerId ?? "").toLowerCase())
+    );
+    const chips = selectedProviders
+      .map(
+        (q) =>
+          `<span style="display:inline-flex; align-items:center; gap:6px; padding: 4px 8px; border-radius: 999px; background: rgba(0,255,136,0.12); color: var(--accent); font-size: 11px;">${q.providerId}</span>`
+      )
+      .join(" ");
+
+    const countText = compareMode ? `${compareProviderIds.length}/3 selected` : "Optional";
+    const toggleLabel = compareMode ? "Compare mode: ON" : "Compare 2–3 providers";
+
+    bar.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button id="compareToggleBtn" style="padding:6px 10px; border-radius: 8px; border: 1px solid var(--border); background: ${compareMode ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${compareMode ? "var(--accent)" : "var(--text-secondary)"}; font-size: 12px; cursor: pointer;">
+          ${toggleLabel}
+        </button>
+        <span style="font-size:12px; color: var(--text-muted);">${countText}</span>
+        ${compareMode ? `<div style="display:flex; gap:6px; flex-wrap:wrap;">${chips || '<span style="font-size:12px; color: var(--text-muted);">Select up to 3 providers</span>'}</div>` : ""}
+        ${compareProviderIds.length > 0 ? `<button id="compareClearBtn" style="margin-left:auto; padding:6px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer;">Clear</button>` : ""}
+      </div>
+    `;
+
+    const toggleBtn = bar.querySelector<HTMLButtonElement>("#compareToggleBtn");
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        if (compareMode) setCompareProviderIds([]);
+        setCompareMode(!compareMode);
+      };
+    }
+
+    const clearBtn = bar.querySelector<HTMLButtonElement>("#compareClearBtn");
+    if (clearBtn) {
+      clearBtn.onclick = () => setCompareProviderIds([]);
+    }
+  }, [compareMode, compareProviderIds, response]);
 
   // Re-select top quote ONLY when scoring mode changes (not when user selects a different provider)
   const prevScoringModeRef = useRef(scoringMode);
@@ -2906,9 +3030,6 @@ export function LandioSwapController() {
     const selectedQuote = response.rankedQuotes.find((q: any) => 
       selected && q.providerId === selected.providerId
     ) || response.rankedQuotes[0];
-    
-    // Get the slippage risk level from the quote (different from tolerance)
-    const slippageRiskFromQuote = selectedQuote?.signals?.slippage?.level;
     
     // Slippage tolerance: what the user is willing to accept (auto-calculated or manual)
     const slippagePct = effectiveSlippageBps / 100;
