@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useGasPrice } from "wagmi";
 import { type Address, erc20Abi, maxUint256 } from "viem";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { bsc } from "viem/chains";
@@ -415,6 +415,7 @@ export function LandioSwapController() {
   const { settings, updateSettings } = useSettings();
   const { resolveToken, tokens: allTokens } = useTokenRegistry();
   const { address, isConnected, connector } = useAccount();
+  const { data: gasPrice } = useGasPrice({ chainId: 56 }); // BSC gas price
 
   const getConnectedEip1193Provider = useCallback(async () => {
     // Prefer the provider from the active wagmi connector (matches the wallet
@@ -2329,19 +2330,41 @@ export function LandioSwapController() {
       setText("priceImpact", "—");
     }
 
-    // Gas Cost for selected quote
-    const gasUsdRaw = parseFloat(selected.normalized.estimatedGasUsd ?? "");
+    // Gas Cost for selected quote - try normalized first, then calculate from raw
     let formattedGas = "—";
-    if (Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0) {
-      // Show gas cost with appropriate precision
+    const gasUsdRaw = parseFloat(selected.normalized.estimatedGasUsd ?? "");
+    
+    if (Number.isFinite(gasUsdRaw) && gasUsdRaw > 0) {
+      // Use normalized gas USD if available
       if (gasUsdRaw < 0.01) {
         formattedGas = "<$0.01";
       } else if (gasUsdRaw < 10) {
         formattedGas = `$${gasUsdRaw.toFixed(2)}`;
-      } else if (gasUsdRaw < 1000) {
-        formattedGas = `$${gasUsdRaw.toFixed(2)}`;
       } else {
-        formattedGas = `$${gasUsdRaw.toFixed(0)}`;
+        formattedGas = `$${gasUsdRaw.toFixed(2)}`;
+      }
+    } else {
+      // Calculate from raw estimatedGas + gasPrice + BNB price
+      const estimatedGas = selected.raw?.estimatedGas;
+      const bnbPrice = getPrice("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") || getPrice("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+      const gasPriceGwei = gasPrice ? Number(gasPrice) / 1e9 : 5; // Default 5 gwei if not available
+      
+      if (estimatedGas && bnbPrice && gasPriceGwei > 0) {
+        // Gas cost in BNB = estimatedGas * gasPrice (in wei) / 1e18
+        // Gas cost in USD = Gas cost in BNB * BNB price
+        const gasCostBnb = (estimatedGas * gasPriceGwei) / 1e9;
+        const gasCostUsd = gasCostBnb * bnbPrice;
+        
+        if (gasCostUsd < 0.01) {
+          formattedGas = "<$0.01";
+        } else if (gasCostUsd < 10) {
+          formattedGas = `$${gasCostUsd.toFixed(2)}`;
+        } else {
+          formattedGas = `$${gasCostUsd.toFixed(2)}`;
+        }
+      } else if (estimatedGas) {
+        // Show gas units if we can't calculate USD
+        formattedGas = `~${Math.round(estimatedGas / 1000)}k gas`;
       }
     }
     setText("gasCost", formattedGas);
@@ -2432,7 +2455,7 @@ export function LandioSwapController() {
         : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
     setHtml("#routeContainer .route-path", routeHtml);
 
-  }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken, scoringMode]);
+  }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken, scoringMode, getPrice, gasPrice]);
 
   // Update swap button state based on approval, balance, and connection
   useEffect(() => {
@@ -2834,29 +2857,24 @@ export function LandioSwapController() {
       margin-bottom: 16px;
     `;
 
-    // Get the selected quote to show its slippage risk
+    // Get the selected quote for its data
     const selectedQuote = response.rankedQuotes.find((q: any) => 
       selected && q.providerId === selected.providerId
     ) || response.rankedQuotes[0];
     
-    const quoteSlippageLevel = selectedQuote?.signals?.slippage?.level;
-    let slippageDisplay = "—";
-    let slippageColor = "var(--text-primary)";
-    
-    if (quoteSlippageLevel === "HIGH") {
-      slippageDisplay = "High";
-      slippageColor = "var(--error, #ff6b6b)";
-    } else if (quoteSlippageLevel === "MEDIUM") {
-      slippageDisplay = "Medium";
-      slippageColor = "var(--warning, #f0b90b)";
-    } else if (quoteSlippageLevel === "LOW") {
-      slippageDisplay = "Low";
-      slippageColor = "var(--ok, #00ff88)";
-    }
+    // Slippage: show the effective slippage tolerance as a percentage
+    const slippagePct = effectiveSlippageBps / 100;
+    const slippageRiskLevel = dynamicSlippage.riskLevel;
+    const slippageColor = slippageRiskLevel === "high" 
+      ? "var(--error, #ff6b6b)" 
+      : slippageRiskLevel === "medium" 
+        ? "var(--warning, #f0b90b)" 
+        : "var(--ok, #00ff88)";
+    const autoIndicator = dynamicSlippage.isAuto ? "⚡ " : "";
 
     const stats = [
       { label: "Network", value: "BSC", icon: "🔗" },
-      { label: "Slippage", value: slippageDisplay, icon: "⚡", color: slippageColor, title: `Quote slippage risk: ${quoteSlippageLevel || 'Unknown'}` },
+      { label: "Slippage", value: `${autoIndicator}${slippagePct.toFixed(1)}%`, icon: "⚡", color: slippageColor, title: dynamicSlippage.reason },
       { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "0.1%", icon: "💰" },
     ];
 
@@ -2878,7 +2896,7 @@ export function LandioSwapController() {
 
     // Insert before the BEQ container content
     beqContainer.insertBefore(statCardsContainer, beqContainer.firstChild);
-  }, [response, selected, feeInfo]);
+  }, [response, selected, feeInfo, effectiveSlippageBps, dynamicSlippage]);
 
   // Add PILOT Tier Badge
   useEffect(() => {
