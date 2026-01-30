@@ -778,7 +778,7 @@ export function LandioSwapController() {
         providers: activeQuotes.map((q) => ({
           providerId: q.providerId,
           mev: q.signals?.mevExposure?.level ?? null,
-          slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+          slippage: q.signals?.slippage?.level ?? null,
         })),
       });
       if (selectedProviderId) {
