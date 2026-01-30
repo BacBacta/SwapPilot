@@ -241,7 +241,7 @@ function renderProviders(
   quotes: RankedQuote[],
   toTokenInfo: { decimals: number; symbol: string },
   toTokenSymbol: string,
-  showAll: boolean,
+  visibleCount: number,
   setSelected: (q: RankedQuote) => void,
   onShowMore?: () => void,
   scoringMode: "BEQ" | "RAW" = "BEQ",
@@ -259,8 +259,8 @@ function renderProviders(
   // Clear existing items
   listContainer.innerHTML = "";
 
-  const displayQuotes = showAll ? quotes : quotes.slice(0, 3);
-  const hasMore = quotes.length > 3 && !showAll;
+  const displayQuotes = quotes.slice(0, Math.max(1, visibleCount));
+  const hasMore = quotes.length > displayQuotes.length;
 
   // Calculate average for delta %
   const avgBuyAmount = (() => {
@@ -396,7 +396,9 @@ function renderProviders(
       transition: all 0.2s;
       margin-top: 8px;
     `;
-    showMoreBtn.textContent = `Show ${quotes.length - 3} more providers...`;
+    const remaining = quotes.length - displayQuotes.length;
+    const batch = Math.min(10, remaining);
+    showMoreBtn.textContent = `Afficher ${batch} de plus`;
     showMoreBtn.onmouseover = () => {
       showMoreBtn.style.borderColor = "var(--accent)";
       showMoreBtn.style.color = "var(--accent)";
@@ -492,7 +494,8 @@ export function LandioSwapController() {
   const [pickerTarget, setPickerTarget] = useState<"from" | "to">("from");
   const [searchQuery, setSearchQuery] = useState("");
   const [isResolvingToken, setIsResolvingToken] = useState(false);
-  const [showAllProviders, setShowAllProviders] = useState(false);
+  const [visibleProvidersCount, setVisibleProvidersCount] = useState(3);
+  const providersScrollTopRef = useRef(0);
   const [compareMode, setCompareMode] = useState(false);
   const [compareProviderIds, setCompareProviderIds] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -983,14 +986,20 @@ export function LandioSwapController() {
           activeQuotes,
           capturedToTokenInfo,
           toTokenSymbol,
-          showAllProviders,
+          visibleProvidersCount,
           setSelectedQuote,
-          () => setShowAllProviders(true),
+          () => {
+            const listEl = container.querySelector<HTMLElement>("#providersList");
+            if (listEl) providersScrollTopRef.current = listEl.scrollTop;
+            setVisibleProvidersCount((prev) => Math.min(activeQuotes.length, prev + 10));
+          },
           capturedScoringMode,
           compareMode,
           compareProviderIds,
           toggleCompareProvider
         );
+        const listEl = container.querySelector<HTMLElement>("#providersList");
+        if (listEl) listEl.scrollTop = providersScrollTopRef.current;
       }
       
       // Update Gas Cost with sanity checks
@@ -1302,7 +1311,7 @@ export function LandioSwapController() {
 
       setResponse(null);
       setSelectedQuote(null);
-      setShowAllProviders(false);
+      setVisibleProvidersCount(3);
 
       if (!amountInput || !toAmountInput || valueNum <= 0) {
         setFromAmountValue(0);
@@ -1572,8 +1581,8 @@ export function LandioSwapController() {
           setWidth("beqProgress", `${Math.max(0, Math.min(100, score))}%`);
         }
 
-        // Fill provider list dynamically (respects showAllProviders)
-        // This initial render shows top 3, the showAllProviders effect will re-render
+        // Fill provider list dynamically (progressive pagination)
+        // This initial render shows top providers, then increments by 10
         const container = document.getElementById("providersContainer");
         if (container && activeQuotes.length > 0) {
           renderProviders(
@@ -1581,14 +1590,20 @@ export function LandioSwapController() {
             activeQuotes, 
             toTokenInfo, 
             toTokenSymbol, 
-            false, 
+            visibleProvidersCount, 
             setSelectedQuote,
-            () => setShowAllProviders(true),
+            () => {
+              const listEl = container.querySelector<HTMLElement>("#providersList");
+              if (listEl) providersScrollTopRef.current = listEl.scrollTop;
+              setVisibleProvidersCount((prev) => Math.min(activeQuotes.length, prev + 10));
+            },
             currentScoringMode,
             compareMode,
             compareProviderIds,
             toggleCompareProvider
           );
+          const listEl = container.querySelector<HTMLElement>("#providersList");
+          if (listEl) listEl.scrollTop = providersScrollTopRef.current;
         }
 
         // BEQ details + route + transaction details (use displayQuote = user's selection)
@@ -2292,7 +2307,7 @@ export function LandioSwapController() {
     }
   }, [receipt]);
 
-  // Re-render providers when showAllProviders changes
+  // Re-render providers when visibleProvidersCount changes
   useEffect(() => {
     if (!response || !toTokenInfo) return;
     const activeQuotes = selectActiveQuotes({
@@ -2310,15 +2325,21 @@ export function LandioSwapController() {
       activeQuotes, 
       toTokenInfo, 
       toTokenSymbol, 
-      showAllProviders, 
+      visibleProvidersCount, 
       setSelectedQuote,
-      () => setShowAllProviders(true),
+      () => {
+        const listEl = container.querySelector<HTMLElement>("#providersList");
+        if (listEl) providersScrollTopRef.current = listEl.scrollTop;
+        setVisibleProvidersCount((prev) => Math.min(activeQuotes.length, prev + 10));
+      },
       scoringMode,
       compareMode,
       compareProviderIds,
       toggleCompareProvider
     );
-  }, [showAllProviders, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider]);
+    const listEl = container.querySelector<HTMLElement>("#providersList");
+    if (listEl) listEl.scrollTop = providersScrollTopRef.current;
+  }, [visibleProvidersCount, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider]);
 
   // Compare mode toolbar (toggle + selected providers)
   useEffect(() => {
@@ -2839,14 +2860,16 @@ export function LandioSwapController() {
     if (!header) return;
 
     if (response?.rankedQuotes && response.rankedQuotes.length > 0) {
-      const countText = showAllProviders 
-        ? `${response.rankedQuotes.length} Providers` 
-        : `Top 3 of ${response.rankedQuotes.length} Providers`;
+      const total = response.rankedQuotes.length;
+      const shown = Math.min(total, Math.max(1, visibleProvidersCount));
+      const countText = shown >= total
+        ? `${total} Providers`
+        : `${shown} of ${total} Providers`;
       header.innerHTML = `${countText} <span style="color: var(--text-muted); font-size: 12px;">⟳ ${refreshCountdown}s</span>`;
     } else {
       header.textContent = "Available Providers";
     }
-  }, [refreshCountdown, response, showAllProviders]);
+  }, [refreshCountdown, response, visibleProvidersCount]);
 
   // Add execution mode presets (Safe/Balanced/Turbo)
   useEffect(() => {
