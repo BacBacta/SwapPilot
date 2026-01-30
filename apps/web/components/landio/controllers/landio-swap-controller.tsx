@@ -301,6 +301,28 @@ function renderProviders(
     // Rank badge
     const rankBadge = idx < 3 ? RANK_BADGES[idx] : `#${idx + 1}`;
 
+    // MEV and Slippage badges
+    const mevLevel = q.signals?.mevExposure?.level;
+    const slippageLevel = q.signals?.slippage?.level;
+    
+    let mevBadge = "";
+    if (mevLevel === "HIGH") {
+      mevBadge = '<span style="background: rgba(255,107,107,0.2); color: #ff6b6b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">MEV: HIGH</span>';
+    } else if (mevLevel === "MEDIUM") {
+      mevBadge = '<span style="background: rgba(240,185,11,0.2); color: #f0b90b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">MEV: MED</span>';
+    } else if (mevLevel === "LOW") {
+      mevBadge = '<span style="background: rgba(0,255,136,0.2); color: #00ff88; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">MEV: LOW</span>';
+    }
+    
+    let slippageBadge = "";
+    if (slippageLevel === "HIGH") {
+      slippageBadge = '<span style="background: rgba(255,107,107,0.2); color: #ff6b6b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">SLIP: HIGH</span>';
+    } else if (slippageLevel === "MEDIUM") {
+      slippageBadge = '<span style="background: rgba(240,185,11,0.2); color: #f0b90b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">SLIP: MED</span>';
+    } else if (slippageLevel === "LOW") {
+      slippageBadge = '<span style="background: rgba(0,255,136,0.2); color: #00ff88; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">SLIP: LOW</span>';
+    }
+
     // Calculate savings vs avg
     let savingsText = "—";
     if (avgBuyAmount !== null && buyAmount !== null) {
@@ -314,6 +336,7 @@ function renderProviders(
         <div>
           <div class="provider-name">${q.providerId}</div>
           <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${mevFlag ? ` • ${mevFlag}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">${mevBadge}${slippageBadge}</div>
         </div>
       </div>
       <div class="provider-right">
