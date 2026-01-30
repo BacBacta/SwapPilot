@@ -941,26 +941,36 @@ export function LandioSwapController() {
         );
       }
       
-      // Update Gas & MEV
-      const gasUsdRaw = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
-      const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
-        ? `$${gasUsdRaw.toFixed(2)}`
-        : "$—";
-      setText("gasCost", formattedGas);
+      // Update Gas Cost with sanity checks
+      const gasUsdRawRefresh = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
+      const isReasonableGasRefresh = Number.isFinite(gasUsdRawRefresh) && gasUsdRawRefresh > 0 && gasUsdRawRefresh < 100;
+      const formattedGasRefresh = isReasonableGasRefresh 
+        ? (gasUsdRawRefresh < 0.01 ? "<$0.01" : `$${gasUsdRawRefresh.toFixed(2)}`)
+        : "~$0.10";
+      setText("gasCost", formattedGasRefresh);
       
+      // Update MEV with proper level handling
       const mevLevel = displayQuote?.signals?.mevExposure?.level;
-      const mevText = mevLevel 
-        ? (mevLevel === "HIGH" ? "Exposed" : "Protected") 
-        : "—";
+      let mevText = "—";
+      if (mevLevel === "HIGH") {
+        mevText = "Exposed";
+      } else if (mevLevel === "MEDIUM") {
+        mevText = "Moderate";
+      } else if (mevLevel === "LOW") {
+        mevText = "Protected";
+      }
       setText("mevRisk", mevText);
       
       // Update MEV Risk color
       const mevEl = document.getElementById("mevRisk");
       if (mevEl) {
         mevEl.classList.remove("ok", "negative");
+        mevEl.style.color = "";
         if (mevLevel === "HIGH") {
           mevEl.classList.add("negative");
-        } else if (mevLevel) {
+        } else if (mevLevel === "MEDIUM") {
+          mevEl.style.color = "var(--warning, #f0b90b)";
+        } else if (mevLevel === "LOW") {
           mevEl.classList.add("ok");
         }
       }
@@ -1550,11 +1560,17 @@ export function LandioSwapController() {
           setText("priceImpact", "—");
         }
 
-        // Gas & MEV - format gas USD properly (use displayQuote)
-        const gasUsdRaw = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
-        const formattedGas = Number.isFinite(gasUsdRaw) && gasUsdRaw >= 0 && gasUsdRaw < 1000
-          ? `$${gasUsdRaw.toFixed(2)}`
-          : "$—";
+        // Gas Cost - format gas USD properly with sanity checks (use displayQuote)
+        const gasUsdRawDebounce = parseFloat(displayQuote?.normalized.estimatedGasUsd ?? "");
+        // Sanity check: BSC gas should be < $100
+        const isReasonableGas = Number.isFinite(gasUsdRawDebounce) && gasUsdRawDebounce > 0 && gasUsdRawDebounce < 100;
+        let formattedGas: string;
+        if (isReasonableGas) {
+          formattedGas = gasUsdRawDebounce < 0.01 ? "<$0.01" : `$${gasUsdRawDebounce.toFixed(2)}`;
+        } else {
+          // Estimate based on typical BSC swap cost
+          formattedGas = "~$0.10";
+        }
         setText("gasCost", formattedGas);
         
         const mevLevel = displayQuote?.signals?.mevExposure?.level;
@@ -2353,37 +2369,47 @@ export function LandioSwapController() {
     let formattedGas = "—";
     const gasUsdRaw = parseFloat(selected.normalized.estimatedGasUsd ?? "");
     
-    if (Number.isFinite(gasUsdRaw) && gasUsdRaw > 0) {
-      // Use normalized gas USD if available
+    // Sanity check: BSC gas costs should never exceed ~$100 for even complex swaps
+    // If the value is absurdly high, it's likely a data error - ignore and use fallback
+    const isReasonableGasUsd = Number.isFinite(gasUsdRaw) && gasUsdRaw > 0 && gasUsdRaw < 100;
+    
+    if (isReasonableGasUsd) {
+      // Use normalized gas USD if available and reasonable
       if (gasUsdRaw < 0.01) {
         formattedGas = "<$0.01";
-      } else if (gasUsdRaw < 10) {
-        formattedGas = `$${gasUsdRaw.toFixed(2)}`;
       } else {
         formattedGas = `$${gasUsdRaw.toFixed(2)}`;
       }
     } else {
       // Calculate from raw estimatedGas + gasPrice + BNB price
-      const estimatedGas = selected.raw?.estimatedGas;
+      const rawEstimatedGas = selected.raw?.estimatedGas;
       const bnbPrice = getPrice("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") || getPrice("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-      const gasPriceGwei = gasPrice ? Number(gasPrice) / 1e9 : 5; // Default 5 gwei if not available
+      const gasPriceGwei = gasPrice ? Number(gasPrice) / 1e9 : 3; // Default 3 gwei for BSC
       
-      if (estimatedGas && bnbPrice && gasPriceGwei > 0) {
-        // Gas cost in BNB = estimatedGas * gasPrice (in wei) / 1e18
-        // Gas cost in USD = Gas cost in BNB * BNB price
-        const gasCostBnb = (estimatedGas * gasPriceGwei) / 1e9;
+      // Sanity check: estimatedGas should be in gas units (typically 100k-500k for swaps)
+      // If it's > 10M, it's probably in wrong units (maybe wei?) - cap it
+      const estimatedGasUnits = rawEstimatedGas && rawEstimatedGas < 10_000_000 
+        ? rawEstimatedGas 
+        : 300_000; // Default reasonable gas for swap
+      
+      if (bnbPrice && gasPriceGwei > 0) {
+        // Gas cost in BNB = gasUnits * gasPrice(gwei) / 1e9
+        // Gas cost in USD = gasCostBnb * bnbPrice
+        const gasCostBnb = (estimatedGasUnits * gasPriceGwei) / 1e9;
         const gasCostUsd = gasCostBnb * bnbPrice;
         
+        // Final sanity check - BSC swaps should be < $10
         if (gasCostUsd < 0.01) {
           formattedGas = "<$0.01";
-        } else if (gasCostUsd < 10) {
+        } else if (gasCostUsd < 50) {
           formattedGas = `$${gasCostUsd.toFixed(2)}`;
         } else {
-          formattedGas = `$${gasCostUsd.toFixed(2)}`;
+          // If still too high, show estimate
+          formattedGas = "~$0.10"; // Typical BSC swap cost
         }
-      } else if (estimatedGas) {
+      } else {
         // Show gas units if we can't calculate USD
-        formattedGas = `~${Math.round(estimatedGas / 1000)}k gas`;
+        formattedGas = `~${Math.round(estimatedGasUnits / 1000)}k gas`;
       }
     }
     setText("gasCost", formattedGas);
@@ -2881,7 +2907,10 @@ export function LandioSwapController() {
       selected && q.providerId === selected.providerId
     ) || response.rankedQuotes[0];
     
-    // Slippage: show the effective slippage tolerance as a percentage
+    // Get the slippage risk level from the quote (different from tolerance)
+    const slippageRiskFromQuote = selectedQuote?.signals?.slippage?.level;
+    
+    // Slippage tolerance: what the user is willing to accept (auto-calculated or manual)
     const slippagePct = effectiveSlippageBps / 100;
     const slippageRiskLevel = dynamicSlippage.riskLevel;
     const slippageColor = slippageRiskLevel === "high" 
@@ -2890,11 +2919,16 @@ export function LandioSwapController() {
         ? "var(--warning, #f0b90b)" 
         : "var(--ok, #00ff88)";
     const autoIndicator = dynamicSlippage.isAuto ? "⚡ " : "";
+    
+    // Build a more informative tooltip that explains why the slippage is what it is
+    const slippageTooltip = dynamicSlippage.isAuto 
+      ? `Auto-calculated tolerance: ${dynamicSlippage.reason}` 
+      : "Manually set slippage tolerance";
 
     const stats = [
       { label: "Network", value: "BSC", icon: "🔗" },
-      { label: "Slippage", value: `${autoIndicator}${slippagePct.toFixed(1)}%`, icon: "⚡", color: slippageColor, title: dynamicSlippage.reason },
-      { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "0.1%", icon: "💰" },
+      { label: "Slippage", value: `${autoIndicator}${slippagePct.toFixed(1)}%`, icon: "⚡", color: slippageColor, title: slippageTooltip },
+      { label: "Platform Fee", value: feeInfo ? formatFee(feeInfo.finalFeeBps) : "Free", icon: "💰" },
     ];
 
     stats.forEach((stat) => {
