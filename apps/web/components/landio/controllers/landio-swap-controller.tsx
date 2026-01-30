@@ -1344,7 +1344,7 @@ export function LandioSwapController() {
           providers: activeQuotes.map((q) => ({
             providerId: q.providerId,
             mev: q.signals?.mevExposure?.level ?? null,
-            slippageBps: q.signals?.slippageRisk?.slippageBps ?? null,
+            slippage: q.signals?.slippage?.level ?? null,
           })),
         });
         if (selectedProviderId) {
@@ -2254,7 +2254,7 @@ export function LandioSwapController() {
     console.debug("[swap][beq] update panel", {
       providerId: selected.providerId,
       mev: selected.signals?.mevExposure?.level ?? null,
-      slippageBps: selected.signals?.slippageRisk?.slippageBps ?? null,
+      slippage: selected.signals?.slippage?.level ?? null,
     });
     const activeQuotes =
       scoringMode === "RAW"
