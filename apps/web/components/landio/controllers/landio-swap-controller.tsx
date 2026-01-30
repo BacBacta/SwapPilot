@@ -289,10 +289,6 @@ function renderProviders(
       deltaPercent = `${diff.toFixed(2)}%`;
     }
 
-    // MEV flag
-    const mevLevel = q.signals?.mevExposure?.level;
-    const mevFlag = mevLevel === "LOW" ? "✓ MEV" : mevLevel === "HIGH" ? "⚠️ MEV" : "";
-
     // Confidence score (using reliabilityFactor from v2Details as proxy)
     const reliabilityFactor = q.score?.v2Details?.components?.reliabilityFactor;
     const confidence = typeof reliabilityFactor === "number" ? Math.round(reliabilityFactor * 100) : null;
@@ -304,6 +300,9 @@ function renderProviders(
     // MEV and Slippage badges
     const mevLevel = q.signals?.mevExposure?.level;
     const slippageLevel = q.signals?.slippage?.level;
+    
+    // MEV flag for inline display
+    const mevFlag = mevLevel === "LOW" ? "✓ MEV" : mevLevel === "HIGH" ? "⚠️ MEV" : "";
     
     let mevBadge = "";
     if (mevLevel === "HIGH") {
