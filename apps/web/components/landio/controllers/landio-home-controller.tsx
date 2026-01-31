@@ -175,7 +175,11 @@ function setupIntegrationsSpotlightParallax(showcase: HTMLElement): () => void {
     lastScrollY = y;
 
     // Gentle drift; keep within [0, 24]
-    const current = Number.parseFloat(getComputedStyle(showcase).getPropertyValue("--sp-spot-y")) || 0;
+    const computed = typeof window.getComputedStyle === "function" ? window.getComputedStyle(showcase) : null;
+    const currentValue = computed && typeof computed.getPropertyValue === "function"
+      ? computed.getPropertyValue("--sp-spot-y")
+      : showcase.style.getPropertyValue("--sp-spot-y");
+    const current = Number.parseFloat(currentValue) || 0;
     pendingY = clamp(current + delta * 0.015, 0, 24);
     schedule();
   };
