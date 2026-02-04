@@ -68,13 +68,16 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   org: 'swappilot-3a',
   project: 'javascript-nextjs',
+  ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
   
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
   
   // Upload a larger set of source maps for prettier stack traces
   widenClientFileUpload: true,
-  
+
   // Automatically instrument Vercel Cron Monitors
-  automaticVercelMonitors: true,
+  webpack: {
+    automaticVercelMonitors: true,
+  },
 });

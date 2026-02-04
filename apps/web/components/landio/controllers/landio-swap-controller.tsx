@@ -809,7 +809,7 @@ export function LandioSwapController() {
     setDisplay("detailsToggle", "none");
     setDisabled("swapBtn", true);
     setSwapBtnText("Enter an amount");
-  }, [pickerTarget, fromTokenSymbol, toTokenSymbol]);
+  }, [pickerTarget, fromTokenSymbol, toTokenSymbol, setSelectedQuote]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 17: REF SYNC EFFECTS
@@ -2207,23 +2207,32 @@ export function LandioSwapController() {
   }, [
     address,
     buildTransaction,
+    compareMode,
+    compareProviderIds,
     dynamicSlippage.isAuto,
     dynamicSlippage.reason,
     effectiveSlippageBps,
     executeSwap,
     feeInfo,
+    fromAmountWei,
     fromTokenInfo,
     fromTokenSymbol,
     getBalance,
+    getConnectedEip1193Provider,
     getPrice,
     isConnected,
     pilotTierInfo,
     resetSwap,
-    toTokenSymbol,
     resolveToken,
     selected,
+    setSelectedQuote,
     toast,
     toTokenInfo,
+    toTokenSymbol,
+    toggleCompareProvider,
+    updateSettings,
+    visibleProvidersCount,
+    withTimeout,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2399,7 +2408,7 @@ export function LandioSwapController() {
     );
     const listEl = container.querySelector<HTMLElement>("#providersList");
     if (listEl) listEl.scrollTop = providersScrollTopRef.current;
-  }, [visibleProvidersCount, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider, selected]);
+  }, [visibleProvidersCount, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider, selected, setSelectedQuote]);
 
   // Compare mode toolbar (toggle + selected providers)
   useEffect(() => {
@@ -3510,7 +3519,7 @@ export function LandioSwapController() {
       clearTimeout(timer);
       (window as any).__swapPilotCleanup?.();
     };
-  }, [fromTokenSymbol, toTokenSymbol]);
+  }, [fromTokenSymbol, toTokenSymbol, setSelectedQuote]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 26: JSX RETURN (Token Picker Modal + History Drawer)
