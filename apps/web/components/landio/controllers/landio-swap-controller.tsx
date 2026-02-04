@@ -2488,7 +2488,11 @@ export function LandioSwapController() {
         const outFormatted = buyAmt ? formatAmount(buyAmt.toString(), toTokenInfo.decimals) : "—";
         const beqScore = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : "—";
         const mev = q.signals?.mevExposure?.level ?? "—";
-        const gasUsd = q.normalized?.estimatedGasUsd ? `$${parseFloat(q.normalized.estimatedGasUsd).toFixed(2)}` : "—";
+        const gasUsdRaw = q.normalized?.estimatedGasUsd ?? "";
+        const gasUsdNum = parseFloat(gasUsdRaw);
+        const gasUsd = Number.isFinite(gasUsdNum) && gasUsdNum > 0 && gasUsdNum < 100
+          ? `$${gasUsdNum.toFixed(2)}`
+          : "—";
         return { providerId: q.providerId, output: outFormatted, beq: beqScore, mev, gas: gasUsd };
       });
 
