@@ -750,6 +750,608 @@ Complete every quest in the campaign to unlock this achievement.
 
 ---
 
+# 🚀 SwapPilot Zealy Sprint — Quest Plan (Feb 4–23, 2026)
+
+## 📊 Claim Budget Compliance
+
+| Metric | Value |
+|--------|-------|
+| Max claims available | 50,000 |
+| Target participants | 2,000 |
+| Max claims per user | 25 |
+| Unique quests | 15 |
+| Daily check-ins | 10 (capped) |
+| Total claims per user | 25 ✅ |
+
+---
+
+## 📅 Publishing Schedule
+
+| Phase | Dates | Focus | Quests |
+|-------|-------|-------|--------|
+| Phase 1 | Feb 4–7 | Discovery & Onboarding | Q1–Q5 |
+| Phase 2 | Feb 8–13 | Education & Engagement | Q6–Q12 |
+| Phase 3 | Feb 14–19 | Content Creation & Growth | Q13–Q15 |
+| Daily | Feb 4–13 | Recurring Check-in | 10 claims max |
+
+---
+
+## PHASE 1 — Discovery & Onboarding (Feb 4–7)
+
+### Q1: Star Our GitHub Repository ⭐
+**Publish:** Feb 4, 14:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 75 |
+| Type | GitHub Star |
+| Validation | Automatic |
+
+**Description:**
+```
+Support open-source development! ⭐
+
+SwapPilot is built transparently — our code is public for everyone to review and contribute.
+
+🔗 Repository: https://github.com/BacBacta/SwapPilot
+
+Every star boosts our visibility in the developer community and shows support for transparent DeFi.
+
+Star it now and join the open-source movement! 🚀
+```
+
+---
+
+### Q2: Explore the SwapPilot App 🌐
+**Publish:** Feb 4, 15:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 50 |
+| Type | URL Visit |
+| Validation | Automatic |
+
+**Description:**
+```
+Take your first flight with SwapPilot! ✈️
+
+Visit our DEX aggregator and explore the swap interface. See how we compare quotes from 4+ DEXs in real-time to find you the best rates on BNB Chain.
+
+🔗 App: https://app-swappilot.xyz
+
+No wallet required — just browse and discover what smart swapping looks like!
+
+Features to explore:
+• Multi-DEX quote comparison
+• BEQ scoring system
+• Slippage protection settings
+• Clean, intuitive interface
+```
+
+---
+
+### Q3: SwapPilot Knowledge Quiz 📚
+**Publish:** Feb 5, 10:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 100 |
+| Type | Quiz (3 questions) |
+| Validation | Automatic |
+
+**Description:**
+```
+Prove you know SwapPilot! 🧠
+
+Complete this quick quiz to test your understanding of our DEX aggregator.
+
+📖 Study first: https://swappilot.gitbook.io
+
+Answer all 3 questions correctly to earn 100 XP!
+
+Topics covered:
+• SwapPilot basics
+• Supported networks
+• BEQ scoring fundamentals
+```
+
+**Quiz Questions:**
+```
+Q1: How many DEX protocols does SwapPilot aggregate?
+○ 2
+○ 4+ ✅
+○ 10
+○ Only 1
+
+Q2: Which blockchain does SwapPilot currently support?
+○ Ethereum
+○ Solana
+○ BNB Smart Chain ✅
+○ Polygon
+
+Q3: What does BEQ stand for?
+○ Best Exchange Query
+○ Best Executable Quote ✅
+○ Blockchain Exchange Quality
+○ Basic Execution Quotient
+```
+
+---
+
+### Q4: Connect Your Wallet 🔗
+**Publish:** Feb 5, 14:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 100 |
+| Type | Screenshot Upload |
+| Validation | Manual |
+
+**Description:**
+```
+Get hands-on with SwapPilot! 🔗
+
+Connect your Web3 wallet to the SwapPilot app and take a screenshot as proof.
+
+🔗 Connect here: https://app-swappilot.xyz/swap
+
+Supported wallets:
+• MetaMask
+• Trust Wallet
+• WalletConnect
+• Binance Wallet
+• Rabby
+
+📸 Screenshot requirements:
+• Must show SwapPilot interface
+• Your wallet address partially visible (first/last 4 characters)
+• Connected status clearly shown
+
+No funds required — just connect and screenshot!
+```
+
+---
+
+### Q5: Introduce Yourself to the Community 👋
+**Publish:** Feb 6, 12:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 80 |
+| Type | Telegram Message |
+| Validation | Manual |
+
+**Description:**
+```
+We want to meet you! 👋
+
+Join our Telegram community and introduce yourself to fellow pilots.
+
+💬 Chat: https://t.me/swapPilot
+
+📝 Your intro should include:
+• Your name or nickname
+• Where you're from (country/region)
+• Your favorite blockchain
+• What excites you about SwapPilot
+• One fun fact about yourself!
+
+Be creative and genuine — best introductions get community shoutouts! 🌟
+
+This is your chance to connect with like-minded DeFi enthusiasts from around the world.
+```
+
+---
+
+## PHASE 2 — Education & Engagement (Feb 8–13)
+
+### Q6: Master Slippage Protection 🛡️
+**Publish:** Feb 8, 10:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 90 |
+| Type | Quiz (3 questions) |
+| Validation | Automatic |
+
+**Description:**
+```
+Trade smarter with slippage knowledge! 🛡️
+
+Understanding slippage is crucial for successful DeFi trading. This quiz tests your knowledge of how slippage works and why it matters.
+
+Learning outcomes:
+• Understand transaction revert conditions
+• Choose optimal slippage for different scenarios
+• Protect yourself from failed trades
+
+Score 3/3 to earn full XP!
+```
+
+**Quiz Questions:**
+```
+Q1: What happens when actual output falls below your slippage tolerance?
+○ You receive fewer tokens
+○ Transaction reverts ✅
+○ Extra fee is charged
+○ Nothing happens
+
+Q2: What slippage setting works best for volatile tokens?
+○ Low (0.5%)
+○ Medium (1-2%)
+○ Higher (3-5%) ✅
+○ Zero
+
+Q3: Setting slippage too low in volatile markets risks...?
+○ Receiving extra tokens
+○ Failed/reverted transactions ✅
+○ Lower fees
+○ Faster execution
+```
+
+---
+
+### Q7: Compare DEX Quotes 📊
+**Publish:** Feb 8, 15:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 150 |
+| Type | Screenshot Upload |
+| Validation | Manual |
+
+**Description:**
+```
+See the aggregation magic in action! ✨
+
+Open SwapPilot and compare quotes from multiple DEXs for any token pair.
+
+🔗 Try it: https://app-swappilot.xyz/swap
+
+📸 Screenshot must clearly show:
+• Token pair selected (e.g., BNB → USDT)
+• Multiple quotes from different providers
+• BEQ scores visible for comparison
+
+💡 Pro tip: Try swapping 1 BNB to USDT or BUSD to see clear differences between providers!
+
+This quest demonstrates WHY aggregators matter — you'll likely see significant price differences between DEXs.
+```
+
+---
+
+### Q8: Grow the Pilot Crew 👥
+**Publish:** Feb 9, 11:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 100 |
+| Type | Twitter Reply |
+| Validation | Manual |
+
+**Description:**
+```
+Help expand the SwapPilot community! 👥
+
+Reply to our pinned campaign tweet and invite 3 friends who trade on BNB Chain.
+
+✅ Requirements:
+• Reply to our pinned tweet on @swappilot_dex
+• Tag 3 DIFFERENT real accounts (no bots!)
+• Add a sentence about why they should check out SwapPilot
+• Your account must be public
+
+🎯 Example reply:
+"Hey @friend1 @friend2 @friend3 — check out SwapPilot! It's a DEX aggregator that finds the best swap rates on BSC. Game changer! 🚀"
+
+Quality over quantity — genuine invitations only!
+```
+
+---
+
+### Q9: Share SwapPilot in Your Community 📢
+**Publish:** Feb 9, 16:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 150 |
+| Type | Screenshot Upload |
+| Validation | Manual |
+
+**Description:**
+```
+Spread the word in crypto communities! 🌍
+
+Share SwapPilot in a crypto group you're part of and screenshot your post.
+
+📍 Accepted platforms:
+• Telegram groups
+• Discord servers
+• WhatsApp groups
+• Reddit communities
+
+📸 Screenshot requirements:
+• Your message must be visible
+• Group name shown
+• Group must have 50+ members
+• Message includes SwapPilot + Zealy link
+
+📝 Sample message:
+"🚀 Discovered SwapPilot — a DEX aggregator for BSC that compares rates from 4+ DEXs to find the best swap! Running a campaign with $3,500+ in rewards. Check it out: https://zealy.io/cw/swappilot"
+
+⚠️ No spam groups — quality communities only!
+```
+
+---
+
+### Q10: Explain BEQ Scoring ✍️
+**Publish:** Feb 10, 11:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 175 |
+| Type | Text Submission (50+ words) |
+| Validation | Manual |
+
+**Description:**
+```
+Show your understanding of BEQ! ✍️
+
+Write a clear explanation (50+ words) of how SwapPilot's BEQ scoring helps traders find the best swap.
+
+📖 Reference: https://swappilot.gitbook.io
+
+✅ Your explanation should cover:
+• Net output (after fees and gas)
+• Execution quality/reliability
+• Risk factors (revert probability, MEV exposure)
+
+💡 Think of it like explaining to a friend who's new to DeFi:
+"BEQ scoring works by..."
+
+🏆 Best explanations may be featured on our official channels!
+
+Be accurate, clear, and educational.
+```
+
+---
+
+### Q11: Preview Your First Swap 🚀
+**Publish:** Feb 10, 16:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 180 |
+| Type | Screenshot Upload |
+| Validation | Manual |
+
+**Description:**
+```
+Experience the full swap flow! 🔄
+
+Navigate through SwapPilot's swap process up to the confirmation screen.
+
+🔗 Start here: https://app-swappilot.xyz/swap
+
+📸 Screenshot must show:
+• Token pair selected
+• Swap amount entered
+• Best quote highlighted with BEQ score
+• Confirmation/swap button visible
+
+⚠️ You do NOT need to execute the swap — just capture the preview screen!
+
+This quest helps you understand the complete user experience before committing any funds.
+
+💡 Tip: Use any token pair you like — BNB → USDT is a good test case.
+```
+
+---
+
+### Q12: Share Your Feedback 📝
+**Publish:** Feb 11, 15:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 200 |
+| Type | Text Submission |
+| Validation | Manual |
+
+**Description:**
+```
+Help us build a better product! 🛠️
+
+After exploring SwapPilot, share your honest, detailed feedback.
+
+📝 Your feedback should include (100+ characters minimum):
+
+1. What you liked
+2. What could improve
+3. Suggestions or feature ideas
+
+💡 Consider:
+• Quote comparison clarity
+• Wallet connection experience
+• Overall speed and performance
+• Mobile responsiveness
+• Information presentation
+
+🏆 Actionable feedback that leads to improvements = bonus XP consideration!
+
+We read every submission — your input directly shapes SwapPilot's development.
+```
+
+---
+
+## PHASE 3 — Content Creation & Growth (Feb 14–19)
+
+### Q13: Create a Twitter Thread 🧵
+**Publish:** Feb 14, 10:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 350 |
+| Type | Twitter Thread URL |
+| Validation | Manual |
+
+**Description:**
+```
+Become a SwapPilot educator! 📚
+
+Create an engaging Twitter thread (4+ tweets) explaining SwapPilot to your audience.
+
+✅ Thread requirements:
+• Minimum 4 connected tweets
+• Explain what SwapPilot does
+• Mention BEQ scoring OR aggregation benefits
+• Include at least 1 image or screenshot
+• Tag @swappilot_dex in the first tweet
+• Use #SwapPilot hashtag
+
+💡 Thread topic ideas:
+• "Why DEX aggregators are the future of DeFi"
+• "How SwapPilot saves you money on every swap"
+• "I tested SwapPilot — here's what I found"
+• "BNB Chain trading just got smarter"
+
+🏆 Rewards:
+• Top 5 threads get retweeted by @swappilot_dex
+• Exceptional threads = bonus XP
+
+📤 Submit the link to your FIRST tweet in the thread.
+```
+
+---
+
+### Q14: Create a SwapPilot Meme 🎨
+**Publish:** Feb 15, 14:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 200 |
+| Type | Image + Twitter Post |
+| Validation | Manual |
+
+**Description:**
+```
+Unleash your creativity! 😂
+
+Create an original meme about SwapPilot, DEX aggregation, or smart crypto trading.
+
+✅ Requirements:
+• 100% original creation (no stolen content!)
+• Related to SwapPilot or DEX aggregation
+• Post on Twitter/X with #SwapPilotMeme
+• Tag @swappilot_dex
+• Upload the image here
+
+💡 Meme inspiration:
+• "Me checking DEXs one by one" vs "Me using SwapPilot"
+• BEQ scoring saving someone from a bad trade
+• The moment you realize aggregators exist
+• FOMO on not using SwapPilot earlier
+
+🏆 Contest prizes:
+• 🥇 1st place: $25 USDT bonus
+• 🥈 2nd place: $15 USDT bonus
+• 🥉 3rd place: $10 USDT bonus
+
+Winners announced Feb 18! Let the memes flow! 🎉
+```
+
+---
+
+### Q15: Record a Video Review 🎬
+**Publish:** Feb 16, 12:00 UTC
+
+| Field | Value |
+|-------|-------|
+| XP | 500 |
+| Type | Video URL |
+| Validation | Manual |
+
+**Description:**
+```
+Lights, camera, SwapPilot! 🎥
+
+Create a video review of SwapPilot (60 seconds to 3 minutes).
+
+📹 Video must include:
+• Brief introduction to SwapPilot
+• Live demo of the app (screen recording)
+• Your honest opinion and experience
+• Call-to-action for viewers
+
+✅ Accepted platforms:
+• YouTube
+• TikTok
+• Twitter/X Video
+• Instagram Reels
+
+📋 Requirements:
+• Your voice or face visible (no silent screencasts)
+• Mention "SwapPilot" by name
+• Show actual app functionality
+• Include Zealy link in description
+
+🏆 This is the HIGHEST XP quest!
+
+Bonus prizes:
+• 🥇 Best video: $50 USDT
+• 🥈 2nd place: $30 USDT
+• 🥉 3rd place: $20 USDT
+
+📤 Submit your video URL. Quality over length!
+```
+
+---
+
+## Daily Check-in (Recurring)
+
+**Publish:** Feb 4, 15:00 UTC
+**Active:** Feb 4–13 (10 days max)
+
+| Field | Value |
+|-------|-------|
+| XP | 15 per day |
+| Type | Daily Claim |
+| Validation | Automatic |
+| Max claims | 10 |
+| Total potential XP | 150 |
+
+**Description:**
+```
+Stay consistent, pilot! ☀️
+
+Check in daily on Zealy to show your dedication to the SwapPilot community.
+
+🎯 How it works:
+• Claim once every 24 hours
+• Earn 15 XP per check-in
+• Maximum 10 check-ins during the sprint
+
+💰 Potential earnings: 150 XP
+
+Consistency builds communities — don't break your streak!
+
+GM, pilots! ✈️
+```
+
+---
+
+## Summary
+
+| Item | Value |
+|------|-------|
+| Unique quests | 15 |
+| Daily claims | 10 |
+| Total claims per user | 25 |
+| Total claims for 2,000 users | 50,000 |
+
+✅ Budget compliant and ready for implementation.
+
+---
+
 ## ✅ CHECKLIST ZEALY
 
 ### Setup
