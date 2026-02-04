@@ -197,7 +197,43 @@ async function assessHoneypotIs(params: {
   const allTaxes = [buyTax, sellTax, transferTax, holderAvgTax].filter((x): x is number => x !== null);
   const maxTaxPercent = allTaxes.length > 0 ? clampPercent(Math.max(...allTaxes)) : null;
 
+  // Extract holder analysis for false positive detection
+  const holdersTotal = parseMaybeNumber(isRecord(holderAnalysis) ? holderAnalysis['holders'] : undefined);
+  const holdersSuccessful = parseMaybeNumber(isRecord(holderAnalysis) ? holderAnalysis['successful'] : undefined);
+  const holdersFailed = parseMaybeNumber(isRecord(holderAnalysis) ? holderAnalysis['failed'] : undefined);
+
+  // Extract flags array from response
+  const flagsRaw = isRecord(json) ? json['flags'] : undefined;
+  const flags = Array.isArray(flagsRaw) ? flagsRaw.filter((f): f is string => typeof f === 'string') : [];
+  const hasHighFailRate = flags.includes('high_fail_rate');
+
+  if (holdersTotal !== null) reasons.push(`token_security:honeypotis:holders_total:${holdersTotal}`);
+  if (holdersSuccessful !== null) reasons.push(`token_security:honeypotis:holders_successful:${holdersSuccessful}`);
+  if (holdersFailed !== null) reasons.push(`token_security:honeypotis:holders_failed:${holdersFailed}`);
+  if (flags.length > 0) reasons.push(`token_security:honeypotis:flags:${flags.join(',')}`);
+
   if (isHoneypot) {
+    // Detect false positive: Honeypot.is may flag tokens with high fail rate as honeypot,
+    // but if simulation succeeds with 0% tax and a reasonable success rate, it's likely
+    // due to user error (insufficient slippage, gas, etc.) rather than a real honeypot.
+    const isLikelyFalsePositive =
+      hasHighFailRate &&
+      simulationSuccess === true &&
+      maxTaxPercent !== null &&
+      maxTaxPercent <= 1 && // Taxes are negligible (≤1%)
+      holdersSuccessful !== null &&
+      holdersFailed !== null &&
+      holdersSuccessful > holdersFailed && // More successful sells than failed
+      (holdersFailed / (holdersSuccessful + holdersFailed)) < 0.25; // Less than 25% failure rate
+
+    if (isLikelyFalsePositive) {
+      reasons.push('token_security:honeypotis:likely_false_positive');
+      return {
+        sellability: { status: 'OK', confidence: 0.65, reasons },
+        maxTaxPercent,
+      };
+    }
+
     return {
       sellability: { status: 'FAIL', confidence: 0.95, reasons: [...reasons, 'token_security:honeypotis:is_honeypot'] },
       maxTaxPercent,
@@ -361,6 +397,32 @@ export async function assessTokenSecuritySellability(params: {
 
       const safetyAssessments = assessments.filter((a) => a.oracle === 'goplus' || a.oracle === 'honeypotis');
       const allOk = safetyAssessments.every((a) => a.sellability.status === 'OK');
+
+      // Check for GoPlus OK + Honeypot.is false positive scenario
+      const goPlusAssessment = safetyAssessments.find((a) => a.oracle === 'goplus');
+      const honeypotIsAssessment = safetyAssessments.find((a) => a.oracle === 'honeypotis');
+      const hasLikelyFalsePositive = reasons.some((r) => r.includes('likely_false_positive'));
+      const goPlusOk = goPlusAssessment?.sellability.status === 'OK';
+      const honeypotIsFalsePositiveOk = honeypotIsAssessment?.sellability.status === 'OK' && hasLikelyFalsePositive;
+
+      // In SAFE mode, allow OK if GoPlus is OK and Honeypot.is is a likely false positive
+      if (!allOk && goPlusOk && honeypotIsFalsePositiveOk) {
+        // Both agree after false positive detection - proceed as OK
+        const taxes = safetyAssessments.map((a) => a.maxTaxPercent).filter((x): x is number => typeof x === 'number');
+        const maxTax = taxes.length ? Math.max(...taxes) : 0;
+        const strictMax = clampPercent(config.taxStrictMaxPercent);
+
+        if (maxTax <= strictMax) {
+          const value = {
+            status: 'OK' as const,
+            confidence: clamp01(Math.max(0.7, maxConfidence)),
+            reasons: [...reasons, 'token_security:safe_mode_false_positive_override'],
+          };
+          cache.set(cacheKey, { expiresAt: now + config.cacheTtlMs, value });
+          return value;
+        }
+      }
+
       if (!allOk) {
         const value = {
           status: 'UNCERTAIN' as const,
