@@ -344,7 +344,373 @@ Link: https://t.me/swapPilot
 
 ---
 
-*[Quests 13-34 suivent le même format — voir Annexes pour détails complets]*
+### Quest 13: Quote Tweet Your Opinion
+**Title:** Quote Tweet Your Opinion 💬  
+**Description:**  
+```
+Quote tweet our pinned post and share your honest opinion about SwapPilot.
+
+Requirements:
+• Quote tweet the pinned post
+• Add your personal comment (min 20 words)
+• Tag @swappilot_dex
+```
+**Type:** Twitter Quote  
+**XP:** 150  
+**Validation:** Manual
+
+---
+
+### Quest 14: Tag 3 DeFi Friends
+**Title:** Tag 3 DeFi Friends 👥  
+**Description:**  
+```
+Help us grow the pilot crew! Reply to our latest campaign tweet and tag 3 friends who are into DeFi.
+
+Requirements:
+• Reply to the campaign tweet
+• Tag 3 different accounts
+• Include a short sentence about SwapPilot
+```
+**Type:** Twitter Reply  
+**XP:** 100  
+**Validation:** Manual
+
+---
+
+### Quest 15: Share in a Crypto Group
+**Title:** Share in a Crypto Group 📢  
+**Description:**  
+```
+Share SwapPilot in a crypto group (Telegram/Discord/WhatsApp) and bring new pilots onboard.
+
+Requirements:
+• Share a short message + link to Zealy
+• Take a screenshot showing your post
+```
+**Type:** Screenshot Upload  
+**XP:** 150  
+**Validation:** Manual  
+**Requirements:** Screenshot must show your message and group name
+
+---
+
+### Quest 16: Compare Quotes Screenshot
+**Title:** Compare Quotes in the App 📊  
+**Description:**  
+```
+Open SwapPilot and compare quotes from multiple DEXs.
+
+Requirements:
+• Go to https://app-swappilot.xyz/swap
+• Select any token pair
+• Take a screenshot showing multiple quotes and BEQ scores
+```
+**Type:** Screenshot Upload  
+**XP:** 150  
+**Validation:** Manual
+
+---
+
+### Quest 17: Risk Modes Quiz
+**Title:** Risk Modes Quiz 🧠  
+**Description:**  
+```
+Understand how risk modes help you trade smarter on SwapPilot. Take this short quiz!
+```
+**Type:** Quiz  
+**XP:** 125  
+**Questions:**
+
+Q1: What does a higher risk mode typically allow?
+- Fewer routes
+- Tighter slippage
+- More route exploration ✅
+- Disables MEV checks
+
+Q2: Which mode is best for cautious swaps?
+- Safe ✅
+- Normal
+- Degen
+- Turbo
+
+Q3: Why do risk modes matter?
+- They change the BEQ score weighting ✅
+- They change your wallet address
+- They disable fees
+- They only affect UI colors
+
+---
+
+### Quest 18: Explain BEQ Scoring
+**Title:** Explain BEQ Scoring ✍️  
+**Description:**  
+```
+In 50+ words, explain how BEQ scoring helps choose the best swap.
+
+Include at least these ideas:
+• Output after fees/gas
+• Quality/reliability
+• Risk (reverts/MEV)
+```
+**Type:** Text (50+ words)  
+**XP:** 175  
+**Validation:** Manual
+
+---
+
+### Quest 19: Initiate a Swap
+**Title:** Initiate a Swap 🚀  
+**Description:**  
+```
+Try your first swap on SwapPilot.
+
+Requirements:
+• Connect wallet
+• Select any token pair
+• Take a screenshot on the swap confirmation screen (before final submit)
+```
+**Type:** Screenshot Upload  
+**XP:** 200  
+**Validation:** Manual
+
+---
+
+### Quest 20: Submit Feedback
+**Title:** Submit Feedback 📝  
+**Description:**  
+```
+Help us improve! Share your feedback about the app.
+
+Form: [FORM LINK]
+```
+**Type:** Form  
+**XP:** 200  
+**Validation:** Auto
+
+---
+
+### Quest 21: Bug Hunter
+**Title:** Bug Hunter 🐛  
+**Description:**  
+```
+Found an issue? Report it and earn bonus XP.
+
+Requirements:
+• Describe the bug clearly
+• Include steps to reproduce
+• Add expected vs actual behavior
+• Provide a screenshot or short clip if possible
+```
+**Type:** Text  
+**XP:** 300  
+**Validation:** Manual
+
+---
+
+### Quest 22: Daily GM (Week 2)
+**Title:** Daily GM — Week 2 ☀️  
+**Description:**  
+```
+Say "GM" in our Telegram group every day this week.
+
+Link: https://t.me/swapPilot
+```
+**Type:** Daily (Recurrence)  
+**XP:** 25/day (175 total)  
+**Validation:** Manual
+
+---
+
+### Quest 23: Twitter Thread
+**Title:** Write a Twitter Thread (5+ tweets) 🧵  
+**Description:**  
+```
+Create a thread about SwapPilot (min 5 tweets).
+
+Ideas to include:
+• What problem we solve
+• BEQ scoring
+• How to use the app
+
+Requirements:
+• Tag @swappilot_dex
+• Include https://app-swappilot.xyz
+```
+**Type:** Twitter Thread  
+**XP:** 400  
+**Validation:** Manual
+
+---
+
+### Quest 24: Create a Meme
+**Title:** Create a Meme 🎨  
+**Description:**  
+```
+Create an original SwapPilot meme and post it on X.
+
+Requirements:
+• Tag @swappilot_dex
+• Use #SwapPilotMeme
+• Share the meme image
+```
+**Type:** Image + Twitter  
+**XP:** 200  
+**Validation:** Manual
+
+---
+
+### Quest 25: Record Video Review
+**Title:** Record a Video Review 🎥  
+**Description:**  
+```
+Record a short video review of SwapPilot and post it on YouTube, TikTok, or Twitter.
+
+Requirements:
+• Min 30 seconds
+• Show the app
+• Include your honest opinion
+```
+**Type:** URL (TikTok/YouTube/X)  
+**XP:** 600  
+**Validation:** Manual
+
+---
+
+### Quest 26: Design an Infographic
+**Title:** Design an Infographic 🧩  
+**Description:**  
+```
+Create a simple infographic about SwapPilot (features, BEQ, or roadmap).
+
+Requirements:
+• Original design
+• Post on X and tag @swappilot_dex
+```
+**Type:** Image  
+**XP:** 400  
+**Validation:** Manual
+
+---
+
+### Quest 27: Host a Mini-AMA
+**Title:** Host a Mini-AMA 🎤  
+**Description:**  
+```
+Host a short AMA in your community (Telegram/Discord) about SwapPilot.
+
+Requirements:
+• Provide a screenshot of the AMA
+• Include at least 3 Q&A messages
+```
+**Type:** Screenshot Upload  
+**XP:** 300  
+**Validation:** Manual
+
+---
+
+### Quest 28: Translate a Post
+**Title:** Translate a Post 🌍  
+**Description:**  
+```
+Translate one of our official posts into your language.
+
+Requirements:
+• Copy the original post + your translation
+• Share where you posted it (link)
+```
+**Type:** Text  
+**XP:** 250  
+**Validation:** Manual
+
+---
+
+### Quest 29: Suggest a Partnership
+**Title:** Suggest a Partnership 🤝  
+**Description:**  
+```
+Recommend a potential partner, KOL, or community that fits SwapPilot.
+
+Provide:
+• Name + link
+• Why they fit
+• Estimated audience size
+```
+**Type:** Text  
+**XP:** 200  
+**Validation:** Manual
+
+---
+
+### Quest 30: Referral Program
+**Title:** Referral Program (Max 10) 🔗  
+**Description:**  
+```
+Invite friends using your Zealy referral link.
+
+Rules:
+• 150 XP per successful referral
+• Friend must complete 5+ quests
+• Max 10 referrals counted
+```
+**Type:** Referral  
+**XP:** 1,500 (max)  
+**Validation:** Auto
+
+---
+
+### Quest 31: Daily GM (Week 3)
+**Title:** Daily GM — Week 3 ☀️  
+**Description:**  
+```
+Say "GM" in our Telegram group every day this week.
+
+Link: https://t.me/swapPilot
+```
+**Type:** Daily (Recurrence)  
+**XP:** 25/day (175 total)  
+**Validation:** Manual
+
+---
+
+### Quest 32: Share Your Journey
+**Title:** Share Your Journey ✈️  
+**Description:**  
+```
+Share a short post about your SwapPilot journey so far.
+
+Requirements:
+• Post on X
+• Tag @swappilot_dex
+• Mention your current XP or tier
+```
+**Type:** Twitter Post  
+**XP:** 150  
+**Validation:** Manual
+
+---
+
+### Quest 33: Vote Next Feature
+**Title:** Vote Next Feature 🗳️  
+**Description:**  
+```
+Vote in our community poll about the next feature to build.
+```
+**Type:** Poll  
+**XP:** 100  
+**Validation:** Auto
+
+---
+
+### Quest 34: Complete All Quests
+**Title:** Complete All Quests 🏁  
+**Description:**  
+```
+Complete every quest in the campaign to unlock this achievement.
+```
+**Type:** Achievement  
+**XP:** 500  
+**Validation:** Auto
 
 ---
 

@@ -60,10 +60,16 @@ Sentry.init({
       /Cannot set property ethereum/i,
       /Failed to assign ethereum proxy/i,
       /Invalid property descriptor/i,
+      /Event `Event` \(type=error\) captured as promise rejection/i,
     ];
     
     if (ignoredPatterns.some(pattern => pattern.test(errorMessage))) {
       return null; // Drop the event
+    }
+
+    // Ignore non-Error promise rejections from DOM Event objects
+    if (error instanceof Event && error.type === "error") {
+      return null;
     }
     
     return event;
