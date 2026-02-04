@@ -344,8 +344,7 @@ function renderProviders(
         <div class="provider-logo">${rankBadge}</div>
         <div>
           <div class="provider-name">${q.providerId}</div>
-          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${mevFlag ? ` • ${mevFlag}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
-          <div style="display: flex; gap: 4px; margin-top: 4px;">${mevBadge}${slippageBadge}</div>
+          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
         </div>
       </div>
       <div class="provider-right">
@@ -2474,7 +2473,56 @@ export function LandioSwapController() {
     if (clearBtn) {
       clearBtn.onclick = () => setCompareProviderIds([]);
     }
-  }, [compareMode, compareProviderIds, response]);
+
+    // Show comparison results table when 2+ providers selected
+    let compareResults = container.querySelector("#compareResultsTable") as HTMLElement | null;
+    if (!compareResults) {
+      compareResults = document.createElement("div");
+      compareResults.id = "compareResultsTable";
+      bar.insertAdjacentElement("afterend", compareResults);
+    }
+
+    if (compareMode && selectedProviders.length >= 2 && toTokenInfo) {
+      const rows = selectedProviders.map((q) => {
+        const buyAmt = toBigIntSafe(q.normalized?.buyAmount ?? q.raw?.buyAmount);
+        const outFormatted = buyAmt ? formatAmount(buyAmt.toString(), toTokenInfo.decimals) : "—";
+        const beqScore = typeof q.score?.beqScore === "number" ? Math.round(q.score.beqScore) : "—";
+        const mev = q.signals?.mevExposure?.level ?? "—";
+        const gasUsd = q.normalized?.estimatedGasUsd ? `$${parseFloat(q.normalized.estimatedGasUsd).toFixed(2)}` : "—";
+        return { providerId: q.providerId, output: outFormatted, beq: beqScore, mev, gas: gasUsd };
+      });
+
+      // Find best values for highlighting
+      const bestOutput = rows.reduce((best, r) => {
+        const curr = parseFloat(r.output.replace(/,/g, "")) || 0;
+        const bestVal = parseFloat(best.replace(/,/g, "")) || 0;
+        return curr > bestVal ? r.output : best;
+      }, "0");
+      const bestBeq = Math.max(...rows.map((r) => (typeof r.beq === "number" ? r.beq : 0)));
+
+      compareResults.innerHTML = `
+        <div style="margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 0.6fr 0.6fr 0.6fr; gap: 1px; background: var(--border); font-size: 11px;">
+            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary);">Provider</div>
+            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: right;">Output</div>
+            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: center;">BEQ</div>
+            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: center;">MEV</div>
+            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: right;">Gas</div>
+            ${rows.map((r) => `
+              <div style="background: var(--bg-card); padding: 8px 10px; font-weight: 500;">${r.providerId}</div>
+              <div style="background: var(--bg-card); padding: 8px 10px; text-align: right; font-weight: 600; color: ${r.output === bestOutput ? "var(--accent)" : "var(--text-primary)"};">${r.output}</div>
+              <div style="background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${r.beq === bestBeq ? "var(--accent)" : "var(--text-muted)"};">${r.beq}</div>
+              <div style="background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${r.mev === "LOW" ? "var(--ok)" : r.mev === "HIGH" ? "var(--error)" : "var(--text-muted)"};">${r.mev}</div>
+              <div style="background: var(--bg-card); padding: 8px 10px; text-align: right; color: var(--text-muted);">${r.gas}</div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      compareResults.style.display = "block";
+    } else {
+      compareResults.style.display = "none";
+    }
+  }, [compareMode, compareProviderIds, response, toTokenInfo]);
 
   // Re-select top quote ONLY when scoring mode changes (not when user selects a different provider)
   const prevScoringModeRef = useRef(scoringMode);
