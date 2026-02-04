@@ -258,7 +258,9 @@ export class OkxDexAdapter implements Adapter {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
     const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
-    const slippage = String((request.slippageBps ?? 50) / 10000);
+    // OKX v6 uses slippagePercent (e.g., "0.5" = 0.5%), not decimal slippage
+    // Convert from bps: 50 bps = 0.5%
+    const slippagePercent = String((request.slippageBps ?? 50) / 100);
 
     // OKX DEX Aggregator API
     const path = `/api/${this.apiVersion}/dex/aggregator/swap`;
@@ -267,7 +269,7 @@ export class OkxDexAdapter implements Adapter {
       fromTokenAddress: this.normalizeNativeToken(request.sellToken),
       toTokenAddress: this.normalizeNativeToken(request.buyToken),
       amount: request.sellAmount,
-      slippage,
+      slippagePercent,
       userWalletAddress: request.account,
     });
 

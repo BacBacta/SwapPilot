@@ -802,7 +802,7 @@ Star it now and join the open-source movement! 🚀
 
 ---
 
-### Q2: Explore the SwapPilot App 🌐
+### Q2: Invite 7 Zealy frens 🌐
 **Publish:** Feb 4, 15:00 UTC
 
 | Field | Value |
@@ -813,19 +813,16 @@ Star it now and join the open-source movement! 🚀
 
 **Description:**
 ```
-Take your first flight with SwapPilot! ✈️
+Invite 7 frens to Zealy and grow the pilot crew! ✈️
 
-Visit our DEX aggregator and explore the swap interface. See how we compare quotes from 4+ DEXs in real-time to find you the best rates on BNB Chain.
+✅ How to complete this quest:
+1) Open the Zealy community: https://zealy.io/cw/swappilot
+2) Copy your referral link from your Zealy profile
+3) Invite 7 friends to join and participate
 
-🔗 App: https://app-swappilot.xyz
+Only valid, real users count. No bots or duplicate accounts.
 
-No wallet required — just browse and discover what smart swapping looks like!
-
-Features to explore:
-• Multi-DEX quote comparison
-• BEQ scoring system
-• Slippage protection settings
-• Clean, intuitive interface
+Thanks for helping us build a strong community! 🚀
 ```
 
 ---
