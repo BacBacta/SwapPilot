@@ -37,10 +37,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
         const style = original(elt, pseudoElt ?? undefined);
         if (style && typeof (style as { getPropertyValue?: unknown }).getPropertyValue !== "function") {
           (style as { getPropertyValue?: (prop: string) => string }).getPropertyValue = function (prop: string) {
-            const raw = (style as Record<string, unknown>)[prop];
+            const raw = (style as unknown as Record<string, unknown>)[prop];
             if (raw !== undefined) return String(raw);
             const camel = prop.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
-            const camelRaw = (style as Record<string, unknown>)[camel];
+            const camelRaw = (style as unknown as Record<string, unknown>)[camel];
             return camelRaw !== undefined ? String(camelRaw) : "";
           };
         }

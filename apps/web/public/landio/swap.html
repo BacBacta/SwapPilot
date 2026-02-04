@@ -418,19 +418,112 @@
       color: var(--accent);
     }
 
-    /* Provider List */
+    /* Provider List - Optimized scrollable container */
     .providers-container {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
       padding: 14px;
       margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
     }
 
     .providers-header {
       font-size: 13px;
       color: var(--text-secondary);
       margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .providers-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .providers-collapse-icon {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+
+    .providers-container.collapsed .providers-collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .providers-container.collapsed #providersList {
+      max-height: 0;
+      overflow: hidden;
+      margin-top: 0;
+    }
+
+    /* Selected provider preview (always visible even when collapsed) */
+    .selected-provider-preview {
+      display: none;
+      padding: 10px 12px;
+      background: rgba(0, 255, 136, 0.06);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .providers-container.collapsed .selected-provider-preview {
+      display: flex;
+    }
+
+    /* Scrollable providers list */
+    #providersList {
+      max-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin-top: 4px;
+      padding-right: 4px;
+      transition: max-height 0.3s ease-out;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    #providersList::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #providersList::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #providersList::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    #providersList::-webkit-scrollbar-thumb:hover {
+      background: var(--border-light);
+    }
+
+    /* Fade effect at bottom to indicate more content */
+    .providers-list-fade {
+      position: relative;
+    }
+
+    .providers-list-fade::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 6px;
+      height: 40px;
+      background: linear-gradient(to top, var(--bg-card), transparent);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .providers-list-fade.has-scroll::after {
+      opacity: 1;
     }
 
     .provider-item {
@@ -452,7 +545,10 @@
 
     .provider-item.selected {
       border-color: var(--accent);
-      background: rgba(200, 255, 0, 0.03);
+      background: rgba(0, 255, 136, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     .provider-item:last-child {
@@ -877,9 +973,20 @@
         <div class="swap-side-column">
           <!-- Provider Comparison -->
           <div class="providers-container" id="providersContainer" style="display: none;">
-            <div class="providers-header">Available Providers</div>
-            <div id="providersList">
-              <!-- Providers will be dynamically inserted here -->
+            <div class="providers-header" id="providersHeaderToggle">
+              <div class="providers-header-left">
+                <span class="providers-collapse-icon">▼</span>
+                <span id="providersHeaderText">Available Providers</span>
+              </div>
+              <span id="providersRefreshTimer" style="color: var(--text-muted); font-size: 12px;"></span>
+            </div>
+            <div class="selected-provider-preview" id="selectedProviderPreview">
+              <!-- Will be populated with selected provider info when collapsed -->
+            </div>
+            <div class="providers-list-fade" id="providersListWrapper">
+              <div id="providersList">
+                <!-- Providers will be dynamically inserted here -->
+              </div>
             </div>
           </div>
 

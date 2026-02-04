@@ -248,6 +248,7 @@ function renderProviders(
   compareMode: boolean = false,
   compareProviderIds: string[] = [],
   onToggleCompare?: (q: RankedQuote) => void,
+  selectedQuote?: RankedQuote | null,
 ) {
   // Find or create providers list container
   let listContainer = container.querySelector("#providersList") as HTMLElement | null;
@@ -375,10 +376,36 @@ function renderProviders(
       listContainer.querySelectorAll(".provider-item").forEach((x) => x.classList.remove("selected"));
       item.classList.add("selected");
       setSelected(q);
+      
+      // Update selected provider preview for collapsed state
+      updateSelectedProviderPreview(container, q, toTokenInfo, toTokenSymbol);
     };
 
     listContainer.appendChild(item);
   });
+
+  // Update scroll fade effect
+  const listWrapper = container.querySelector("#providersListWrapper");
+  if (listWrapper && listContainer) {
+    const updateScrollFade = () => {
+      const hasScroll = listContainer.scrollHeight > listContainer.clientHeight;
+      const atBottom = listContainer.scrollTop + listContainer.clientHeight >= listContainer.scrollHeight - 10;
+      if (hasScroll && !atBottom) {
+        listWrapper.classList.add("has-scroll");
+      } else {
+        listWrapper.classList.remove("has-scroll");
+      }
+    };
+    listContainer.addEventListener("scroll", updateScrollFade);
+    // Initial check
+    setTimeout(updateScrollFade, 100);
+  }
+
+  // Update selected provider preview (for collapsed state)
+  const currentSelected = selectedQuote || quotes[0];
+  if (currentSelected) {
+    updateSelectedProviderPreview(container, currentSelected, toTokenInfo, toTokenSymbol);
+  }
 
   // Add "Show more" button if needed
   if (hasMore) {
@@ -398,7 +425,7 @@ function renderProviders(
     `;
     const remaining = quotes.length - displayQuotes.length;
     const batch = Math.min(10, remaining);
-    showMoreBtn.textContent = `Afficher ${batch} de plus`;
+    showMoreBtn.textContent = `Show ${batch} more`;
     showMoreBtn.onmouseover = () => {
       showMoreBtn.style.borderColor = "var(--accent)";
       showMoreBtn.style.color = "var(--accent)";
@@ -414,6 +441,36 @@ function renderProviders(
     showMoreBtn.id = "showMoreProvidersBtn";
     listContainer.appendChild(showMoreBtn);
   }
+}
+
+// Update the selected provider preview shown when the list is collapsed
+function updateSelectedProviderPreview(
+  container: HTMLElement,
+  quote: RankedQuote,
+  toTokenInfo: { decimals: number; symbol: string },
+  toTokenSymbol: string,
+) {
+  const preview = container.querySelector("#selectedProviderPreview") as HTMLElement | null;
+  if (!preview) return;
+
+  const out = formatAmount(quote.normalized.buyAmount ?? quote.raw.buyAmount, toTokenInfo.decimals);
+  const beq = typeof quote.score?.beqScore === "number" ? Math.round(quote.score.beqScore) : null;
+  
+  preview.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000;">🥇</div>
+        <div>
+          <div style="font-weight: 600; font-size: 13px;">${quote.providerId}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${beq !== null ? `BEQ ${beq}` : "Selected"}</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: 700; font-size: 14px;">${out} ${toTokenSymbol}</div>
+        <div style="font-size: 11px; color: var(--accent);">Click to expand ▼</div>
+      </div>
+    </div>
+  `;
 }
 
 function selectActiveQuotes(params: {
@@ -996,7 +1053,8 @@ export function LandioSwapController() {
           capturedScoringMode,
           compareMode,
           compareProviderIds,
-          toggleCompareProvider
+          toggleCompareProvider,
+          displayQuote
         );
         const listEl = container.querySelector<HTMLElement>("#providersList");
         if (listEl) listEl.scrollTop = providersScrollTopRef.current;
@@ -1600,7 +1658,8 @@ export function LandioSwapController() {
             currentScoringMode,
             compareMode,
             compareProviderIds,
-            toggleCompareProvider
+            toggleCompareProvider,
+            displayQuote
           );
           const listEl = container.querySelector<HTMLElement>("#providersList");
           if (listEl) listEl.scrollTop = providersScrollTopRef.current;
@@ -2335,11 +2394,12 @@ export function LandioSwapController() {
       scoringMode,
       compareMode,
       compareProviderIds,
-      toggleCompareProvider
+      toggleCompareProvider,
+      selected
     );
     const listEl = container.querySelector<HTMLElement>("#providersList");
     if (listEl) listEl.scrollTop = providersScrollTopRef.current;
-  }, [visibleProvidersCount, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider]);
+  }, [visibleProvidersCount, response, toTokenInfo, toTokenSymbol, scoringMode, settings.mode, compareMode, compareProviderIds, toggleCompareProvider, selected]);
 
   // Compare mode toolbar (toggle + selected providers)
   useEffect(() => {
@@ -2854,20 +2914,46 @@ export function LandioSwapController() {
     };
   }, [response, selected]);
 
-  // Display refresh countdown in providers header
+  // Display refresh countdown in providers header and setup collapse toggle
   useEffect(() => {
-    const header = document.querySelector(".providers-header");
-    if (!header) return;
+    const container = document.getElementById("providersContainer");
+    const headerToggle = document.getElementById("providersHeaderToggle");
+    const headerText = document.getElementById("providersHeaderText");
+    const refreshTimer = document.getElementById("providersRefreshTimer");
 
+    if (!container || !headerToggle || !headerText) return;
+
+    // Update header text with provider count
     if (response?.rankedQuotes && response.rankedQuotes.length > 0) {
       const total = response.rankedQuotes.length;
       const shown = Math.min(total, Math.max(1, visibleProvidersCount));
       const countText = shown >= total
         ? `${total} Providers`
         : `${shown} of ${total} Providers`;
-      header.innerHTML = `${countText} <span style="color: var(--text-muted); font-size: 12px;">⟳ ${refreshCountdown}s</span>`;
+      headerText.textContent = countText;
+      if (refreshTimer) {
+        refreshTimer.textContent = `⟳ ${refreshCountdown}s`;
+      }
     } else {
-      header.textContent = "Available Providers";
+      headerText.textContent = "Available Providers";
+      if (refreshTimer) refreshTimer.textContent = "";
+    }
+
+    // Setup collapse toggle (only once)
+    if (!headerToggle.dataset.initialized) {
+      headerToggle.dataset.initialized = "true";
+      headerToggle.onclick = () => {
+        container.classList.toggle("collapsed");
+        // When expanding, scroll to make sure button is still visible
+        if (!container.classList.contains("collapsed")) {
+          setTimeout(() => {
+            const swapBtn = document.getElementById("swapBtn");
+            if (swapBtn) {
+              swapBtn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          }, 350);
+        }
+      };
     }
   }, [refreshCountdown, response, visibleProvidersCount]);
 
