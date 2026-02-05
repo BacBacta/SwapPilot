@@ -241,6 +241,72 @@ export class OkxDexAdapter implements Adapter {
   }
 
   /**
+   * Get the approval address (spender) for a specific token.
+   * Calls OKX DEX Aggregator approve-transaction endpoint.
+   */
+  private async getApprovalAddress(tokenAddress: string): Promise<string | null> {
+    if (!this.quoteEnabled()) return null;
+    
+    const chainIdStr = OKX_CHAIN_IDS[this.chainId] ?? String(this.chainId);
+    const path = `/api/${this.apiVersion}/dex/aggregator/approve-transaction`;
+    const queryParams = new URLSearchParams({
+      chainIndex: chainIdStr,
+      tokenContractAddress: this.normalizeNativeToken(tokenAddress),
+      approveAmount: '0', // 0 = get info only, not approval data
+    });
+
+    const url = `${this.apiBaseUrl}${path}?${queryParams.toString()}`;
+    const timestamp = new Date().toISOString();
+    const preHash = timestamp + 'GET' + path + '?' + queryParams.toString();
+    const signature = createHmac('sha256', this.secretKey!).update(preHash).digest('base64');
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'OK-ACCESS-KEY': this.apiKey!,
+          'OK-ACCESS-SIGN': signature,
+          'OK-ACCESS-TIMESTAMP': timestamp,
+          'OK-ACCESS-PASSPHRASE': this.passphrase!,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.warn('[OKX] approve-transaction endpoint failed:', res.status);
+        return null;
+      }
+
+      const json = (await res.json()) as {
+        code: string;
+        data?: Array<{
+          dexContractAddress?: string;
+          approveAddress?: string;
+        }>;
+      };
+
+      console.log('[OKX] approve-transaction response:', JSON.stringify(json, null, 2));
+
+      if (json.code === '0' && json.data?.[0]) {
+        const item = json.data[0];
+        return item.dexContractAddress ?? item.approveAddress ?? null;
+      }
+
+      return null;
+    } catch (err) {
+      console.warn('[OKX] approve-transaction request failed:', err);
+      return null;
+    }
+  }
+
+  /**
    * Build a ready-to-sign transaction for the swap.
    * Calls OKX DEX Aggregator swap endpoint which returns calldata.
    */
@@ -388,6 +454,25 @@ export class OkxDexAdapter implements Adapter {
         throw new Error('OKX swap API returned no tx calldata');
       }
 
+      // If no approval address found in swap response, call the approve-transaction endpoint
+      // to get the correct spender address for the sell token
+      let finalApprovalAddress = approvalAddress;
+      if (!finalApprovalAddress) {
+        const sellTokenLower = request.sellToken.toLowerCase();
+        const isNativeToken = 
+          sellTokenLower === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+          sellTokenLower === '0x0000000000000000000000000000000000000000';
+        
+        if (!isNativeToken) {
+          console.log('[OKX] no approval address in swap response, fetching from approve-transaction endpoint');
+          const fetchedApprovalAddress = await this.getApprovalAddress(request.sellToken);
+          if (fetchedApprovalAddress) {
+            finalApprovalAddress = fetchedApprovalAddress;
+            console.log('[OKX] fetched approvalAddress from endpoint:', finalApprovalAddress);
+          }
+        }
+      }
+
       const gasRaw = tx?.gas;
       const gasStr =
         typeof gasRaw === 'number'
@@ -407,7 +492,7 @@ export class OkxDexAdapter implements Adapter {
         data,
         value,
         ...(gasStr ? { gas: gasStr } : {}),
-        ...(approvalAddress ? { approvalAddress } : {}),
+        ...(finalApprovalAddress ? { approvalAddress: finalApprovalAddress } : {}),
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
