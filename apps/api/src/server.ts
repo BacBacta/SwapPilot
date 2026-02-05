@@ -1186,7 +1186,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           gas: tx.gas,
           gasPrice: tx.gasPrice,
           providerId,
-          approvalAddress: tx.to, // For ERC-20 approvals, approve this address
+          approvalAddress: tx.approvalAddress ?? tx.to, // For ERC-20 approvals, approve this address
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';

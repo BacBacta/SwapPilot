@@ -349,6 +349,19 @@ export class OkxDexAdapter implements Adapter {
       const to = tx?.to;
       const data = tx?.data;
       const value = tx?.value ?? '0';
+      const approvalAddressRaw =
+        (item as { approvalAddress?: string }).approvalAddress ??
+        (item as { approveTo?: string }).approveTo ??
+        (item as { tokenApproveAddress?: string }).tokenApproveAddress ??
+        (item as { spender?: string }).spender ??
+        (tx as { approvalAddress?: string } | undefined)?.approvalAddress ??
+        (tx as { approveTo?: string } | undefined)?.approveTo ??
+        (tx as { tokenApproveAddress?: string } | undefined)?.tokenApproveAddress ??
+        (tx as { spender?: string } | undefined)?.spender;
+      const approvalAddress =
+        typeof approvalAddressRaw === 'string' && approvalAddressRaw.startsWith('0x')
+          ? approvalAddressRaw
+          : undefined;
 
       if (!to || !data) {
         throw new Error('OKX swap API returned no tx calldata');
@@ -373,6 +386,7 @@ export class OkxDexAdapter implements Adapter {
         data,
         value,
         ...(gasStr ? { gas: gasStr } : {}),
+        ...(approvalAddress ? { approvalAddress } : {}),
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
