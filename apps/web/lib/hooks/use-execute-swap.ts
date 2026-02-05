@@ -31,17 +31,20 @@ function getErrorInfo(err: unknown): ErrorInfo {
       ? String((cause as { message?: unknown }).message)
       : undefined;
 
-  return {
-    name: typeof anyErr.name === "string" ? anyErr.name : undefined,
+  const info: ErrorInfo = {
     message: typeof anyErr.message === "string" ? anyErr.message : String(err),
-    shortMessage: typeof anyErr.shortMessage === "string" ? anyErr.shortMessage : undefined,
-    details: typeof anyErr.details === "string" ? anyErr.details : undefined,
-    code: anyErr.code,
-    data: anyErr.data,
-    metaMessages: Array.isArray(anyErr.metaMessages) ? anyErr.metaMessages : undefined,
-    causeType: cause ? typeof cause : undefined,
-    causeMessage,
   };
+
+  if (typeof anyErr.name === "string") info.name = anyErr.name;
+  if (typeof anyErr.shortMessage === "string") info.shortMessage = anyErr.shortMessage;
+  if (typeof anyErr.details === "string") info.details = anyErr.details;
+  if ("code" in anyErr) info.code = anyErr.code;
+  if ("data" in anyErr) info.data = anyErr.data;
+  if (Array.isArray(anyErr.metaMessages)) info.metaMessages = anyErr.metaMessages;
+  if (cause) info.causeType = typeof cause;
+  if (causeMessage) info.causeMessage = causeMessage;
+
+  return info;
 }
 
 export type SwapParams = {
