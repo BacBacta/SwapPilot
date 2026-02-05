@@ -287,6 +287,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       console.info("[swap][buildTx] success", {
         providerId: tx.providerId,
         to: tx.to,
+        approvalAddress: tx.approvalAddress,
         value: tx.value,
         gas: tx.gas,
         dataPrefix: typeof tx.data === "string" ? tx.data.slice(0, 10) : null,
