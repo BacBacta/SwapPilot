@@ -7,6 +7,43 @@ import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/share
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://swappilot-api.fly.dev";
 
+type ErrorInfo = {
+  name?: string;
+  message: string;
+  shortMessage?: string;
+  details?: string;
+  code?: unknown;
+  data?: unknown;
+  metaMessages?: unknown;
+  causeType?: string;
+  causeMessage?: string;
+};
+
+function getErrorInfo(err: unknown): ErrorInfo {
+  if (!err || typeof err !== "object") {
+    return { message: String(err) };
+  }
+
+  const anyErr = err as Record<string, unknown>;
+  const cause = anyErr.cause;
+  const causeMessage =
+    cause && typeof cause === "object" && "message" in cause && typeof (cause as { message?: unknown }).message === "string"
+      ? String((cause as { message?: unknown }).message)
+      : undefined;
+
+  return {
+    name: typeof anyErr.name === "string" ? anyErr.name : undefined,
+    message: typeof anyErr.message === "string" ? anyErr.message : String(err),
+    shortMessage: typeof anyErr.shortMessage === "string" ? anyErr.shortMessage : undefined,
+    details: typeof anyErr.details === "string" ? anyErr.details : undefined,
+    code: anyErr.code,
+    data: anyErr.data,
+    metaMessages: Array.isArray(anyErr.metaMessages) ? anyErr.metaMessages : undefined,
+    causeType: cause ? typeof cause : undefined,
+    causeMessage,
+  };
+}
+
 export type SwapParams = {
   providerId: string;
   sellToken: string;
@@ -88,7 +125,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
         console.error("[swap][sendTransaction] error", {
           message: err.message,
           name: err.name,
-          cause: (err as unknown as { cause?: unknown })?.cause,
+          errorInfo: getErrorInfo(err),
           providerId: builtTx?.providerId,
           builtTx,
         });
@@ -172,7 +209,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       txHash: submittedTxHash ?? txHash,
       providerId: builtTx?.providerId,
       message,
-      err: txReceiptError,
+      errorInfo: getErrorInfo(txReceiptError),
     });
     setError(message);
     setStatus("error");
@@ -351,6 +388,16 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
       } catch (estimateError) {
         // Gas estimation failed = transaction would revert
         const errMsg = estimateError instanceof Error ? estimateError.message : "Unknown error";
+        console.error("[swap][execute] simulation error", {
+          providerId: transaction.providerId,
+          error: errMsg,
+          errorInfo: getErrorInfo(estimateError),
+          txRequest: {
+            to: transaction.to,
+            value: transaction.value,
+            dataPrefix: typeof transaction.data === "string" ? transaction.data.slice(0, 10) : null,
+          },
+        });
         
         // Check if this is a fee-on-transfer token error or simulation-only failure
         // Some taxed tokens report misleading "insufficient allowance" during simulation
@@ -525,6 +572,13 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
         providerId: transaction.providerId,
         error: errMsg,
         userMessage,
+        errorInfo: getErrorInfo(sendError),
+        txRequest: {
+          to: transaction.to,
+          value: transaction.value,
+          gas: gas?.toString(),
+          dataPrefix: typeof transaction.data === "string" ? transaction.data.slice(0, 10) : null,
+        },
       });
       
       setError(userMessage);
