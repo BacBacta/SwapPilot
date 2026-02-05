@@ -345,15 +345,34 @@ export class OkxDexAdapter implements Adapter {
       }
 
       const item = json.data[0];
+      // Debug: log full OKX response to identify approval address field
+      console.log('[OKX] swap response item:', JSON.stringify(item, null, 2));
       const tx = item.tx ?? item.transaction;
       const to = tx?.to;
       const data = tx?.data;
       const value = tx?.value ?? '0';
+      
+      // OKX v6 API may return approval address in multiple locations
+      // Common fields: routerResult.toTokenApproveContractAddress, 
+      // routerResult.fromTokenApproveAddress, dexContractAddress, etc.
+      const routerResult = (item as { routerResult?: {
+        toTokenApproveContractAddress?: string;
+        fromTokenApproveAddress?: string;
+        dexContractAddress?: string;
+      }}).routerResult;
+      
       const approvalAddressRaw =
+        // Top level fields
         (item as { approvalAddress?: string }).approvalAddress ??
         (item as { approveTo?: string }).approveTo ??
         (item as { tokenApproveAddress?: string }).tokenApproveAddress ??
         (item as { spender?: string }).spender ??
+        (item as { dexContractAddress?: string }).dexContractAddress ??
+        // routerResult fields (OKX v6 format)
+        routerResult?.toTokenApproveContractAddress ??
+        routerResult?.fromTokenApproveAddress ??
+        routerResult?.dexContractAddress ??
+        // tx object fields
         (tx as { approvalAddress?: string } | undefined)?.approvalAddress ??
         (tx as { approveTo?: string } | undefined)?.approveTo ??
         (tx as { tokenApproveAddress?: string } | undefined)?.tokenApproveAddress ??
@@ -362,6 +381,8 @@ export class OkxDexAdapter implements Adapter {
         typeof approvalAddressRaw === 'string' && approvalAddressRaw.startsWith('0x')
           ? approvalAddressRaw
           : undefined;
+      
+      console.log('[OKX] extracted approvalAddress:', approvalAddress, 'raw:', approvalAddressRaw);
 
       if (!to || !data) {
         throw new Error('OKX swap API returned no tx calldata');
