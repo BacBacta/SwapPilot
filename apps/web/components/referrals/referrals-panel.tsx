@@ -475,37 +475,7 @@ function ClaimRewardsCard() {
    MAIN PANEL
    ======================================== */
 export function ReferralsPanel() {
-  return (
-    <div className="rounded-2xl border border-sp-border bg-sp-surface p-12 text-center">
-      <div className="text-6xl mb-6">🎁</div>
-      <h2 className="text-h1 font-bold text-sp-text">Referral Program</h2>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-sp-accent/10 px-4 py-2 text-sp-accent font-semibold">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sp-accent opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-sp-accent"></span>
-        </span>
-        Coming Soon
-      </div>
-      <p className="mt-6 text-body text-sp-muted max-w-lg mx-auto">
-        Soon, you&apos;ll be able to refer your friends and earn 5% of the fees from every swap they make.
-        Stay tuned!
-      </p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3 max-w-2xl mx-auto">
-        <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
-          <div className="text-h2 font-bold text-sp-accent">5%</div>
-          <div className="text-caption text-sp-muted">Commission</div>
-        </div>
-        <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
-          <div className="text-h2 font-bold text-sp-text">∞</div>
-          <div className="text-caption text-sp-muted">Unlimited referrals</div>
-        </div>
-        <div className="rounded-xl border border-sp-border bg-sp-surface2 p-4">
-          <div className="text-h2 font-bold text-sp-text">BNB</div>
-          <div className="text-caption text-sp-muted">Paid in BNB</div>
-        </div>
-      </div>
-    </div>
-  );
+  return <ReferralsPanelContent />;
 }
 
 function ReferralsPanelContent() {
