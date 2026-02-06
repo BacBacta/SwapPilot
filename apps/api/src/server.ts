@@ -820,6 +820,21 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
       await receiptStore.put(receipt);
 
+      // Track BEQ win rate and uplift
+      if (config.metrics.enabled && rankedQuotes.length > 0) {
+        const beqMatch = beqRecommendedProviderId === bestRawOutputProviderId;
+        metrics.beqMatchesTotal.labels({ match: String(beqMatch) }).inc();
+
+        if (rankedQuotes.length >= 2) {
+          const bestBuy = Number(rankedQuotes[0]?.normalized?.buyAmount ?? 0);
+          const worstBuy = Number(rankedQuotes[rankedQuotes.length - 1]?.normalized?.buyAmount ?? 0);
+          if (worstBuy > 0 && bestBuy > 0) {
+            const upliftBps = Math.round(((bestBuy - worstBuy) / worstBuy) * 10000);
+            metrics.beqUpliftBps.labels({ bucket: 'all' }).observe(upliftBps);
+          }
+        }
+      }
+
       return {
         receiptId,
         rankedQuotes,
@@ -908,6 +923,21 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
       await receiptStore.put(receipt);
 
+      // Track BEQ win rate and uplift (POST handler)
+      if (config.metrics.enabled && rankedQuotes.length > 0) {
+        const beqMatch = beqRecommendedProviderId === bestRawOutputProviderId;
+        metrics.beqMatchesTotal.labels({ match: String(beqMatch) }).inc();
+
+        if (rankedQuotes.length >= 2) {
+          const bestBuy = Number(rankedQuotes[0]?.normalized?.buyAmount ?? 0);
+          const worstBuy = Number(rankedQuotes[rankedQuotes.length - 1]?.normalized?.buyAmount ?? 0);
+          if (worstBuy > 0 && bestBuy > 0) {
+            const upliftBps = Math.round(((bestBuy - worstBuy) / worstBuy) * 10000);
+            metrics.beqUpliftBps.labels({ bucket: 'all' }).observe(upliftBps);
+          }
+        }
+      }
+
       return {
         receiptId,
         rankedQuotes,
@@ -949,6 +979,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     buyToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
     sellAmount: z.string(),
     buyAmount: z.string(),
+    expectedBuyAmount: z.string().optional(),
     amountUsd: z.string().optional().nullable(),
     timestamp: z.string().datetime().optional(),
     status: z.enum(['success', 'failed']).default('success'),
@@ -959,6 +990,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
     chainId: z.coerce.number().int().optional(),
+    wallet: z.string().optional(),
   });
 
   api.post(
@@ -999,6 +1031,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         from,
         to,
         chainId: request.query.chainId,
+        wallet: request.query.wallet,
         status: 'success',
       });
       const volumeUsd = logs.reduce((sum, log) => {
@@ -1032,6 +1065,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         from,
         to,
         chainId: request.query.chainId,
+        wallet: request.query.wallet,
         status: 'success',
       });
       const byDate = new Map<string, { volumeUsd: number; swaps: number }>();
@@ -1050,6 +1084,345 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       return Array.from(byDate.entries())
         .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([date, data]) => ({ date, ...data }));
+    },
+  );
+
+  // ─── Couche 1: Success rate ───────────────────────────────────────
+  api.get(
+    '/v1/analytics/success-rate',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.object({
+            total: z.number().int(),
+            success: z.number().int(),
+            failed: z.number().int(),
+            rate: z.number(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const allLogs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        wallet: request.query.wallet,
+      });
+      const success = allLogs.filter((l) => l.status === 'success').length;
+      const failed = allLogs.filter((l) => l.status === 'failed').length;
+      const total = allLogs.length;
+      return { total, success, failed, rate: total > 0 ? success / total : 1 };
+    },
+  );
+
+  // ─── Couche 2: Unique wallets per day ─────────────────────────────
+  api.get(
+    '/v1/analytics/unique-wallets',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.object({
+            totalUniqueWallets: z.number().int(),
+            daily: z.array(
+              z.object({
+                date: z.string(),
+                uniqueWallets: z.number().int(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        status: 'success',
+      });
+
+      const allWallets = new Set<string>();
+      const byDate = new Map<string, Set<string>>();
+      for (const log of logs) {
+        const date = new Date(log.timestamp);
+        if (Number.isNaN(date.getTime())) continue;
+        const key = date.toISOString().slice(0, 10);
+        const walletLower = log.wallet.toLowerCase();
+        allWallets.add(walletLower);
+        const set = byDate.get(key) ?? new Set<string>();
+        set.add(walletLower);
+        byDate.set(key, set);
+      }
+
+      return {
+        totalUniqueWallets: allWallets.size,
+        daily: Array.from(byDate.entries())
+          .sort(([a], [b]) => (a < b ? -1 : 1))
+          .map(([date, wallets]) => ({ date, uniqueWallets: wallets.size })),
+      };
+    },
+  );
+
+  // ─── Couche 1: Quote accuracy ─────────────────────────────────────
+  api.get(
+    '/v1/analytics/quote-accuracy',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.object({
+            samplesCount: z.number().int(),
+            avgSlippagePct: z.number(),
+            medianSlippagePct: z.number(),
+            maxSlippagePct: z.number(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        status: 'success',
+      });
+
+      const slippages: number[] = [];
+      for (const log of logs) {
+        if (!log.expectedBuyAmount || !log.buyAmount) continue;
+        const expected = Number(log.expectedBuyAmount);
+        const actual = Number(log.buyAmount);
+        if (!Number.isFinite(expected) || !Number.isFinite(actual) || expected === 0) continue;
+        slippages.push(Math.abs(1 - actual / expected) * 100);
+      }
+
+      if (slippages.length === 0) {
+        return { samplesCount: 0, avgSlippagePct: 0, medianSlippagePct: 0, maxSlippagePct: 0 };
+      }
+
+      slippages.sort((a, b) => a - b);
+      const avg = slippages.reduce((s, v) => s + v, 0) / slippages.length;
+      const median = slippages[Math.floor(slippages.length / 2)] ?? 0;
+      const max = slippages[slippages.length - 1] ?? 0;
+
+      return {
+        samplesCount: slippages.length,
+        avgSlippagePct: Math.round(avg * 10000) / 10000,
+        medianSlippagePct: Math.round(median * 10000) / 10000,
+        maxSlippagePct: Math.round(max * 10000) / 10000,
+      };
+    },
+  );
+
+  // ─── Couche 1: BEQ win rate ───────────────────────────────────────
+  api.get(
+    '/v1/analytics/beq-winrate',
+    {
+      schema: {
+        response: {
+          200: z.object({
+            total: z.number().int(),
+            matches: z.number().int(),
+            winRate: z.number(),
+          }),
+        },
+      },
+    },
+    async () => {
+      const metric = await metrics.beqMatchesTotal.get();
+      let trueCount = 0;
+      let falseCount = 0;
+      for (const v of metric.values) {
+        if (v.labels.match === 'true') trueCount += v.value;
+        else if (v.labels.match === 'false') falseCount += v.value;
+      }
+      const total = trueCount + falseCount;
+      return { total, matches: trueCount, winRate: total > 0 ? trueCount / total : 0 };
+    },
+  );
+
+  // ─── Couche 3: Revenue ────────────────────────────────────────────
+  api.get(
+    '/v1/analytics/revenue',
+    {
+      schema: {
+        querystring: VolumeQuerySchema,
+        response: {
+          200: z.object({
+            totalRevenueUsd: z.number(),
+            avgRevenuePerSwap: z.number(),
+            swapCount: z.number().int(),
+            feeBps: z.number(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({
+        from,
+        to,
+        chainId: request.query.chainId,
+        status: 'success',
+      });
+
+      const BASE_FEE_BPS = 10; // 0.1%
+      const MIN_SWAP_USD = 50;
+      let totalRevenue = 0;
+      let feeableSwaps = 0;
+
+      for (const log of logs) {
+        const usd = log.amountUsd ? Number(log.amountUsd) : 0;
+        if (!Number.isFinite(usd) || usd < MIN_SWAP_USD) continue;
+        feeableSwaps++;
+        totalRevenue += usd * (BASE_FEE_BPS / 10000);
+      }
+
+      return {
+        totalRevenueUsd: Math.round(totalRevenue * 100) / 100,
+        avgRevenuePerSwap:
+          feeableSwaps > 0 ? Math.round((totalRevenue / feeableSwaps) * 100) / 100 : 0,
+        swapCount: feeableSwaps,
+        feeBps: BASE_FEE_BPS,
+      };
+    },
+  );
+
+  // ─── Couche 2: Leaderboard ────────────────────────────────────────
+  const LeaderboardQuerySchema = z.object({
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(10),
+    minSwapUsd: z.coerce.number().min(0).default(10),
+  });
+
+  api.get(
+    '/v1/analytics/leaderboard',
+    {
+      schema: {
+        querystring: LeaderboardQuerySchema,
+        response: {
+          200: z.object({
+            participants: z.number().int(),
+            leaderboard: z.array(
+              z.object({
+                rank: z.number().int(),
+                wallet: z.string(),
+                volumeUsd: z.number(),
+                swapCount: z.number().int(),
+                score: z.number(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const from = request.query.from ? new Date(request.query.from) : undefined;
+      const to = request.query.to ? new Date(request.query.to) : undefined;
+      const logs = await swapLogStore.list({ from, to, status: 'success' });
+
+      // Group by wallet, filter by min swap USD
+      const walletStats = new Map<string, { volumeUsd: number; swapCount: number }>();
+      for (const log of logs) {
+        const usd = log.amountUsd ? Number(log.amountUsd) : 0;
+        if (!Number.isFinite(usd) || usd < request.query.minSwapUsd) continue;
+        const w = log.wallet.toLowerCase();
+        const current = walletStats.get(w) ?? { volumeUsd: 0, swapCount: 0 };
+        walletStats.set(w, {
+          volumeUsd: current.volumeUsd + usd,
+          swapCount: current.swapCount + 1,
+        });
+      }
+
+      if (walletStats.size === 0) {
+        return { participants: 0, leaderboard: [] };
+      }
+
+      // Composite score: 60% volume + 40% swap count (normalized)
+      const entries = Array.from(walletStats.entries());
+      const maxVolume = Math.max(...entries.map(([, s]) => s.volumeUsd));
+      const maxSwaps = Math.max(...entries.map(([, s]) => s.swapCount));
+
+      const scored = entries
+        .map(([wallet, stats]) => ({
+          wallet,
+          volumeUsd: Math.round(stats.volumeUsd * 100) / 100,
+          swapCount: stats.swapCount,
+          score:
+            Math.round(
+              (0.6 * (maxVolume > 0 ? stats.volumeUsd / maxVolume : 0) +
+                0.4 * (maxSwaps > 0 ? stats.swapCount / maxSwaps : 0)) *
+                10000,
+            ) / 100,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, request.query.limit)
+        .map((entry, index) => ({ rank: index + 1, ...entry }));
+
+      return { participants: walletStats.size, leaderboard: scored };
+    },
+  );
+
+  // ─── Couche 1: API latency from Prometheus ────────────────────────
+  api.get(
+    '/v1/analytics/latency',
+    {
+      schema: {
+        response: {
+          200: z.object({
+            quotesP50Ms: z.number(),
+            quotesP95Ms: z.number(),
+            quotesP99Ms: z.number(),
+            totalRequests: z.number().int(),
+          }),
+        },
+      },
+    },
+    async () => {
+      const metric = await metrics.httpRequestDurationMs.get();
+      // Find quote-related observations
+      let totalCount = 0;
+      const allValues: number[] = [];
+
+      for (const value of metric.values) {
+        const labels = value.labels as Record<string, string | number>;
+        const route = labels.route;
+        if (route === '/v1/quotes' && value.metricName === 'swappilot_http_request_duration_ms_bucket') {
+          const le = Number(labels.le);
+          const count = Number(value.value);
+          if (Number.isFinite(le) && Number.isFinite(count) && le !== Infinity) {
+            for (let i = 0; i < count; i++) allValues.push(le);
+          }
+        }
+        if (
+          route === '/v1/quotes' &&
+          value.metricName === 'swappilot_http_request_duration_ms_count'
+        ) {
+          totalCount += Number(value.value) || 0;
+        }
+      }
+
+      allValues.sort((a, b) => a - b);
+      const percentile = (arr: number[], p: number) =>
+        arr.length > 0 ? arr[Math.floor(arr.length * p)] ?? 0 : 0;
+
+      return {
+        quotesP50Ms: percentile(allValues, 0.5),
+        quotesP95Ms: percentile(allValues, 0.95),
+        quotesP99Ms: percentile(allValues, 0.99),
+        totalRequests: totalCount,
+      };
     },
   );
 

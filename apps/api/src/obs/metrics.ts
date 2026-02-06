@@ -6,6 +6,8 @@ export type Metrics = {
   providerQuoteDurationMs: Histogram<'providerId' | 'status'>;
   providerQuoteRequestsTotal: Counter<'providerId' | 'status'>;
   preflightVerificationsTotal: Counter<'status'>;
+  beqMatchesTotal: Counter<'match'>;
+  beqUpliftBps: Histogram<'bucket'>;
 };
 
 export function createMetrics(params?: { collectDefault?: boolean }): Metrics {
@@ -45,11 +47,28 @@ export function createMetrics(params?: { collectDefault?: boolean }): Metrics {
     registers: [registry],
   });
 
+  const beqMatchesTotal = new Counter({
+    name: 'swappilot_beq_matches_total',
+    help: 'BEQ recommendation vs raw best price match',
+    labelNames: ['match'] as const,
+    registers: [registry],
+  });
+
+  const beqUpliftBps = new Histogram({
+    name: 'swappilot_beq_uplift_bps',
+    help: 'BEQ uplift vs worst quote in basis points',
+    labelNames: ['bucket'] as const,
+    buckets: [0, 5, 10, 25, 50, 100, 250, 500, 1000],
+    registers: [registry],
+  });
+
   return {
     registry,
     httpRequestDurationMs,
     providerQuoteDurationMs,
     providerQuoteRequestsTotal,
     preflightVerificationsTotal,
+    beqMatchesTotal,
+    beqUpliftBps,
   };
 }

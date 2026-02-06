@@ -1,0 +1,662 @@
+{
+  "meta": {
+    "project": "SwapPilot",
+    "platform": "Combot (combot.org)",
+    "description": "Combot trigger configuration — XP campaign anti-spam & anti-farm",
+    "created": "2026-02-05",
+    "target": "Telegram group — 800 members — 60 day XP campaign",
+    "instructions": "Create each trigger manually in Combot dashboard: combot.org > Your Group > Triggers > Add trigger. Fill in each field exactly as shown below."
+  },
+  "triggers": [
+    {
+      "trigger_title": "Flood_5msg_10s",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "",
+          "condition_type": "Flood",
+          "case_sensitive": false,
+          "note": "If Flood type not available, use Combot > Moderation > Anti-Flood instead (5 msgs / 10 sec)"
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Flood detected. Slow down or your XP will be reduced." },
+        { "action_type": "Restrict user", "duration": "10 minutes" }
+      ]
+    },
+    {
+      "trigger_title": "Repeat_same_text",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "",
+          "condition_type": "Repeated message",
+          "case_sensitive": false,
+          "note": "If not available as condition type, use Combot > Moderation > Anti-Spam > Repeated messages"
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Repeated message detected. Say something new to earn XP." }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_Copypaste_1",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "SwapPilot is a decentralized tool that makes crypto swapping smarter and easier",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Copy-paste detected. Your XP may be reduced. Contribute original thoughts to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_BestRoutes",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "best swap routes across multiple exchanges",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Templated message detected. Share your real experience instead!" },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_ILike",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "I like SwapPilot because",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic praise detected. Be specific — what feature did you actually use?" },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_AIAssistant",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "intelligent assistant guiding",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ AI-generated text detected. Write in your own words to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_ManualTrading",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "removes the stress of manual trading",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Scripted message removed. Tell us what you actually tried." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_FeelsLike",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "transparent and secure. It feels like",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Templated message removed. Speak from experience, not from ChatGPT." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_GameChanger",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "game-changer in the world of",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic AI phrase detected. Use your own words!" },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_Revolutionizing",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "revolutionizing the way we",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generated message detected. Tell us what YOU actually did with SwapPilot." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_Seamless",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "seamless and user-friendly experience",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Templated text removed. Share a real swap you did instead!" },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_HighlyReco",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "highly recommend this project to anyone",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic recommendation removed. Be authentic to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_FutureOf",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "the future of decentralized",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ AI buzzwords detected. Drop the script and be real." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_Innovative",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "innovative platform that simplifies",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ AI-generated text removed. Describe your own experience." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_CuttingEdge",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "cutting-edge technology that",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Buzzword spam removed. Be real, Pilot." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_BestProject",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "one of the best projects I have ever",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic hype removed. What did you actually do with SwapPilot?" },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_ToTheMoon",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "to the moon",
+          "condition_type": "Full match",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Low-effort hype removed. Contribute a real thought to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -2 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_LFG",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "LFG",
+          "condition_type": "Full match",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ One-word hype removed. Add context to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -2 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_GM_Spam",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "gm",
+          "condition_type": "Full match",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ GM alone won't earn XP. Add something useful to the conversation!" },
+        { "action_type": "Change user reputation", "reputation_change": -1 }
+      ]
+    },
+    {
+      "trigger_title": "XP_Farm_WAGMI",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "wagmi",
+          "condition_type": "Full match",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ One-word messages don't earn XP. Tell us why we're all gonna make it!" },
+        { "action_type": "Change user reputation", "reputation_change": -1 }
+      ]
+    },
+
+    {
+      "_comment": "=== SMART PATTERN TRIGGERS (recommended alternative) ===",
+      "_description": "These triggers catch generic/AI praise broadly instead of matching exact phrases. More robust against paraphrasing and new templates."
+    },
+
+    {
+      "trigger_title": "Smart_Amazing_Long",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "amazing",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Combine with: message length > 80 characters (if Combot supports multi-condition). Otherwise use this alone."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic praise detected. Be specific — what did you actually try? Short, genuine messages earn more XP." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_Awesome_Long",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "awesome",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'SwapPilot is awesome', 'poised to be awesome', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Vague praise removed. Tell us WHAT is awesome and WHY. Quality > hype." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_BestWay",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "one of the best",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'one of the best projects', 'one of the best way to extract', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic hype removed. Share a specific experience instead of general praise." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_Engagement",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "maximum engagement",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'extract maximum engagement', 'drive maximum engagement', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Marketing-speak detected. Talk like a human, not a press release." },
+        { "action_type": "Change user reputation", "reputation_change": -5 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_PushingContent",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "pushing out content",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'pushing out contents', 'pushing out content', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Engagement farming detected. Contribute real value to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_Poised",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "poised to",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'poised to be awesome', 'poised to succeed', 'poised to moon', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Hype phrase detected. Describe something you actually tried on SwapPilot." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_Incredible",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "incredible project",
+          "condition_type": "Contains",
+          "case_sensitive": false
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic praise removed. What specifically makes it incredible? Share details." },
+        { "action_type": "Change user reputation", "reputation_change": -3 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_Bullish",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "bullish on",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'bullish on SwapPilot', 'bullish on this project', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Low-effort hype. Tell us WHY you're bullish with specifics to earn XP." },
+        { "action_type": "Change user reputation", "reputation_change": -2 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_GonnaBe",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "gonna be huge",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'this is gonna be huge', 'SwapPilot gonna be huge', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Empty hype removed. Back it up with real usage or feedback." },
+        { "action_type": "Change user reputation", "reputation_change": -2 }
+      ]
+    },
+    {
+      "trigger_title": "Smart_CantWait",
+      "trigger_mode": "All messages",
+      "chance_to_trigger_percent": 100,
+      "admin_mode": "Anybody can trigger",
+      "advanced_options": true,
+      "trigger_conditions": [
+        {
+          "message_text": "can't wait for",
+          "condition_type": "Contains",
+          "case_sensitive": false,
+          "note": "Catches 'can't wait for the launch', 'can't wait for TGE', etc."
+        }
+      ],
+      "trigger_actions_mode": "ALL",
+      "trigger_actions": [
+        { "action_type": "Delete the message" },
+        { "action_type": "Send a message", "message_text": "⚠️ Generic excitement removed. Share what feature you're excited about and why." },
+        { "action_type": "Change user reputation", "reputation_change": -2 }
+      ]
+    }
+  ],
+  "combot_moderation_settings": {
+    "note": "Configure these in Combot > Your Group > Moderation (separate from triggers)",
+    "anti_flood": {
+      "enabled": true,
+      "max_messages": 5,
+      "time_window_seconds": 10,
+      "action": "Restrict user 10 minutes"
+    },
+    "anti_spam": {
+      "enabled": true,
+      "repeated_messages": true,
+      "links_filter": true,
+      "whitelisted_domains": [
+        "swappilot.io",
+        "app.swappilot.io",
+        "docs.swappilot.io",
+        "github.com/BacBacta/SwapPilot",
+        "t.me",
+        "discord.gg"
+      ]
+    },
+    "newcomer_restrictions": {
+      "enabled": true,
+      "restrict_media_for_hours": 24,
+      "restrict_links_for_hours": 24
+    }
+  },
+  "combot_reputation_settings": {
+    "note": "Configure in Combot > Your Group > Reputation",
+    "reputation_enabled": true,
+    "reputation_per_message": 1,
+    "reputation_cooldown_seconds": 60,
+    "max_reputation_changes_per_day": 50
+  }
+}

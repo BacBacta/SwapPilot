@@ -4,22 +4,24 @@ export type SwapLog = {
   chainId: number;
   txHash: string;
   wallet: string;
-  providerId?: string;
+  providerId?: string | undefined;
   sellToken: string;
   buyToken: string;
   sellAmount: string;
   buyAmount: string;
-  amountUsd?: string | null;
+  expectedBuyAmount?: string | undefined;
+  amountUsd?: string | null | undefined;
   timestamp: string;
   status: SwapLogStatus;
-  source?: 'app' | 'api' | 'relayer';
+  source?: 'app' | 'api' | 'relayer' | undefined;
 };
 
 export type SwapLogQuery = {
-  from?: Date;
-  to?: Date;
-  chainId?: number;
-  status?: SwapLogStatus;
+  from?: Date | undefined;
+  to?: Date | undefined;
+  chainId?: number | undefined;
+  status?: SwapLogStatus | undefined;
+  wallet?: string | undefined;
 };
 
 export type SwapLogStore = {
@@ -40,6 +42,7 @@ export class MemorySwapLogStore implements SwapLogStore {
     return this.logs.filter((log) => {
       if (query?.chainId && log.chainId !== query.chainId) return false;
       if (query?.status && log.status !== query.status) return false;
+      if (query?.wallet && log.wallet.toLowerCase() !== query.wallet.toLowerCase()) return false;
       const ts = Date.parse(log.timestamp);
       if (Number.isNaN(ts)) return false;
       if (fromMs && ts < fromMs) return false;

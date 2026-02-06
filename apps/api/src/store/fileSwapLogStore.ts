@@ -68,6 +68,7 @@ export class FileSwapLogStore implements SwapLogStore {
       return logs.filter((log) => {
         if (query.chainId && log.chainId !== query.chainId) return false;
         if (query.status && log.status !== query.status) return false;
+        if (query.wallet && log.wallet.toLowerCase() !== query.wallet.toLowerCase()) return false;
         const ts = Date.parse(log.timestamp);
         if (Number.isNaN(ts)) return false;
         if (fromMs && ts < fromMs) return false;

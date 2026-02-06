@@ -37,6 +37,7 @@ import { ModeExplanationBadge } from "@/components/ui/tooltip";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
+import { useAnalytics } from "@/components/providers/posthog-provider";
 import type { RankedQuote } from "@swappilot/shared";
 import type { Address } from "viem";
 
@@ -156,6 +157,9 @@ function StatCard({ label, value, subValue }: { label: string; value: string; su
    MAIN SWAP INTERFACE
    ======================================== */
 export function SwapInterface() {
+  // Analytics
+  const analytics = useAnalytics();
+
   // Global Settings
   const { settings, updateSettings, resetSettings } = useSettings();
   
@@ -715,11 +719,19 @@ export function SwapInterface() {
         buyToken: toTokenInfo.address,
         sellAmount: sellAmountWei.toString(),
         buyAmount: quote.normalized.buyAmount,
+        expectedBuyAmount: quote.normalized.buyAmount,
         amountUsd: fromUsdValue > 0 ? fromUsdValue.toFixed(2) : null,
         timestamp: new Date().toISOString(),
         status: "success",
         source: "app",
       };
+
+      // PostHog: track swap confirmed
+      analytics.trackSwapConfirmed({
+        sellToken: fromTokenInfo.symbol ?? fromTokenInfo.address,
+        buyToken: toTokenInfo.symbol ?? toTokenInfo.address,
+        provider: quote.providerId,
+      });
 
       executeSwap(tx);
 
@@ -755,6 +767,16 @@ export function SwapInterface() {
             txHash,
           },
         });
+
+        // PostHog: track swap completed
+        analytics.trackSwapCompleted({
+          sellToken: swapLogRef.current.sellToken,
+          buyToken: swapLogRef.current.buyToken,
+          provider: swapLogRef.current.providerId ?? 'unknown',
+          txHash,
+          actualOutput: swapLogRef.current.buyAmount,
+        });
+
         swapLogRef.current = null;
       }
       toast.success("Swap successful!", `Transaction: ${txHash.slice(0, 10)}...`);
@@ -791,12 +813,23 @@ export function SwapInterface() {
   useEffect(() => {
     if (swapError && swapStatus === "error") {
       toast.error("Transaction failed", swapError);
+
+      // PostHog: track swap failed
+      if (swapLogRef.current) {
+        analytics.trackSwapFailed({
+          sellToken: swapLogRef.current.sellToken,
+          buyToken: swapLogRef.current.buyToken,
+          provider: swapLogRef.current.providerId ?? 'unknown',
+          error: swapError,
+        });
+      }
+
       const pendingTx = transactions.find(t => t.status === "pending");
       if (pendingTx) {
         updateTransaction(pendingTx.id, { status: "failed" });
       }
     }
-  }, [swapError, swapStatus, toast, transactions, updateTransaction]);
+  }, [swapError, swapStatus, toast, transactions, updateTransaction, analytics]);
 
   const handleViewReceipt = async (quote: RankedQuote) => {
     setSelectedQuoteForReceipt(quote);

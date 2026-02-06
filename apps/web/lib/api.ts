@@ -46,6 +46,7 @@ export type SwapLogPayload = {
   buyToken: string;
   sellAmount: string;
   buyAmount: string;
+  expectedBuyAmount?: string;
   amountUsd?: string | null;
   timestamp: string;
   status: 'success' | 'failed';
