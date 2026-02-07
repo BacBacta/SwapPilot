@@ -724,6 +724,12 @@ export function SwapInterface() {
         source: "app",
       };
 
+      try {
+        sessionStorage.setItem("swappilot_last_swap_log", JSON.stringify(swapLogRef.current));
+      } catch {
+        // Ignore storage errors (private mode or full storage).
+      }
+
       // PostHog: track swap confirmed
       analytics.trackSwapConfirmed({
         sellToken: fromTokenInfo.symbol ?? fromTokenInfo.address,
@@ -758,24 +764,40 @@ export function SwapInterface() {
   // Watch for transaction completion
   useEffect(() => {
     if (isSwapSuccess && txHash) {
-      if (swapLogRef.current) {
+      const logSnapshot: SwapLogPayload | null =
+        swapLogRef.current ??
+        (() => {
+          try {
+            const raw = sessionStorage.getItem("swappilot_last_swap_log");
+            return raw ? (JSON.parse(raw) as SwapLogPayload) : null;
+          } catch {
+            return null;
+          }
+        })();
+
+      if (logSnapshot) {
         void postSwapLog({
           payload: {
-            ...swapLogRef.current,
+            ...logSnapshot,
             txHash,
           },
         });
 
         // PostHog: track swap completed
         analytics.trackSwapCompleted({
-          sellToken: swapLogRef.current.sellToken,
-          buyToken: swapLogRef.current.buyToken,
-          provider: swapLogRef.current.providerId ?? 'unknown',
+          sellToken: logSnapshot.sellToken,
+          buyToken: logSnapshot.buyToken,
+          provider: logSnapshot.providerId ?? 'unknown',
           txHash,
-          actualOutput: swapLogRef.current.buyAmount,
+          actualOutput: logSnapshot.buyAmount,
         });
 
         swapLogRef.current = null;
+        try {
+          sessionStorage.removeItem("swappilot_last_swap_log");
+        } catch {
+          // Ignore storage errors.
+        }
       }
       toast.success("Swap successful!", `Transaction: ${txHash.slice(0, 10)}...`);
       // Update the most recent pending transaction
