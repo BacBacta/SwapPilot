@@ -8,7 +8,6 @@ import {
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit";
 import {
-  metaMaskWallet,
   walletConnectWallet,
   coinbaseWallet,
   trustWallet,
@@ -42,7 +41,7 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: "Popular",
-      wallets: [metaMaskWallet, trustWallet, coinbaseWallet],
+      wallets: [injectedWallet, trustWallet, coinbaseWallet],
     },
     {
       groupName: "Other",

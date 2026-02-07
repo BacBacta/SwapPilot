@@ -46,6 +46,7 @@ Sentry.init({
       /invoking post/i,
       /User rejected/i, // User cancelled wallet action - not an error
       /User denied/i,
+      /chrome\.runtime\.sendMessage\(\) called from a webpage must specify an Extension ID/i,
       // MetaMask state / availability (environment issues, not app bugs)
       /KeyRing is locked/i,
       /MetaMask extension not found/i,
