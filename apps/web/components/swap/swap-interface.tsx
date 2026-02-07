@@ -8,7 +8,6 @@ import { triggerRainbowKitConnect } from "@/lib/wallet/connect-guard";
 import { TokenInput, SwapDirectionButton } from "@/components/ui/token-input";
 import { Tabs, PresetButtons } from "@/components/ui/inputs";
 import { TokenPickerModal } from "@/components/swap/token-picker-modal";
-import { SettingsDrawer } from "@/components/swap/settings-drawer";
 import { ReceiptDrawer } from "@/components/swap/receipt-drawer";
 import { RouteVisualization } from "@/components/swap/route-visualization";
 import { 
@@ -190,7 +189,6 @@ export function SwapInterface() {
   // Modals/Drawers
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [tokenPickerTarget, setTokenPickerTarget] = useState<"from" | "to">("from");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedQuoteForReceipt, setSelectedQuoteForReceipt] = useState<RankedQuote | null>(null);
@@ -875,29 +873,6 @@ export function SwapInterface() {
               />
               <ModeExplanationBadge mode={mode} />
             </div>
-            <span className="hidden h-5 w-px bg-sp-border/60 sm:block" />
-            <div className="flex items-center gap-2">
-              {/* Dynamic slippage indicator */}
-              <button
-                onClick={() => setSettingsOpen(true)}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-micro font-medium transition-all ${
-                  dynamicSlippage.riskLevel === "high"
-                    ? "bg-sp-bad/20 text-sp-bad border border-sp-bad/30"
-                    : dynamicSlippage.riskLevel === "medium"
-                      ? "bg-sp-warn/20 text-sp-warn border border-sp-warn/30"
-                      : "bg-sp-surface3 text-sp-muted border border-sp-border hover:border-sp-borderHover"
-                }`}
-                title={dynamicSlippage.reason}
-              >
-                {dynamicSlippage.isAuto && (
-                  <span className="text-[10px]">⚡</span>
-                )}
-                <span>{(effectiveSlippageBps / 100).toFixed(1)}%</span>
-              </button>
-              <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
-                <SettingsIcon className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -1285,11 +1260,6 @@ export function SwapInterface() {
         selectedToken={tokenPickerTarget === "from" ? fromToken : toToken}
       />
 
-      {/* Settings Drawer */}
-      <SettingsDrawer
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
 
       {/* Receipt Drawer */}
       <ReceiptDrawer
@@ -1315,15 +1285,6 @@ export function SwapInterface() {
 /* ========================================
    ICONS
    ======================================== */
-function SettingsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
 function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

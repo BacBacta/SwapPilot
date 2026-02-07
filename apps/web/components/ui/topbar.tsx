@@ -4,13 +4,12 @@ import { cn } from "@/lib/cn";
 export function TopbarDark({
   active = "Swap",
 }: {
-  active?: "Swap" | "Status" | "Providers" | "Settings";
+  active?: "Swap" | "Status" | "Providers";
 }) {
   const nav = [
     { label: "Swap", href: "/swap" },
     { label: "Status", href: "/status" },
     { label: "Providers", href: "/providers/1inch" },
-    { label: "Settings", href: "/settings" },
   ] as const;
 
   return (

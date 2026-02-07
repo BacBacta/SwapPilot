@@ -403,8 +403,6 @@ const styles = {
 
 export function LandioSwap() {
   const [fromAmount, setFromAmount] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [slippage, setSlippage] = useState("0.5");
   const [selectedProvider, setSelectedProvider] = useState(0);
 
   const hasQuote = parseFloat(fromAmount) > 0;
@@ -423,7 +421,6 @@ export function LandioSwap() {
         <div style={styles.swapContainer}>
           <div style={styles.swapHeader}>
             <h2 style={styles.swapTitle}>Swap</h2>
-            <button style={styles.settingsBtn} onClick={() => setShowSettings(true)}>⚙️</button>
           </div>
 
           {/* From Token */}
@@ -587,32 +584,6 @@ export function LandioSwap() {
         </button>
       </div>
 
-      {/* Slippage Modal */}
-      {showSettings && (
-        <div style={styles.modal} onClick={() => setShowSettings(false)}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Settings</h3>
-              <button style={styles.modalClose} onClick={() => setShowSettings(false)}>×</button>
-            </div>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "16px" }}>Slippage Tolerance</p>
-            <div style={styles.slippageOptions}>
-              {["0.1", "0.5", "1.0"].map((val) => (
-                <div
-                  key={val}
-                  style={{
-                    ...styles.slippageOption,
-                    ...(slippage === val ? styles.slippageOptionActive : {}),
-                  }}
-                  onClick={() => setSlippage(val)}
-                >
-                  {val}%
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
