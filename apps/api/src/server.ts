@@ -621,7 +621,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   const oneInchAdapter = new OneInchAdapter({
     apiKey: process.env.ONEINCH_API_KEY ?? null,
     chainId: 56,
-    timeoutMs: 10000,
+    timeoutMs: 3000,
   });
 
   const okxAdapter = new OkxDexAdapter({
@@ -629,35 +629,35 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     secretKey: process.env.OKX_SECRET_KEY ?? null,
     passphrase: process.env.OKX_PASSPHRASE ?? null,
     chainId: 56,
-    timeoutMs: 10000,
+    timeoutMs: 3000,
   });
 
   const kyberSwapAdapter = new KyberSwapAdapter({
     chainId: 56,
     clientId: 'swappilot',
-    timeoutMs: 10000,
+    timeoutMs: 3000,
   });
 
   const paraSwapAdapter = new ParaSwapAdapter({
     chainId: 56,
     partner: 'swappilot',
-    timeoutMs: 10000,
+    timeoutMs: 3000,
   });
 
   const odosAdapter = new OdosAdapter({
     chainId: 56,
-    timeoutMs: 10000,
+    timeoutMs: 4000,
   });
 
   const openOceanAdapter = new OpenOceanAdapter({
     chainId: 56,
-    timeoutMs: 10000,
+    timeoutMs: 4000,
   });
 
   const zeroXAdapter = new ZeroXAdapter({
     apiKey: process.env.ZEROX_API_KEY ?? null,
     chainId: 56,
-    timeoutMs: 10000,
+    timeoutMs: 4000,
   });
 
   const uniswapV3Adapter = new UniswapV3Adapter({
@@ -980,6 +980,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     sellAmount: z.string(),
     buyAmount: z.string(),
     expectedBuyAmount: z.string().optional(),
+    beqRecommendedProviderId: z.string().optional(),
     amountUsd: z.string().optional().nullable(),
     timestamp: z.string().datetime().optional(),
     status: z.enum(['success', 'failed']).default('success'),
@@ -1238,15 +1239,31 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       },
     },
     async () => {
-      const metric = await metrics.beqMatchesTotal.get();
-      let trueCount = 0;
-      let falseCount = 0;
-      for (const v of metric.values) {
-        if (v.labels.match === 'true') trueCount += v.value;
-        else if (v.labels.match === 'false') falseCount += v.value;
+      // Compute BEQ "user follow rate" from swap logs instead of ephemeral Prometheus counters.
+      // A "match" means the user chose the same provider that BEQ recommended.
+      const logs = await swapLogStore.list({ status: 'success' });
+      let total = 0;
+      let matches = 0;
+      for (const log of logs) {
+        if (!log.providerId || !log.beqRecommendedProviderId) continue;
+        total++;
+        if (log.providerId === log.beqRecommendedProviderId) matches++;
       }
-      const total = trueCount + falseCount;
-      return { total, matches: trueCount, winRate: total > 0 ? trueCount / total : 0 };
+
+      // Fallback to Prometheus counters for backward compatibility with older logs
+      if (total === 0) {
+        const metric = await metrics.beqMatchesTotal.get();
+        let trueCount = 0;
+        let falseCount = 0;
+        for (const v of metric.values) {
+          if (v.labels.match === 'true') trueCount += v.value;
+          else if (v.labels.match === 'false') falseCount += v.value;
+        }
+        total = trueCount + falseCount;
+        matches = trueCount;
+      }
+
+      return { total, matches, winRate: total > 0 ? matches / total : 0 };
     },
   );
 

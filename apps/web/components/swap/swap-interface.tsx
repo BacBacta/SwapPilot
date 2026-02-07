@@ -239,6 +239,7 @@ export function SwapInterface() {
     status: swapStatus, 
     error: swapError, 
     txHash, 
+    txReceipt,
     builtTx,
     buildTransaction, 
     executeSwap, 
@@ -718,6 +719,7 @@ export function SwapInterface() {
         sellAmount: sellAmountWei.toString(),
         buyAmount: quote.normalized.buyAmount,
         expectedBuyAmount: quote.normalized.buyAmount,
+        beqRecommendedProviderId: quotes.data?.beqRecommendedProviderId ?? undefined,
         amountUsd: fromUsdValue > 0 ? fromUsdValue.toFixed(2) : null,
         timestamp: new Date().toISOString(),
         status: "success",
@@ -776,10 +778,41 @@ export function SwapInterface() {
         })();
 
       if (logSnapshot) {
+        // Parse ERC-20 Transfer events from the tx receipt to get the real output amount.
+        // Transfer topic0 = keccak256("Transfer(address,address,uint256)")
+        const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+        let actualBuyAmount: string | undefined;
+
+        if (txReceipt?.logs) {
+          const walletLower = logSnapshot.wallet.toLowerCase();
+          const buyTokenLower = logSnapshot.buyToken.toLowerCase();
+
+          for (const log of txReceipt.logs) {
+            if (
+              log.topics[0] === TRANSFER_TOPIC &&
+              log.address.toLowerCase() === buyTokenLower &&
+              log.topics[2] && // "to" is topic[2] for indexed Transfer
+              log.topics[2].toLowerCase().endsWith(walletLower.slice(2))
+            ) {
+              // data contains the uint256 amount
+              const amt = BigInt(log.data);
+              // Accumulate in case of multiple Transfer events to the same wallet
+              actualBuyAmount = actualBuyAmount
+                ? (BigInt(actualBuyAmount) + amt).toString()
+                : amt.toString();
+            }
+          }
+        }
+
         void postSwapLog({
           payload: {
             ...logSnapshot,
             txHash,
+            // If we decoded the on-chain amount, use it as buyAmount
+            // and keep the quoted value as expectedBuyAmount
+            ...(actualBuyAmount
+              ? { buyAmount: actualBuyAmount }
+              : {}),
           },
         });
 
@@ -789,7 +822,7 @@ export function SwapInterface() {
           buyToken: logSnapshot.buyToken,
           provider: logSnapshot.providerId ?? 'unknown',
           txHash,
-          actualOutput: logSnapshot.buyAmount,
+          actualOutput: actualBuyAmount ?? logSnapshot.buyAmount,
         });
 
         swapLogRef.current = null;

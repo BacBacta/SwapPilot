@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useAccount, useChainId, useSendTransaction, useWaitForTransactionReceipt, useEstimateGas, usePublicClient } from "wagmi";
-import type { Address } from "viem";
+import type { Address, TransactionReceipt } from "viem";
 import type { ProviderQuoteRaw, ProviderQuoteNormalized } from "@swappilot/shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://swappilot-api.fly.dev";
@@ -82,6 +82,7 @@ export type UseExecuteSwapReturn = {
   status: SwapStatus;
   error: string | null;
   txHash: `0x${string}` | undefined;
+  txReceipt: TransactionReceipt | undefined;
   
   // Built transaction (for approval flow)
   builtTx: BuiltTransaction | null;
@@ -603,6 +604,7 @@ export function useExecuteSwap(): UseExecuteSwapReturn {
     status,
     error,
     txHash: submittedTxHash ?? txHash,
+    txReceipt: (txReceipt as TransactionReceipt | undefined) ?? undefined,
     builtTx,
     buildTransaction,
     executeSwap,

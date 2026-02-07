@@ -14,6 +14,8 @@ primary_region = "fra"
   HOST = "0.0.0.0"
   PORT = "3001"
   RECEIPT_STORE = "memory"
+  SWAP_LOG_STORE = "file"
+  SWAP_LOG_STORE_PATH = "/data/swaps"
   METRICS_ENABLED = "true"
   DEXSCREENER_ENABLED = "true"
   DEXSCREENER_BASE_URL = "https://api.dexscreener.com"
@@ -25,12 +27,16 @@ primary_region = "fra"
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = "requests"
     soft_limit = 200
     hard_limit = 250
+
+[mounts]
+  source = "swappilot_data"
+  destination = "/data"
 
 [[vm]]
   cpu_kind = "shared"

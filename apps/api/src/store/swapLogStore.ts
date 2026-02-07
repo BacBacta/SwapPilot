@@ -10,6 +10,7 @@ export type SwapLog = {
   sellAmount: string;
   buyAmount: string;
   expectedBuyAmount?: string | undefined;
+  beqRecommendedProviderId?: string | undefined;
   amountUsd?: string | null | undefined;
   timestamp: string;
   status: SwapLogStatus;

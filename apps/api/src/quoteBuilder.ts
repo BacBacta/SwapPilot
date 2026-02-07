@@ -14,6 +14,17 @@ import { deepLinkBuilder } from '@swappilot/deeplinks';
 
 import { defaultAssumptions, normalizeQuote, defaultPlaceholderSignals, rankQuotes } from '@swappilot/scoring';
 
+/** Race a promise against a timeout; resolves to null on timeout. */
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), ms);
+    }),
+  ]).finally(() => clearTimeout(timer!));
+}
+
 import type { PreflightClient, TxRequest } from '@swappilot/preflight';
 import type { RiskEngine } from '@swappilot/risk';
 
@@ -384,9 +395,17 @@ async function buildQuotesImpl(
     };
   });
 
+  const QUOTE_DEADLINE_MS = 4000; // Global per-provider deadline
+
   const resolvedInputs = await Promise.all(
     parts.map(async (item) => {
-      const adapterQuote = item.adapterQuotePromise ? await item.adapterQuotePromise : null;
+      const adapterQuote = item.adapterQuotePromise
+        ? await withDeadline(item.adapterQuotePromise, QUOTE_DEADLINE_MS)
+        : null;
+
+      if (item.adapterQuotePromise && !adapterQuote) {
+        log.warn({ providerId: item.provider.providerId }, 'provider.quote.deadline_exceeded');
+      }
 
       const capabilities = adapterQuote?.capabilities ?? item.provider.capabilities;
       const isDeepLinkOnly = capabilities.quote === false;
@@ -501,53 +520,56 @@ async function buildQuotesImpl(
       // For DexScreener and token security APIs, convert native sentinel to WBNB.
       const buyTokenForSecurityCheck = resolveTokenForSecurityCheck(parsed.buyToken, parsed.chainId);
       
-      const onchainSellability = rpc
-        ? await assessOnchainSellability({
-            chainId: parsed.chainId,
-            buyToken: parsed.buyToken, // Check buyToken - can we sell it after buying?
-            rpcUrls: rpc.bscUrls,
-            timeoutMs: rpc.timeoutMs,
-            multicall3Address: sellability?.multicall3Address ?? null,
-            baseTokens: sellability?.baseTokensBsc ?? null,
-            pancake: sellability?.pancake ?? null,
-          })
-        : null;
+      // Run all security checks in parallel with individual deadlines
+      const [onchainSellability, dexScreenerSellability, tokenSecuritySellability] = await Promise.all([
+        rpc
+          ? withDeadline(assessOnchainSellability({
+              chainId: parsed.chainId,
+              buyToken: parsed.buyToken,
+              rpcUrls: rpc.bscUrls,
+              timeoutMs: rpc.timeoutMs,
+              multicall3Address: sellability?.multicall3Address ?? null,
+              baseTokens: sellability?.baseTokensBsc ?? null,
+              pancake: sellability?.pancake ?? null,
+            }), 2000)
+          : null,
 
-      const dexScreenerSellability = dexScreener
-        ? await assessDexScreenerSellability({
-            chainId: parsed.chainId,
-            token: buyTokenForSecurityCheck, // Check buyToken liquidity
-            config: {
-              enabled: dexScreener.enabled,
-              baseUrl: dexScreener.baseUrl,
-              timeoutMs: dexScreener.timeoutMs,
-              cacheTtlMs: dexScreener.cacheTtlMs,
-              minLiquidityUsd: dexScreener.minLiquidityUsd,
-            },
-          })
-        : null;
+        dexScreener
+          ? withDeadline(assessDexScreenerSellability({
+              chainId: parsed.chainId,
+              token: buyTokenForSecurityCheck,
+              config: {
+                enabled: dexScreener.enabled,
+                baseUrl: dexScreener.baseUrl,
+                timeoutMs: dexScreener.timeoutMs,
+                cacheTtlMs: dexScreener.cacheTtlMs,
+                minLiquidityUsd: dexScreener.minLiquidityUsd,
+              },
+            }), 2000)
+          : null,
 
-      const tokenSecuritySellability = tokenSecurity
-        ? await assessTokenSecuritySellability({
-            chainId: parsed.chainId,
-            token: buyTokenForSecurityCheck, // Check buyToken for honeypots/taxes
-            mode: parsed.mode ?? 'NORMAL',
-            config: {
-              enabled: tokenSecurity.enabled,
-              goPlusEnabled: tokenSecurity.goPlusEnabled,
-              goPlusBaseUrl: tokenSecurity.goPlusBaseUrl,
-              honeypotIsEnabled: tokenSecurity.honeypotIsEnabled,
-              honeypotIsBaseUrl: tokenSecurity.honeypotIsBaseUrl,
-              bscScanEnabled: tokenSecurity.bscScanEnabled,
-              bscScanBaseUrl: tokenSecurity.bscScanBaseUrl,
-              bscScanApiKey: tokenSecurity.bscScanApiKey,
-              timeoutMs: tokenSecurity.timeoutMs,
-              cacheTtlMs: tokenSecurity.cacheTtlMs,
-              taxStrictMaxPercent: tokenSecurity.taxStrictMaxPercent,
-              fallbackMinLiquidityUsd: tokenSecurity.fallbackMinLiquidityUsd,
-            },
-          })
-        : null;
+        tokenSecurity
+          ? withDeadline(assessTokenSecuritySellability({
+              chainId: parsed.chainId,
+              token: buyTokenForSecurityCheck,
+              mode: parsed.mode ?? 'NORMAL',
+              config: {
+                enabled: tokenSecurity.enabled,
+                goPlusEnabled: tokenSecurity.goPlusEnabled,
+                goPlusBaseUrl: tokenSecurity.goPlusBaseUrl,
+                honeypotIsEnabled: tokenSecurity.honeypotIsEnabled,
+                honeypotIsBaseUrl: tokenSecurity.honeypotIsBaseUrl,
+                bscScanEnabled: tokenSecurity.bscScanEnabled,
+                bscScanBaseUrl: tokenSecurity.bscScanBaseUrl,
+                bscScanApiKey: tokenSecurity.bscScanApiKey,
+                timeoutMs: tokenSecurity.timeoutMs,
+                cacheTtlMs: tokenSecurity.cacheTtlMs,
+                taxStrictMaxPercent: tokenSecurity.taxStrictMaxPercent,
+                fallbackMinLiquidityUsd: tokenSecurity.fallbackMinLiquidityUsd,
+              },
+            }), 2000)
+          : null,
+      ]);
 
       // Merge sellability signals intelligently:
       // - Token security FAIL or UNCERTAIN (SAFE mode) takes priority for honeypot/tax protection

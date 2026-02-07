@@ -301,10 +301,10 @@ function calculateRiskFactor(
   const protocol = calculateProtocolFactor(signals, options);
 
   const defaultWeights = mode === 'SAFE'
-    ? { revert: 0.35, mev: 0.25, churn: 0.1, liquidity: 0.15, slippage: 0.1, protocol: 0.05 }
+    ? { revert: 0.35, mev: 0.20, churn: 0.1, liquidity: 0.20, slippage: 0.10, protocol: 0.05 }
     : mode === 'DEGEN'
-      ? { revert: 0.25, mev: 0.2, churn: 0.2, liquidity: 0.15, slippage: 0.1, protocol: 0.1 }
-      : { revert: 0.3, mev: 0.25, churn: 0.15, liquidity: 0.15, slippage: 0.1, protocol: 0.05 };
+      ? { revert: 0.25, mev: 0.15, churn: 0.20, liquidity: 0.15, slippage: 0.15, protocol: 0.10 }
+      : { revert: 0.25, mev: 0.15, churn: 0.15, liquidity: 0.20, slippage: 0.15, protocol: 0.10 };
 
   const overrides = options?.riskWeights ?? {};
   const weights = normalizeWeights({
