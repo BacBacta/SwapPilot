@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
@@ -138,25 +139,57 @@ export function DesktopSidebar() {
    HEADER (Mobile) - Landio Style
    ======================================== */
 export function MobileHeader() {
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsCompact(window.scrollY > 12);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 bg-sp-bg/95 backdrop-blur-xl md:hidden">
-      <div className="flex h-16 items-center justify-between px-5">
+    <header className={cn(
+      "sticky top-0 z-40 bg-sp-bg/95 backdrop-blur-xl md:hidden transition-all duration-300",
+      isCompact && "bg-sp-bg/98"
+    )}>
+      <div className={cn(
+        "flex items-center justify-between px-5 transition-all duration-300",
+        isCompact ? "h-12" : "h-16"
+      )}>
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="relative grid h-10 w-10 place-items-center rounded-2xl bg-sp-accent font-bold text-black text-sm shadow-accentGlow">
+          <div className={cn(
+            "relative grid place-items-center rounded-2xl bg-sp-accent font-bold text-black shadow-accentGlow transition-all duration-300",
+            isCompact ? "h-8 w-8 text-[10px]" : "h-10 w-10 text-sm"
+          )}>
             SP
           </div>
           <div>
-            <span className="text-body font-bold text-sp-text">SwapPilot</span>
+            <span className={cn(
+              "text-body font-bold text-sp-text transition-all duration-300",
+              isCompact && "text-[0.85rem]"
+            )}>SwapPilot</span>
             <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-sp-ok animate-pulse" />
-              <span className="text-[10px] text-sp-muted">Connected</span>
+              <div className={cn(
+                "rounded-full bg-sp-ok animate-pulse transition-all duration-300",
+                isCompact ? "h-1 w-1" : "h-1.5 w-1.5"
+              )} />
+              <span className={cn(
+                "text-[10px] text-sp-muted",
+                isCompact && "hidden"
+              )}>Connected</span>
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className={cn(
+          "flex items-center transition-all duration-300",
+          isCompact ? "gap-2" : "gap-3"
+        )}>
           <ChainSelector compact showLabel={false} />
           <ThemeToggle />
           <WalletButton showBalance={false} showChainStatus={false} />

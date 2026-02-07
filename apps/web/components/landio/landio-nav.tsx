@@ -75,7 +75,7 @@ export function LandioNav() {
         />
       )}
       <nav 
-        className={`nav ${scrolled ? "nav-scrolled" : ""}`}
+        className={`nav ${scrolled ? "nav-scrolled nav-compact" : ""}`}
         role="navigation"
         aria-label="Main navigation"
       >
@@ -109,6 +109,18 @@ export function LandioNav() {
             <div className="network-badge" title="Connected to BNB Chain">
               <span className="network-dot"></span>
               <span className="network-name">BNB Chain</span>
+            </div>
+          )}
+
+          {/* Quick Actions - app pages */}
+          {!isLanding && (
+            <div className="nav-quick" aria-label="Quick actions">
+              <Link href="/status" className="nav-icon-btn" aria-label="Status">
+                <StatusIcon className="nav-icon" />
+              </Link>
+              <Link href="/settings" className="nav-icon-btn" aria-label="Settings">
+                <SettingsIcon className="nav-icon" />
+              </Link>
             </div>
           )}
 
@@ -236,5 +248,22 @@ export function LandioNav() {
       </div>
       </nav>
     </>
+  );
+}
+
+function StatusIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h3l2-4 4 8 2-4h3" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9a3 3 0 100 6 3 3 0 000-6z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3 1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8 1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
+    </svg>
   );
 }

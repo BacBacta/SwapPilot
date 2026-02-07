@@ -88,8 +88,8 @@ img {
 
 .nav-scrolled .nav-inner {
   background: rgba(10, 10, 10, 0.95);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  padding: 10px 20px;
+  background-image: linear-gradient(130deg, rgba(200, 255, 0, 0.12), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .btn-sm {
@@ -103,10 +103,33 @@ img {
   justify-content: space-between;
   padding: 12px 24px;
   background: rgba(15, 15, 15, 0.85);
+  background-image: linear-gradient(120deg, rgba(200, 255, 0, 0.08), rgba(255, 255, 255, 0.02));
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 100px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-compact .nav-inner {
+  padding: 8px 18px;
+  border-radius: 999px;
+}
+
+.nav-compact .logo-text {
+  display: none;
+}
+
+.nav-compact .nav-links {
+  gap: 6px;
+}
+
+.nav-compact .nav-links a {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.nav-compact .nav-right {
+  gap: 8px;
 }
 
 .logo {
@@ -205,6 +228,41 @@ img {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.nav-quick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.nav-icon-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-icon-btn:focus-visible {
+  outline: 2px solid rgba(200, 255, 0, 0.35);
+  outline-offset: 2px;
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* Network Badge */
@@ -2437,6 +2495,10 @@ html, body {
     padding: 8px 14px;
     font-size: 13px;
     min-height: var(--touch-target-min);
+  }
+
+  .nav-quick {
+    display: none;
   }
   
   /* Hamburger menu touch target */

@@ -845,9 +845,9 @@ export function SwapInterface() {
     <>
       <CardDark className="overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col gap-3 border-b border-sp-border bg-sp-surface/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-b border-sp-border/70 bg-gradient-to-r from-sp-surface/90 via-sp-surface/70 to-sp-surface/90 px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sp-accent font-bold text-black shadow-glow">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sp-accent font-bold text-black shadow-glow">
               SP
             </div>
             <div>
@@ -862,6 +862,7 @@ export function SwapInterface() {
               pendingCount={pendingCount} 
               onClick={() => setHistoryOpen(true)} 
             />
+            <span className="hidden h-5 w-px bg-sp-border/60 sm:block" />
             <div className="flex items-center gap-1.5">
               <Tabs
                 tabs={[
@@ -874,6 +875,7 @@ export function SwapInterface() {
               />
               <ModeExplanationBadge mode={mode} />
             </div>
+            <span className="hidden h-5 w-px bg-sp-border/60 sm:block" />
             <div className="flex items-center gap-2">
               {/* Dynamic slippage indicator */}
               <button
