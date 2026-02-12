@@ -57,6 +57,7 @@ export function LandioNav() {
     : [
         { href: "/swap", label: "Swap" },
         { href: "/rewards", label: "Rewards" },
+        { href: "/token", label: "Token" },
         { href: "/analytics", label: "Analytics" },
         { href: "/status", label: "Status" },
       ];

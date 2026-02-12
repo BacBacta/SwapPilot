@@ -28,6 +28,36 @@ function formatPilotBalance(balance: string): string {
   }
 }
 
+function parsePilotBalance(balance: string): number {
+  try {
+    return Number(BigInt(balance)) / 1e18;
+  } catch {
+    return 0;
+  }
+}
+
+type TierKey = "none" | "bronze" | "silver" | "gold";
+
+const STAKING_BASE_APY: Record<TierKey, number> = {
+  none: 12,
+  bronze: 14,
+  silver: 16,
+  gold: 20,
+};
+
+function getStakingStorageKey(address?: string): string | null {
+  if (!address) return null;
+  return `sp:staking:${address.toLowerCase()}`;
+}
+
+function formatStakeAmount(value: number): string {
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} PILOT`;
+}
+
+function formatReward(value: number): string {
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 4 })} PILOT`;
+}
+
 export function LandioRewardsController() {
   const { address, isConnected } = useAccount();
   const { data: pilotTierInfo, isLoading: isPilotTierLoading } = usePilotTier();
@@ -257,6 +287,145 @@ export function LandioRewardsController() {
       return () => navConnectBtn.removeEventListener("click", onClick);
     }
   }, [isConnected, address]);
+
+  // PILOT staking simulation + methodology
+  useEffect(() => {
+    const amountInput = document.getElementById("stakingAmountInput") as HTMLInputElement | null;
+    const lockSelect = document.getElementById("stakingLockSelect") as HTMLSelectElement | null;
+    const maxBtn = document.getElementById("stakingMaxBtn") as HTMLButtonElement | null;
+    const stakeBtn = document.getElementById("stakePilotBtn") as HTMLButtonElement | null;
+    const unstakeBtn = document.getElementById("unstakePilotBtn") as HTMLButtonElement | null;
+
+    const stakedAmountValue = document.getElementById("stakedAmountValue");
+    const effectiveApyValue = document.getElementById("effectiveApyValue");
+    const dailyRewardValue = document.getElementById("dailyRewardValue");
+    const periodRewardValue = document.getElementById("periodRewardValue");
+    const statusText = document.getElementById("stakingStatusText");
+    const apyBadge = document.getElementById("stakingApyBadge");
+
+    if (
+      !amountInput ||
+      !lockSelect ||
+      !maxBtn ||
+      !stakeBtn ||
+      !unstakeBtn ||
+      !stakedAmountValue ||
+      !effectiveApyValue ||
+      !dailyRewardValue ||
+      !periodRewardValue ||
+      !statusText ||
+      !apyBadge
+    ) {
+      return;
+    }
+
+    const walletBalance = pilotTierInfo ? parsePilotBalance(pilotTierInfo.balance) : 0;
+    const currentTier = (pilotTierInfo?.tier ?? "none") as TierKey;
+    const baseApy = STAKING_BASE_APY[currentTier] ?? STAKING_BASE_APY.none;
+
+    const storageKey = getStakingStorageKey(address);
+    let stakedAmount = 0;
+    if (storageKey) {
+      try {
+        stakedAmount = Number(window.localStorage.getItem(storageKey) || "0") || 0;
+      } catch {
+        stakedAmount = 0;
+      }
+    }
+
+    const compute = () => {
+      const lockDays = Number(lockSelect.value || "30");
+      const lockBonus = lockDays >= 180 ? 4 : lockDays >= 90 ? 2 : 0;
+      const effectiveApy = baseApy + lockBonus;
+      const apr = Math.log(1 + effectiveApy / 100);
+      const dailyRate = apr / 365;
+      const dailyReward = stakedAmount * dailyRate;
+      const periodReward = stakedAmount * (Math.pow(1 + dailyRate, lockDays) - 1);
+
+      stakedAmountValue.textContent = formatStakeAmount(stakedAmount);
+      effectiveApyValue.textContent = `${effectiveApy.toFixed(1)}%`;
+      apyBadge.textContent = `${effectiveApy.toFixed(1)}% APY`;
+      dailyRewardValue.textContent = formatReward(dailyReward);
+      periodRewardValue.textContent = formatReward(periodReward);
+
+      const inputAmount = Number(amountInput.value || "0");
+      const canStake = isConnected && inputAmount > 0 && inputAmount <= walletBalance;
+      stakeBtn.disabled = !canStake;
+      unstakeBtn.disabled = !isConnected || stakedAmount <= 0;
+
+      if (!isConnected) {
+        statusText.textContent = "Connect wallet to start staking simulation.";
+      } else if (inputAmount > walletBalance) {
+        statusText.textContent = `Insufficient PILOT balance. Max available: ${walletBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}.`;
+      } else if (stakedAmount > 0) {
+        statusText.textContent = `Staking active: ${formatStakeAmount(stakedAmount)} · Lock: ${lockDays} days · Tier base APY: ${baseApy.toFixed(1)}%`;
+      } else {
+        statusText.textContent = `Ready to stake. Tier base APY: ${baseApy.toFixed(1)}% (${currentTier.toUpperCase()}).`;
+      }
+    };
+
+    if (!isConnected) {
+      amountInput.value = "";
+      amountInput.disabled = true;
+      lockSelect.disabled = true;
+      maxBtn.disabled = true;
+      stakeBtn.disabled = true;
+      unstakeBtn.disabled = true;
+      stakedAmount = 0;
+    } else {
+      amountInput.disabled = false;
+      lockSelect.disabled = false;
+      maxBtn.disabled = false;
+    }
+
+    const onInput = () => compute();
+    const onLockChange = () => compute();
+    const onMax = () => {
+      amountInput.value = walletBalance > 0 ? walletBalance.toFixed(2) : "0";
+      compute();
+    };
+    const onStake = () => {
+      const value = Number(amountInput.value || "0");
+      if (!Number.isFinite(value) || value <= 0 || value > walletBalance) return;
+      stakedAmount = value;
+      if (storageKey) {
+        try {
+          window.localStorage.setItem(storageKey, value.toString());
+        } catch {
+          // no-op
+        }
+      }
+      amountInput.value = "";
+      compute();
+    };
+    const onUnstake = () => {
+      stakedAmount = 0;
+      if (storageKey) {
+        try {
+          window.localStorage.removeItem(storageKey);
+        } catch {
+          // no-op
+        }
+      }
+      compute();
+    };
+
+    amountInput.addEventListener("input", onInput);
+    lockSelect.addEventListener("change", onLockChange);
+    maxBtn.addEventListener("click", onMax);
+    stakeBtn.addEventListener("click", onStake);
+    unstakeBtn.addEventListener("click", onUnstake);
+
+    compute();
+
+    return () => {
+      amountInput.removeEventListener("input", onInput);
+      lockSelect.removeEventListener("change", onLockChange);
+      maxBtn.removeEventListener("click", onMax);
+      stakeBtn.removeEventListener("click", onStake);
+      unstakeBtn.removeEventListener("click", onUnstake);
+    };
+  }, [isConnected, address, pilotTierInfo]);
 
   return null;
 }
