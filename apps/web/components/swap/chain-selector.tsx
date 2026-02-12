@@ -84,7 +84,7 @@ export function ChainSelector({ className = "", showLabel = true, compact = fals
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitching}
         className={`
-          flex items-center gap-2 rounded-xl border transition-all duration-200
+          flex items-center gap-2 rounded-xl border transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard
           ${compact ? "px-2 py-1.5" : "px-3 py-2"}
           border-sp-border bg-sp-surface2 hover:border-sp-borderHover hover:bg-sp-surface3
           disabled:cursor-not-allowed disabled:opacity-50
@@ -135,7 +135,7 @@ export function ChainSelector({ className = "", showLabel = true, compact = fals
                 }}
                 disabled={isSwitching}
                 className={`
-                  flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-150
+                  flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-[transform,background-color,border-color,color,opacity] duration-fast ease-standard
                   ${chain.chain.id === currentChain.chain.id
                     ? "bg-sp-accent/10 text-sp-accent"
                     : "text-sp-text hover:bg-sp-surface2"

@@ -168,7 +168,7 @@
     /* Elements are visible by default, animations are progressive enhancement */
     .reveal {
       opacity: 1;
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .reveal.active {
@@ -227,7 +227,7 @@
     .stagger-children > * {
       opacity: 1;
       transform: translateY(0);
-      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .stagger-children.active > *:nth-child(1) { transition-delay: 0.1s; }
@@ -269,12 +269,12 @@
     }
 
     .hero-card {
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+      transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .hero-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
     }
 
     .hero-card-main {
@@ -317,7 +317,7 @@
     .pricing-card,
     .testimonial-card,
     .story-card {
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .benefit-card:hover,
@@ -325,17 +325,46 @@
     .bento-card:hover,
     .testimonial-card:hover,
     .story-card:hover {
-      transform: translateY(-8px);
+      transform: translateY(-6px);
       border-color: var(--border-light);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
     }
 
     .pricing-card:hover {
-      transform: translateY(-12px) scale(1.02);
+      transform: translateY(-8px) scale(1.01);
     }
 
     .pricing-card.featured {
-      animation: pulseGlow 3s infinite;
+      animation: pulseGlow 5s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-badge,
+      .hero h1,
+      .hero h1 .accent,
+      .hero-subtitle,
+      .hero-buttons,
+      .hero-visual,
+      .hero-card-main,
+      .hero-card:not(.hero-card-main),
+      .nav,
+      .pricing-card.featured {
+        animation: none !important;
+      }
+
+      .hero-card,
+      .benefit-card,
+      .feature-card,
+      .bento-card,
+      .pricing-card,
+      .testimonial-card,
+      .story-card,
+      .reveal,
+      .stagger-children > * {
+        transition: opacity 120ms ease-out, color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out !important;
+        transform: none !important;
+        filter: none !important;
+      }
     }
 
     /* ===== ICON ANIMATIONS ===== */

@@ -34,7 +34,9 @@ const BSC_RPC_URLS = [
    ======================================== */
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ?? "";
 const walletConnectEnabled = projectId.length > 0;
-const walletConnectProjectId = walletConnectEnabled ? projectId : "";
+const walletConnectProjectId = walletConnectEnabled
+  ? projectId
+  : "walletconnect-disabled-no-project-id";
 
 // Only include essential wallets for faster modal loading
 const connectors = connectorsForWallets(
@@ -209,6 +211,14 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   // Only render the full provider tree on the client
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!walletConnectEnabled && process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[Web3Provider] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is missing. WalletConnect wallet is disabled until a valid projectId is configured."
+      );
+    }
   }, []);
 
   return (

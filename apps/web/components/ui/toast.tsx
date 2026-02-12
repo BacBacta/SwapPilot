@@ -156,7 +156,8 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
   return (
     <div
       className={cn(
-        "animate-slideIn flex w-80 items-start gap-3 rounded-xl border p-4 shadow-lg backdrop-blur-sm",
+        "animate-slideIn motion-reduce:animate-none flex w-80 items-start gap-3 rounded-xl border p-4 shadow-lg backdrop-blur-sm",
+        "transition-[transform,opacity,box-shadow,border-color,background-color] duration-base ease-standard hover:-translate-y-0.5 hover:shadow-xl",
         "bg-sp-surface/95",
         styles[toast.type]
       )}
@@ -172,7 +173,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
         {toast.action && (
           <button
             onClick={toast.action.onClick}
-            className="mt-2 text-micro font-semibold text-sp-accent hover:underline"
+            className="mt-2 text-micro font-semibold text-sp-accent transition-[color,opacity,transform] duration-fast ease-standard hover:underline hover:opacity-90"
           >
             {toast.action.label}
           </button>
@@ -182,7 +183,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
       {toast.type !== "loading" && (
         <button
           onClick={onRemove}
-          className="flex-shrink-0 text-sp-muted hover:text-sp-text transition"
+          className="flex-shrink-0 text-sp-muted transition-[color,opacity,transform] duration-fast ease-standard hover:text-sp-text hover:scale-105"
         >
           <XIcon className="h-4 w-4" />
         </button>

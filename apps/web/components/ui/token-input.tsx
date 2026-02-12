@@ -40,7 +40,7 @@ export function TokenInput({
   return (
     <div
       className={cn(
-        "group relative rounded-2xl border bg-sp-surface2/80 p-5 transition-all duration-300",
+        "group relative rounded-2xl border bg-sp-surface2/80 p-5 transition-[transform,border-color,background-color,box-shadow,opacity] duration-base ease-standard",
         error
           ? "border-sp-bad/50 bg-sp-bad/5 animate-shake"
           : focused
@@ -60,7 +60,7 @@ export function TokenInput({
             {onMaxClick && !readOnly && (
               <button
                 onClick={onMaxClick}
-                className="min-h-[32px] rounded-lg bg-sp-accent/15 px-3 py-1 text-caption font-bold text-sp-accent transition-all duration-200 hover:bg-sp-accent/25 hover:scale-105 active:scale-95"
+                className="min-h-[32px] rounded-lg bg-sp-accent/15 px-3 py-1 text-caption font-bold text-sp-accent transition-[transform,background-color,color,box-shadow,opacity] duration-fast ease-standard hover:bg-sp-accent/25 hover:scale-105 active:scale-95"
               >
                 MAX
               </button>
@@ -74,7 +74,7 @@ export function TokenInput({
         {/* Token selector button - 48px touch target */}
         <button
           onClick={onTokenClick}
-          className="flex items-center gap-3 rounded-2xl border border-sp-border bg-sp-surface3/80 px-4 py-3 min-h-[56px] transition-all duration-200 hover:border-sp-borderHover hover:bg-sp-surface3 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-3 rounded-2xl border border-sp-border bg-sp-surface3/80 px-4 py-3 min-h-[56px] transition-[transform,border-color,background-color,box-shadow,opacity] duration-fast ease-standard hover:border-sp-borderHover hover:bg-sp-surface3 hover:scale-[1.02] active:scale-[0.98]"
         >
           <TokenImage symbol={token} src={tokenLogoURI} size="lg" />
           <span className="text-h2 font-bold text-sp-text">{token}</span>
@@ -121,7 +121,7 @@ export function SwapDirectionButton({ onClick }: { onClick?: () => void }) {
     <div className="relative z-10 -my-3 flex justify-center">
       <button
         onClick={onClick}
-        className="group flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-sp-border bg-sp-surface shadow-xl transition-all duration-300 hover:border-sp-accent hover:shadow-glow hover:rotate-180 active:scale-90"
+        className="group flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-sp-border bg-sp-surface shadow-xl transition-[transform,border-color,background-color,box-shadow,color,opacity] duration-base ease-standard hover:border-sp-accent hover:shadow-glow hover:rotate-180 active:scale-90"
       >
         <svg
           className="h-6 w-6 text-sp-muted transition-colors duration-300 group-hover:text-sp-accent"

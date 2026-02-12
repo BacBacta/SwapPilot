@@ -30,7 +30,7 @@ export function TopbarDark({
             key={n.href}
             href={n.href}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all",
+              "rounded-full border px-3 py-1.5 text-xs font-semibold transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
               active === n.label
                 ? "border-sp-accent/35 bg-sp-accent/10 text-sp-text"
                 : "border-sp-border bg-white/5 text-sp-muted hover:border-sp-borderHover hover:text-sp-text"
@@ -49,7 +49,7 @@ export function TopbarDark({
         <Pill tone="accent">BNB</Pill>
         <a
           href="/status"
-          className="rounded-full border border-sp-border bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-sp-muted transition-all hover:border-sp-borderHover hover:text-sp-text"
+          className="rounded-full border border-sp-border bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-sp-muted transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard hover:border-sp-borderHover hover:text-sp-text"
         >
           Status
         </a>

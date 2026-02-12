@@ -46,7 +46,7 @@ export function ReceiptDrawer({ open, onClose, receipt, selectedQuote, loading, 
       {/* Backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-base ease-standard",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
@@ -55,7 +55,7 @@ export function ReceiptDrawer({ open, onClose, receipt, selectedQuote, loading, 
       {/* Drawer */}
       <div
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-full max-w-lg transform overflow-y-auto border-l border-sp-lightBorder bg-sp-lightSurface shadow-soft transition-transform duration-300",
+          "fixed right-0 top-0 z-50 h-full w-full max-w-lg transform overflow-y-auto border-l border-sp-lightBorder bg-sp-lightSurface shadow-soft transition-transform duration-base ease-standard",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -370,7 +370,7 @@ function BeqScoreBreakdown({ details }: { details: BeqV2DetailsType }) {
         </div>
         <div className="h-2 rounded-full bg-sp-lightBorder overflow-hidden">
           <div 
-            className="h-full bg-sp-primary rounded-full transition-all" 
+            className="h-full bg-sp-primary rounded-full transition-[width,background-color,opacity] duration-base ease-standard" 
             style={{ width: `${Math.min(components.outputScore, 100)}%` }}
           />
         </div>

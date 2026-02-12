@@ -26,6 +26,11 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-2xl: 32px;
+  --motion-fast: 160ms;
+  --motion-base: 260ms;
+  --motion-slow: 420ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-emphasis: cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
 body {
@@ -71,7 +76,7 @@ img {
 /* ===== NAVIGATION ===== */
 .nav {
   position: fixed !important;
-  top: 16px !important;
+  top: 0 !important;
   left: 16px !important;
   right: 16px !important;
   margin: 0 auto !important;
@@ -79,11 +84,11 @@ img {
   max-width: 1200px !important;
   width: auto !important;
   transform: none !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: top var(--motion-base) var(--motion-ease), left var(--motion-base) var(--motion-ease), right var(--motion-base) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
 }
 
 .nav-scrolled {
-  top: 8px;
+  top: 0;
 }
 
 .nav-scrolled .nav-inner {
@@ -107,7 +112,7 @@ img {
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 100px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: padding var(--motion-base) var(--motion-ease), border-radius var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), backdrop-filter var(--motion-base) var(--motion-ease);
 }
 
 .nav-compact .nav-inner {
@@ -188,7 +193,7 @@ img {
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
   padding: 8px 16px;
   border-radius: 100px;
   position: relative;
@@ -246,7 +251,7 @@ img {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
 }
 
 .nav-icon-btn:hover {
@@ -329,7 +334,7 @@ img {
   background: var(--ok);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--ok);
-  animation: pulse 2s infinite;
+  animation: pulse 3.2s ease-in-out infinite;
 }
 
 @keyframes pulse {
@@ -349,7 +354,7 @@ img {
   padding: 10px 20px;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(200, 255, 0, 0.2);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease);
 }
 
 .btn-cta:hover {
@@ -358,7 +363,7 @@ img {
 }
 
 .btn-cta .btn-arrow {
-  transition: transform 0.2s;
+  transition: transform var(--motion-fast) var(--motion-ease);
 }
 
 .btn-cta:hover .btn-arrow {
@@ -436,7 +441,7 @@ img {
   height: 2px;
   background: var(--text-primary);
   border-radius: 2px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--motion-base) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease);
 }
 
 .hamburger.open span:nth-child(1) {
@@ -468,7 +473,7 @@ img {
   opacity: 0;
   transform: translateY(-10px);
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--motion-base) var(--motion-ease), transform var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
 }
 
 /* Backdrop for mobile menu (mounted by React) */
@@ -506,7 +511,7 @@ img {
   font-size: 15px;
   font-weight: 500;
   border-radius: 12px;
-  transition: all 0.2s;
+  transition: background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
 }
 
 .mobile-menu a:hover {
@@ -529,7 +534,7 @@ img {
   font-size: 14px;
   font-weight: 600;
   border-radius: 100px;
-  transition: all 0.2s;
+  transition: transform var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), filter var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
   cursor: pointer;
   border: none;
   font-family: inherit;
@@ -608,7 +613,7 @@ img {
   height: 6px;
   background: var(--accent);
   border-radius: 50%;
-  animation: pulse 2s infinite;
+  animation: pulse 3.2s ease-in-out infinite;
 }
 
 @keyframes pulse {
@@ -654,6 +659,14 @@ img {
   border-radius: var(--radius-xl);
   padding: 24px;
   text-align: left;
+  transition: transform var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-slow) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
+  will-change: transform;
+}
+
+.hero-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-light);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .hero-card-main {
@@ -870,7 +883,7 @@ img {
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 28px;
-  transition: all 0.3s;
+  transition: transform var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-slow) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
 }
 
 .benefit-card:hover {
@@ -1192,11 +1205,13 @@ img {
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 28px;
-  transition: all 0.3s;
+  transition: transform var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-slow) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
 }
 
 .feature-card:hover {
   border-color: var(--border-light);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
 }
 
 .feature-icon {
@@ -1233,7 +1248,7 @@ img {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
   font-family: inherit;
 }
 
@@ -2267,7 +2282,7 @@ img {
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: all 0.3s;
+  transition: transform var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-slow) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
 }
 
 .blog-card:hover {
@@ -2435,13 +2450,13 @@ img {
 
   /* Keep the fixed navbar clear of iOS/PWA status bars and landscape insets */
   .nav {
-    top: calc(16px + env(safe-area-inset-top)) !important;
+    top: env(safe-area-inset-top) !important;
     left: calc(16px + env(safe-area-inset-left)) !important;
     right: calc(16px + env(safe-area-inset-right)) !important;
   }
 
   .nav-scrolled {
-    top: calc(8px + env(safe-area-inset-top));
+    top: env(safe-area-inset-top);
   }
   
   .safe-bottom {
@@ -2470,7 +2485,7 @@ html, body {
 /* ===== MOBILE NAVIGATION (< 768px) ===== */
 @media (max-width: 768px) {
   .nav {
-    top: 8px;
+    top: 0;
     left: 8px;
     right: 8px;
   }
@@ -2512,7 +2527,7 @@ html, body {
 @supports (padding: env(safe-area-inset-bottom)) {
   @media (max-width: 768px) {
     .nav {
-      top: calc(8px + env(safe-area-inset-top)) !important;
+      top: env(safe-area-inset-top) !important;
       left: calc(8px + env(safe-area-inset-left)) !important;
       right: calc(8px + env(safe-area-inset-right)) !important;
     }
@@ -3355,7 +3370,7 @@ html, body {
 /* ===== 🟠 MEDIUM PRIORITY: Navigation CTA Mobile ===== */
 @media (max-width: 768px) {
   .nav {
-    top: 8px !important;
+    top: 0 !important;
     left: 8px !important;
     right: 8px !important;
   }

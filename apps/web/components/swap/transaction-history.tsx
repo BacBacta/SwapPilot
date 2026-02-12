@@ -153,7 +153,7 @@ export function TransactionHistoryPanel({
         {onClear && (
           <button
             onClick={onClear}
-            className="text-micro text-sp-muted hover:text-sp-bad transition"
+            className="text-micro text-sp-muted hover:text-sp-bad transition-[color,opacity,transform] duration-fast ease-standard"
           >
             Clear all
           </button>
@@ -209,7 +209,7 @@ function TransactionRow({
   const timeAgo = formatTimeAgo(transaction.timestamp);
 
   return (
-    <div className="rounded-xl border border-sp-border bg-sp-surface2 overflow-hidden">
+    <div className="rounded-xl border border-sp-border bg-sp-surface2 overflow-hidden transition-[border-color,box-shadow,background-color,transform] duration-base ease-standard hover:border-sp-borderHover hover:bg-sp-surface3/70 hover:-translate-y-0.5">
       <div className="flex w-full items-center gap-3 px-4 py-3">
         {/* Status icon */}
         <div className={cn("flex-shrink-0", status.color)}>
@@ -243,7 +243,7 @@ function TransactionRow({
             href={getExplorerLink(transaction.chainId, transaction.hash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 flex items-center gap-1 rounded-lg bg-sp-accent/10 px-2 py-1 text-micro font-medium text-sp-accent hover:bg-sp-accent/20 transition"
+            className="flex-shrink-0 flex items-center gap-1 rounded-lg bg-sp-accent/10 px-2 py-1 text-micro font-medium text-sp-accent hover:bg-sp-accent/20 transition-[background-color,color,opacity,transform] duration-fast ease-standard hover:-translate-y-0.5"
             onClick={(e) => e.stopPropagation()}
           >
             <ExternalLinkIcon className="h-3 w-3" />
@@ -252,10 +252,10 @@ function TransactionRow({
         )}
 
         {/* Expand icon */}
-        <button onClick={onToggle} className="flex-shrink-0 p-1">
+        <button onClick={onToggle} className="flex-shrink-0 p-1 transition-[transform,opacity] duration-fast ease-standard hover:scale-105">
           <ChevronIcon
             className={cn(
-              "h-4 w-4 text-sp-muted transition",
+              "h-4 w-4 text-sp-muted transition-[transform,color,opacity] duration-base ease-standard",
               expanded && "rotate-180"
             )}
           />
@@ -285,7 +285,7 @@ function TransactionRow({
                 href={getExplorerLink(transaction.chainId, transaction.hash)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-sp-accent py-2 text-caption font-semibold text-black hover:bg-sp-accent/90 transition"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-sp-accent py-2 text-caption font-semibold text-black hover:bg-sp-accent/90 transition-[background-color,transform,opacity,box-shadow] duration-fast ease-standard hover:-translate-y-0.5"
               >
                 <ExternalLinkIcon className="h-4 w-4" />
                 View on {getExplorerName(transaction.chainId)}
@@ -329,7 +329,7 @@ export function TransactionHistoryButton({
       <HistoryIcon className="h-4 w-4" />
       <span className="hidden sm:inline">History</span>
       {pendingCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-sp-warn text-[10px] font-bold text-black animate-pulse">
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-sp-warn text-[10px] font-bold text-black animate-pulse motion-reduce:animate-none">
           {pendingCount}
         </span>
       )}
@@ -359,12 +359,12 @@ export function TransactionHistoryDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fadeIn"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fadeIn motion-reduce:animate-none"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md animate-slideInRight">
+      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md animate-slideInRight motion-reduce:animate-none">
         <div className="flex h-full flex-col bg-sp-surface border-l border-sp-border">
           {/* Header */}
           <div className="flex-shrink-0 flex items-center justify-between border-b border-sp-border px-5 py-4">
@@ -379,14 +379,14 @@ export function TransactionHistoryDrawer({
               {onClear && transactions.length > 0 && (
                 <button
                   onClick={onClear}
-                  className="text-micro text-sp-muted hover:text-sp-bad transition"
+                  className="text-micro text-sp-muted hover:text-sp-bad transition-[color,opacity,transform] duration-fast ease-standard"
                 >
                   Clear all
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-sp-muted hover:bg-sp-surface3 hover:text-sp-text transition"
+                className="grid h-8 w-8 place-items-center rounded-lg text-sp-muted hover:bg-sp-surface3 hover:text-sp-text transition-[background-color,color,opacity,transform] duration-fast ease-standard hover:scale-105"
               >
                 <XIcon className="h-5 w-5" />
               </button>

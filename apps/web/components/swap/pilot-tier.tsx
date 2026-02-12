@@ -93,7 +93,7 @@ export function PilotTierCard() {
           {/* Progress bar */}
           <div className="mt-2 h-1.5 bg-sp-surface3 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-sp-accent rounded-full transition-all duration-300"
+              className="h-full bg-sp-accent rounded-full transition-[width,background-color,opacity] duration-base ease-standard"
               style={{
                 width: `${Math.min(100, (Number(BigInt(tierInfo.balance)) / Number(BigInt(tierInfo.nextTier.requiredBalance))) * 100)}%`
               }}

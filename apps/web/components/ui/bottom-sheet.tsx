@@ -177,14 +177,14 @@ export function BottomSheet({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 transition-opacity duration-300",
+        "fixed inset-0 z-50 transition-opacity duration-base ease-standard",
         open ? "opacity-100" : "pointer-events-none opacity-0"
       )}
     >
       {/* Backdrop */}
       <div
         className={cn(
-          "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+          "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-base ease-standard",
           open ? "opacity-100" : "opacity-0"
         )}
         onClick={dismissible ? onClose : undefined}
@@ -198,7 +198,7 @@ export function BottomSheet({
         ref={sheetRef}
         className={cn(
           "fixed bottom-0 left-0 right-0 flex flex-col rounded-t-3xl border-t border-white/10 bg-sp-surface shadow-2xl transition-transform",
-          isDragging ? "duration-0" : "duration-300 ease-out",
+          isDragging ? "duration-0" : "duration-base ease-standard",
           !open && "translate-y-full",
           fullHeightDesktop && "md:left-auto md:right-4 md:bottom-4 md:top-4 md:w-[420px] md:rounded-2xl md:border",
           className
