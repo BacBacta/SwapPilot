@@ -37,6 +37,7 @@
     "node_modules",
     "playwright.config.ts",
     "e2e",
-    "scripts"
+    "scripts",
+    "components/landio-copy-087b2-main/**"
   ]
 }
