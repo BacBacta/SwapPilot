@@ -48,7 +48,7 @@ export function WalletButton({
                   <button
                     onClick={() => guardedOpenConnect(openConnectModal)}
                     className={cn(
-                      "flex items-center gap-2 rounded-xl border border-sp-accent/30 bg-sp-accent/10 px-4 py-2.5 text-caption font-semibold text-sp-accent transition-all duration-200",
+                      "flex items-center gap-2 rounded-xl border border-sp-accent/30 bg-sp-accent/10 px-4 py-2.5 text-caption font-semibold text-sp-accent transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
                       "hover:border-sp-accent/50 hover:bg-sp-accent/20 hover:shadow-glow",
                       "active:scale-95",
                       className
@@ -65,7 +65,7 @@ export function WalletButton({
                   <button
                     onClick={openChainModal}
                     className={cn(
-                      "flex items-center gap-2 rounded-xl border border-sp-bad/30 bg-sp-bad/10 px-4 py-2.5 text-caption font-semibold text-sp-bad transition-all duration-200",
+                      "flex items-center gap-2 rounded-xl border border-sp-bad/30 bg-sp-bad/10 px-4 py-2.5 text-caption font-semibold text-sp-bad transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
                       "hover:border-sp-bad/50 hover:bg-sp-bad/20",
                       className
                     )}

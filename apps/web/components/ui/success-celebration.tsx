@@ -72,14 +72,14 @@ export function SuccessCelebration({
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-fadeIn" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-fadeIn motion-reduce:animate-none" />
 
       {/* Confetti */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {confetti.map((particle) => (
           <div
             key={particle.id}
-            className="confetti-particle absolute"
+            className="confetti-particle absolute motion-reduce:hidden"
             style={{
               left: `${particle.x}%`,
               backgroundColor: particle.color,
@@ -90,7 +90,7 @@ export function SuccessCelebration({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 mx-4 max-w-sm animate-success-pop rounded-3xl border border-sp-accent/30 bg-sp-surface p-8 text-center shadow-2xl">
+      <div className="relative z-10 mx-4 max-w-sm animate-success-pop motion-reduce:animate-none rounded-3xl border border-sp-accent/30 bg-sp-surface p-8 text-center shadow-2xl transition-[transform,opacity,box-shadow,border-color] duration-base ease-standard">
         {/* Success icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sp-accent/20 to-sp-accent/5">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sp-accent to-sp-accent2">
@@ -133,7 +133,7 @@ interface SuccessToastProps {
 
 export function SuccessToast({ message, txHash, onViewTx }: SuccessToastProps) {
   return (
-    <div className="flex items-center gap-3 animate-slideIn">
+    <div className="flex items-center gap-3 animate-slideIn motion-reduce:animate-none transition-[transform,opacity] duration-base ease-standard">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sp-ok/20">
         <CheckIcon className="h-5 w-5 text-sp-ok" />
       </div>

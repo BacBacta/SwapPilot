@@ -152,7 +152,7 @@ export function ModeExplanationBadge({ mode }: { mode: "BEQ" | "RAW" }) {
       }
       position="bottom"
     >
-      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-sp-surface2 text-[11px] font-medium text-sp-muted hover:bg-sp-accent/20 hover:text-sp-accent transition-all cursor-help">
+      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-sp-surface2 text-[11px] font-medium text-sp-muted hover:bg-sp-accent/20 hover:text-sp-accent transition-[transform,background-color,border-color,color,opacity] duration-fast ease-standard cursor-help">
         ?
       </div>
     </Tooltip>

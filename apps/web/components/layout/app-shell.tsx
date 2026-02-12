@@ -34,7 +34,7 @@ export function MobileNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex min-h-[52px] min-w-[60px] flex-col items-center justify-center gap-1 rounded-full px-3 py-2 transition-all duration-300",
+                  "relative flex min-h-[52px] min-w-[60px] flex-col items-center justify-center gap-1 rounded-full px-3 py-2 transition-[transform,background-color,color,opacity,box-shadow] duration-base ease-standard",
                   isActive
                     ? "bg-sp-accent/15 text-sp-accent"
                     : "text-sp-muted active:scale-95 active:bg-white/5"
@@ -45,7 +45,7 @@ export function MobileNav() {
                   isActive && "scale-110"
                 )}>
                   <Icon className={cn(
-                    "h-5 w-5 transition-all duration-300",
+                    "h-5 w-5 transition-[transform,color,filter,opacity] duration-base ease-standard",
                     isActive && "drop-shadow-[0_0_8px_rgba(200,255,0,0.6)]"
                   )} />
                   {isActive && (
@@ -53,7 +53,7 @@ export function MobileNav() {
                   )}
                 </div>
                 <span className={cn(
-                  "text-[10px] font-medium tracking-wide transition-all duration-300",
+                  "text-[10px] font-medium tracking-wide transition-[opacity,color] duration-fast ease-standard",
                   isActive ? "opacity-100" : "opacity-60"
                 )}>
                   {item.label}
@@ -101,7 +101,7 @@ export function DesktopSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-body font-medium transition-all duration-300",
+                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-body font-medium transition-[transform,background-color,color,box-shadow,border-color,opacity] duration-base ease-standard",
                     isActive
                       ? "bg-sp-accent/10 text-sp-accent shadow-[inset_0_0_0_1px_rgba(200,255,0,0.2)]"
                       : "text-sp-muted hover:bg-sp-surface2 hover:text-sp-text"
@@ -151,29 +151,29 @@ export function MobileHeader() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-40 bg-sp-bg/95 backdrop-blur-xl md:hidden transition-all duration-300",
+      "sticky top-0 z-40 bg-sp-bg/95 backdrop-blur-xl md:hidden transition-[background-color,opacity,backdrop-filter] duration-base ease-standard",
       isCompact && "bg-sp-bg/98"
     )}>
       <div className={cn(
-        "flex items-center justify-between px-5 transition-all duration-300",
+        "flex items-center justify-between px-5 transition-[height,padding,opacity] duration-base ease-standard",
         isCompact ? "h-12" : "h-16"
       )}>
         {/* Logo */}
         <div className="flex items-center gap-3">
           <div className={cn(
-            "relative grid place-items-center rounded-2xl bg-sp-accent font-bold text-black shadow-accentGlow transition-all duration-300",
+            "relative grid place-items-center rounded-2xl bg-sp-accent font-bold text-black shadow-accentGlow transition-[transform,width,height,font-size,box-shadow,opacity] duration-base ease-standard",
             isCompact ? "h-8 w-8 text-[10px]" : "h-10 w-10 text-sm"
           )}>
             SP
           </div>
           <div>
             <span className={cn(
-              "text-body font-bold text-sp-text transition-all duration-300",
+              "text-body font-bold text-sp-text transition-[font-size,opacity,color] duration-fast ease-standard",
               isCompact && "text-[0.85rem]"
             )}>SwapPilot</span>
             <div className="flex items-center gap-1.5">
               <div className={cn(
-                "rounded-full bg-sp-ok animate-pulse transition-all duration-300",
+                "rounded-full bg-sp-ok animate-pulse transition-[width,height,opacity,background-color] duration-fast ease-standard",
                 isCompact ? "h-1 w-1" : "h-1.5 w-1.5"
               )} />
               <span className={cn(
@@ -186,7 +186,7 @@ export function MobileHeader() {
 
         {/* Actions */}
         <div className={cn(
-          "flex items-center transition-all duration-300",
+          "flex items-center transition-[gap,opacity,transform] duration-base ease-standard",
           isCompact ? "gap-2" : "gap-3"
         )}>
           <ChainSelector compact showLabel={false} />

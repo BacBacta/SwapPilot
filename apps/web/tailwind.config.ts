@@ -50,6 +50,15 @@ const config: Config = {
         cardDark: "0 4px 32px rgba(0,0,0,.5)",
         input: "0 2px 8px rgba(0,0,0,.08)",
       },
+      transitionTimingFunction: {
+        standard: "cubic-bezier(0.22, 1, 0.36, 1)",
+        emphasized: "cubic-bezier(0.2, 0.9, 0.25, 1)",
+      },
+      transitionDuration: {
+        fast: "160ms",
+        base: "240ms",
+        slow: "360ms",
+      },
       colors: {
         sp: {
           bg: "#0B0F17",

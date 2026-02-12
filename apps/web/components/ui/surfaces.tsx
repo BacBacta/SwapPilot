@@ -5,7 +5,7 @@ export function CardDark({ children, className }: { children: ReactNode; classNa
   return (
     <div className={cn(
       "rounded-2xl border border-white/8 bg-sp-surface/70 shadow-2xl backdrop-blur-xl",
-      "transition-all duration-300",
+      "transition-[transform,background-color,border-color,box-shadow,opacity,backdrop-filter] duration-base ease-standard",
       className
     )}>
       {children}
@@ -17,7 +17,7 @@ export function CardLight({ children, className }: { children: ReactNode; classN
   return (
     <div className={cn(
       "rounded-2xl border border-sp-lightBorder bg-sp-lightSurface shadow-xl",
-      "transition-all duration-300",
+      "transition-[transform,background-color,border-color,box-shadow,opacity] duration-base ease-standard",
       className
     )}>
       {children}
@@ -38,7 +38,7 @@ export function GlassCard({
   return (
     <div className={cn(
       "relative rounded-2xl border border-white/10 bg-gradient-to-b from-sp-surface/80 to-sp-surface2/80 backdrop-blur-xl",
-      "transition-all duration-300",
+      "transition-[transform,background-color,border-color,box-shadow,opacity,backdrop-filter] duration-base ease-standard",
       glow && "shadow-glow",
       className
     )}>
@@ -61,7 +61,7 @@ export function ElevatedCard({
 }) {
   return (
     <div className={cn(
-      "rounded-2xl border bg-sp-surface2 shadow-xl transition-all duration-300",
+      "rounded-2xl border bg-sp-surface2 shadow-xl transition-[transform,background-color,border-color,box-shadow,opacity] duration-base ease-standard",
       highlight 
         ? "border-sp-accent/30 shadow-glow" 
         : "border-sp-border/50 hover:border-sp-borderHover",

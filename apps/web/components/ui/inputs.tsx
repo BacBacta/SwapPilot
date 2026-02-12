@@ -26,7 +26,7 @@ export function SearchInput({
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-xl border bg-sp-surface2 px-3.5 py-2.5 transition-all duration-200",
+        "flex items-center gap-2.5 rounded-xl border bg-sp-surface2 px-3.5 py-2.5 transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
         focused ? "border-sp-borderActive shadow-glow" : "border-sp-border hover:border-sp-borderHover",
         className
       )}
@@ -93,7 +93,7 @@ export function Slider({
       <div className="relative">
         <div className="h-2 w-full rounded-full bg-sp-surface3">
           <div
-            className="h-2 rounded-full bg-sp-accent transition-all"
+            className="h-2 rounded-full bg-sp-accent transition-[width,background-color,opacity] duration-base ease-standard"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -141,7 +141,7 @@ export function Tabs<T extends string>({
           key={tab.value}
           onClick={() => onChange?.(tab.value)}
           className={cn(
-            "rounded-lg font-semibold transition-all duration-200",
+            "rounded-lg font-semibold transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
             size === "sm" ? "px-3 py-1.5 text-micro" : "px-4 py-2 text-caption",
             value === tab.value
               ? "bg-sp-accent text-black shadow-glow"
@@ -178,7 +178,7 @@ export function PresetButtons({
           key={opt.value}
           onClick={() => onChange?.(opt.value)}
           className={cn(
-            "rounded-lg border px-3 py-1.5 text-micro font-semibold transition-all",
+            "rounded-lg border px-3 py-1.5 text-micro font-semibold transition-[transform,background-color,border-color,color,opacity,box-shadow] duration-fast ease-standard",
             value === opt.value
               ? "border-sp-accent/50 bg-sp-accent/15 text-sp-accent"
               : "border-sp-border bg-sp-surface2 text-sp-muted hover:border-sp-borderHover hover:text-sp-text"

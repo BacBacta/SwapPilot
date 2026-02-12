@@ -55,7 +55,7 @@ export function Button({
   size?: "sm" | "md" | "lg" | "xl";
   loading?: boolean;
 }) {
-  const baseStyles = "relative inline-flex items-center justify-center font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
+  const baseStyles = "relative inline-flex items-center justify-center font-bold transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-base ease-standard disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden";
   
   const variantStyles = {
     primary: "bg-gradient-to-r from-sp-accent to-sp-accent/90 text-black hover:shadow-glow active:scale-[0.97] active:shadow-none",
@@ -81,7 +81,7 @@ export function Button({
     >
       {/* Subtle shine effect on primary */}
       {variant === "primary" && !disabled && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-slow ease-emphasized" />
       )}
       {loading && <Spinner className="h-5 w-5" />}
       {children}
@@ -132,7 +132,7 @@ export function Toggle({ on, onChange }: { on: boolean; onChange?: (value: boole
       aria-checked={on}
       onClick={() => onChange?.(!on)}
       className={cn(
-        "relative h-8 w-14 rounded-full border transition-all duration-300",
+        "relative h-8 w-14 rounded-full border transition-[background-color,border-color,box-shadow,opacity] duration-base ease-standard",
         on 
           ? "border-sp-ok/40 bg-sp-ok/20" 
           : "border-sp-border bg-sp-surface2 hover:border-sp-borderHover"
@@ -140,7 +140,7 @@ export function Toggle({ on, onChange }: { on: boolean; onChange?: (value: boole
     >
       <div
         className={cn(
-          "absolute top-1 h-6 w-6 rounded-full transition-all duration-300 ease-out",
+          "absolute top-1 h-6 w-6 rounded-full transition-[left,background-color,box-shadow,opacity] duration-base ease-standard",
           on 
             ? "left-7 bg-sp-ok shadow-glowOk" 
             : "left-1 bg-sp-muted"
@@ -163,7 +163,7 @@ export function Progress({ value, tone = "ok" }: { value: number; tone?: "ok" | 
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-sp-surface3">
       <div
-        className={cn("h-full rounded-full transition-all duration-300", toneStyles[tone])}
+        className={cn("h-full rounded-full transition-[width,background-color,opacity] duration-base ease-standard", toneStyles[tone])}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
@@ -191,7 +191,7 @@ export function IconButton({
     <button
       {...props}
       className={cn(
-        "flex items-center justify-center border border-sp-border bg-sp-surface2 text-sp-muted transition-all duration-200 hover:border-sp-borderHover hover:bg-sp-surface3 hover:text-sp-text active:scale-95",
+        "flex items-center justify-center border border-sp-border bg-sp-surface2 text-sp-muted transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-fast ease-standard hover:border-sp-borderHover hover:bg-sp-surface3 hover:text-sp-text active:scale-95",
         sizeStyles[size],
         className
       )}
