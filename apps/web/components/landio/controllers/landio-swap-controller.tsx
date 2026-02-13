@@ -95,8 +95,32 @@ type StoredTransaction = {
   providerId: string;
 };
 
+function normalizeAmountInput(input: string): string {
+  const raw = String(input).trim().replace(/\s+/g, "");
+  if (!raw) return "";
+
+  const lastComma = raw.lastIndexOf(",");
+  const lastDot = raw.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    // If both are present, assume the last separator is the decimal separator.
+    if (lastComma > lastDot) {
+      return raw.replace(/\./g, "").replace(/,/g, ".");
+    }
+    return raw.replace(/,/g, "");
+  }
+
+  if (lastComma >= 0) {
+    // Treat single comma as decimal separator.
+    return raw.replace(/,/g, ".");
+  }
+
+  return raw;
+}
+
 function parseNumber(input: string): number {
-  const n = parseFloat(String(input).replace(/,/g, ""));
+  const normalized = normalizeAmountInput(input);
+  const n = parseFloat(normalized);
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -174,19 +198,21 @@ function formatSignedAmount(amount: bigint, decimals: number, symbol: string): s
 // Convert human-readable amount to wei (atomic units)
 function toWei(amount: string, decimals: number): string {
   try {
-    const cleanAmount = amount.replace(/,/g, "");
+    const normalized = normalizeAmountInput(amount);
+    if (!normalized) return "0";
+
     // Handle decimal amounts
-    const parts = cleanAmount.split(".");
+    const parts = normalized.split(".");
     const wholePart = parts[0] || "0";
     let decimalPart = parts[1] || "";
-    
+
     // Pad or truncate decimal part to match decimals
     if (decimalPart.length < decimals) {
       decimalPart = decimalPart.padEnd(decimals, "0");
     } else if (decimalPart.length > decimals) {
       decimalPart = decimalPart.slice(0, decimals);
     }
-    
+
     // Combine and convert to BigInt
     const combined = wholePart + decimalPart;
     // Remove leading zeros but keep at least one digit
