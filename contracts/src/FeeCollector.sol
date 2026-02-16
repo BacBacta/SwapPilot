@@ -10,23 +10,25 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @title SwapPilot Fee Collector
  * @notice Collects platform fees and distributes according to tokenomics:
  *         - 15% -> Buy and burn PILOT
- *         - 85% -> Treasury
- *         
- * Note: Referral rewards are paid in PILOT tokens from a separate allocation
- *       (5% of total PILOT supply), managed by the ReferralRewards contract.
+ *         - 80% -> Treasury
+ *         - 5% -> Referral pool
  */
 contract FeeCollector is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice Distribution percentages (must sum to 100)
     uint256 public constant BURN_PERCENT = 15;
-    uint256 public constant TREASURY_PERCENT = 85;
+    uint256 public constant TREASURY_PERCENT = 80;
+    uint256 public constant REFERRAL_PERCENT = 5;
 
     /// @notice PILOT token address
     IERC20 public immutable pilotToken;
 
     /// @notice Treasury wallet
     address public treasury;
+
+    /// @notice Referral pool wallet
+    address public referralPool;
 
     /// @notice DEX router for buying PILOT (e.g., PancakeSwap)
     address public dexRouter;
@@ -46,7 +48,8 @@ contract FeeCollector is Ownable, ReentrancyGuard {
     /// @notice Emitted when fees are distributed
     event FeesDistributed(
         uint256 burnAmount,
-        uint256 treasuryAmount
+        uint256 treasuryAmount,
+        uint256 referralAmount
     );
 
     /// @notice Emitted when PILOT is bought and burned
@@ -55,14 +58,17 @@ contract FeeCollector is Ownable, ReentrancyGuard {
     constructor(
         address _pilotToken,
         address _treasury,
+        address _referralPool,
         address _dexRouter,
         address _wbnb
     ) Ownable(msg.sender) {
         require(_pilotToken != address(0), "Invalid PILOT address");
         require(_treasury != address(0), "Invalid treasury address");
+        require(_referralPool != address(0), "Invalid referral pool address");
 
         pilotToken = IERC20(_pilotToken);
         treasury = _treasury;
+        referralPool = _referralPool;
         dexRouter = _dexRouter;
         wbnb = _wbnb;
     }
@@ -82,20 +88,25 @@ contract FeeCollector is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to distribute");
 
-        // Calculate distribution: 85% treasury, 15% buy & burn
+        // Calculate distribution
         uint256 burnAmount = (balance * BURN_PERCENT) / 100;
-        uint256 treasuryAmount = balance - burnAmount;
+        uint256 treasuryAmount = (balance * TREASURY_PERCENT) / 100;
+        uint256 referralAmount = balance - burnAmount - treasuryAmount;
 
         // Send to treasury
         (bool treasurySuccess, ) = treasury.call{value: treasuryAmount}("");
         require(treasurySuccess, "Treasury transfer failed");
+
+        // Send to referral pool
+        (bool referralSuccess, ) = referralPool.call{value: referralAmount}("");
+        require(referralSuccess, "Referral transfer failed");
 
         // Buy and burn PILOT with remaining
         if (burnAmount > 0 && dexRouter != address(0)) {
             _buyAndBurnPilot(burnAmount);
         }
 
-        emit FeesDistributed(burnAmount, treasuryAmount);
+        emit FeesDistributed(burnAmount, treasuryAmount, referralAmount);
     }
 
     /**
@@ -138,6 +149,14 @@ contract FeeCollector is Ownable, ReentrancyGuard {
     function setTreasury(address _treasury) external onlyOwner {
         require(_treasury != address(0), "Invalid address");
         treasury = _treasury;
+    }
+
+    /**
+     * @notice Update referral pool address
+     */
+    function setReferralPool(address _referralPool) external onlyOwner {
+        require(_referralPool != address(0), "Invalid address");
+        referralPool = _referralPool;
     }
 
     /**

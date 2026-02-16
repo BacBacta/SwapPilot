@@ -13,7 +13,7 @@
  * Fee Distribution:
  * - 15% -> PILOT burn (deflationary)
  * - 80% -> Treasury (operations)
- * - 5% -> Referral pool
+ * - 5% -> Referral rewards (PILOT incentives, managed by ReferralRewards)
  */
 
 /** Fee configuration constants */
@@ -42,7 +42,7 @@ export const FEE_CONFIG = {
 /** Treasury and token addresses (BSC Mainnet) */
 export const FEE_ADDRESSES = {
   /** Treasury wallet - receives 80% of fees */
-  TREASURY: '0xa5ad3569b95f56a2777206934f2af8a4b4c5d8be' as const,
+  TREASURY: '0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8' as const,
   
   /** PILOT token contract address */
   PILOT_TOKEN: '0xe3f77E20226fdc7BA85E495158615dEF83b48192' as const,
@@ -50,8 +50,11 @@ export const FEE_ADDRESSES = {
   /** Burn address for PILOT tokens */
   BURN_ADDRESS: '0x000000000000000000000000000000000000dEaD' as const,
   
-  /** Referral pool contract/wallet */
-  REFERRAL_POOL: '0xe810e4cfa68620cb51cd68618642ee1d44382f45' as const,
+  /** FeeCollector referral pool (receives 5% of BNB fees) */
+  REFERRAL_POOL: '0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8' as const,
+
+  /** Referral rewards (PILOT) are managed by ReferralRewards */
+  REFERRAL_REWARDS: '0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E' as const,
   
   /** FeeCollector contract address */
   FEE_COLLECTOR: '0xEe841Def61326C116F92e71FceF8cb11FBC05034' as const,
