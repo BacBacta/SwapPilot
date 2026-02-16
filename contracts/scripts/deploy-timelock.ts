@@ -56,7 +56,9 @@ async function main() {
 
   // Deploy TimelockController
   console.log("\n🚀 Deploying TimelockController...");
-  const TimelockController = await ethers.getContractFactory("TimelockController");
+  const TimelockController = await ethers.getContractFactory(
+    "@openzeppelin/contracts/governance/TimelockController.sol:TimelockController"
+  );
   const timelock = await TimelockController.deploy(
     MIN_DELAY,
     proposers,

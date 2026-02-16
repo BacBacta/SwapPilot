@@ -107,7 +107,10 @@ async function main() {
   console.log("=".repeat(60));
 
   try {
-    const timelock = await ethers.getContractAt("TimelockController", addresses.timelock);
+    const timelock = await ethers.getContractAt(
+      "@openzeppelin/contracts/governance/TimelockController.sol:TimelockController",
+      addresses.timelock
+    );
     
     const PROPOSER_ROLE = await timelock.PROPOSER_ROLE();
     const EXECUTOR_ROLE = await timelock.EXECUTOR_ROLE();
