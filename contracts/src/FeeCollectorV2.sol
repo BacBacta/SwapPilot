@@ -159,7 +159,7 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
         path[1] = address(pilotToken);
 
         // Buy PILOT from DEX
-        (bool success, bytes memory data) = dexRouter.call{value: bnbAmount}(
+        (bool success, ) = dexRouter.call{value: bnbAmount}(
             abi.encodeWithSignature(
                 "swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256)",
                 minPilotOut, // Slippage protection

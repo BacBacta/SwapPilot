@@ -14,10 +14,28 @@ import { ethers } from "hardhat";
  */
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  
+  const signers = await ethers.getSigners();
+  if (signers.length === 0) {
+    throw new Error(
+      [
+        "No deployer signer available.",
+        "\n\nFix:",
+        "- Create /workspaces/SwapPilot/contracts/.env with DEPLOYER_PRIVATE_KEY=...", 
+        "  (or export DEPLOYER_PRIVATE_KEY in your shell)",
+        "- Fund the deployer address with BNB for gas", 
+        "- Re-run: npx hardhat run scripts/deploy-timelock.ts --network bsc",
+      ].join("\n")
+    );
+  }
+
+  const [deployer] = signers;
+
   console.log("Deploying TimelockController with account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "BNB");
+  console.log(
+    "Account balance:",
+    ethers.formatEther(await ethers.provider.getBalance(deployer.address)),
+    "BNB"
+  );
 
   // Configuration
   const SAFE = "0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8"; // Safe multisig

@@ -13,10 +13,28 @@ import { ethers } from "hardhat";
  */
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  
+  const signers = await ethers.getSigners();
+  if (signers.length === 0) {
+    throw new Error(
+      [
+        "No deployer signer available.",
+        "\n\nFix:",
+        "- Create /workspaces/SwapPilot/contracts/.env with DEPLOYER_PRIVATE_KEY=...",
+        "  (or export DEPLOYER_PRIVATE_KEY in your shell)",
+        "- Fund the deployer address with BNB for gas",
+        "- Re-run: npx hardhat run scripts/deploy-feecollector-v2.ts --network bsc",
+      ].join("\n")
+    );
+  }
+
+  const [deployer] = signers;
+
   console.log("Deploying FeeCollectorV2 with account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "BNB");
+  console.log(
+    "Account balance:",
+    ethers.formatEther(await ethers.provider.getBalance(deployer.address)),
+    "BNB"
+  );
 
   // Contract addresses
   const PILOT_TOKEN = "0xe3f77E20226fdc7BA85E495158615dEF83b48192";
