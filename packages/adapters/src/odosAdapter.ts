@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { OdosQuoteSchema, OdosAssembleSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -139,14 +139,17 @@ export class OdosAdapter implements Adapter {
         compact: true,
       };
 
-      const res = await safeFetch(`${this.apiBaseUrl}/sor/quote/v2`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(quoteBody),
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(`${this.apiBaseUrl}/sor/quote/v2`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(quoteBody),
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -230,12 +233,15 @@ export class OdosAdapter implements Adapter {
         userAddr: request.account,
       };
 
-      const quoteRes = await safeFetch(quoteUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quoteBody),
-        signal: controller.signal,
-      });
+      const quoteRes = await withRetries(
+        () => safeFetch(quoteUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(quoteBody),
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       if (!quoteRes.ok) {
         throw new Error(`Odos quote API error: ${quoteRes.status}`);
@@ -251,12 +257,15 @@ export class OdosAdapter implements Adapter {
         simulate: false,
       };
 
-      const assembleRes = await safeFetch(assembleUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(assembleBody),
-        signal: controller.signal,
-      });
+      const assembleRes = await withRetries(
+        () => safeFetch(assembleUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assembleBody),
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 

@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { OneInchQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -126,14 +126,17 @@ export class OneInchAdapter implements Adapter {
       url.searchParams.set('amount', request.sellAmount);
       url.searchParams.set('includeGas', 'true');
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -228,14 +231,17 @@ export class OneInchAdapter implements Adapter {
       url.searchParams.set('allowPartialFill', 'false');
       url.searchParams.set('usePermit2', 'false'); // Use standard ERC-20 approval instead of permit
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 

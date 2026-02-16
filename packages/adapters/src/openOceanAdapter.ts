@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { OpenOceanQuoteSchema, OpenOceanSwapSchema, safeJsonParse } from './validation';
 
 /**
@@ -132,11 +132,14 @@ export class OpenOceanAdapter implements Adapter {
       const timeout = setTimeout(() => controller.abort(), 5000);
 
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/tokenList`);
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
       clearTimeout(timeout);
 
       if (res.ok) {
@@ -253,13 +256,16 @@ export class OpenOceanAdapter implements Adapter {
       url.searchParams.set('slippage', String((request.slippageBps ?? 50) / 100));
       url.searchParams.set('gasPrice', '5'); // Default gas price in gwei
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -369,11 +375,14 @@ export class OpenOceanAdapter implements Adapter {
       url.searchParams.set('slippage', slippage.toString());
       url.searchParams.set('gasPrice', '5'); // Use default gas price
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 

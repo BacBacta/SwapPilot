@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { KyberSwapQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -144,14 +144,17 @@ export class KyberSwapAdapter implements Adapter {
       url.searchParams.set('gasInclude', 'true');
       url.searchParams.set('clientData', JSON.stringify({ source: this.clientId }));
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'x-client-id': this.clientId,
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'x-client-id': this.clientId,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -240,14 +243,17 @@ export class KyberSwapAdapter implements Adapter {
       routesUrl.searchParams.set('gasInclude', 'true');
       routesUrl.searchParams.set('clientData', JSON.stringify({ source: this.clientId }));
 
-      const routesRes = await safeFetch(routesUrl.toString(), {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'x-client-id': this.clientId,
-        },
-        signal: controller.signal,
-      });
+      const routesRes = await withRetries(
+        () => safeFetch(routesUrl.toString(), {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'x-client-id': this.clientId,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       if (!routesRes.ok) {
         const text = await routesRes.text();
@@ -266,26 +272,31 @@ export class KyberSwapAdapter implements Adapter {
         throw new Error(routesJson.message ?? 'KyberSwap: no route found');
       }
 
+      const routeSummary = routesJson.data.routeSummary;
+
       // 2) Build calldata.
       const deadline = Math.floor(Date.now() / 1000) + 20 * 60; // 20 minutes
       const slippageTolerance = request.slippageBps ?? 100;
 
-      const buildRes = await safeFetch(`${this.baseUrl}/route/build`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'x-client-id': this.clientId,
-        },
-        body: JSON.stringify({
-          routeSummary: routesJson.data.routeSummary,
-          sender: request.account,
-          recipient: request.account,
-          slippageTolerance,
-          deadline,
+      const buildRes = await withRetries(
+        () => safeFetch(`${this.baseUrl}/route/build`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'x-client-id': this.clientId,
+          },
+          body: JSON.stringify({
+            routeSummary,
+            sender: request.account,
+            recipient: request.account,
+            slippageTolerance,
+            deadline,
+          }),
+          signal: controller.signal,
         }),
-        signal: controller.signal,
-      });
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 

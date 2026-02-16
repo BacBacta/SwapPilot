@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { createHmac } from 'crypto';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -162,18 +162,21 @@ export class OkxDexAdapter implements Adapter {
         .update(preHash)
         .digest('base64');
       
-      const res = await safeFetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'OK-ACCESS-KEY': this.apiKey!,
-          'OK-ACCESS-SIGN': signature,
-          'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': this.passphrase!,
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'OK-ACCESS-KEY': this.apiKey!,
+            'OK-ACCESS-SIGN': signature,
+            'OK-ACCESS-TIMESTAMP': timestamp,
+            'OK-ACCESS-PASSPHRASE': this.passphrase!,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -265,18 +268,21 @@ export class OkxDexAdapter implements Adapter {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
 
-      const res = await safeFetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'OK-ACCESS-KEY': this.apiKey!,
-          'OK-ACCESS-SIGN': signature,
-          'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': this.passphrase!,
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'OK-ACCESS-KEY': this.apiKey!,
+            'OK-ACCESS-SIGN': signature,
+            'OK-ACCESS-TIMESTAMP': timestamp,
+            'OK-ACCESS-PASSPHRASE': this.passphrase!,
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 

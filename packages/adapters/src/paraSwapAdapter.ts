@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared';
 import { ParaSwapPriceSchema, ParaSwapTxSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -164,13 +164,16 @@ export class ParaSwapAdapter implements Adapter {
       url.searchParams.set('partner', this.partner);
       url.searchParams.set('version', '5');
 
-      const res = await safeFetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: controller.signal,
-      });
+      const res = await withRetries(
+        () => safeFetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
@@ -315,11 +318,14 @@ export class ParaSwapAdapter implements Adapter {
       priceUrl.searchParams.set('network', String(this.chainId));
       priceUrl.searchParams.set('partner', this.partner);
 
-      const priceRes = await safeFetch(priceUrl.toString(), {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      });
+      const priceRes = await withRetries(
+        () => safeFetch(priceUrl.toString(), {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       if (!priceRes.ok) {
         throw new Error(`ParaSwap price API error: ${priceRes.status}`);
@@ -350,15 +356,18 @@ export class ParaSwapAdapter implements Adapter {
         ignoreGasEstimate: true,
       };
 
-      const txRes = await safeFetch(txUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(txBody),
-        signal: controller.signal,
-      });
+      const txRes = await withRetries(
+        () => safeFetch(txUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(txBody),
+          signal: controller.signal,
+        }),
+        { maxRetries: 2, signal: controller.signal }
+      );
 
       clearTimeout(timeout);
 
