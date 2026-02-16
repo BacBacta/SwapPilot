@@ -129,7 +129,8 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
 
         uint256 burnAmount = (balance * BURN_PERCENT) / 100;
         uint256 treasuryAmount = (balance * TREASURY_PERCENT) / 100;
-        uint256 referralAmount = (balance * REFERRAL_PERCENT) / 100;
+        // Calculate referral as remainder to avoid rounding dust accumulation
+        uint256 referralAmount = balance - burnAmount - treasuryAmount;
 
         if (burnAmount > 0 && dexRouter != address(0) && wbnb != address(0)) {
             _buyAndBurnPilot(burnAmount, minPilotOut);

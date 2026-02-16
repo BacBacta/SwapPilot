@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as feeCollectorSol from "./FeeCollector.sol";
+export { FeeCollectorV2__factory } from "./FeeCollectorV2__factory";
 export { PILOTToken__factory } from "./PILOTToken__factory";
 export { ReferralPool__factory } from "./ReferralPool__factory";
 export { ReferralRewards__factory } from "./ReferralRewards__factory";

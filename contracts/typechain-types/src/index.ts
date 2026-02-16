@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type * as feeCollectorSol from "./FeeCollector.sol";
 export type { feeCollectorSol };
+export type { FeeCollectorV2 } from "./FeeCollectorV2";
 export type { PILOTToken } from "./PILOTToken";
 export type { ReferralPool } from "./ReferralPool";
 export type { ReferralRewards } from "./ReferralRewards";

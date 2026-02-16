@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * 1. Referrer generates a referral code (off-chain, verified on-chain)
  * 2. New user signs up with referral code
  * 3. When referred user swaps, referrer earns PILOT rewards
- * 4. Rewards vest over time to prevent gaming
+ * 4. Rewards accrue and can be claimed at any time
  */
 contract ReferralRewards is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
