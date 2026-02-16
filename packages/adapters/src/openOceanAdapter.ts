@@ -1,5 +1,7 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
+import { OpenOceanQuoteSchema, OpenOceanSwapSchema, safeJsonParse } from './validation';
 
 /**
  * OpenOcean API expects amount in human-readable units (e.g., "1" for 1 token),
@@ -130,7 +132,7 @@ export class OpenOceanAdapter implements Adapter {
       const timeout = setTimeout(() => controller.abort(), 5000);
 
       const url = new URL(`${this.apiBaseUrl}/${this.chainName}/tokenList`);
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         signal: controller.signal,
@@ -251,7 +253,7 @@ export class OpenOceanAdapter implements Adapter {
       url.searchParams.set('slippage', String((request.slippageBps ?? 50) / 100));
       url.searchParams.set('gasPrice', '5'); // Default gas price in gwei
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -266,24 +268,18 @@ export class OpenOceanAdapter implements Adapter {
         throw new Error(`OpenOcean API error: ${res.status} - ${text}`);
       }
 
-      const json = await res.json() as {
-        code: number;
-        data?: {
-          outAmount: string;
-          estimatedGas: number | string;
-        };
-      };
+      const json = await safeJsonParse(res, OpenOceanQuoteSchema, 'OpenOcean quote');
 
-      if (json.code !== 200 || !json.data) {
+      if (json.code !== 200) {
         throw new Error(`OpenOcean returned error code: ${json.code}`);
       }
 
       const raw = {
         sellAmount: request.sellAmount,
         buyAmount: json.data.outAmount,
-        estimatedGas: typeof json.data.estimatedGas === 'string' 
+        estimatedGas: json.data.estimatedGas 
           ? parseInt(json.data.estimatedGas, 10) || 200000 
-          : json.data.estimatedGas ?? 200000,
+          : 200000,
         feeBps: 0,
         route: [request.sellToken, request.buyToken],
       };
@@ -373,7 +369,7 @@ export class OpenOceanAdapter implements Adapter {
       url.searchParams.set('slippage', slippage.toString());
       url.searchParams.set('gasPrice', '5'); // Use default gas price
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         signal: controller.signal,
@@ -386,17 +382,9 @@ export class OpenOceanAdapter implements Adapter {
         throw new Error(`OpenOcean swap API error: ${res.status} - ${text}`);
       }
 
-      const json = await res.json() as {
-        code: number;
-        data?: {
-          to: string;
-          data: string;
-          value: string;
-          estimatedGas: number;
-        };
-      };
+      const json = await safeJsonParse(res, OpenOceanSwapSchema, 'OpenOcean swap');
 
-      if (json.code !== 200 || !json.data) {
+      if (json.code !== 200) {
         throw new Error(`OpenOcean swap returned error code: ${json.code}`);
       }
 
@@ -408,7 +396,7 @@ export class OpenOceanAdapter implements Adapter {
         to: json.data.to,
         data: json.data.data,
         value: txValue,
-        gas: String(json.data.estimatedGas),
+        ...(json.data.gas ? { gas: json.data.gas } : {}),
       };
     } catch (err) {
       clearTimeout(timeout);

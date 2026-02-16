@@ -82,15 +82,14 @@ export const OdosAssembleSchema = z.object({
 
 // ParaSwap API response
 export const ParaSwapPriceSchema = z.object({
-  srcToken: z.string(),
-  destToken: z.string(),
-  srcAmount: z.string(),
-  destAmount: z.string(),
   priceRoute: z.object({
-    destAmount: z.string(),
+    srcToken: z.string().optional(),
+    destToken: z.string().optional(),
     srcAmount: z.string(),
+    destAmount: z.string(),
     bestRoute: z.array(z.any()).optional(),
     gasCost: z.string().optional(),
+    gasCostUSD: z.string().optional(),
   }),
 });
 
@@ -134,21 +133,22 @@ export const OkxQuoteSchema = z.object({
   })),
 });
 
-// KyberSwap API response
+// KyberSwap API response (wrapper structure)
 export const KyberSwapQuoteSchema = z.object({
-  inputAmount: z.string(),
-  outputAmount: z.string(),
-  totalGas: z.string().optional(),
-  gasUsd: z.string().optional(),
-  amountIn: z.string(),
-  amountOut: z.string(),
-  gas: z.string().optional(),
-  routeSummary: z.object({
-    tokenIn: z.string(),
-    tokenOut: z.string(),
-    amountIn: z.string(),
-    amountOut: z.string(),
-    route: z.array(z.any()).optional(),
+  code: z.number(),
+  message: z.string().optional(),
+  data: z.object({
+    routeSummary: z.object({
+      tokenIn: z.string(),
+      tokenOut: z.string(),
+      amountIn: z.string(),
+      amountOut: z.string(),
+      amountOutUsd: z.string().optional(),
+      gas: z.string().optional(),
+      gasUsd: z.string().optional(),
+      route: z.array(z.any()).optional(),
+    }),
+    routerAddress: z.string().optional(),
   }).optional(),
 });
 
@@ -226,7 +226,7 @@ export function safeParse<T>(
   const result = schema.safeParse(data);
   
   if (!result.success) {
-    const errors = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    const errors = result.error.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', ');
     throw new Error(`${context} validation failed: ${errors}`);
   }
   
@@ -235,7 +235,7 @@ export function safeParse<T>(
 
 /**
  * Safe JSON parse with schema validation
- * Prevents JSON injection attacks
+ * Prevents JSON injection attacks and prototype pollution
  */
 export async function safeJsonParse<T>(
   response: Response,
@@ -244,14 +244,21 @@ export async function safeJsonParse<T>(
 ): Promise<T> {
   const text = await response.text();
   
-  // Prevent prototype pollution
-  if (text.includes('__proto__') || text.includes('constructor') || text.includes('prototype')) {
-    throw new Error(`${context}: Potential prototype pollution detected`);
+  // Check for __proto__ as a JSON key (must be quoted in JSON)
+  // This is more precise than checking for substrings
+  if (/"__proto__"\s*:/.test(text)) {
+    throw new Error(`${context}: Potential prototype pollution detected (__proto__ key)`);
   }
   
   let json: unknown;
   try {
-    json = JSON.parse(text);
+    // Use a reviver function to strip dangerous keys during parsing
+    json = JSON.parse(text, (key, value) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        return undefined;
+      }
+      return value;
+    });
   } catch (err) {
     throw new Error(`${context}: Invalid JSON - ${err}`);
   }

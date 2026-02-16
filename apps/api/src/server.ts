@@ -21,6 +21,7 @@ import {
   ProviderQuoteRawSchema,
   ProviderQuoteNormalizedSchema,
   type RiskSignals,
+  timingSafeStringEqual,
 } from '@swappilot/shared';
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
@@ -127,7 +128,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     }
 
     const providedToken = getHeaderValue(request.headers['x-admin-token']);
-    if (!providedToken || providedToken !== adminApiToken) {
+    if (!providedToken || !timingSafeStringEqual(providedToken, adminApiToken)) {
       return reply.code(401).send({ message: 'unauthorized' });
     }
   };

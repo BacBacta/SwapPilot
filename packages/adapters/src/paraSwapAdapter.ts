@@ -1,5 +1,7 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
+import { ParaSwapPriceSchema, ParaSwapTxSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -162,7 +164,7 @@ export class ParaSwapAdapter implements Adapter {
       url.searchParams.set('partner', this.partner);
       url.searchParams.set('version', '5');
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -177,34 +179,19 @@ export class ParaSwapAdapter implements Adapter {
         throw new Error(`ParaSwap API error: ${res.status} - ${text}`);
       }
 
-      const json = await res.json() as {
-        error?: string;
-        priceRoute: {
-          srcAmount: string;
-          destAmount: string;
-          gasCost: string;
-          gasCostUSD: string;
-          bestRoute: Array<{
-            swaps: Array<{
-              srcToken: string;
-              destToken: string;
-              exchange: string;
-            }>;
-          }>;
-        };
-      };
+      const json = await safeJsonParse(res, ParaSwapPriceSchema, 'ParaSwap price');
 
-      if (json.error) {
-        throw new Error(json.error);
+      if (!json.priceRoute) {
+        throw new Error('ParaSwap API returned no price route');
       }
 
       const priceRoute = json.priceRoute;
       const raw = {
         sellAmount: priceRoute.srcAmount,
         buyAmount: priceRoute.destAmount,
-        estimatedGas: parseInt(priceRoute.gasCost, 10) || 200000,
+        estimatedGas: parseInt(priceRoute.gasCost ?? '200000', 10) || 200000,
         feeBps: 0,
-        route: this.extractRoute(priceRoute.bestRoute, request.sellToken, request.buyToken),
+        route: this.extractRoute(priceRoute.bestRoute ?? [], request.sellToken, request.buyToken),
       };
 
       return {
@@ -328,7 +315,7 @@ export class ParaSwapAdapter implements Adapter {
       priceUrl.searchParams.set('network', String(this.chainId));
       priceUrl.searchParams.set('partner', this.partner);
 
-      const priceRes = await fetch(priceUrl.toString(), {
+      const priceRes = await safeFetch(priceUrl.toString(), {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         signal: controller.signal,
@@ -363,7 +350,7 @@ export class ParaSwapAdapter implements Adapter {
         ignoreGasEstimate: true,
       };
 
-      const txRes = await fetch(txUrl, {
+      const txRes = await safeFetch(txUrl, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -380,14 +367,7 @@ export class ParaSwapAdapter implements Adapter {
         throw new Error(`ParaSwap transaction API error: ${txRes.status} - ${text}`);
       }
 
-      const txData = await txRes.json() as {
-        to: string;
-        data: string;
-        value: string;
-        gas: string;
-        gasPrice: string;
-        chainId: number;
-      };
+      const txData = await safeJsonParse(txRes, ParaSwapTxSchema, 'ParaSwap tx');
 
       // For ERC-20 tokens, user needs to approve the TokenTransferProxy first
       const sellTokenIsNative = this.isNativeToken(request.sellToken);
@@ -397,8 +377,8 @@ export class ParaSwapAdapter implements Adapter {
         to: txData.to,
         data: txData.data,
         value: txData.value,
-        gas: txData.gas,
-        gasPrice: txData.gasPrice,
+        ...(txData.gas ? { gas: txData.gas } : {}),
+        ...(txData.gasPrice ? { gasPrice: txData.gasPrice } : {}),
         ...(approvalAddress ? { approvalAddress } : {}),
       };
     } catch (err) {

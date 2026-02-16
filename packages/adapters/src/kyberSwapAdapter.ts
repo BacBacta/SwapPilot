@@ -1,5 +1,7 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
+import { KyberSwapQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -142,7 +144,7 @@ export class KyberSwapAdapter implements Adapter {
       url.searchParams.set('gasInclude', 'true');
       url.searchParams.set('clientData', JSON.stringify({ source: this.clientId }));
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -158,27 +160,7 @@ export class KyberSwapAdapter implements Adapter {
         throw new Error(`KyberSwap API error: ${res.status} - ${text}`);
       }
 
-      const json = await res.json() as {
-        code: number;
-        message?: string;
-        data?: {
-          routeSummary: {
-            amountIn: string;
-            amountOut: string;
-            amountOutUsd: string;
-            gas: string;
-            gasUsd: string;
-            route: Array<Array<{
-              pool: string;
-              tokenIn: string;
-              tokenOut: string;
-              swapAmount: string;
-              amountOut: string;
-            }>>;
-          };
-          routerAddress: string;
-        };
-      };
+      const json = await safeJsonParse(res, KyberSwapQuoteSchema, 'KyberSwap quote');
 
       if (json.code !== 0 || !json.data?.routeSummary) {
         throw new Error(json.message ?? 'No route found');
@@ -188,9 +170,9 @@ export class KyberSwapAdapter implements Adapter {
       const raw = {
         sellAmount: summary.amountIn,
         buyAmount: summary.amountOut,
-        estimatedGas: parseInt(summary.gas, 10) || 200000,
+        estimatedGas: parseInt(summary.gas ?? '200000', 10) || 200000,
         feeBps: 0,
-        route: this.extractRoute(summary.route),
+        route: summary.route ? this.extractRoute(summary.route) : [request.sellToken, request.buyToken],
       };
 
       return {
@@ -258,7 +240,7 @@ export class KyberSwapAdapter implements Adapter {
       routesUrl.searchParams.set('gasInclude', 'true');
       routesUrl.searchParams.set('clientData', JSON.stringify({ source: this.clientId }));
 
-      const routesRes = await fetch(routesUrl.toString(), {
+      const routesRes = await safeFetch(routesUrl.toString(), {
         method: 'GET',
         headers: {
           Accept: 'application/json',
@@ -288,7 +270,7 @@ export class KyberSwapAdapter implements Adapter {
       const deadline = Math.floor(Date.now() / 1000) + 20 * 60; // 20 minutes
       const slippageTolerance = request.slippageBps ?? 100;
 
-      const buildRes = await fetch(`${this.baseUrl}/route/build`, {
+      const buildRes = await safeFetch(`${this.baseUrl}/route/build`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',

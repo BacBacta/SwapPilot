@@ -1,5 +1,6 @@
 import type { Adapter, AdapterQuote, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
 import { ZeroXQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -136,7 +137,7 @@ export class ZeroXAdapter implements Adapter {
         url.searchParams.set('takerAddress', request.account);
       }
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

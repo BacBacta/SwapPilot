@@ -1,5 +1,7 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
+import { OdosQuoteSchema, OdosAssembleSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -137,7 +139,7 @@ export class OdosAdapter implements Adapter {
         compact: true,
       };
 
-      const res = await fetch(`${this.apiBaseUrl}/sor/quote/v2`, {
+      const res = await safeFetch(`${this.apiBaseUrl}/sor/quote/v2`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,11 +155,7 @@ export class OdosAdapter implements Adapter {
         throw new Error(`Odos API error: ${res.status} - ${text}`);
       }
 
-      const data = await res.json() as {
-        outAmounts: string[];
-        gasEstimate: number | string;
-        pathId: string;
-      };
+      const data = await safeJsonParse(res, OdosQuoteSchema, 'Odos quote');
 
       const buyAmount = data.outAmounts?.[0] ?? '0';
       const gasEstimate = typeof data.gasEstimate === 'string'
@@ -232,7 +230,7 @@ export class OdosAdapter implements Adapter {
         userAddr: request.account,
       };
 
-      const quoteRes = await fetch(quoteUrl, {
+      const quoteRes = await safeFetch(quoteUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(quoteBody),
@@ -253,7 +251,7 @@ export class OdosAdapter implements Adapter {
         simulate: false,
       };
 
-      const assembleRes = await fetch(assembleUrl, {
+      const assembleRes = await safeFetch(assembleUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(assembleBody),
@@ -267,15 +265,7 @@ export class OdosAdapter implements Adapter {
         throw new Error(`Odos assemble API error: ${assembleRes.status} - ${text}`);
       }
 
-      const txData = await assembleRes.json() as {
-        transaction: {
-          to: string;
-          data: string;
-          value: string;
-          gas: number;
-          gasPrice: number;
-        };
-      };
+      const txData = await safeJsonParse(assembleRes, OdosAssembleSchema, 'Odos assemble');
 
       return {
         to: txData.transaction.to,

@@ -1,5 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
 import { createHmac } from 'crypto';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -161,7 +162,7 @@ export class OkxDexAdapter implements Adapter {
         .update(preHash)
         .digest('base64');
       
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -264,7 +265,7 @@ export class OkxDexAdapter implements Adapter {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
 
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -280,7 +281,6 @@ export class OkxDexAdapter implements Adapter {
       clearTimeout(timeout);
 
       if (!res.ok) {
-        console.warn('[OKX] approve-transaction endpoint failed:', res.status);
         return null;
       }
 
@@ -292,8 +292,6 @@ export class OkxDexAdapter implements Adapter {
         }>;
       };
 
-      console.log('[OKX] approve-transaction response:', JSON.stringify(json, null, 2));
-
       if (json.code === '0' && json.data?.[0]) {
         const item = json.data[0];
         return item.dexContractAddress ?? item.approveAddress ?? null;
@@ -301,7 +299,7 @@ export class OkxDexAdapter implements Adapter {
 
       return null;
     } catch (err) {
-      console.warn('[OKX] approve-transaction request failed:', err);
+      void err;
       return null;
     }
   }
@@ -345,7 +343,7 @@ export class OkxDexAdapter implements Adapter {
     const signatureGet = createHmac('sha256', this.secretKey!).update(preHashGet).digest('base64');
 
     try {
-      let res = await fetch(url, {
+      let res = await safeFetch(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -363,7 +361,7 @@ export class OkxDexAdapter implements Adapter {
         const body = JSON.stringify(Object.fromEntries(queryParams.entries()));
         const preHashPost = timestamp + 'POST' + path + body;
         const signaturePost = createHmac('sha256', this.secretKey!).update(preHashPost).digest('base64');
-        res = await fetch(`https://www.okx.com${path}`, {
+        res = await safeFetch(`https://www.okx.com${path}`, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -411,8 +409,6 @@ export class OkxDexAdapter implements Adapter {
       }
 
       const item = json.data[0];
-      // Debug: log full OKX response to identify approval address field
-      console.log('[OKX] swap response item:', JSON.stringify(item, null, 2));
       const tx = item.tx ?? item.transaction;
       const to = tx?.to;
       const data = tx?.data;
@@ -447,8 +443,6 @@ export class OkxDexAdapter implements Adapter {
         typeof approvalAddressRaw === 'string' && approvalAddressRaw.startsWith('0x')
           ? approvalAddressRaw
           : undefined;
-      
-      console.log('[OKX] extracted approvalAddress:', approvalAddress, 'raw:', approvalAddressRaw);
 
       if (!to || !data) {
         throw new Error('OKX swap API returned no tx calldata');
@@ -464,11 +458,9 @@ export class OkxDexAdapter implements Adapter {
           sellTokenLower === '0x0000000000000000000000000000000000000000';
         
         if (!isNativeToken) {
-          console.log('[OKX] no approval address in swap response, fetching from approve-transaction endpoint');
           const fetchedApprovalAddress = await this.getApprovalAddress(request.sellToken);
           if (fetchedApprovalAddress) {
             finalApprovalAddress = fetchedApprovalAddress;
-            console.log('[OKX] fetched approvalAddress from endpoint:', finalApprovalAddress);
           }
         }
       }

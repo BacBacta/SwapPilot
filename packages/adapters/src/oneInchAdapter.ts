@@ -1,5 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { safeFetch } from '@swappilot/shared';
 import { OneInchQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
@@ -125,7 +126,7 @@ export class OneInchAdapter implements Adapter {
       url.searchParams.set('amount', request.sellAmount);
       url.searchParams.set('includeGas', 'true');
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -227,7 +228,7 @@ export class OneInchAdapter implements Adapter {
       url.searchParams.set('allowPartialFill', 'false');
       url.searchParams.set('usePermit2', 'false'); // Use standard ERC-20 approval instead of permit
 
-      const res = await fetch(url.toString(), {
+      const res = await safeFetch(url.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
