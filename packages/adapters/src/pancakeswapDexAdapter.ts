@@ -590,8 +590,8 @@ export class PancakeSwapDexAdapter implements Adapter {
       // V2 fallback (also handles native tokens which V3 doesn't support directly)
       routerAddress = this.config.v2RouterAddress!;
       const path = [sellToken, buyToken] as `0x${string}`[];
-      // Extended deadline for network congestion (30 minutes)
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+      // Reasonable deadline for security (15 minutes - balances MEV risk vs success rate)
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 900);
 
       // Use "SupportingFeeOnTransferTokens" methods by default
       // These work for ALL tokens (including those with taxes) and are safer on BSC

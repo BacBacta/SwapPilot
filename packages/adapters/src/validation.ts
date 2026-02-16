@@ -1,0 +1,260 @@
+import { z } from 'zod';
+
+/**
+ * Zod schemas for validating external API responses
+ * 
+ * Security: Replaces unsafe `as` type assertions with runtime validation
+ * to prevent injection attacks and type confusion vulnerabilities.
+ */
+
+// Common fields across DEX aggregators
+export const BaseQuoteResponseSchema = z.object({
+  sellAmount: z.string(),
+  buyAmount: z.string(),
+  estimatedGas: z.string().optional().nullable(),
+  gas: z.string().optional(),
+  gasPrice: z.string().optional(),
+  value: z.string().optional(),
+  to: z.string().optional(),
+  data: z.string().optional(),
+  from: z.string().optional(),
+});
+
+// 1inch API response
+export const OneInchQuoteSchema = z.object({
+  dstAmount: z.string(),
+  srcAmount: z.string(),
+  toTokenAmount: z.string(),
+  fromTokenAmount: z.string(),
+  protocols: z.array(z.any()).optional(),
+  tx: z.object({
+    from: z.string(),
+    to: z.string(),
+    data: z.string(),
+    value: z.string(),
+    gas: z.union([z.string(), z.number()]).optional(),
+    gasPrice: z.string().optional(),
+  }).optional(),
+});
+
+// 0x API response
+export const ZeroXQuoteSchema = z.object({
+  sellAmount: z.string(),
+  buyAmount: z.string(),
+  price: z.string().optional(),
+  estimatedGas: z.string().optional(),
+  gas: z.string().optional(),
+  gasPrice: z.string().optional(),
+  to: z.string(),
+  data: z.string(),
+  value: z.string(),
+  allowanceTarget: z.string().optional(),
+});
+
+// Odos API response
+export const OdosQuoteSchema = z.object({
+  inTokens: z.array(z.string()),
+  outTokens: z.array(z.string()),
+  inAmounts: z.array(z.string()),
+  outAmounts: z.array(z.string()),
+  gasEstimate: z.number().optional(),
+  pathId: z.string().optional(),
+});
+
+export const OdosAssembleSchema = z.object({
+  transaction: z.object({
+    gas: z.number().optional(),
+    gasPrice: z.number().optional(),
+    value: z.string(),
+    to: z.string(),
+    data: z.string(),
+    from: z.string().optional(),
+  }),
+  inputTokens: z.array(z.object({
+    tokenAddress: z.string(),
+    amount: z.string(),
+  })).optional(),
+  outputTokens: z.array(z.object({
+    tokenAddress: z.string(),
+    amount: z.string(),
+  })).optional(),
+});
+
+// ParaSwap API response
+export const ParaSwapPriceSchema = z.object({
+  srcToken: z.string(),
+  destToken: z.string(),
+  srcAmount: z.string(),
+  destAmount: z.string(),
+  priceRoute: z.object({
+    destAmount: z.string(),
+    srcAmount: z.string(),
+    bestRoute: z.array(z.any()).optional(),
+    gasCost: z.string().optional(),
+  }),
+});
+
+export const ParaSwapTxSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  value: z.string(),
+  data: z.string(),
+  gasPrice: z.string().optional(),
+  gas: z.string().optional(),
+  chainId: z.number().optional(),
+});
+
+// OKX DEX API response
+export const OkxQuoteSchema = z.object({
+  code: z.string(),
+  msg: z.string().optional(),
+  data: z.array(z.object({
+    routerResult: z.object({
+      fromTokenAmount: z.string(),
+      toTokenAmount: z.string(),
+      estimateGasFee: z.string().optional(),
+    }).optional(),
+    tx: z.object({
+      from: z.string(),
+      to: z.string(),
+      data: z.string(),
+      value: z.string(),
+      gas: z.string().optional(),
+      gasPrice: z.string().optional(),
+    }).optional(),
+    quoteCompareList: z.array(z.object({
+      dexName: z.string().optional(),
+      tradeFee: z.string().optional(),
+    })).optional(),
+    approvalAddress: z.string().optional(),
+    approveTo: z.string().optional(),
+    tokenApproveAddress: z.string().optional(),
+    spender: z.string().optional(),
+    dexContractAddress: z.string().optional(),
+  })),
+});
+
+// KyberSwap API response
+export const KyberSwapQuoteSchema = z.object({
+  inputAmount: z.string(),
+  outputAmount: z.string(),
+  totalGas: z.string().optional(),
+  gasUsd: z.string().optional(),
+  amountIn: z.string(),
+  amountOut: z.string(),
+  gas: z.string().optional(),
+  routeSummary: z.object({
+    tokenIn: z.string(),
+    tokenOut: z.string(),
+    amountIn: z.string(),
+    amountOut: z.string(),
+    route: z.array(z.any()).optional(),
+  }).optional(),
+});
+
+export const KyberSwapBuildTxSchema = z.object({
+  data: z.string(),
+  routerAddress: z.string().optional(),
+  amountIn: z.string(),
+  amountInUsd: z.string().optional(),
+  amountOut: z.string(),
+  amountOutUsd: z.string().optional(),
+  gas: z.string().optional(),
+  gasUsd: z.string().optional(),
+});
+
+// OpenOcean API response
+export const OpenOceanQuoteSchema = z.object({
+  code: z.number(),
+  data: z.object({
+    inAmount: z.string(),
+    outAmount: z.string(),
+    estimatedGas: z.string().optional(),
+    path: z.object({
+      routes: z.array(z.any()).optional(),
+    }).optional(),
+  }),
+});
+
+export const OpenOceanSwapSchema = z.object({
+  code: z.number(),
+  data: z.object({
+    from: z.string(),
+    to: z.string(),
+    data: z.string(),
+    value: z.string(),
+    gasPrice: z.string().optional(),
+    gas: z.string().optional(),
+    minOutAmount: z.string().optional(),
+    inAmount: z.string(),
+    outAmount: z.string(),
+  }),
+});
+
+// Thena/Ramses DEX response
+export const ThenaQuoteSchema = z.object({
+  amountIn: z.string(),
+  amountOut: z.string(),
+  route: z.array(z.object({
+    from: z.string(),
+    to: z.string(),
+    stable: z.boolean(),
+  })).optional(),
+});
+
+// Generic RPC response for on-chain calls (Uniswap, PancakeSwap, etc.)
+export const RpcResponseSchema = z.object({
+  jsonrpc: z.string(),
+  id: z.union([z.number(), z.string()]),
+  result: z.union([z.string(), z.array(z.string())]).optional(),
+  error: z.object({
+    code: z.number(),
+    message: z.string(),
+    data: z.any().optional(),
+  }).optional(),
+});
+
+/**
+ * Safe parse helper with type narrowing
+ * Returns parsed data or throws descriptive error
+ */
+export function safeParse<T>(
+  schema: z.ZodSchema<T>,
+  data: unknown,
+  context: string
+): T {
+  const result = schema.safeParse(data);
+  
+  if (!result.success) {
+    const errors = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    throw new Error(`${context} validation failed: ${errors}`);
+  }
+  
+  return result.data;
+}
+
+/**
+ * Safe JSON parse with schema validation
+ * Prevents JSON injection attacks
+ */
+export async function safeJsonParse<T>(
+  response: Response,
+  schema: z.ZodSchema<T>,
+  context: string
+): Promise<T> {
+  const text = await response.text();
+  
+  // Prevent prototype pollution
+  if (text.includes('__proto__') || text.includes('constructor') || text.includes('prototype')) {
+    throw new Error(`${context}: Potential prototype pollution detected`);
+  }
+  
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`${context}: Invalid JSON - ${err}`);
+  }
+  
+  return safeParse(schema, json, context);
+}

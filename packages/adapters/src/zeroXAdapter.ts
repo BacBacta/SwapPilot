@@ -1,5 +1,6 @@
 import type { Adapter, AdapterQuote, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { ZeroXQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -170,16 +171,12 @@ export class ZeroXAdapter implements Adapter {
         throw new Error(`0x API error: ${res.status} - ${text}`);
       }
 
-      const data = await res.json() as {
-        buyAmount: string;
-        sellAmount: string;
-        estimatedGas: string | number;
-        sources: Array<{ name: string; proportion: string }>;
-      };
+      // Validate response with Zod schema
+      const data = await safeJsonParse(res, ZeroXQuoteSchema, '0x quote');
 
-      const gasEstimate = typeof data.estimatedGas === 'string'
-        ? parseInt(data.estimatedGas, 10) || 200000
-        : data.estimatedGas ?? 200000;
+      const gasEstimate = data.estimatedGas || data.gas 
+        ? parseInt(String(data.estimatedGas || data.gas), 10) || 200000
+        : 200000;
 
       const raw = {
         sellAmount: request.sellAmount,

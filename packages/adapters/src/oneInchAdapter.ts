@@ -1,5 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
+import { OneInchQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -135,28 +136,13 @@ export class OneInchAdapter implements Adapter {
 
       clearTimeout(timeout);
 
-      const text = await res.text();
-      
-      if (!res.ok) {
-        throw new Error(`1inch API error: ${res.status} - ${text}`);
-      }
-
-      let data: {
-        dstAmount: string;
-        gas: number;
-        protocols?: unknown[][];
-      };
-      
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(`1inch API returned invalid JSON: ${text.slice(0, 200)}`);
-      }
+      // Validate response with Zod schema
+      const data = await safeJsonParse(res, OneInchQuoteSchema, '1inch quote');
 
       const raw = {
         sellAmount: request.sellAmount,
-        buyAmount: data.dstAmount,
-        estimatedGas: data.gas ?? 250000,
+        buyAmount: data.dstAmount || data.toTokenAmount,
+        estimatedGas: data.tx?.gas ? Number(data.tx.gas) : 250000,
         feeBps: 0, // 1inch doesn't charge swap fees
         route: [request.sellToken, request.buyToken],
       };

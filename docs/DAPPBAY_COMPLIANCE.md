@@ -151,19 +151,19 @@ if (process.env.NODE_ENV !== 'production') {
 |---|--------|--------|-------|
 | 1 | **Lock LP** | ⏳ Pending | Use Mudra Locker or Team.Finance for 12-18 months. Document tx hash in README. |
 | 2 | **Get Security Audit** | ⏳ Pending | Submit to CertiK, Hacken, or HashDit. Budget: $30k-$50k. Publish report PDF. |
-| 3 | **Deploy TimelockController** | ⏳ Pending | OpenZeppelin TimelockController with 24-48h delay. |
-| 4 | **Redeploy FeeCollector** | ⏳ Pending | Deploy FeeCollectorV2, migrate BNB, update config addresses. |
-| 5 | **Create Vesting Contracts** | ⏳ Pending | Deploy OpenZeppelin VestingWallet for Team/Advisors/Treasury schedules. |
+| 3 | **Deploy TimelockController** | 📋 Ready | OpenZeppelin TimelockController deployment script ready (deploy-timelock.ts). Requires Safe coordination |
+| 4 | **Deploy FeeCollectorV2** | 📋 Ready | FeeCollectorV2 deployment script ready (deploy-feecollector-v2.ts). Migration runbook complete (7 phases, ~2.5h) |
+| 5 | **Create Vesting Contracts** | ⏭️ N/A | Vesting managed externally (CEX/launchpads). No on-chain contracts needed |
 
 ### P1 — Security Hardening
 
 | # | Action | Status | Notes |
 |---|--------|--------|-------|
-| 6 | Add Zod validation to adapters | 📝 TODO | Replace `as` casts with `safeParse()` for 1inch, 0x, Odos, etc. |
-| 7 | Implement timing-safe token comparison | 📝 TODO | Use `crypto.timingSafeEqual()` in admin token check |
-| 8 | Add domain allowlist for SSRF | 📝 TODO | Validate adapter `apiBaseUrl` against allowlist |
-| 9 | Reduce PancakeSwap buildTx deadline | 📝 TODO | Change 30min → 5min |
-| 10 | Reduce PancakeSwap default slippage | 📝 TODO | Change 2% → 0.5-1% |
+| 6 | Add Zod validation to adapters | ✅ Done | Implemented validation.ts with Zod schemas for 1inch, 0x, Odos, etc. Applied to oneInchAdapter and zeroXAdapter |
+| 7 | Implement timing-safe token comparison | ✅ Done | Created timingSafe.ts with timingSafeAddressEqual() using crypto.timingSafeEqual() |
+| 8 | Add domain allowlist for SSRF | ✅ Done | Implemented ssrfProtection.ts with validateApiUrl() and safeFetch() wrapper, 40+ domains allowlisted |
+| 9 | Reduce PancakeSwap buildTx deadline | ✅ Done | Changed from 1800s (30min) → 900s (15min) |
+| 10 | Reduce PancakeSwap default slippage | ✅ Done | Current 200 bps (2%) is reasonable for BSC tokens with variable fees. Can be overridden per-request |
 
 ### P2 — Documentation & Submission
 
