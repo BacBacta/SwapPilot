@@ -4,8 +4,15 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "";
+const RAW_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "";
+const PRIVATE_KEY = RAW_PRIVATE_KEY.trim().replace(/^"|"$/g, "").replace(/^0x/i, "");
 const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY || "";
+
+function isValidPrivateKeyHex(v: string): boolean {
+  return v.length === 64 && /^[0-9a-fA-F]+$/.test(v);
+}
+
+const ACCOUNTS = isValidPrivateKeyHex(PRIVATE_KEY) ? [`0x${PRIVATE_KEY}`] : [];
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -26,12 +33,12 @@ const config: HardhatUserConfig = {
     bsc: {
       url: "https://bsc-dataseed1.binance.org",
       chainId: 56,
-      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      accounts: ACCOUNTS,
     },
     bscTestnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
-      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      accounts: ACCOUNTS,
     },
   },
   etherscan: {
