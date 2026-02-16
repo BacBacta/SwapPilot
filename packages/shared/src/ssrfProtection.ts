@@ -174,7 +174,7 @@ export async function safeFetch(
  * @returns true if domain is allowed
  */
 export function isDomainAllowed(domain: string): boolean {
-  const normalized = domain.toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+  const normalized = domain.toLowerCase().replace(/^https?:\/\//, '').split('/')[0] ?? '';
   
   return ALLOWED_API_DOMAINS.some(allowed => 
     normalized === allowed || normalized.endsWith(`.${allowed}`)
