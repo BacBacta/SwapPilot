@@ -101,11 +101,13 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://vercel.live https://*.sentry.io",
+              "script-src 'self' 'unsafe-inline' https://vercel.live https://*.sentry.io https://*.posthog.com https://*.i.posthog.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://tokens.coingecko.com https://*.walletconnect.com",
+              // Token images may be proxied via our API; allow a minimal set of third-party hosts.
+              "img-src 'self' data: blob: https://swappilot-api.fly.dev https://assets-cdn.trustwallet.com https://tokens.coingecko.com https://assets.coingecko.com https://*.walletconnect.com",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.sentry.io https://app.posthog.com https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org blob:",
+              // Allow API calls, analytics, token lists, and RPC endpoints required for wallet balance reads.
+              "connect-src 'self' https://swappilot-api.fly.dev https://*.sentry.io https://app.posthog.com https://*.posthog.com https://*.i.posthog.com https://api.web3modal.org https://tokens.pancakeswap.finance https://api.coingecko.com https://bsc-dataseed.binance.org https://bsc-dataseed1.binance.org https://bsc-dataseed2.binance.org https://bsc-dataseed3.binance.org https://bsc-dataseed4.binance.org https://bsc.publicnode.com https://rpc.ankr.com https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org blob:",
               "frame-src 'self' https://verify.walletconnect.com https://verify.walletconnect.org",
               "worker-src 'self' blob:",
             ].join('; '),
