@@ -13,6 +13,7 @@ import { ethers } from "hardhat";
 interface MigrationAddresses {
   feeCollectorV1: string;
   feeCollectorV2: string;
+  timelock: string | null;
   referralRewards: string;
   pilotToken: string;
   safe: string;
@@ -25,6 +26,7 @@ async function main() {
   const addresses: MigrationAddresses = {
     feeCollectorV1: "0xEe84a7Ab26bcCBc0E45cC1e1A915FbBFfa185034",
     feeCollectorV2: process.env.FEE_COLLECTOR_V2 || "",
+    timelock: process.env.TIMELOCK_ADDRESS || null,
     referralRewards: "0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E",
     pilotToken: "0xe3f77E20226fdc7BA85E495158615dEF83b48192",
     safe: "0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8",
@@ -38,6 +40,9 @@ async function main() {
   console.log("\n📋 Migration Addresses:");
   console.log("  FeeCollectorV1:", addresses.feeCollectorV1);
   console.log("  FeeCollectorV2:", addresses.feeCollectorV2);
+  if (addresses.timelock) {
+    console.log("  TimelockController:", addresses.timelock);
+  }
   console.log("  ReferralRewards:", addresses.referralRewards);
   console.log("  PILOTToken:", addresses.pilotToken);
   console.log("  Safe Multisig:", addresses.safe);
@@ -105,12 +110,22 @@ async function main() {
     console.log(`  PILOT Token: ${v2PilotToken}`);
     console.log(`  Paused: ${v2Paused}`);
 
-    if (v2Owner === ethers.ZeroAddress || v2Owner !== addresses.safe) {
-      console.log("⚠️  V2 owner is not Safe (should be owned before migration)");
-      warnings++;
-    } else {
+    const v2OwnerLower = v2Owner.toLowerCase();
+    const safeLower = addresses.safe.toLowerCase();
+    const timelockLower = addresses.timelock?.toLowerCase() ?? null;
+
+    if (v2OwnerLower === safeLower) {
       console.log("✅ V2 owner is Safe");
       passed++;
+    } else if (timelockLower && v2OwnerLower === timelockLower) {
+      console.log("✅ V2 owner is TimelockController");
+      passed++;
+    } else if (v2OwnerLower === ethers.ZeroAddress) {
+      console.log("❌ V2 owner is zero address (unexpected)");
+      warnings++;
+    } else {
+      console.log(`⚠️  V2 owner is ${v2Owner} (neither Safe nor Timelock)`);
+      warnings++;
     }
 
     if (v2Treasury.toLowerCase() !== addresses.safe.toLowerCase()) {
@@ -186,30 +201,40 @@ async function main() {
     warnings++;
   }
 
-  // Phase 3: ReferralRewards configuration
+  // Phase 3: ReferralRewards ownership/config sanity
   console.log("\n" + "=".repeat(60));
-  console.log("PHASE 3: ReferralRewards Integration");
+  console.log("PHASE 3: ReferralRewards Sanity Check");
   console.log("=".repeat(60));
 
   try {
     const referralRewards = await ethers.getContractAt("ReferralRewards", addresses.referralRewards);
-    
-    const feeCollectorAddr = await referralRewards.feeCollector();
+
     const owner = await referralRewards.owner();
+    const pilotToken = await referralRewards.pilotToken();
 
-    console.log(`  Fee Collector Address: ${feeCollectorAddr}`);
     console.log(`  Owner: ${owner}`);
+    console.log(`  PILOT token: ${pilotToken}`);
 
-    if (feeCollectorAddr.toLowerCase() === addresses.feeCollectorV2.toLowerCase()) {
-      console.log("✅ ReferralRewards points to V2");
+    if (pilotToken.toLowerCase() === addresses.pilotToken.toLowerCase()) {
+      console.log("✅ ReferralRewards PILOT token address correct");
       passed++;
-    } else if (feeCollectorAddr.toLowerCase() === addresses.feeCollectorV1.toLowerCase()) {
-      console.log("⚠️  ReferralRewards still points to V1 (update needed)");
-      console.log("\nTo update:");
-      console.log(`  referralRewards.setFeeCollector("${addresses.feeCollectorV2}")`);
+    } else {
+      console.log("❌ ReferralRewards PILOT token address incorrect");
+      warnings++;
+    }
+
+    const ownerLower = owner.toLowerCase();
+    const safeLower = addresses.safe.toLowerCase();
+    const timelockLower = addresses.timelock?.toLowerCase() ?? null;
+
+    if (timelockLower && ownerLower === timelockLower) {
+      console.log("✅ ReferralRewards owner is TimelockController");
+      passed++;
+    } else if (ownerLower === safeLower) {
+      console.log("⚠️  ReferralRewards owner is Safe (transfer to Timelock recommended)");
       warnings++;
     } else {
-      console.log(`❌ ReferralRewards points to unexpected address: ${feeCollectorAddr}`);
+      console.log(`⚠️  ReferralRewards owner is ${owner} (unexpected)`);
       warnings++;
     }
 
@@ -240,7 +265,7 @@ async function main() {
     { task: "Transfer ownership to Timelock", done: false }, // Can't check without Timelock address
     { task: "Withdraw funds from V1", done: (await ethers.provider.getBalance(addresses.feeCollectorV1)) === 0n },
     { task: "Transfer funds to V2", done: (await ethers.provider.getBalance(addresses.feeCollectorV2)) > 0n },
-    { task: "Update ReferralRewards.feeCollector", done: false },
+    { task: "Transfer ReferralRewards ownership to Timelock", done: false },
     { task: "Update config files", done: false },
     { task: "Redeploy API", done: false },
     { task: "Redeploy Web", done: false },
