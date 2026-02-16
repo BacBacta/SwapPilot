@@ -636,15 +636,17 @@ export function SwapInterface() {
         });
 
         if (currentAllowance < sellAmountWei) {
+          const spender = tx.approvalAddress as `0x${string}`;
+          const spenderShort = spender ? `${spender.slice(0, 6)}...${spender.slice(-4)}` : "unknown";
           toast.updateToast(loadingToastId, {
             type: "info",
             title: "Approval required",
-            message: `Please approve ${fromToken} spending in your wallet`,
+            message: `Approve ${fromToken} for ${spenderShort}`,
           });
 
           // Request approval and wait for it
           const { writeContract, waitForTransactionReceipt } = await import("viem/actions");
-          const { createWalletClient, custom, maxUint256 } = await import("viem");
+          const { createWalletClient, custom } = await import("viem");
           
           try {
             // Create wallet client from window.ethereum
@@ -658,7 +660,7 @@ export function SwapInterface() {
               address: fromTokenInfo.address as `0x${string}`,
               abi: erc20Abi,
               functionName: "approve",
-              args: [tx.approvalAddress as `0x${string}`, maxUint256],
+              args: [tx.approvalAddress as `0x${string}`, sellAmountWei],
               account: walletAddress as `0x${string}`,
             });
 
