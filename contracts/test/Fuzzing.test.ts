@@ -34,6 +34,7 @@ describe("Smart Contract Fuzzing Tests", function () {
     feeCollector = await FeeCollector.deploy(
       await pilot.getAddress(),
       treasury.address,
+      treasury.address, // referralPool (use treasury for testing)
       ethers.ZeroAddress, // No DEX router
       ethers.ZeroAddress  // No WBNB
     );
@@ -189,37 +190,39 @@ describe("Smart Contract Fuzzing Tests", function () {
         { volume: ethers.parseEther("10000"), reward: ethers.parseEther("1000") },
       ];
 
+      // Register a referral code and link user2 to user1 as referrer
+      await referralRewards.registerReferralCode("USER1_CODE");
+      await referralRewards.linkUserToReferrer(user2.address, "USER1_CODE");
+      
       for (const test of testCases) {
-        await referralRewards.distributeReward(
-          user1.address,
-          test.volume,
-          test.reward
+        // accrueReward only takes user and volume; reward is calculated internally
+        await referralRewards.accrueReward(
+          user2.address,
+          test.volume
         );
         
-        expect(await pilot.balanceOf(user1.address)).to.be.gt(0);
+        // Check that user1 (referrer) has pending rewards
+        expect(await referralRewards.pendingRewards(user1.address)).to.be.gt(0);
         
-        // Reset balance
-        const balance = await pilot.balanceOf(user1.address);
-        await pilot.connect(user1).transfer(treasury.address, balance);
+        // Claim and reset
+        await referralRewards.connect(user1).claimRewards();
       }
     });
 
-    it("should reject zero address referrer", async function () {
-      await expect(
-        referralRewards.distributeReward(
-          ethers.ZeroAddress,
-          ethers.parseEther("100"),
-          ethers.parseEther("10")
-        )
-      ).to.be.revertedWith("Invalid referrer");
+    it("should handle zero address user gracefully", async function () {
+      // accrueReward with zero address user should simply return (no referrer linked)
+      await referralRewards.accrueReward(
+        ethers.ZeroAddress,
+        ethers.parseEther("100")
+      );
+      // No error, just returns early
     });
 
     it("should reject unauthorized distributors", async function () {
       await expect(
-        referralRewards.connect(attacker).distributeReward(
+        referralRewards.connect(attacker).accrueReward(
           attacker.address,
-          ethers.parseEther("100"),
-          ethers.parseEther("10")
+          ethers.parseEther("100")
         )
       ).to.be.revertedWith("Not authorized");
     });
@@ -228,26 +231,31 @@ describe("Smart Contract Fuzzing Tests", function () {
       const minVolume = await referralRewards.minSwapVolumeUsd();
       const belowMin = minVolume - 1n;
       
-      await expect(
-        referralRewards.distributeReward(
-          user1.address,
-          belowMin,
-          ethers.parseEther("10")
-        )
-      ).to.be.revertedWith("Swap volume too low");
+      // accrueReward silently returns if volume is below minimum (no revert)
+      await referralRewards.accrueReward(
+        user1.address,
+        belowMin
+      );
+      // Should not accrue any rewards
+      expect(await referralRewards.pendingRewards(user1.address)).to.equal(0);
     });
 
-    it("should enforce max reward per swap", async function () {
-      const maxReward = await referralRewards.maxRewardPerSwap();
-      const aboveMax = maxReward + ethers.parseEther("1");
+    it("should cap rewards at max per swap", async function () {
+      // Register and link
+      await referralRewards.registerReferralCode("USER1_CODE");
+      await referralRewards.linkUserToReferrer(user2.address, "USER1_CODE");
       
-      await expect(
-        referralRewards.distributeReward(
-          user1.address,
-          ethers.parseEther("1000"),
-          aboveMax
-        )
-      ).to.be.revertedWith("Reward exceeds maximum");
+      const maxReward = await referralRewards.maxRewardPerSwap();
+      
+      // Very high volume should cap reward at maxRewardPerSwap
+      await referralRewards.accrueReward(
+        user2.address,
+        ethers.parseEther("1000000") // Very high volume
+      );
+      
+      // Pending reward should be capped at maxRewardPerSwap
+      const pending = await referralRewards.pendingRewards(user1.address);
+      expect(pending).to.be.lte(maxReward);
     });
   });
 

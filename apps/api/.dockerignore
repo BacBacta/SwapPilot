@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build artifacts
+dist
+build
+.turbo
+.next
+
+# Testing
+coverage
+.nyc_output
+test-results
+playwright-report
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs and non-essential files
+docs
+README.md
+*.md
+!package.json
+
+# Contracts (not needed in API container)
+contracts
+
+# Pitch deck and temp files
+pitch-deck
+temp-ui-kit
+
+# Test files
+test
+tests
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml

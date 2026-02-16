@@ -12,6 +12,7 @@ export * from './openOceanAdapter';
 export * from './zeroXAdapter';
 export * from './uniswapV3Adapter';
 export * from './uniswapV2Adapter';
-export * from './squadSwapAdapter';
+// Removed: SquadSwap and FstSwap adapters (duplicates of PancakeSwap router)
+// export * from './squadSwapAdapter';
 export * from './thenaAdapter';
-export * from './fstSwapAdapter';
+// export * from './fstSwapAdapter';

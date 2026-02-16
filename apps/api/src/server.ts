@@ -39,9 +39,7 @@ import {
   ZeroXAdapter,
   UniswapV3Adapter,
   UniswapV2Adapter,
-  SquadSwapAdapter,
   ThenaAdapter,
-  FstSwapAdapter,
   PROVIDERS,
   type Adapter,
 } from '@swappilot/adapters';
@@ -230,9 +228,12 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     transform: jsonSchemaTransform,
   });
 
-  app.register(swaggerUi, {
-    routePrefix: '/docs',
-  });
+  // Only expose Swagger UI in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    app.register(swaggerUi, {
+      routePrefix: '/docs',
+    });
+  }
 
   // Basic API gateway rate limiting.
   app.register(rateLimit, {
@@ -687,24 +688,12 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   const uniswapV2Adapter = new UniswapV2Adapter({
     chainId: 56,
     rpcUrl: config.rpc.bscUrls[0] ?? null,
-    routerAddress: null, // Will use default BSC router
+    routerAddress: null, // Will use default BSC router (PancakeSwap V2 fork)
     weth: config.pancakeswap.wbnb,
     quoteTimeoutMs: 5000,
   });
 
-  const squadSwapAdapter = new SquadSwapAdapter({
-    chainId: 56,
-    rpcUrl: config.rpc.bscUrls[0] ?? null,
-    quoteTimeoutMs: 5000,
-  });
-
   const thenaAdapter = new ThenaAdapter({
-    chainId: 56,
-    rpcUrl: config.rpc.bscUrls[0] ?? null,
-    quoteTimeoutMs: 5000,
-  });
-
-  const fstSwapAdapter = new FstSwapAdapter({
     chainId: 56,
     rpcUrl: config.rpc.bscUrls[0] ?? null,
     quoteTimeoutMs: 5000,
@@ -722,9 +711,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['0x', zeroXAdapter],
     ['uniswap-v3', uniswapV3Adapter],
     ['uniswap-v2', uniswapV2Adapter],
-    ['squadswap', squadSwapAdapter],
     ['thena', thenaAdapter],
-    ['fstswap', fstSwapAdapter],
   ]);
 
   // Set adapters reference and register the status endpoint

@@ -45,6 +45,7 @@ contract FuzzTest is Test {
         feeCollector = new FeeCollector(
             address(pilot),
             treasury,
+            treasury, // referralPool (use treasury for testing)
             address(0), // No DEX router for testing
             address(0)  // No WBNB for testing
         );
@@ -203,11 +204,14 @@ contract FuzzTest is Test {
         // Set distributor
         referralRewards.setDistributor(owner, true);
         
-        // Distribute rewards
-        if (rewardAmount <= referralRewards.maxRewardPerSwap() && 
-            swapVolumeUsd >= referralRewards.minSwapVolumeUsd()) {
-            referralRewards.distributeReward(referrer, swapVolumeUsd, rewardAmount);
-            assertEq(pilot.balanceOf(referrer), rewardAmount);
+        // Link user to referrer first
+        referralRewards.linkUserToReferrer(user1, "TEST_CODE");
+        
+        // Accrue rewards (reward is calculated internally)
+        if (swapVolumeUsd >= referralRewards.minSwapVolumeUsd()) {
+            referralRewards.accrueReward(user1, swapVolumeUsd);
+            // Check that referrer has pending rewards
+            assertTrue(referralRewards.pendingRewards(referrer) > 0 || referralRewards.totalEarned(referrer) > 0);
         }
     }
     
@@ -219,7 +223,7 @@ contract FuzzTest is Test {
         vm.startPrank(attacker);
         
         vm.expectRevert("Not authorized");
-        referralRewards.distributeReward(attacker, 100 * 10**18, amount);
+        referralRewards.accrueReward(attacker, 100 * 10**18);
         
         vm.stopPrank();
     }
@@ -230,8 +234,8 @@ contract FuzzTest is Test {
         
         referralRewards.setDistributor(owner, true);
         
-        vm.expectRevert("Invalid referrer");
-        referralRewards.distributeReward(address(0), 100 * 10**18, amount);
+        // accrueReward with zero address user should simply return (no referrer)
+        referralRewards.accrueReward(address(0), 100 * 10**18);
     }
     
     // ============================================================================
