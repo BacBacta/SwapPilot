@@ -33,13 +33,23 @@ function mustEnv(name: string): string {
   return v;
 }
 
+function mustEnvAny(names: string[]): string {
+  for (const name of names) {
+    const v = process.env[name];
+    if (v) {
+      return v;
+    }
+  }
+  throw new Error(`Missing env var (any of): ${names.join(", ")}`);
+}
+
 function envOr(name: string, fallback: string): string {
   return process.env[name] || fallback;
 }
 
 async function main() {
   const timelock = mustEnv("TIMELOCK_ADDRESS");
-  const feeCollectorV2 = mustEnv("FEECOLLECTOR_V2");
+  const feeCollectorV2 = mustEnvAny(["FEECOLLECTOR_V2", "FEE_COLLECTOR_V2"]);
 
   const safe = envOr("SAFE", DEFAULTS.SAFE);
   const feeCollectorV1 = envOr("FEE_COLLECTOR_V1", DEFAULTS.FEE_COLLECTOR_V1);
