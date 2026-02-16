@@ -111,8 +111,8 @@ test.describe('Swap Interface', () => {
     await expect(swapArrowBtn).toBeVisible();
     await expect(swapArrowBtn).toHaveText('↓');
     
-    // Click the swap button (visual feedback via hover transform)
-    await swapArrowBtn.click();
+    // Click the swap button - use force:true because hover transform makes it "unstable"
+    await swapArrowBtn.click({ force: true });
     // Button should still be visible after click
     await expect(swapArrowBtn).toBeVisible();
   });

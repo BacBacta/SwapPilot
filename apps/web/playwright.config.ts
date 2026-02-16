@@ -41,9 +41,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm exec next dev --port 3000',
+    command: 'pnpm dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // Avoid reusing a potentially stale/half-crashed dev server which can cause
+    // cascading ERR_CONNECTION_REFUSED / page crashes across tests.
+    // Opt-in reuse locally via PW_REUSE_EXISTING_SERVER=1.
+    reuseExistingServer: !!process.env.PW_REUSE_EXISTING_SERVER,
     timeout: 120 * 1000,
   },
 });
