@@ -8,24 +8,26 @@ import { cn } from "@/lib/cn";
    TOKEN ICONS - URLs for common tokens
    ======================================== */
 export const TOKEN_ICONS: Record<string, string> = {
-  BNB: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
-  ETH: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
-  USDT: "https://assets.coingecko.com/coins/images/325/small/Tether.png",
-  USDC: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
-  BUSD: "https://assets.coingecko.com/coins/images/9576/small/BUSD.png",
-  CAKE: "https://assets.coingecko.com/coins/images/12632/small/pancakeswap-cake-logo.png",
-  WBNB: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
-  BTCB: "https://assets.coingecko.com/coins/images/14108/small/Binance-bitcoin.png",
-  DAI: "https://assets.coingecko.com/coins/images/9956/small/Badge_Dai.png",
-  XRP: "https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png",
-  ADA: "https://assets.coingecko.com/coins/images/975/small/cardano.png",
-  DOGE: "https://assets.coingecko.com/coins/images/5/small/dogecoin.png",
-  MATIC: "https://assets.coingecko.com/coins/images/4713/small/polygon.png",
-  SOL: "https://assets.coingecko.com/coins/images/4128/small/solana.png",
-  DOT: "https://assets.coingecko.com/coins/images/12171/small/polkadot.png",
-  LINK: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
-  UNI: "https://assets.coingecko.com/coins/images/12504/small/uni.jpg",
-  AVAX: "https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png",
+  // Use API proxy to avoid loading third-party images directly in the browser.
+  // Prefer same-origin rewrite (/api/v1/...) when NEXT_PUBLIC_API_URL is configured.
+  BNB: "/api/v1/token-image/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+  WBNB: "/api/v1/token-image/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+  ETH: "/api/v1/token-image/0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+  USDT: "/api/v1/token-image/0x55d398326f99059ff775485246999027b3197955",
+  USDC: "/api/v1/token-image/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+  BUSD: "/api/v1/token-image/0xe9e7cea3dedca5984780bafc599bd69add087d56",
+  CAKE: "/api/v1/token-image/0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82",
+  BTCB: "/api/v1/token-image/0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c",
+  DAI: "/api/v1/token-image/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3",
+  XRP: "/api/v1/token-image/0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe",
+  ADA: "/api/v1/token-image/0x3ee2200efb3400fabb9aacf31297cbdd1d435d47",
+  DOGE: "/api/v1/token-image/0xba2ae424d960c26247dd6c32edc70b295c744c43",
+  MATIC: "/api/v1/token-image/0xcc42724c6683b7e57334c4e856f4c9965ed682bd",
+  SOL: "/api/v1/token-image/0x570a5d26f7765ecb712c0924e4de545b89fd43df",
+  DOT: "/api/v1/token-image/0x7083609fce4d1d8dc0c979aab8c869ea2c873402",
+  LINK: "/api/v1/token-image/0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd",
+  UNI: "/api/v1/token-image/0xbf5140a22578168fd562dccf235e5d43a02ce9b1",
+  AVAX: "/api/v1/token-image/0x1ce0c2827e2ef14d5c4f29a091d735a204794041",
 };
 
 /* ========================================
@@ -78,7 +80,9 @@ export function TokenImage({
   const unoptimized =
     imageUrl.includes("assets.coingecko.com") ||
     imageUrl.includes("walletconnect") ||
-    imageUrl.includes("trustwallet");
+    imageUrl.includes("trustwallet") ||
+    imageUrl.includes("swappilot-api.fly.dev") ||
+    imageUrl.startsWith("/api/v1/token-image/");
 
   return (
     <Image

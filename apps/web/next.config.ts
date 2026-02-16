@@ -49,6 +49,11 @@ const nextConfig: NextConfig = {
         hostname: 'assets-cdn.trustwallet.com',
         pathname: '/blockchains/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'swappilot-api.fly.dev',
+        pathname: '/v1/token-image/**',
+      },
     ],
   },
   // Allow API calls to Fly.io deployed API

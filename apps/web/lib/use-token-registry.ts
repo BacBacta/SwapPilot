@@ -24,6 +24,19 @@ const BSC_CHAIN_ID = 56;
 const LIST_CACHE_KEY = 'swappilot_token_list_cache_v1';
 const LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
 
+function getTokenImageProxyUrl(address: string): string {
+  const rawApiUrl =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    (process.env.NODE_ENV === 'production' ? 'https://swappilot-api.fly.dev' : 'http://localhost:3001');
+  // If API URL is set, prefer same-origin rewrite (/api/v1/...) to avoid CSP/image domain issues.
+  if (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return `/api/v1/token-image/${address}`;
+  }
+  const base = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+  return `${base}/v1/token-image/${address}`;
+}
+
 function getTokenListUrl(): string {
   return process.env.NEXT_PUBLIC_TOKEN_LIST_URL ?? DEFAULT_TOKEN_LIST_URL;
 }
@@ -40,8 +53,11 @@ function parseTokenList(json: unknown): TokenInfo[] {
       const symbol = String((t as any).symbol ?? '');
       const name = String((t as any).name ?? '');
       const decimals = Number((t as any).decimals ?? 18);
-      const logoURI = typeof (t as any).logoURI === 'string' ? (t as any).logoURI : undefined;
       if (!isAddress(address) || !symbol) return null;
+
+      // Option B: never load third-party logoURI directly in the browser.
+      // Always use the API proxy endpoint for the token address.
+      const logoURI = getTokenImageProxyUrl(normalizeAddress(address));
       return {
         address,
         symbol: normalizeSymbol(symbol),

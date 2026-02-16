@@ -24,7 +24,9 @@ import {
 } from '@swappilot/shared';
 
 import { timingSafeStringEqual } from '@swappilot/shared/server';
+import { safeFetch } from '@swappilot/shared/server';
 import { checkBuildTxAllowlist, getTxAllowlistMode } from './txAllowlist';
+import { getAddress } from 'viem';
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
 
@@ -748,6 +750,122 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         timeoutMs: config.rpc.timeoutMs,
       });
       return meta;
+    },
+  );
+
+  // GET /v1/token-image/:address - proxy token logos via allowlisted upstream
+  // Purpose: avoid loading third-party token images directly from the browser.
+  const TOKEN_IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+  const TOKEN_IMAGE_NEGATIVE_TTL_MS = 60 * 60 * 1000; // 1h for 404s
+  const TOKEN_IMAGE_MAX_BYTES = 512 * 1024; // 512KB
+  const tokenImageCache = new Map<
+    string,
+    { expiresAt: number; status: 200 | 404; contentType?: string; body?: Buffer }
+  >();
+
+  async function readBodyWithLimit(res: Response, maxBytes: number): Promise<Buffer> {
+    if (!res.body) {
+      const ab = await res.arrayBuffer();
+      if (ab.byteLength > maxBytes) throw new Error('image_too_large');
+      return Buffer.from(ab);
+    }
+
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      received += value.byteLength;
+      if (received > maxBytes) throw new Error('image_too_large');
+      chunks.push(value);
+    }
+    return Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  }
+
+  api.get(
+    '/v1/token-image/:address',
+    {
+      schema: {
+        params: z.object({
+          address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+        }),
+        response: {
+          200: z.any(),
+          404: z.any(),
+        },
+      },
+    },
+    async (request, reply) => {
+      const addressRaw = request.params.address;
+      const key = addressRaw.toLowerCase();
+      const now = Date.now();
+
+      const cached = tokenImageCache.get(key);
+      if (cached && cached.expiresAt > now) {
+        if (cached.status === 404) {
+          return reply.code(404).send();
+        }
+        reply.header('Content-Type', cached.contentType ?? 'image/png');
+        reply.header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return reply.code(200).send(cached.body!);
+      }
+
+      let checksum: string;
+      try {
+        checksum = getAddress(addressRaw);
+      } catch {
+        tokenImageCache.set(key, { status: 404, expiresAt: now + TOKEN_IMAGE_NEGATIVE_TTL_MS });
+        return reply.code(404).send();
+      }
+
+      // TrustWallet CDN (BSC)
+      const upstreamUrl = `https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/${checksum}/logo.png`;
+
+      try {
+        const res = await safeFetch(upstreamUrl, {
+          method: 'GET',
+          headers: {
+            Accept: 'image/*',
+          },
+        });
+
+        if (res.status === 404) {
+          tokenImageCache.set(key, { status: 404, expiresAt: now + TOKEN_IMAGE_NEGATIVE_TTL_MS });
+          return reply.code(404).send();
+        }
+
+        if (!res.ok) {
+          request.log.warn({ status: res.status, upstreamUrl }, 'token-image upstream failed');
+          tokenImageCache.set(key, { status: 404, expiresAt: now + TOKEN_IMAGE_NEGATIVE_TTL_MS });
+          return reply.code(404).send();
+        }
+
+        const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+        if (!contentType.startsWith('image/')) {
+          request.log.warn({ contentType, upstreamUrl }, 'token-image upstream invalid content-type');
+          tokenImageCache.set(key, { status: 404, expiresAt: now + TOKEN_IMAGE_NEGATIVE_TTL_MS });
+          return reply.code(404).send();
+        }
+
+        const body = await readBodyWithLimit(res, TOKEN_IMAGE_MAX_BYTES);
+
+        tokenImageCache.set(key, {
+          status: 200,
+          expiresAt: now + TOKEN_IMAGE_CACHE_TTL_MS,
+          contentType,
+          body,
+        });
+
+        reply.header('Content-Type', contentType);
+        reply.header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return reply.code(200).send(body);
+      } catch (err) {
+        request.log.warn({ err, upstreamUrl }, 'token-image fetch error');
+        tokenImageCache.set(key, { status: 404, expiresAt: now + TOKEN_IMAGE_NEGATIVE_TTL_MS });
+        return reply.code(404).send();
+      }
     },
   );
 

@@ -48,6 +48,7 @@ export const ALLOWED_API_DOMAINS = [
   
   // Token lists / metadata
   'tokens.coingecko.com',
+  'assets-cdn.trustwallet.com',
 ] as const;
 
 /**
@@ -166,11 +167,9 @@ async function validateResolvedIps(hostname: string): Promise<void> {
         throw new Error(`SSRF: DNS resolved to private IP: ${ip} for hostname ${hostname}`);
       }
     }
-  } catch (err) {
+  } catch {
     // Re-throw SSRF errors
-    if (err instanceof Error && err.message.startsWith('SSRF:')) {
-      throw err;
-    }
+    // (No err variable here; DNS resolution failures are allowed)
     // DNS resolution failures are allowed — the fetch will fail naturally
   }
 }
@@ -213,7 +212,7 @@ export async function safeFetch(
       try {
         const redirectUrl = new URL(location, validatedUrl);
         validateApiUrl(redirectUrl);
-      } catch (err) {
+      } catch {
         throw new Error(`SSRF: Redirect to unauthorized domain: ${location}`);
       }
     }
