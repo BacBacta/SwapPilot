@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title SwapPilot Referral Rewards
@@ -21,7 +22,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * 3. When referred user swaps, referrer earns PILOT rewards
  * 4. Rewards accrue and can be claimed at any time
  */
-contract ReferralRewards is Ownable, ReentrancyGuard {
+contract ReferralRewards is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice PILOT token
@@ -74,6 +75,8 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
     event RewardsClaimed(address indexed referrer, uint256 amount);
     event DistributorUpdated(address indexed distributor, bool authorized);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
+    event MinSwapVolumeUpdated(uint256 oldMin, uint256 newMin);
+    event MaxRewardPerSwapUpdated(uint256 oldMax, uint256 newMax);
 
     /// @notice Emitted on emergency withdrawal
     event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
@@ -142,7 +145,7 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
      * @param user The user who made the swap
      * @param swapVolumeUsd Swap volume in USD (scaled by 1e18)
      */
-    function accrueReward(address user, uint256 swapVolumeUsd) external onlyDistributor {
+    function accrueReward(address user, uint256 swapVolumeUsd) external onlyDistributor whenNotPaused {
         address referrer = userReferrer[user];
         if (referrer == address(0)) return; // No referrer, no reward
         if (swapVolumeUsd < minSwapVolumeUsd) return; // Below minimum
@@ -172,7 +175,7 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
     /**
      * @notice Claim pending rewards
      */
-    function claimRewards() external nonReentrant {
+    function claimRewards() external nonReentrant whenNotPaused {
         uint256 amount = pendingRewards[msg.sender];
         require(amount > 0, "No rewards to claim");
         
@@ -191,10 +194,10 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
      */
     function getRemainingAllocation() public view returns (uint256) {
         uint256 balance = pilotToken.balanceOf(address(this));
-        if (balance > REFERRAL_ALLOCATION) {
-            return REFERRAL_ALLOCATION - totalRewardsDistributed;
-        }
-        return balance;
+        uint256 remaining = REFERRAL_ALLOCATION > totalRewardsDistributed
+            ? REFERRAL_ALLOCATION - totalRewardsDistributed
+            : 0;
+        return balance < remaining ? balance : remaining;
     }
 
     /**
@@ -258,14 +261,18 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
      * @notice Update minimum swap volume
      */
     function setMinSwapVolume(uint256 minVolumeUsd) external onlyOwner {
+        uint256 oldMin = minSwapVolumeUsd;
         minSwapVolumeUsd = minVolumeUsd;
+        emit MinSwapVolumeUpdated(oldMin, minVolumeUsd);
     }
 
     /**
      * @notice Update maximum reward per swap
      */
     function setMaxRewardPerSwap(uint256 maxReward) external onlyOwner {
+        uint256 oldMax = maxRewardPerSwap;
         maxRewardPerSwap = maxReward;
+        emit MaxRewardPerSwapUpdated(oldMax, maxReward);
     }
 
     /**
@@ -279,5 +286,19 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
         emit EmergencyWithdraw(token, amount, msg.sender);
+    }
+
+    /**
+     * @notice Pause the contract (owner only)
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract (owner only)
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 }

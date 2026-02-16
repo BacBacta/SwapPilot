@@ -15,7 +15,7 @@ function isValidDsn(value: string): boolean {
 
 export function initSentry(dsn: string | undefined, environment: string) {
   const candidate = dsn;
-  if (!isValidDsn(candidate)) {
+  if (!candidate || !isValidDsn(candidate)) {
     console.log('[Sentry] Disabled (invalid DSN)');
     return;
   }

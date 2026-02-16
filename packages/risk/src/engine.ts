@@ -109,17 +109,17 @@ export function createRiskEngine(config: RiskConfig): RiskEngine {
       };
 
       const churn: RiskSignals['churn'] = {
-        level: 'LOW',
+        level: 'MEDIUM',
         reasons: ['heuristic_placeholder'],
       };
 
       const liquidity: RiskSignals['liquidity'] = {
-        level: 'LOW',
+        level: 'MEDIUM',
         reasons: ['heuristic_placeholder'],
       };
 
       const slippage: RiskSignals['slippage'] = {
-        level: 'LOW',
+        level: 'MEDIUM',
         reasons: ['heuristic_placeholder'],
       };
       const protocolRisk = protocolRiskFrom({ providerId: input.quote.providerId, isDeepLinkOnly });

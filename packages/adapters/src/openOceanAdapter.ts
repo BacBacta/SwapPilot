@@ -77,7 +77,8 @@ export class OpenOceanAdapter implements Adapter {
   private readonly apiBaseUrl: string;
   private readonly timeoutMs: number;
   
-  // Cache for token decimals to avoid repeated API calls
+  // Cache for token decimals to avoid repeated API calls (LRU-bounded)
+  private static readonly MAX_DECIMALS_CACHE = 500;
   private tokenDecimalsCache: Map<string, number> = new Map();
 
   constructor(config: OpenOceanAdapterConfig) {
@@ -90,6 +91,13 @@ export class OpenOceanAdapter implements Adapter {
 
   private isChainSupported(): boolean {
     return this.chainId in CHAIN_NAMES;
+  }
+
+  private evictOldestDecimalsCacheIfNeeded(): void {
+    if (this.tokenDecimalsCache.size >= OpenOceanAdapter.MAX_DECIMALS_CACHE) {
+      const firstKey = this.tokenDecimalsCache.keys().next().value;
+      if (firstKey !== undefined) this.tokenDecimalsCache.delete(firstKey);
+    }
   }
 
   /**
@@ -123,6 +131,7 @@ export class OpenOceanAdapter implements Adapter {
       '0x0000000000000000000000000000000000000000',
     ];
     if (nativePlaceholders.includes(tokenAddress.toLowerCase())) {
+      this.evictOldestDecimalsCacheIfNeeded();
       this.tokenDecimalsCache.set(cacheKey, 18);
       return 18;
     }
@@ -152,6 +161,7 @@ export class OpenOceanAdapter implements Adapter {
             (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
           );
           if (token) {
+            this.evictOldestDecimalsCacheIfNeeded();
             this.tokenDecimalsCache.set(cacheKey, token.decimals);
             return token.decimals;
           }
@@ -162,6 +172,7 @@ export class OpenOceanAdapter implements Adapter {
     }
 
     // Default to 18 decimals if we can't determine
+    this.evictOldestDecimalsCacheIfNeeded();
     this.tokenDecimalsCache.set(cacheKey, 18);
     return 18;
   }

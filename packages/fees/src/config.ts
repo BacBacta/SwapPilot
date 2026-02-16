@@ -62,10 +62,10 @@ export const FEE_ADDRESSES = {
   // ========== V2 CONTRACTS (Update after deployment) ==========
   
   /** FeeCollectorV2 (DappBay compliant with Pausable, events, slippage protection) */
-  FEE_COLLECTOR_V2: process.env.FEE_COLLECTOR_V2 || '0x0000000000000000000000000000000000000000' as const,
+  FEE_COLLECTOR_V2: (process.env.FEE_COLLECTOR_V2 || '0x2083B8b745Ff78c6a00395b1800469c0Dddc966c') as `0x${string}`,
   
   /** TimelockController (24h delay for all admin operations) */
-  TIMELOCK_CONTROLLER: process.env.TIMELOCK_CONTROLLER || '0x0000000000000000000000000000000000000000' as const,
+  TIMELOCK_CONTROLLER: (process.env.TIMELOCK_CONTROLLER || '0xF98a25C78Ba1B8d7bC2D816993faD7E7f825B75b') as `0x${string}`,
 } as const;
 
 export type FeeConfig = typeof FEE_CONFIG;

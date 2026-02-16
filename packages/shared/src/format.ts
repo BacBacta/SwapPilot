@@ -3,9 +3,11 @@ export function formatDecimalFromRatio(input: {
   denominator: bigint;
   decimals: number;
 }): string {
-  const denom = input.denominator === 0n ? 1n : input.denominator;
+  if (input.denominator === 0n) {
+    throw new RangeError('formatDecimalFromRatio: denominator must not be zero');
+  }
   const scale = 10n ** BigInt(input.decimals);
-  const value = (input.numerator * scale) / denom;
+  const value = (input.numerator * scale) / input.denominator;
   const intPart = value / scale;
   const fracPart = value % scale;
   const frac = fracPart

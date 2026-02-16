@@ -36,6 +36,8 @@ export interface ReferralPoolInterface extends Interface {
       | "getReferrerInfo"
       | "minClaimAmount"
       | "owner"
+      | "pause"
+      | "paused"
       | "pendingRewards"
       | "referralCodes"
       | "registerReferralCode"
@@ -45,16 +47,20 @@ export interface ReferralPoolInterface extends Interface {
       | "totalClaimed"
       | "totalClaimedAmount"
       | "transferOwnership"
+      | "unpause"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
       | "EmergencyWithdraw"
+      | "MinClaimAmountUpdated"
       | "OwnershipTransferred"
+      | "Paused"
       | "Received"
       | "ReferralCodeRegistered"
       | "RewardsAllocated"
       | "RewardsClaimed"
+      | "Unpaused"
   ): EventFragment;
 
   encodeFunctionData(
@@ -91,6 +97,8 @@ export interface ReferralPoolInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: "pause", values?: undefined): string;
+  encodeFunctionData(functionFragment: "paused", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "pendingRewards",
     values: [AddressLike]
@@ -127,6 +135,7 @@ export interface ReferralPoolInterface extends Interface {
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
 
   decodeFunctionResult(
     functionFragment: "addressToCode",
@@ -162,6 +171,8 @@ export interface ReferralPoolInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "pendingRewards",
     data: BytesLike
@@ -198,6 +209,7 @@ export interface ReferralPoolInterface extends Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
 }
 
 export namespace EmergencyWithdrawEvent {
@@ -213,12 +225,37 @@ export namespace EmergencyWithdrawEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace MinClaimAmountUpdatedEvent {
+  export type InputTuple = [oldMin: BigNumberish, newMin: BigNumberish];
+  export type OutputTuple = [oldMin: bigint, newMin: bigint];
+  export interface OutputObject {
+    oldMin: bigint;
+    newMin: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace OwnershipTransferredEvent {
   export type InputTuple = [previousOwner: AddressLike, newOwner: AddressLike];
   export type OutputTuple = [previousOwner: string, newOwner: string];
   export interface OutputObject {
     previousOwner: string;
     newOwner: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -271,6 +308,18 @@ export namespace RewardsClaimedEvent {
   export interface OutputObject {
     referrer: string;
     amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace UnpausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -374,6 +423,10 @@ export interface ReferralPool extends BaseContract {
 
   owner: TypedContractMethod<[], [string], "view">;
 
+  pause: TypedContractMethod<[], [void], "nonpayable">;
+
+  paused: TypedContractMethod<[], [boolean], "view">;
+
   pendingRewards: TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
 
   referralCodes: TypedContractMethod<[arg0: BytesLike], [string], "view">;
@@ -403,6 +456,8 @@ export interface ReferralPool extends BaseContract {
     [void],
     "nonpayable"
   >;
+
+  unpause: TypedContractMethod<[], [void], "nonpayable">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -468,6 +523,12 @@ export interface ReferralPool extends BaseContract {
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "pause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "paused"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "pendingRewards"
   ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
   getFunction(
@@ -494,6 +555,9 @@ export interface ReferralPool extends BaseContract {
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "unpause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "EmergencyWithdraw"
@@ -503,11 +567,25 @@ export interface ReferralPool extends BaseContract {
     EmergencyWithdrawEvent.OutputObject
   >;
   getEvent(
+    key: "MinClaimAmountUpdated"
+  ): TypedContractEvent<
+    MinClaimAmountUpdatedEvent.InputTuple,
+    MinClaimAmountUpdatedEvent.OutputTuple,
+    MinClaimAmountUpdatedEvent.OutputObject
+  >;
+  getEvent(
     key: "OwnershipTransferred"
   ): TypedContractEvent<
     OwnershipTransferredEvent.InputTuple,
     OwnershipTransferredEvent.OutputTuple,
     OwnershipTransferredEvent.OutputObject
+  >;
+  getEvent(
+    key: "Paused"
+  ): TypedContractEvent<
+    PausedEvent.InputTuple,
+    PausedEvent.OutputTuple,
+    PausedEvent.OutputObject
   >;
   getEvent(
     key: "Received"
@@ -537,6 +615,13 @@ export interface ReferralPool extends BaseContract {
     RewardsClaimedEvent.OutputTuple,
     RewardsClaimedEvent.OutputObject
   >;
+  getEvent(
+    key: "Unpaused"
+  ): TypedContractEvent<
+    UnpausedEvent.InputTuple,
+    UnpausedEvent.OutputTuple,
+    UnpausedEvent.OutputObject
+  >;
 
   filters: {
     "EmergencyWithdraw(uint256,address)": TypedContractEvent<
@@ -550,6 +635,17 @@ export interface ReferralPool extends BaseContract {
       EmergencyWithdrawEvent.OutputObject
     >;
 
+    "MinClaimAmountUpdated(uint256,uint256)": TypedContractEvent<
+      MinClaimAmountUpdatedEvent.InputTuple,
+      MinClaimAmountUpdatedEvent.OutputTuple,
+      MinClaimAmountUpdatedEvent.OutputObject
+    >;
+    MinClaimAmountUpdated: TypedContractEvent<
+      MinClaimAmountUpdatedEvent.InputTuple,
+      MinClaimAmountUpdatedEvent.OutputTuple,
+      MinClaimAmountUpdatedEvent.OutputObject
+    >;
+
     "OwnershipTransferred(address,address)": TypedContractEvent<
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
@@ -559,6 +655,17 @@ export interface ReferralPool extends BaseContract {
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
       OwnershipTransferredEvent.OutputObject
+    >;
+
+    "Paused(address)": TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
+    >;
+    Paused: TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
     >;
 
     "Received(address,uint256)": TypedContractEvent<
@@ -603,6 +710,17 @@ export interface ReferralPool extends BaseContract {
       RewardsClaimedEvent.InputTuple,
       RewardsClaimedEvent.OutputTuple,
       RewardsClaimedEvent.OutputObject
+    >;
+
+    "Unpaused(address)": TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
+    >;
+    Unpaused: TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
     >;
   };
 }

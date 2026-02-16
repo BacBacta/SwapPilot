@@ -3,13 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title SwapPilot Referral Pool
  * @notice Manages referral rewards distribution and claiming
  * @dev Receives BNB from FeeCollector and allows referrers to claim their share
  */
-contract ReferralPool is Ownable, ReentrancyGuard {
+contract ReferralPool is Ownable, ReentrancyGuard, Pausable {
     
     /// @notice Pending rewards per referrer (in wei)
     mapping(address => uint256) public pendingRewards;
@@ -46,6 +47,9 @@ contract ReferralPool is Ownable, ReentrancyGuard {
 
     /// @notice Emitted on emergency withdrawal
     event EmergencyWithdraw(uint256 amount, address indexed to);
+
+    /// @notice Emitted when minimum claim amount is updated
+    event MinClaimAmountUpdated(uint256 oldMin, uint256 newMin);
     
     constructor() Ownable(msg.sender) {}
     
@@ -76,7 +80,7 @@ contract ReferralPool is Ownable, ReentrancyGuard {
      * @param referrer The referrer's address
      * @param amount The amount of BNB (wei) to allocate
      */
-    function allocateRewards(address referrer, uint256 amount) external onlyOwner {
+    function allocateRewards(address referrer, uint256 amount) external onlyOwner whenNotPaused {
         require(referrer != address(0), "Invalid referrer");
         require(amount > 0, "Amount must be > 0");
         require(address(this).balance >= totalAllocated - totalClaimedAmount + amount, "Insufficient balance");
@@ -95,8 +99,9 @@ contract ReferralPool is Ownable, ReentrancyGuard {
     function batchAllocateRewards(
         address[] calldata referrers, 
         uint256[] calldata amounts
-    ) external onlyOwner {
+    ) external onlyOwner whenNotPaused {
         require(referrers.length == amounts.length, "Length mismatch");
+        require(referrers.length <= 200, "Too many recipients");
         
         uint256 totalToAllocate = 0;
         for (uint256 i = 0; i < amounts.length; i++) {
@@ -119,7 +124,7 @@ contract ReferralPool is Ownable, ReentrancyGuard {
     /**
      * @notice Claim pending rewards
      */
-    function claim() external nonReentrant {
+    function claim() external nonReentrant whenNotPaused {
         uint256 amount = pendingRewards[msg.sender];
         require(amount >= minClaimAmount, "Amount below minimum");
         
@@ -180,7 +185,9 @@ contract ReferralPool is Ownable, ReentrancyGuard {
      * @param _minClaimAmount New minimum (in wei)
      */
     function setMinClaimAmount(uint256 _minClaimAmount) external onlyOwner {
+        uint256 oldMin = minClaimAmount;
         minClaimAmount = _minClaimAmount;
+        emit MinClaimAmountUpdated(oldMin, _minClaimAmount);
     }
     
     /**
@@ -193,7 +200,21 @@ contract ReferralPool is Ownable, ReentrancyGuard {
         require(success, "Transfer failed");
         emit EmergencyWithdraw(amount, msg.sender);
     }
-    
+
+    /**
+     * @notice Pause the contract (owner only)
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract (owner only)
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     /**
      * @notice Lookup referrer by code
      * @param code The referral code

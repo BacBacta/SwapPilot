@@ -40,6 +40,8 @@ export interface ReferralRewardsInterface extends Interface {
       | "maxRewardPerSwap"
       | "minSwapVolumeUsd"
       | "owner"
+      | "pause"
+      | "paused"
       | "pendingRewards"
       | "pilotToken"
       | "referralCount"
@@ -55,6 +57,7 @@ export interface ReferralRewardsInterface extends Interface {
       | "totalEarned"
       | "totalRewardsDistributed"
       | "transferOwnership"
+      | "unpause"
       | "userReferrer"
   ): FunctionFragment;
 
@@ -62,11 +65,15 @@ export interface ReferralRewardsInterface extends Interface {
     nameOrSignatureOrTopic:
       | "DistributorUpdated"
       | "EmergencyWithdraw"
+      | "MaxRewardPerSwapUpdated"
+      | "MinSwapVolumeUpdated"
       | "OwnershipTransferred"
+      | "Paused"
       | "ReferralCodeCreated"
       | "RewardAccrued"
       | "RewardRateUpdated"
       | "RewardsClaimed"
+      | "Unpaused"
       | "UserReferred"
   ): EventFragment;
 
@@ -123,6 +130,8 @@ export interface ReferralRewardsInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: "pause", values?: undefined): string;
+  encodeFunctionData(functionFragment: "paused", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "pendingRewards",
     values: [AddressLike]
@@ -183,6 +192,7 @@ export interface ReferralRewardsInterface extends Interface {
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "userReferrer",
     values: [AddressLike]
@@ -241,6 +251,8 @@ export interface ReferralRewardsInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "pendingRewards",
     data: BytesLike
@@ -298,6 +310,7 @@ export interface ReferralRewardsInterface extends Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "userReferrer",
     data: BytesLike
@@ -335,12 +348,50 @@ export namespace EmergencyWithdrawEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace MaxRewardPerSwapUpdatedEvent {
+  export type InputTuple = [oldMax: BigNumberish, newMax: BigNumberish];
+  export type OutputTuple = [oldMax: bigint, newMax: bigint];
+  export interface OutputObject {
+    oldMax: bigint;
+    newMax: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace MinSwapVolumeUpdatedEvent {
+  export type InputTuple = [oldMin: BigNumberish, newMin: BigNumberish];
+  export type OutputTuple = [oldMin: bigint, newMin: bigint];
+  export interface OutputObject {
+    oldMin: bigint;
+    newMin: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace OwnershipTransferredEvent {
   export type InputTuple = [previousOwner: AddressLike, newOwner: AddressLike];
   export type OutputTuple = [previousOwner: string, newOwner: string];
   export interface OutputObject {
     previousOwner: string;
     newOwner: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -405,6 +456,18 @@ export namespace RewardsClaimedEvent {
   export interface OutputObject {
     referrer: string;
     amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace UnpausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -520,6 +583,10 @@ export interface ReferralRewards extends BaseContract {
 
   owner: TypedContractMethod<[], [string], "view">;
 
+  pause: TypedContractMethod<[], [void], "nonpayable">;
+
+  paused: TypedContractMethod<[], [boolean], "view">;
+
   pendingRewards: TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
 
   pilotToken: TypedContractMethod<[], [string], "view">;
@@ -573,6 +640,8 @@ export interface ReferralRewards extends BaseContract {
     [void],
     "nonpayable"
   >;
+
+  unpause: TypedContractMethod<[], [void], "nonpayable">;
 
   userReferrer: TypedContractMethod<[arg0: AddressLike], [string], "view">;
 
@@ -647,6 +716,12 @@ export interface ReferralRewards extends BaseContract {
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "pause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "paused"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "pendingRewards"
   ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
   getFunction(
@@ -700,6 +775,9 @@ export interface ReferralRewards extends BaseContract {
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "unpause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "userReferrer"
   ): TypedContractMethod<[arg0: AddressLike], [string], "view">;
 
@@ -718,11 +796,32 @@ export interface ReferralRewards extends BaseContract {
     EmergencyWithdrawEvent.OutputObject
   >;
   getEvent(
+    key: "MaxRewardPerSwapUpdated"
+  ): TypedContractEvent<
+    MaxRewardPerSwapUpdatedEvent.InputTuple,
+    MaxRewardPerSwapUpdatedEvent.OutputTuple,
+    MaxRewardPerSwapUpdatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "MinSwapVolumeUpdated"
+  ): TypedContractEvent<
+    MinSwapVolumeUpdatedEvent.InputTuple,
+    MinSwapVolumeUpdatedEvent.OutputTuple,
+    MinSwapVolumeUpdatedEvent.OutputObject
+  >;
+  getEvent(
     key: "OwnershipTransferred"
   ): TypedContractEvent<
     OwnershipTransferredEvent.InputTuple,
     OwnershipTransferredEvent.OutputTuple,
     OwnershipTransferredEvent.OutputObject
+  >;
+  getEvent(
+    key: "Paused"
+  ): TypedContractEvent<
+    PausedEvent.InputTuple,
+    PausedEvent.OutputTuple,
+    PausedEvent.OutputObject
   >;
   getEvent(
     key: "ReferralCodeCreated"
@@ -751,6 +850,13 @@ export interface ReferralRewards extends BaseContract {
     RewardsClaimedEvent.InputTuple,
     RewardsClaimedEvent.OutputTuple,
     RewardsClaimedEvent.OutputObject
+  >;
+  getEvent(
+    key: "Unpaused"
+  ): TypedContractEvent<
+    UnpausedEvent.InputTuple,
+    UnpausedEvent.OutputTuple,
+    UnpausedEvent.OutputObject
   >;
   getEvent(
     key: "UserReferred"
@@ -783,6 +889,28 @@ export interface ReferralRewards extends BaseContract {
       EmergencyWithdrawEvent.OutputObject
     >;
 
+    "MaxRewardPerSwapUpdated(uint256,uint256)": TypedContractEvent<
+      MaxRewardPerSwapUpdatedEvent.InputTuple,
+      MaxRewardPerSwapUpdatedEvent.OutputTuple,
+      MaxRewardPerSwapUpdatedEvent.OutputObject
+    >;
+    MaxRewardPerSwapUpdated: TypedContractEvent<
+      MaxRewardPerSwapUpdatedEvent.InputTuple,
+      MaxRewardPerSwapUpdatedEvent.OutputTuple,
+      MaxRewardPerSwapUpdatedEvent.OutputObject
+    >;
+
+    "MinSwapVolumeUpdated(uint256,uint256)": TypedContractEvent<
+      MinSwapVolumeUpdatedEvent.InputTuple,
+      MinSwapVolumeUpdatedEvent.OutputTuple,
+      MinSwapVolumeUpdatedEvent.OutputObject
+    >;
+    MinSwapVolumeUpdated: TypedContractEvent<
+      MinSwapVolumeUpdatedEvent.InputTuple,
+      MinSwapVolumeUpdatedEvent.OutputTuple,
+      MinSwapVolumeUpdatedEvent.OutputObject
+    >;
+
     "OwnershipTransferred(address,address)": TypedContractEvent<
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
@@ -792,6 +920,17 @@ export interface ReferralRewards extends BaseContract {
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
       OwnershipTransferredEvent.OutputObject
+    >;
+
+    "Paused(address)": TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
+    >;
+    Paused: TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
     >;
 
     "ReferralCodeCreated(address,bytes32)": TypedContractEvent<
@@ -836,6 +975,17 @@ export interface ReferralRewards extends BaseContract {
       RewardsClaimedEvent.InputTuple,
       RewardsClaimedEvent.OutputTuple,
       RewardsClaimedEvent.OutputObject
+    >;
+
+    "Unpaused(address)": TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
+    >;
+    Unpaused: TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
     >;
 
     "UserReferred(address,address)": TypedContractEvent<

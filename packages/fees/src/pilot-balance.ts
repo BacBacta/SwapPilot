@@ -98,9 +98,18 @@ function encodeBalanceOfCall(address: string): `0x${string}` {
 
 /**
  * Cache for PILOT balances to avoid repeated RPC calls
+ * LRU-bounded to prevent unbounded memory growth
  */
+const MAX_BALANCE_CACHE = 500;
 const balanceCache = new Map<string, { balance: bigint; timestamp: number }>();
 const CACHE_TTL_MS = 60_000; // 1 minute cache
+
+function evictOldestIfNeeded() {
+  if (balanceCache.size >= MAX_BALANCE_CACHE) {
+    const firstKey = balanceCache.keys().next().value;
+    if (firstKey !== undefined) balanceCache.delete(firstKey);
+  }
+}
 
 /**
  * Get PILOT balance with caching
@@ -118,6 +127,7 @@ export async function getPilotBalanceCached(
 
   const balance = await getPilotBalance(userAddress, config);
   
+  evictOldestIfNeeded();
   balanceCache.set(cacheKey, {
     balance,
     timestamp: Date.now(),
