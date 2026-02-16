@@ -135,23 +135,34 @@ async function main() {
     }
 
     // Check that no one has ADMIN role (fully decentralized)
-    const deployer = (await ethers.getSigners())[0];
-    const deployerHasAdmin = await timelock.hasRole(ADMIN_ROLE, deployer.address);
+    const signers = await ethers.getSigners();
+    const deployerAddress = signers[0]?.address ?? null;
     const safeHasAdmin = await timelock.hasRole(ADMIN_ROLE, addresses.safe);
-    
-    if (!deployerHasAdmin && !safeHasAdmin) {
-      console.log("✅ ADMIN role properly renounced (fully decentralized)");
-      passed++;
-    } else if (deployerHasAdmin) {
-      console.log("⚠️  Deployer still has ADMIN role (should renounce)");
-      failed++;
-    } else if (safeHasAdmin) {
-      console.log("⚠️  Safe has ADMIN role (not recommended)");
-      failed++;
+
+    if (deployerAddress) {
+      const deployerHasAdmin = await timelock.hasRole(ADMIN_ROLE, deployerAddress);
+      if (!deployerHasAdmin && !safeHasAdmin) {
+        console.log("✅ ADMIN role properly renounced (fully decentralized)");
+        passed++;
+      } else if (deployerHasAdmin) {
+        console.log("⚠️  Deployer still has ADMIN role (should renounce)");
+        failed++;
+      } else if (safeHasAdmin) {
+        console.log("⚠️  Safe has ADMIN role (not recommended)");
+        failed++;
+      }
+    } else {
+      if (!safeHasAdmin) {
+        console.log("⚠️  ADMIN role check: no local deployer signer available; only checked Safe (no admin)");
+      } else {
+        console.log("⚠️  ADMIN role check: Safe has ADMIN role (not recommended)");
+        failed++;
+      }
     }
 
     const minDelay = await timelock.getMinDelay();
-    console.log(`\nTimelock min delay: ${minDelay} seconds (${minDelay / 3600} hours)`);
+    const minDelaySeconds = typeof minDelay === 'bigint' ? Number(minDelay) : Number(minDelay);
+    console.log(`\nTimelock min delay: ${minDelaySeconds} seconds (${(minDelaySeconds / 3600).toFixed(2)} hours)`);
     
   } catch (error) {
     console.log("❌ Error checking TimelockController roles:", error);
