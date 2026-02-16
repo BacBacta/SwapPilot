@@ -73,6 +73,13 @@ export function TokenImage({
     );
   }
 
+  // Avoid Next.js optimizer for some third-party hosts that may block server-side fetches
+  // (causing noisy logs like: "upstream image response failed ... 403").
+  const unoptimized =
+    imageUrl.includes("assets.coingecko.com") ||
+    imageUrl.includes("walletconnect") ||
+    imageUrl.includes("trustwallet");
+
   return (
     <Image
       src={imageUrl}
@@ -81,7 +88,7 @@ export function TokenImage({
       height={pixelSize}
       className={cn("rounded-full", className)}
       onError={() => setHasError(true)}
-      unoptimized={imageUrl.includes("walletconnect") || imageUrl.includes("trustwallet")} // Skip optimization for dynamic URLs
+      unoptimized={unoptimized}
     />
   );
 }

@@ -77,6 +77,11 @@ function getOptimizedImageUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
     if (!isAllowedImageHost(parsed.hostname)) return null;
+    // CoinGecko frequently blocks server-side fetches (403) which creates noisy logs.
+    // For those icons, bypass Next.js optimizer and let the browser fetch directly.
+    if (parsed.hostname === 'assets.coingecko.com') {
+      return url;
+    }
     return `/_next/image?url=${encodeURIComponent(url)}&w=64&q=75`;
   } catch {
     return null;
