@@ -29,6 +29,13 @@
     "vitest": "^3.2.4"
   },
   "pnpm": {
+    "overrides": {
+      "hono": ">=4.11.7",
+      "axios": ">=1.7.9",
+      "h3": ">=1.14.0",
+      "lodash": ">=4.17.21",
+      "@isaacs/brace-expansion": ">=3.0.1"
+    },
     "onlyBuiltDependencies": [
       "@sentry/cli",
       "bufferutil",

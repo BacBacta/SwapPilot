@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" suppressHydrationWarning className={dmSans.variable}>
+    <html lang="en" suppressHydrationWarning className={dmSans.variable}>
       <head>
         {/* Landio CSS is served from /public; keep as <link> to preserve asset URL resolution. */}
         {/* eslint-disable-next-line @next/next/no-css-tags */}

@@ -57,8 +57,12 @@ const nextConfig: NextConfig = {
     if (!apiUrl) return [];
     return [
       {
-        source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
+        source: '/api/v1/:path*',
+        destination: `${apiUrl}/v1/:path*`,
+      },
+      {
+        source: '/api/health',
+        destination: `${apiUrl}/health`,
       },
     ];
   },
@@ -94,9 +98,9 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' https://vercel.live https://*.sentry.io",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
+              "img-src 'self' data: blob: https://tokens.coingecko.com https://*.walletconnect.com",
               "font-src 'self' data:",
-              "connect-src 'self' https: wss: blob:",
+              "connect-src 'self' https://*.sentry.io https://app.posthog.com https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org blob:",
               "frame-src 'self' https://verify.walletconnect.com https://verify.walletconnect.org",
               "worker-src 'self' blob:",
             ].join('; '),

@@ -109,6 +109,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           'req.headers.cookie',
           'req.headers.set-cookie',
           'req.headers.x-api-key',
+          'req.headers.x-admin-token',
         ],
         remove: true,
       },
@@ -275,8 +276,8 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
   app.get('/debug/sentry', async (request, reply) => {
     const token = config.observability.sentryTestToken;
-    const provided = request.headers['x-sentry-test-token'];
-    if (!token || provided !== token) {
+    const provided = getHeaderValue(request.headers['x-sentry-test-token']);
+    if (!token || !provided || !timingSafeStringEqual(provided, token)) {
       reply.status(404).send({ error: 'Not Found' });
       return;
     }
@@ -1593,9 +1594,11 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           approvalAddress: tx.approvalAddress ?? tx.to, // For ERC-20 approvals, approve this address
         };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const rawMsg = err instanceof Error ? err.message : 'Unknown error';
         request.log.error({ err, providerId }, 'buildTx failed');
-        return reply.code(500).send({ message: `Build transaction failed: ${message}` });
+        // Truncate to avoid leaking internal adapter details
+        const safeMsg = rawMsg.length > 80 ? rawMsg.slice(0, 80) + '…' : rawMsg;
+        return reply.code(500).send({ message: `Build transaction failed: ${safeMsg}` });
       }
     },
   );

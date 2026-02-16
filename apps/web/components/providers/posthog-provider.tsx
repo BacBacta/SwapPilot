@@ -12,8 +12,8 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     capture_pageview: true,
     // Capture page leaves
     capture_pageleave: true,
-    // Session recording (optional)
-    disable_session_recording: process.env.NODE_ENV !== 'production',
+    // Session recording disabled in production for privacy
+    disable_session_recording: true,
     // Respect Do Not Track
     respect_dnt: true,
     // Persistence
@@ -126,9 +126,11 @@ export function useAnalytics() {
       ph?.capture('feature_used', { feature, ...metadata });
     },
 
-    // Identify user (call after wallet connect)
+    // Identify user (call after wallet connect) — uses truncated address for privacy
     identifyUser: (address: string, properties?: Record<string, unknown>) => {
-      ph?.identify(address, properties);
+      // Hash the wallet address to avoid storing PII in analytics
+      const anonymousId = address.slice(0, 6) + '…' + address.slice(-4);
+      ph?.identify(anonymousId, properties);
     },
 
     // Reset user (call after wallet disconnect)
