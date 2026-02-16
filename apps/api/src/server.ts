@@ -24,6 +24,7 @@ import {
 } from '@swappilot/shared';
 
 import { timingSafeStringEqual } from '@swappilot/shared/server';
+import { checkBuildTxAllowlist, getTxAllowlistMode } from './txAllowlist';
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
 
@@ -1585,6 +1586,39 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         // Build the transaction
         const tx = await adapter.buildTx(quoteRequest, quote);
 
+        const approvalSpender = tx.approvalAddress ?? tx.to;
+        const allowlistMode = getTxAllowlistMode();
+        if (allowlistMode !== 'off') {
+          const check = checkBuildTxAllowlist({
+            chainId: 56,
+            providerId,
+            to: tx.to,
+            spender: approvalSpender,
+          });
+
+          if (!check.ok) {
+            request.log.warn(
+              {
+                providerId,
+                chainId: 56,
+                to: tx.to,
+                approvalSpender,
+                allowlistMode,
+                reason: check.reason,
+                allowlistedTargets: check.allowlistedTargets,
+                allowlistedSpenders: check.allowlistedSpenders,
+              },
+              'buildTx allowlist check failed',
+            );
+
+            if (allowlistMode === 'enforce') {
+              return reply.code(400).send({
+                message: `Build transaction rejected: unexpected target/spender for provider '${providerId}'`,
+              });
+            }
+          }
+        }
+
         return {
           to: tx.to,
           data: tx.data,
@@ -1592,7 +1626,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           gas: tx.gas,
           gasPrice: tx.gasPrice,
           providerId,
-          approvalAddress: tx.approvalAddress ?? tx.to, // For ERC-20 approvals, approve this address
+          approvalAddress: approvalSpender, // For ERC-20 approvals, approve this address
         };
       } catch (err) {
         const rawMsg = err instanceof Error ? err.message : 'Unknown error';

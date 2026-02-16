@@ -66,5 +66,24 @@ Configuration (env):
 - `RPC_TIMEOUT_MS`
 - `RPC_ENABLE_TRACE` (must be false by default)
 
+## Transaction target / spender allowlist (buildTx)
+
+Risk: Aggregator APIs may return a transaction target (`tx.to`) and an ERC-20 approval spender (`approvalAddress`) that, if malicious, could trick users into approving the wrong contract.
+
+Controls:
+- Server-side allowlist validation for `tx.to` and the approval spender.
+- Mode can be configured:
+	- `TX_ALLOWLIST_MODE=off` (disabled)
+	- `TX_ALLOWLIST_MODE=warn` (log and allow)
+	- `TX_ALLOWLIST_MODE=enforce` (reject buildTx if not allowlisted)
+
+Per-provider allowlist (CSV of addresses):
+- `TX_ALLOWLIST_<CHAINID>_<PROVIDER>_TARGETS`
+- `TX_ALLOWLIST_<CHAINID>_<PROVIDER>_SPENDERS`
+
+Examples:
+- `TX_ALLOWLIST_56_ONEINCH_TARGETS=0x...,0x...`
+- `TX_ALLOWLIST_56_OKX_DEX_SPENDERS=0x...`
+
 ## Storage
 - Receipts must not store sensitive data; store sanitized request and summaries.
