@@ -2,6 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": false,
-    "incremental": false
+    "incremental": false,
+    "module": "Node16",
+    "moduleResolution": "Node16"
   }
 }
