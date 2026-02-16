@@ -51,10 +51,10 @@ export const FEE_ADDRESSES = {
   BURN_ADDRESS: '0x000000000000000000000000000000000000dEaD' as const,
   
   /** FeeCollector referral pool (receives 5% of BNB fees) */
-  REFERRAL_POOL: '0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8' as const,
+  REFERRAL_POOL: '0xC02CE39b6807B146397e12Eeb76DaeEDa840e055' as const,
 
   /** Referral rewards (PILOT) are managed by ReferralRewards */
-  REFERRAL_REWARDS: '0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E' as const,
+  REFERRAL_REWARDS: '0xFC2B872F6eD62fD28eE789E35862E69adeB82698' as const,
   
   /** FeeCollector contract address (V1 - deprecated after V2 deployment) */
   FEE_COLLECTOR: '0xEe841Def61326C116F92e71FceF8cb11FBC05034' as const,
