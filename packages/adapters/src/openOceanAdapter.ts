@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch, withRetries } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared/server';
 import { OpenOceanQuoteSchema, OpenOceanSwapSchema, safeJsonParse } from './validation';
 
 /**

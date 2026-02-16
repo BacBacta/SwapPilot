@@ -4,9 +4,9 @@ import {
   type RankedQuote,
   type DecisionReceipt,
   type PreflightResult,
-  deterministicHash,
-  sha256Hex,
 } from '@swappilot/shared';
+
+import { deterministicHash, sha256Hex } from '@swappilot/shared/server';
 
 import { getEnabledProviders } from '@swappilot/adapters';
 import type { Adapter, AdapterQuote } from '@swappilot/adapters';

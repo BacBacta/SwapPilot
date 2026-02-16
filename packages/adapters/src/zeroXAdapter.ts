@@ -1,6 +1,6 @@
 import type { Adapter, AdapterQuote, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
-import { safeFetch, withRetries } from '@swappilot/shared';
+import { safeFetch, withRetries } from '@swappilot/shared/server';
 import { ZeroXQuoteSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {

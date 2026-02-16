@@ -21,8 +21,9 @@ import {
   ProviderQuoteRawSchema,
   ProviderQuoteNormalizedSchema,
   type RiskSignals,
-  timingSafeStringEqual,
 } from '@swappilot/shared';
+
+import { timingSafeStringEqual } from '@swappilot/shared/server';
 
 import { loadConfig, type AppConfig } from '@swappilot/config';
 
