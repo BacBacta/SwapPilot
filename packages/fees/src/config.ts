@@ -56,8 +56,16 @@ export const FEE_ADDRESSES = {
   /** Referral rewards (PILOT) are managed by ReferralRewards */
   REFERRAL_REWARDS: '0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E' as const,
   
-  /** FeeCollector contract address */
+  /** FeeCollector contract address (V1 - deprecated after V2 deployment) */
   FEE_COLLECTOR: '0xEe841Def61326C116F92e71FceF8cb11FBC05034' as const,
+  
+  // ========== V2 CONTRACTS (Update after deployment) ==========
+  
+  /** FeeCollectorV2 (DappBay compliant with Pausable, events, slippage protection) */
+  FEE_COLLECTOR_V2: process.env.FEE_COLLECTOR_V2 || '0x0000000000000000000000000000000000000000' as const,
+  
+  /** TimelockController (24h delay for all admin operations) */
+  TIMELOCK_CONTROLLER: process.env.TIMELOCK_CONTROLLER || '0x0000000000000000000000000000000000000000' as const,
 } as const;
 
 export type FeeConfig = typeof FEE_CONFIG;
