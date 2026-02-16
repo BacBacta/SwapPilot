@@ -9,6 +9,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV CI=true
 
+RUN addgroup --system --gid 1001 app && adduser --system --uid 1001 --ingroup app app
+
 RUN corepack enable
 
 # Copy the monorepo (keeps it simple; optimize later with a .dockerignore)
@@ -18,5 +20,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @swappilot/api... build
 
 EXPOSE 3001
+
+USER app
 
 CMD ["node", "apps/api/dist/index.js"]

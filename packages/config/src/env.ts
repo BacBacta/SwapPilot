@@ -37,6 +37,7 @@ export const EnvSchema = z.object({
   // Sentry error tracking
   SENTRY_DSN: z.string().default(''),
   SENTRY_TEST_TOKEN: z.string().default(''),
+  ADMIN_API_TOKEN: z.string().default(''),
   // Logtail (BetterStack) for log aggregation
   LOGTAIL_TOKEN: z.string().default(''),
 
@@ -146,6 +147,7 @@ export type AppConfig = {
   observability: {
     sentryDsn: string | null;
     sentryTestToken: string | null;
+    adminApiToken: string | null;
     logtailToken: string | null;
   };
   rpc: {
@@ -233,6 +235,8 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       sentryDsn: env.SENTRY_DSN.trim().length > 0 ? env.SENTRY_DSN.trim() : null,
       sentryTestToken:
         env.SENTRY_TEST_TOKEN.trim().length > 0 ? env.SENTRY_TEST_TOKEN.trim() : null,
+      adminApiToken:
+        env.ADMIN_API_TOKEN.trim().length > 0 ? env.ADMIN_API_TOKEN.trim() : null,
       logtailToken: env.LOGTAIL_TOKEN.trim().length > 0 ? env.LOGTAIL_TOKEN.trim() : null,
     },
     rpc: {

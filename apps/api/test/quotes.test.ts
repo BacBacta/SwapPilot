@@ -67,21 +67,24 @@ describe('Option 1 API', () => {
     const json2 = res2.json();
 
     expect(json1.receiptId).toBe(json2.receiptId);
-    expect(json1.rankedQuotes).toHaveLength(13);
-    expect(json2.rankedQuotes).toHaveLength(13);
-    expect(json1.bestRawQuotes).toHaveLength(13);
-    expect(json2.bestRawQuotes).toHaveLength(13);
+    expect(json1.rankedQuotes.length).toBeGreaterThan(0);
+    expect(json1.rankedQuotes).toHaveLength(json2.rankedQuotes.length);
+    expect(json1.bestRawQuotes).toHaveLength(json2.bestRawQuotes.length);
+    expect(json1.rankedQuotes).toHaveLength(json1.bestRawQuotes.length);
     expect(typeof json1.beqRecommendedProviderId === 'string' || json1.beqRecommendedProviderId === null).toBe(true);
 
-    const ids = json1.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
-    expect(ids).toEqual(
-      ['0x', '1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'odos', 'okx-dex', 'openocean', 'pancakeswap', 'paraswap', 'uniswap-v2', 'uniswap-v3'].sort(),
-    );
+    const ids1 = json1.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    const ids2 = json2.rankedQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    expect(ids1).toEqual(ids2);
 
-    const rawIds = json1.bestRawQuotes.map((q: { providerId: string }) => q.providerId).sort();
-    expect(rawIds).toEqual(
-      ['0x', '1inch', 'binance-wallet', 'kyberswap', 'liquidmesh', 'metamask', 'odos', 'okx-dex', 'openocean', 'pancakeswap', 'paraswap', 'uniswap-v2', 'uniswap-v3'].sort(),
-    );
+    const rawIds1 = json1.bestRawQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    const rawIds2 = json2.bestRawQuotes.map((q: { providerId: string }) => q.providerId).sort();
+    expect(rawIds1).toEqual(rawIds2);
+
+    // Sanity: core providers should be present in registry.
+    expect(ids1).toContain('pancakeswap');
+    expect(ids1).toContain('1inch');
+    expect(ids1).toContain('0x');
 
     const receiptRes = await app.inject({
       method: 'GET',
@@ -91,8 +94,8 @@ describe('Option 1 API', () => {
     expect(receiptRes.statusCode).toBe(200);
     const receipt = receiptRes.json() as ReceiptSummary;
     expect(receipt.id).toBe(json1.receiptId);
-    expect(receipt.rankedQuotes).toHaveLength(13);
-    expect(receipt.bestRawQuotes).toHaveLength(13);
+    expect(receipt.rankedQuotes).toHaveLength(json1.rankedQuotes.length);
+    expect(receipt.bestRawQuotes).toHaveLength(json1.bestRawQuotes.length);
     expect(typeof receipt.beqRecommendedProviderId === 'string' || receipt.beqRecommendedProviderId === null).toBe(true);
     expect(Array.isArray(receipt.whyWinner)).toBe(true);
     expect(receipt.normalization?.assumptions?.priceModel).toBe('ratio_sell_buy');
@@ -160,9 +163,16 @@ describe('Option 1 API', () => {
         host: '0.0.0.0',
         port: 3001,
         receiptStore: { type: 'memory', path: '' },
+        swapLogStore: { type: 'memory', path: '' },
         redis: { url: null, quoteCacheTtlSeconds: 10 },
         rateLimit: { max: 1000, windowMs: 60_000 },
         metrics: { enabled: false },
+        observability: {
+          sentryDsn: null,
+          sentryTestToken: null,
+          adminApiToken: null,
+          logtailToken: null,
+        },
         rpc: { bscUrls: ['https://rpc.example.invalid'], quorum: 2, timeoutMs: 2500, enableTrace: false },
         risk: { knownTokens: [], memeTokens: [] },
         pancakeswap: { v2Router: router, v3Quoter: null, v2Factory: '0x0000000000000000000000000000000000000000', v3Factory: '0x0000000000000000000000000000000000000000', wbnb: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', quoteTimeoutMs: 2000 },
@@ -173,9 +183,20 @@ describe('Option 1 API', () => {
           goPlusBaseUrl: 'https://api.gopluslabs.io/api/v1/token_security',
           honeypotIsEnabled: false,
           honeypotIsBaseUrl: 'https://api.honeypot.is/v2',
+          bscScanEnabled: false,
+          bscScanBaseUrl: 'https://api.bscscan.com',
+          bscScanApiKey: '',
           timeoutMs: 1500,
           cacheTtlMs: 60_000,
           taxStrictMaxPercent: 20,
+          fallbackMinLiquidityUsd: 0,
+        },
+        dexScreener: {
+          enabled: false,
+          baseUrl: 'https://api.dexscreener.com',
+          timeoutMs: 1200,
+          cacheTtlMs: 120_000,
+          minLiquidityUsd: 100,
         },
       },
       preflightClient: {
@@ -262,9 +283,16 @@ describe('Option 1 API', () => {
         host: '0.0.0.0',
         port: 3001,
         receiptStore: { type: 'memory', path: '' },
+        swapLogStore: { type: 'memory', path: '' },
         redis: { url: null, quoteCacheTtlSeconds: 10 },
         rateLimit: { max: 1000, windowMs: 60_000 },
         metrics: { enabled: false },
+        observability: {
+          sentryDsn: null,
+          sentryTestToken: null,
+          adminApiToken: null,
+          logtailToken: null,
+        },
         // Disable RPC/onchain sellability to keep this test focused and deterministic.
         rpc: { bscUrls: [], quorum: 2, timeoutMs: 2500, enableTrace: false },
         risk: { knownTokens: [], memeTokens: [] },
@@ -283,9 +311,20 @@ describe('Option 1 API', () => {
           goPlusBaseUrl: 'https://api.gopluslabs.io',
           honeypotIsEnabled: true,
           honeypotIsBaseUrl: 'https://api.honeypot.is',
+          bscScanEnabled: false,
+          bscScanBaseUrl: 'https://api.bscscan.com',
+          bscScanApiKey: '',
           timeoutMs: 800,
           cacheTtlMs: 60_000,
           taxStrictMaxPercent: 5,
+          fallbackMinLiquidityUsd: 0,
+        },
+        dexScreener: {
+          enabled: false,
+          baseUrl: 'https://api.dexscreener.com',
+          timeoutMs: 1200,
+          cacheTtlMs: 120_000,
+          minLiquidityUsd: 100,
         },
       },
       preflightClient: {

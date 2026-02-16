@@ -680,10 +680,16 @@ async function buildQuotesImpl(
           }
         : riskSignals;
 
-      const liquidityRisk = deriveLiquidityRisk({
-        reasons: mergedSignals.sellability.reasons,
-        minLiquidityUsd: dexScreener?.minLiquidityUsd,
-      });
+      const liquidityRisk = deriveLiquidityRisk(
+        dexScreener?.minLiquidityUsd != null
+          ? {
+              reasons: mergedSignals.sellability.reasons,
+              minLiquidityUsd: dexScreener.minLiquidityUsd,
+            }
+          : {
+              reasons: mergedSignals.sellability.reasons,
+            },
+      );
 
       const slippageRisk = deriveSlippageRisk({
         liquidityLevel: liquidityRisk.level,

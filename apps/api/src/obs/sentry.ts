@@ -1,8 +1,5 @@
 import * as Sentry from '@sentry/node';
 
-// Default DSN - same Sentry project as frontend (can be overridden via SENTRY_DSN env var)
-const DEFAULT_DSN = 'https://4a02392b17dabe691cec9e062975ce35@o4510733389201408.ingest.de.sentry.io/4510733402177616';
-
 function isValidDsn(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed || trimmed.toLowerCase() === 'xxx' || trimmed.toLowerCase() === 'your_dsn_here') {
@@ -17,7 +14,7 @@ function isValidDsn(value: string): boolean {
 }
 
 export function initSentry(dsn: string | undefined, environment: string) {
-  const candidate = dsn ?? DEFAULT_DSN;
+  const candidate = dsn;
   if (!isValidDsn(candidate)) {
     console.log('[Sentry] Disabled (invalid DSN)');
     return;

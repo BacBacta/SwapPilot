@@ -1,4 +1,4 @@
-import fastify, { type FastifyInstance } from 'fastify';
+import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 
 import { z } from 'zod';
@@ -120,6 +120,20 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  const adminApiToken = config.observability.adminApiToken;
+  const getHeaderValue = (value: string | string[] | undefined): string | null =>
+    Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+  const requireAdminToken = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!adminApiToken) {
+      return reply.code(503).send({ message: 'admin_token_not_configured' });
+    }
+
+    const providedToken = getHeaderValue(request.headers['x-admin-token']);
+    if (!providedToken || providedToken !== adminApiToken) {
+      return reply.code(401).send({ message: 'unauthorized' });
+    }
+  };
+
   // Attach requestId and structured request/response logs.
   app.addHook('onRequest', async (request, reply) => {
     request.swappilotStart = process.hrtime.bigint();
@@ -183,9 +197,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
     // Send response
     const statusCode = error.statusCode ?? 500;
+    const safeMessage = statusCode >= 500 ? 'internal_server_error' : error.message;
     reply.status(statusCode).send({
       error: error.name,
-      message: error.message,
+      message: safeMessage,
       statusCode,
     });
   });
@@ -195,9 +210,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      /\.vercel\.app$/,
-      /\.fly\.dev$/,
-      /swappilot\./,
+      'https://app-swappilot.xyz',
+      'https://www.app-swappilot.xyz',
+      /^https:\/\/swappilot-[a-z0-9-]+\.vercel\.app$/,
+      /^https:\/\/swappilot-api\.fly\.dev$/,
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
@@ -582,7 +598,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   };
 
   if (config.metrics.enabled) {
-    api.get('/metrics', async (_request, reply) => {
+    api.get('/metrics', { preHandler: requireAdminToken }, async (_request, reply) => {
       reply.header('content-type', metrics.registry.contentType);
       return metrics.registry.metrics();
     });
@@ -954,7 +970,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     '/v1/receipts/:id',
     {
       schema: {
-        params: z.object({ id: z.string().min(1) }),
+        params: z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/) }),
         response: {
           200: DecisionReceiptSchema,
           404: z.object({ message: z.string() }),
@@ -997,6 +1013,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.post(
     '/v1/analytics/swaps',
     {
+      preHandler: requireAdminToken,
       schema: {
         body: SwapLogSchema,
         response: {
@@ -1015,6 +1032,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/volume',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1046,6 +1064,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/volume/daily',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1092,6 +1111,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/success-rate',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1124,6 +1144,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/unique-wallets',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1175,6 +1196,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/quote-accuracy',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1228,6 +1250,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/beq-winrate',
     {
+      preHandler: requireAdminToken,
       schema: {
         response: {
           200: z.object({
@@ -1271,6 +1294,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/revenue',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: VolumeQuerySchema,
         response: {
@@ -1326,6 +1350,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/leaderboard',
     {
+      preHandler: requireAdminToken,
       schema: {
         querystring: LeaderboardQuerySchema,
         response: {
@@ -1395,6 +1420,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.get(
     '/v1/analytics/latency',
     {
+      preHandler: requireAdminToken,
       schema: {
         response: {
           200: z.object({

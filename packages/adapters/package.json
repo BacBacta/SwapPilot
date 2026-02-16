@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsup src/index.ts src/types.ts --format cjs --dts --tsconfig tsconfig.build.json --out-dir dist --clean",
     "lint": "eslint .",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --emitDeclarationOnly --declaration --declarationMap",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {

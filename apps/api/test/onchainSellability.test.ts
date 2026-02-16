@@ -190,7 +190,8 @@ describe('assessOnchainSellability (PCS V2/V3, multicall)', () => {
               const returnData = encodeFunctionResult({
                 abi: V2_PAIR_ABI,
                 functionName: 'getReserves',
-                result: [100n, 200n, 1] as const,
+                // Use non-dust reserves so sellability can be OK under MIN_LIQUIDITY_THRESHOLD.
+                result: [100_000_000_000_000_000n, 200_000_000_000_000_000n, 1] as const,
               });
               return { success: true, returnData };
             }
@@ -212,7 +213,8 @@ describe('assessOnchainSellability (PCS V2/V3, multicall)', () => {
               const returnData = encodeFunctionResult({
                 abi: V3_POOL_ABI,
                 functionName: 'liquidity',
-                result: 1000n,
+                // Meet MIN_V3_LIQUIDITY_THRESHOLD.
+                result: 2_000_000_000_000_000n,
               });
               return { success: true, returnData };
             }
