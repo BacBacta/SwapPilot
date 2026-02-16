@@ -3,7 +3,10 @@
  * 
  * Prevents Server-Side Request Forgery (SSRF) attacks by validating
  * all external URLs against a strict allowlist of known DEX aggregator domains.
+ * Includes DNS rebinding protection via pre-fetch IP resolution.
  */
+
+import { resolve4, resolve6 } from 'node:dns/promises';
 
 /**
  * Allowed domains for DEX aggregator APIs
@@ -45,8 +48,6 @@ export const ALLOWED_API_DOMAINS = [
   
   // Token lists / metadata
   'tokens.coingecko.com',
-  'raw.githubusercontent.com',
-  'github.com',
 ] as const;
 
 /**
@@ -98,15 +99,21 @@ export function validateApiUrl(url: string | URL): URL {
     throw new Error(`SSRF: Private IP range blocked: ${hostname}`);
   }
 
-  // 4. Check domain allowlist
+  // 4. Check domain allowlist (strict: exact match or single-level subdomain only)
   const isAllowed = ALLOWED_API_DOMAINS.some(allowed => {
     // Exact match
     if (hostname === allowed) {
       return true;
     }
-    // Subdomain match (e.g., api.1inch.io matches *.1inch.io)
+    // Strict single-level subdomain match
+    // e.g., "bsc.api.0x.org" is allowed for "api.0x.org" but
+    // "evil-api.0x.org" must be a single label before the allowed domain
     if (hostname.endsWith(`.${allowed}`)) {
-      return true;
+      const prefix = hostname.slice(0, -(allowed.length + 1));
+      // Only allow if prefix is a single DNS label (no dots, alphanumeric + hyphen)
+      if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(prefix)) {
+        return true;
+      }
     }
     return false;
   });
@@ -124,6 +131,51 @@ export function validateApiUrl(url: string | URL): URL {
 }
 
 /**
+ * Check if an IP address is in a private/internal range.
+ * Used for DNS rebinding protection.
+ */
+function isPrivateIp(ip: string): boolean {
+  return PRIVATE_IP_PATTERNS.some(pattern => pattern.test(ip));
+}
+
+/**
+ * Resolve hostname to IPs and verify none are private.
+ * Protects against DNS rebinding attacks (C-2).
+ */
+async function validateResolvedIps(hostname: string): Promise<void> {
+  // Skip for IP literals — already checked in validateApiUrl
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.includes(':')) {
+    return;
+  }
+
+  try {
+    const [ipv4Results, ipv6Results] = await Promise.allSettled([
+      resolve4(hostname),
+      resolve6(hostname),
+    ]);
+
+    const ips: string[] = [];
+    if (ipv4Results.status === 'fulfilled') ips.push(...ipv4Results.value);
+    if (ipv6Results.status === 'fulfilled') ips.push(...ipv6Results.value);
+
+    // If DNS resolution returned no results, allow (the fetch itself will fail)
+    if (ips.length === 0) return;
+
+    for (const ip of ips) {
+      if (isPrivateIp(ip)) {
+        throw new Error(`SSRF: DNS resolved to private IP: ${ip} for hostname ${hostname}`);
+      }
+    }
+  } catch (err) {
+    // Re-throw SSRF errors
+    if (err instanceof Error && err.message.startsWith('SSRF:')) {
+      throw err;
+    }
+    // DNS resolution failures are allowed — the fetch will fail naturally
+  }
+}
+
+/**
  * Safe fetch wrapper with SSRF protection
  * 
  * Use this instead of bare fetch() in adapters
@@ -138,6 +190,9 @@ export async function safeFetch(
 ): Promise<Response> {
   // Validate URL first
   const validatedUrl = validateApiUrl(url);
+
+  // DNS rebinding protection: resolve hostname and check IPs before connecting
+  await validateResolvedIps(validatedUrl.hostname);
 
   // Additional request-time checks
   const safeOptions: RequestInit = {
@@ -176,7 +231,12 @@ export async function safeFetch(
 export function isDomainAllowed(domain: string): boolean {
   const normalized = domain.toLowerCase().replace(/^https?:\/\//, '').split('/')[0] ?? '';
   
-  return ALLOWED_API_DOMAINS.some(allowed => 
-    normalized === allowed || normalized.endsWith(`.${allowed}`)
-  );
+  return ALLOWED_API_DOMAINS.some(allowed => {
+    if (normalized === allowed) return true;
+    if (normalized.endsWith(`.${allowed}`)) {
+      const prefix = normalized.slice(0, -(allowed.length + 1));
+      return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(prefix);
+    }
+    return false;
+  });
 }

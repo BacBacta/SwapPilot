@@ -172,7 +172,7 @@ export class ZeroXAdapter implements Adapter {
             },
           };
         }
-        throw new Error(`0x API error: ${res.status} - ${text}`);
+        throw new Error(`0x API error: ${res.status} - ${text.slice(0, 200)}`);
       }
 
       // Validate response with Zod schema

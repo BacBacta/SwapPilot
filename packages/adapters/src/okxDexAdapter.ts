@@ -2,6 +2,7 @@ import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 import { safeFetch, withRetries } from '@swappilot/shared';
 import { createHmac } from 'crypto';
+import { safeJsonParse, OkxQuoteSchema, OkxSwapSchema } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -182,26 +183,20 @@ export class OkxDexAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`OKX ${this.apiVersion} API error: ${res.status} - ${text}`);
+        throw new Error(`OKX ${this.apiVersion} API error: ${res.status} - ${text.slice(0, 200)}`);
       }
 
-      const json = await res.json() as {
-        code: string;
-        data?: Array<{
-          toTokenAmount: string;
-          estimateGasFee: string;
-        }>;
-        msg?: string;
-      };
+      const json = await safeJsonParse(res, OkxQuoteSchema, 'OKX quote');
 
       if (json.code !== '0' || !json.data?.[0]) {
         throw new Error(`OKX ${this.apiVersion} API error: ${json.msg ?? 'No quote data'}`);
       }
 
       const quoteData = json.data[0];
+      const buyAmount = quoteData.toTokenAmount ?? quoteData.routerResult?.toTokenAmount ?? '0';
       const raw = {
         sellAmount: request.sellAmount,
-        buyAmount: quoteData.toTokenAmount,
+        buyAmount,
         estimatedGas: 200000,
         feeBps: 0,
         route: [request.sellToken, request.buyToken],
@@ -213,7 +208,7 @@ export class OkxDexAdapter implements Adapter {
         raw,
         normalized: {
           ...normalizeQuote(raw),
-          estimatedGasUsd: quoteData.estimateGasFee ?? '0.30',
+          estimatedGasUsd: quoteData.estimateGasFee ?? quoteData.routerResult?.estimateGasFee ?? '0.30',
         },
         signals: {
           ...placeholderSignals('okx_live_quote'),
@@ -386,29 +381,10 @@ export class OkxDexAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`OKX ${this.apiVersion} swap API error: ${res.status} - ${text}`);
+        throw new Error(`OKX ${this.apiVersion} swap API error: ${res.status} - ${text.slice(0, 200)}`);
       }
 
-      const json = (await res.json()) as {
-        code: string;
-        msg?: string;
-        data?: Array<{
-          tx?: {
-            to?: string;
-            data?: string;
-            value?: string;
-            gas?: string | number;
-            gasPrice?: string | number;
-          };
-          transaction?: {
-            to?: string;
-            data?: string;
-            value?: string;
-            gas?: string | number;
-            gasPrice?: string | number;
-          };
-        }>;
-      };
+      const json = await safeJsonParse(res, OkxSwapSchema, 'OKX swap');
 
       if (json.code !== '0' || !json.data?.[0]) {
         throw new Error(`OKX ${this.apiVersion} swap API error: ${json.msg ?? 'No swap data'}`);

@@ -77,6 +77,9 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
     /// @notice Emitted when minimum distribution amount is updated
     event MinDistributionAmountUpdated(uint256 oldAmount, uint256 newAmount);
 
+    /// @notice Emitted on emergency withdrawal
+    event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
+
     constructor(
         address _pilotToken,
         address _treasury,
@@ -160,6 +163,8 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
         path[1] = address(pilotToken);
 
         // Buy PILOT from DEX
+        uint256 pilotBefore = pilotToken.balanceOf(address(this));
+
         (bool success, ) = dexRouter.call{value: bnbAmount}(
             abi.encodeWithSignature(
                 "swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256)",
@@ -172,7 +177,8 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
         require(success, "DEX swap failed");
 
         // Burn received PILOT (actual supply reduction)
-        uint256 pilotReceived = pilotToken.balanceOf(address(this));
+        // Use delta pattern to only burn tokens received from the swap, not pre-existing balance
+        uint256 pilotReceived = pilotToken.balanceOf(address(this)) - pilotBefore;
         if (pilotReceived > 0) {
             // Use PILOTToken's burn function to reduce totalSupply
             (bool burnSuccess, ) = address(pilotToken).call(
@@ -243,6 +249,7 @@ contract FeeCollectorV2 is Ownable, ReentrancyGuard, Pausable {
         } else {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
+        emit EmergencyWithdraw(token, amount, msg.sender);
     }
 
     /**

@@ -61,6 +61,7 @@ export interface ReferralRewardsInterface extends Interface {
   getEvent(
     nameOrSignatureOrTopic:
       | "DistributorUpdated"
+      | "EmergencyWithdraw"
       | "OwnershipTransferred"
       | "ReferralCodeCreated"
       | "RewardAccrued"
@@ -309,6 +310,24 @@ export namespace DistributorUpdatedEvent {
   export interface OutputObject {
     distributor: string;
     authorized: boolean;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace EmergencyWithdrawEvent {
+  export type InputTuple = [
+    token: AddressLike,
+    amount: BigNumberish,
+    to: AddressLike
+  ];
+  export type OutputTuple = [token: string, amount: bigint, to: string];
+  export interface OutputObject {
+    token: string;
+    amount: bigint;
+    to: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -692,6 +711,13 @@ export interface ReferralRewards extends BaseContract {
     DistributorUpdatedEvent.OutputObject
   >;
   getEvent(
+    key: "EmergencyWithdraw"
+  ): TypedContractEvent<
+    EmergencyWithdrawEvent.InputTuple,
+    EmergencyWithdrawEvent.OutputTuple,
+    EmergencyWithdrawEvent.OutputObject
+  >;
+  getEvent(
     key: "OwnershipTransferred"
   ): TypedContractEvent<
     OwnershipTransferredEvent.InputTuple,
@@ -744,6 +770,17 @@ export interface ReferralRewards extends BaseContract {
       DistributorUpdatedEvent.InputTuple,
       DistributorUpdatedEvent.OutputTuple,
       DistributorUpdatedEvent.OutputObject
+    >;
+
+    "EmergencyWithdraw(address,uint256,address)": TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
+    >;
+    EmergencyWithdraw: TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
     >;
 
     "OwnershipTransferred(address,address)": TypedContractEvent<

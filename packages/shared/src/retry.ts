@@ -100,7 +100,7 @@ export async function withRetries<T>(
   options: RetryOptions = {}
 ): Promise<T> {
   const {
-    maxRetries = DEFAULT_OPTIONS.maxRetries,
+    maxRetries: rawMaxRetries = DEFAULT_OPTIONS.maxRetries,
     baseDelayMs = DEFAULT_OPTIONS.baseDelayMs,
     maxDelayMs = DEFAULT_OPTIONS.maxDelayMs,
     jitterFactor = DEFAULT_OPTIONS.jitterFactor,
@@ -108,6 +108,9 @@ export async function withRetries<T>(
     isRetryable,
     signal,
   } = options;
+
+  // Hard ceiling to prevent amplification attacks (H-5)
+  const maxRetries = Math.min(rawMaxRetries, 5);
 
   let lastError: unknown;
 

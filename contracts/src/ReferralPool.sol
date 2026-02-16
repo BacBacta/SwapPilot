@@ -43,6 +43,9 @@ contract ReferralPool is Ownable, ReentrancyGuard {
     
     /// @notice Emitted when BNB is received
     event Received(address indexed from, uint256 amount);
+
+    /// @notice Emitted on emergency withdrawal
+    event EmergencyWithdraw(uint256 amount, address indexed to);
     
     constructor() Ownable(msg.sender) {}
     
@@ -188,6 +191,7 @@ contract ReferralPool is Ownable, ReentrancyGuard {
         require(amount <= address(this).balance, "Insufficient balance");
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
+        emit EmergencyWithdraw(amount, msg.sender);
     }
     
     /**

@@ -75,6 +75,9 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
     event DistributorUpdated(address indexed distributor, bool authorized);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
+    /// @notice Emitted on emergency withdrawal
+    event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
+
     modifier onlyDistributor() {
         require(distributors[msg.sender] || msg.sender == owner(), "Not authorized");
         _;
@@ -275,5 +278,6 @@ contract ReferralRewards is Ownable, ReentrancyGuard {
         } else {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
+        emit EmergencyWithdraw(token, amount, msg.sender);
     }
 }

@@ -13,6 +13,7 @@ import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
+import { sanitizeHtml, escapeHtml } from "@/lib/sanitize";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
 import { TOKEN_ICONS } from "@/components/ui/token-image";
@@ -133,7 +134,7 @@ function setText(id: string, text: string) {
 function setHtml(selector: string, html: string) {
   const el = document.querySelector(selector);
   if (!el) return;
-  el.innerHTML = html;
+  el.innerHTML = sanitizeHtml(html);
 }
 
 function setDisplay(id: string, display: string) {

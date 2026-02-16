@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { sanitizeHtml, escapeHtml } from "@/lib/sanitize";
 
 type ProviderStatus = {
   providerId: string;
@@ -417,8 +418,8 @@ export function LandioStatusController() {
           const updateClass = update.status === "resolved" ? "resolved" : "";
           updatesHtml += `
             <div class="incident-update ${updateClass}">
-              <div class="incident-update-time">${updateTime}</div>
-              <div class="incident-update-text">${update.message}</div>
+              <div class="incident-update-time">${escapeHtml(updateTime)}</div>
+              <div class="incident-update-text">${escapeHtml(update.message)}</div>
             </div>
           `;
         }
@@ -426,14 +427,14 @@ export function LandioStatusController() {
         item.innerHTML = `
           <div class="incident-header">
             <div>
-              <div class="incident-title">${severityIcon} ${incident.title}</div>
+              <div class="incident-title">${severityIcon} ${escapeHtml(incident.title)}</div>
               <div class="incident-date">${startDate.toLocaleDateString("en-US", { 
                 month: "long", 
                 day: "numeric", 
                 year: "numeric" 
               })}</div>
             </div>
-            <span class="incident-status ${statusClass}">${statusText}</span>
+            <span class="incident-status ${statusClass}">${escapeHtml(statusText)}</span>
           </div>
           <div class="incident-timeline">
             ${updatesHtml}

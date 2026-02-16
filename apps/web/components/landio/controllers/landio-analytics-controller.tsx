@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 type VolumeSummary = {
   volumeUsd: number;
@@ -34,7 +35,7 @@ function setText(id: string, text: string) {
 function setHtml(id: string, html: string) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = html;
+  el.innerHTML = sanitizeHtml(html);
 }
 
 export function LandioAnalyticsController() {

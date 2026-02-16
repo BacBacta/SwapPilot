@@ -7,11 +7,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title SwapPilot Fee Collector
+ * @title SwapPilot Fee Collector (DEPRECATED)
  * @notice Collects platform fees and distributes according to tokenomics:
  *         - 15% -> Buy and burn PILOT
  *         - 80% -> Treasury
  *         - 5% -> Referral pool
+ *
+ * @custom:deprecated This contract is deprecated. Use FeeCollectorV2 instead.
+ *   V1 has known security issues (zero slippage protection, public distributeFees,
+ *   burn to dead address instead of _burn). DO NOT deploy to production.
+ *   Kept for historical reference and existing test compatibility only.
  */
 contract FeeCollector is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -54,6 +59,9 @@ contract FeeCollector is Ownable, ReentrancyGuard {
 
     /// @notice Emitted when PILOT is bought and burned
     event PilotBurned(uint256 bnbSpent, uint256 pilotBurned);
+
+    /// @notice Emitted on emergency withdrawal
+    event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
 
     constructor(
         address _pilotToken,
@@ -176,6 +184,7 @@ contract FeeCollector is Ownable, ReentrancyGuard {
         } else {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
+        emit EmergencyWithdraw(token, amount, msg.sender);
     }
 
     /**

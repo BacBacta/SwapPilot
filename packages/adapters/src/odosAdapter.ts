@@ -155,7 +155,7 @@ export class OdosAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Odos API error: ${res.status} - ${text}`);
+        throw new Error(`Odos API error: ${res.status} - ${text.slice(0, 200)}`);
       }
 
       const data = await safeJsonParse(res, OdosQuoteSchema, 'Odos quote');
@@ -271,7 +271,7 @@ export class OdosAdapter implements Adapter {
 
       if (!assembleRes.ok) {
         const text = await assembleRes.text();
-        throw new Error(`Odos assemble API error: ${assembleRes.status} - ${text}`);
+        throw new Error(`Odos assemble API error: ${assembleRes.status} - ${text.slice(0, 200)}`);
       }
 
       const txData = await safeJsonParse(assembleRes, OdosAssembleSchema, 'Odos assemble');

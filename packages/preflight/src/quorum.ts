@@ -28,9 +28,11 @@ export function mergeQuorumResults(
   else if (failCount === n) reasons.push('quorum_all_failed');
   else reasons.push('quorum_mixed');
 
-  for (const r of results) {
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i]!;
     for (const reason of r.reasons) {
-      reasons.push(`${r.rpcUrl}:${reason}`);
+      // Anonymize RPC URLs to prevent API key leakage (H-4)
+      reasons.push(`rpc_${i}:${reason}`);
     }
   }
 

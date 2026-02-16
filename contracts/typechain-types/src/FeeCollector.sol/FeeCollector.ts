@@ -50,6 +50,7 @@ export interface FeeCollectorInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "EmergencyWithdraw"
       | "FeesCollected"
       | "FeesDistributed"
       | "OwnershipTransferred"
@@ -190,6 +191,24 @@ export interface FeeCollectorInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "treasury", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "wbnb", data: BytesLike): Result;
+}
+
+export namespace EmergencyWithdrawEvent {
+  export type InputTuple = [
+    token: AddressLike,
+    amount: BigNumberish,
+    to: AddressLike
+  ];
+  export type OutputTuple = [token: string, amount: bigint, to: string];
+  export interface OutputObject {
+    token: string;
+    amount: bigint;
+    to: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace FeesCollectedEvent {
@@ -438,6 +457,13 @@ export interface FeeCollector extends BaseContract {
   ): TypedContractMethod<[], [string], "view">;
 
   getEvent(
+    key: "EmergencyWithdraw"
+  ): TypedContractEvent<
+    EmergencyWithdrawEvent.InputTuple,
+    EmergencyWithdrawEvent.OutputTuple,
+    EmergencyWithdrawEvent.OutputObject
+  >;
+  getEvent(
     key: "FeesCollected"
   ): TypedContractEvent<
     FeesCollectedEvent.InputTuple,
@@ -467,6 +493,17 @@ export interface FeeCollector extends BaseContract {
   >;
 
   filters: {
+    "EmergencyWithdraw(address,uint256,address)": TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
+    >;
+    EmergencyWithdraw: TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
+    >;
+
     "FeesCollected(address,uint256)": TypedContractEvent<
       FeesCollectedEvent.InputTuple,
       FeesCollectedEvent.OutputTuple,

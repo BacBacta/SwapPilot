@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { escapeHtml } from "@/lib/sanitize";
 
 type ProviderStatus = {
   providerId: string;
@@ -573,20 +574,32 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     div.className = "integration-logo";
     
     const initials = getInitials(displayName);
+    const safeDisplayName = escapeHtml(displayName);
+    const safeLogo = config?.logo ? escapeHtml(config.logo) : "";
+    const safeInitials = escapeHtml(initials);
     
     // Create image with fallback to initials
     div.innerHTML = `
       <div class="provider-img-wrapper">
         <img 
-          src="${config?.logo || ""}" 
-          alt="${displayName}" 
+          src="${safeLogo}" 
+          alt="${safeDisplayName}" 
           class="provider-img"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
         />
-        <div class="provider-initials" style="display: ${config?.logo ? 'none' : 'flex'};">${initials}</div>
+        <div class="provider-initials" style="display: ${config?.logo ? 'none' : 'flex'};">${safeInitials}</div>
       </div>
-      <span class="provider-name">${displayName}</span>
+      <span class="provider-name">${safeDisplayName}</span>
     `;
+    
+    // Add image error handler safely via addEventListener
+    const img = div.querySelector('img');
+    if (img) {
+      img.addEventListener('error', () => {
+        img.style.display = 'none';
+        const initialsEl = img.nextElementSibling as HTMLElement | null;
+        if (initialsEl) initialsEl.style.display = 'flex';
+      });
+    }
     
     div.title = displayName;
     logosEl.appendChild(div);

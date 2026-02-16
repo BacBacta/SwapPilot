@@ -103,7 +103,7 @@ export const ParaSwapTxSchema = z.object({
   chainId: z.number().optional(),
 });
 
-// OKX DEX API response
+// OKX DEX API response (quote endpoint - simple format)
 export const OkxQuoteSchema = z.object({
   code: z.string(),
   msg: z.string().optional(),
@@ -113,6 +113,8 @@ export const OkxQuoteSchema = z.object({
       toTokenAmount: z.string(),
       estimateGasFee: z.string().optional(),
     }).optional(),
+    toTokenAmount: z.string().optional(),
+    estimateGasFee: z.string().optional(),
     tx: z.object({
       from: z.string(),
       to: z.string(),
@@ -131,6 +133,49 @@ export const OkxQuoteSchema = z.object({
     spender: z.string().optional(),
     dexContractAddress: z.string().optional(),
   })),
+});
+
+// OKX DEX API response (swap/buildTx endpoint)
+export const OkxSwapSchema = z.object({
+  code: z.string(),
+  msg: z.string().optional(),
+  data: z.array(z.object({
+    tx: z.object({
+      to: z.string().optional(),
+      data: z.string().optional(),
+      value: z.string().optional(),
+      gas: z.union([z.string(), z.number()]).optional(),
+      gasPrice: z.union([z.string(), z.number()]).optional(),
+    }).optional(),
+    transaction: z.object({
+      to: z.string().optional(),
+      data: z.string().optional(),
+      value: z.string().optional(),
+      gas: z.union([z.string(), z.number()]).optional(),
+      gasPrice: z.union([z.string(), z.number()]).optional(),
+    }).optional(),
+    routerResult: z.object({
+      toTokenApproveContractAddress: z.string().optional(),
+      fromTokenApproveAddress: z.string().optional(),
+      dexContractAddress: z.string().optional(),
+    }).optional(),
+    approvalAddress: z.string().optional(),
+    approveTo: z.string().optional(),
+    tokenApproveAddress: z.string().optional(),
+    spender: z.string().optional(),
+    dexContractAddress: z.string().optional(),
+  })),
+});
+
+// 1inch swap (buildTx) response
+export const OneInchSwapResponseSchema = z.object({
+  tx: z.object({
+    to: z.string(),
+    data: z.string(),
+    value: z.string(),
+    gas: z.union([z.string(), z.number()]).optional(),
+    gasPrice: z.string().optional(),
+  }),
 });
 
 // KyberSwap API response (wrapper structure)

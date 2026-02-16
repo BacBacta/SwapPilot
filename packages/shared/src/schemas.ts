@@ -65,8 +65,8 @@ export const QuoteRequestSchema = z.object({
   mode: QuoteModeSchema.optional(),
   scoringOptions: ScoringOptionsSchema.optional(),
   // Token decimals for accurate quote calculation
-  sellTokenDecimals: z.number().int().min(0).max(18).optional(),
-  buyTokenDecimals: z.number().int().min(0).max(18).optional(),
+  sellTokenDecimals: z.number().int().min(0).max(36).optional(),
+  buyTokenDecimals: z.number().int().min(0).max(36).optional(),
   // Token price in USD for gas-adjusted BEQ scoring
   buyTokenPriceUsd: z.number().positive().optional(),
 });

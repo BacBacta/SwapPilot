@@ -49,6 +49,7 @@ export interface ReferralPoolInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "EmergencyWithdraw"
       | "OwnershipTransferred"
       | "Received"
       | "ReferralCodeRegistered"
@@ -197,6 +198,19 @@ export interface ReferralPoolInterface extends Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+}
+
+export namespace EmergencyWithdrawEvent {
+  export type InputTuple = [amount: BigNumberish, to: AddressLike];
+  export type OutputTuple = [amount: bigint, to: string];
+  export interface OutputObject {
+    amount: bigint;
+    to: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace OwnershipTransferredEvent {
@@ -482,6 +496,13 @@ export interface ReferralPool extends BaseContract {
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
 
   getEvent(
+    key: "EmergencyWithdraw"
+  ): TypedContractEvent<
+    EmergencyWithdrawEvent.InputTuple,
+    EmergencyWithdrawEvent.OutputTuple,
+    EmergencyWithdrawEvent.OutputObject
+  >;
+  getEvent(
     key: "OwnershipTransferred"
   ): TypedContractEvent<
     OwnershipTransferredEvent.InputTuple,
@@ -518,6 +539,17 @@ export interface ReferralPool extends BaseContract {
   >;
 
   filters: {
+    "EmergencyWithdraw(uint256,address)": TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
+    >;
+    EmergencyWithdraw: TypedContractEvent<
+      EmergencyWithdrawEvent.InputTuple,
+      EmergencyWithdrawEvent.OutputTuple,
+      EmergencyWithdrawEvent.OutputObject
+    >;
+
     "OwnershipTransferred(address,address)": TypedContractEvent<
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,

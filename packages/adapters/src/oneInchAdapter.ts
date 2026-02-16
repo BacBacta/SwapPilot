@@ -1,7 +1,7 @@
 import type { Adapter, AdapterQuote, BuiltTx, ProviderMeta } from './types';
 import type { QuoteRequest, RiskSignals } from '@swappilot/shared';
 import { safeFetch, withRetries } from '@swappilot/shared';
-import { OneInchQuoteSchema, safeJsonParse } from './validation';
+import { OneInchQuoteSchema, OneInchSwapResponseSchema, safeJsonParse } from './validation';
 
 function placeholderSignals(reason: string): RiskSignals {
   return {
@@ -247,20 +247,12 @@ export class OneInchAdapter implements Adapter {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`1inch swap API error: ${res.status} - ${text}`);
+        throw new Error(`1inch swap API error: ${res.status} - ${text.slice(0, 200)}`);
       }
 
-      const data = await res.json() as {
-        tx: {
-          to: string;
-          data: string;
-          value: string;
-          gas: number;
-          gasPrice: string;
-        };
-      };
+      const data = await safeJsonParse(res, OneInchSwapResponseSchema, '1inch swap');
 
-      const gas = data.tx.gas && data.tx.gas > 0 ? String(data.tx.gas) : null;
+      const gas = data.tx.gas && Number(data.tx.gas) > 0 ? String(data.tx.gas) : null;
 
       return {
         to: data.tx.to,
