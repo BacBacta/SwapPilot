@@ -96,4 +96,4 @@ export const referralPoolAbi = [
 ] as const;
 
 // ReferralPool address on BSC
-export const REFERRAL_POOL_ADDRESS = "0xe810e4cfa68620cb51cd68618642ee1d44382f45" as const;
+export const REFERRAL_POOL_ADDRESS = "0xC02CE39b6807B146397e12Eeb76DaeEDa840e055" as const;
