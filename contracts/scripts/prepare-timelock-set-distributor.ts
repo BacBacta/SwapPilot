@@ -3,8 +3,7 @@ import { ethers } from 'hardhat';
 const DEFAULTS = {
   SAFE: '0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8',
   TIMELOCK: '0xF98a25C78Ba1B8d7bC2D816993faD7E7f825B75b',
-  FEE_COLLECTOR_V2: '0x2083B8b745Ff78c6a00395b1800469c0Dddc966c',
-  NEW_REFERRAL_POOL: '0xC02CE39b6807B146397e12Eeb76DaeEDa840e055',
+  REFERRAL_REWARDS: '0xFC2B872F6eD62fD28eE789E35862E69adeB82698',
 } as const;
 
 function envOr(name: string, fallback: string): string {
@@ -34,8 +33,12 @@ type Tx = { label: string; to: string; value: string; data: string };
 async function main() {
   const safe = envOr('SAFE', DEFAULTS.SAFE);
   const timelock = envOr('TIMELOCK_ADDRESS', DEFAULTS.TIMELOCK);
-  const feeCollectorV2 = envOr('FEE_COLLECTOR_V2', DEFAULTS.FEE_COLLECTOR_V2);
-  const newReferralPool = envOr('NEW_REFERRAL_POOL', DEFAULTS.NEW_REFERRAL_POOL);
+  const referralRewardsAddr = envOr('REFERRAL_REWARDS_ADDRESS', DEFAULTS.REFERRAL_REWARDS);
+  const distributor = envOr('BACKEND_DISTRIBUTOR', envOr('DISTRIBUTOR', ''));
+
+  if (!ethers.isAddress(distributor)) {
+    throw new Error('Missing/invalid BACKEND_DISTRIBUTOR (or DISTRIBUTOR) address');
+  }
 
   const timelockIface = new ethers.Interface([
     'function schedule(address target,uint256 value,bytes data,bytes32 predecessor,bytes32 salt,uint256 delay)',
@@ -49,31 +52,35 @@ async function main() {
     'function getTimestamp(bytes32 id) view returns (uint256)',
   ]);
 
-  const feeCollectorIface = new ethers.Interface([
-    'function setReferralPool(address _referralPool)',
-    'function referralPool() view returns (address)',
+  const rewardsIface = new ethers.Interface([
+    'function setDistributor(address distributor,bool allowed)',
     'function owner() view returns (address)',
+    'function distributors(address distributor) view returns (bool)',
   ]);
-
-  const fee = await ethers.getContractAt('FeeCollectorV2', feeCollectorV2);
-  const currentPool = await fee.referralPool();
-  const owner = await fee.owner();
 
   const timelockContract = new ethers.Contract(timelock, timelockIface, ethers.provider);
   const minDelay = await timelockContract.getMinDelay();
 
-  const data = feeCollectorIface.encodeFunctionData('setReferralPool', [newReferralPool]);
+  const rewards = new ethers.Contract(referralRewardsAddr, rewardsIface, ethers.provider);
+  const [rewardsOwner, isAlreadyDistributor] = await Promise.all([
+    rewards.owner(),
+    rewards.distributors(distributor),
+  ]);
+
+  const data = rewardsIface.encodeFunctionData('setDistributor', [distributor, true]);
   const predecessor = ethers.ZeroHash;
+
   const saltEnv = envOrUndef('SALT');
   const saltNonce = envOrUndef('SALT_NONCE');
   const salt = saltEnv
     ? normalizeSalt(saltEnv)
     : ethers.keccak256(
         ethers.toUtf8Bytes(
-          `setReferralPool:${feeCollectorV2}:${newReferralPool}${saltNonce ? `:${saltNonce}` : ''}`,
+          `setDistributor:${referralRewardsAddr}:${distributor}:true${saltNonce ? `:${saltNonce}` : ''}`,
         ),
       );
-  const operationId = await timelockContract.hashOperation(feeCollectorV2, 0, data, predecessor, salt);
+
+  const operationId = await timelockContract.hashOperation(referralRewardsAddr, 0, data, predecessor, salt);
 
   const [isOperation, isPending, isReady, isDone, ts] = await Promise.all([
     timelockContract.isOperation(operationId),
@@ -85,16 +92,23 @@ async function main() {
 
   const txs: Tx[] = [
     {
-      label: `Timelock.schedule(FeeCollectorV2.setReferralPool(${newReferralPool}))`,
+      label: `Timelock.schedule(ReferralRewards.setDistributor(${distributor}, true))`,
       to: timelock,
       value: '0',
-      data: timelockIface.encodeFunctionData('schedule', [feeCollectorV2, 0, data, predecessor, salt, minDelay]),
+      data: timelockIface.encodeFunctionData('schedule', [
+        referralRewardsAddr,
+        0,
+        data,
+        predecessor,
+        salt,
+        minDelay,
+      ]),
     },
     {
-      label: `Timelock.execute(FeeCollectorV2.setReferralPool(${newReferralPool}))  (after delay)`,
+      label: `Timelock.execute(ReferralRewards.setDistributor(${distributor}, true))  (after delay)`,
       to: timelock,
       value: '0',
-      data: timelockIface.encodeFunctionData('execute', [feeCollectorV2, 0, data, predecessor, salt]),
+      data: timelockIface.encodeFunctionData('execute', [referralRewardsAddr, 0, data, predecessor, salt]),
     },
   ];
 
@@ -102,10 +116,10 @@ async function main() {
   console.log('  Safe:', safe);
   console.log('  Timelock:', timelock);
   console.log('  Timelock minDelay (s):', String(minDelay));
-  console.log('  FeeCollectorV2:', feeCollectorV2);
-  console.log('  FeeCollectorV2.owner:', owner);
-  console.log('  FeeCollectorV2.referralPool (current):', currentPool);
-  console.log('  FeeCollectorV2.referralPool (new):', newReferralPool);
+  console.log('  ReferralRewards:', referralRewardsAddr);
+  console.log('  ReferralRewards.owner:', rewardsOwner);
+  console.log('  Backend distributor:', distributor);
+  console.log('  isDistributor(before):', Boolean(isAlreadyDistributor));
   console.log('  Timelock salt:', salt);
   console.log('  Timelock operationId:', operationId);
   console.log('  Timelock op status:', {
@@ -115,6 +129,12 @@ async function main() {
     isDone: Boolean(isDone),
     timestamp: String(ts),
   });
+
+  if (String(rewardsOwner).toLowerCase() !== timelock.toLowerCase()) {
+    console.log(
+      `\nWARNING: ReferralRewards.owner is not the Timelock. This operation will revert unless the Timelock is the owner.\n`,
+    );
+  }
 
   if (isOperation) {
     console.log(
@@ -139,7 +159,7 @@ async function main() {
         chainId: String((await ethers.provider.getNetwork()).chainId),
         createdAt: Date.now(),
         meta: {
-          name: 'SwapPilot Timelock op: setReferralPool',
+          name: 'SwapPilot Timelock op: setDistributor(backend,true)',
           description: '1) schedule, 2) wait minDelay, 3) execute',
         },
         transactions: txs.map((t) => ({ to: t.to, value: t.value, data: t.data })),
