@@ -715,7 +715,7 @@ export function LandioSwapController() {
     return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
   }, [fromTokenInfo, toTokenInfo]);
 
-  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances, refetch: refetchBalances } = useTokenBalances(balanceTokens);
+  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances, error: balanceError, refetch: refetchBalances } = useTokenBalances(balanceTokens);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 11: SWAP EXECUTION HOOK
@@ -1295,9 +1295,11 @@ export function LandioSwapController() {
     };
 
     if (fromBalanceLabel && fromTokenInfo) {
-      if (isConnected && !isLoadingBalances) {
+      if (isConnected && !isLoadingBalances && !balanceError) {
         const balance = getBalanceFormatted(fromTokenInfo);
         renderFromBalance(fromBalanceLabel as HTMLElement, balance);
+      } else if (isConnected && balanceError) {
+        renderFromBalance(fromBalanceLabel as HTMLElement, "-- (retry)");
       } else if (isConnected && isLoadingBalances) {
         renderFromBalance(fromBalanceLabel as HTMLElement, "...");
       } else {
@@ -1306,9 +1308,11 @@ export function LandioSwapController() {
     }
 
     if (toBalanceLabel && toTokenInfo) {
-      if (isConnected && !isLoadingBalances) {
+      if (isConnected && !isLoadingBalances && !balanceError) {
         const balance = getBalanceFormatted(toTokenInfo);
         toBalanceLabel.textContent = `Balance: ${balance}`;
+      } else if (isConnected && balanceError) {
+        toBalanceLabel.textContent = `Balance: -- (retry)`;
       } else if (isConnected && isLoadingBalances) {
         toBalanceLabel.textContent = `Balance: ...`;
       } else {
@@ -1345,7 +1349,7 @@ export function LandioSwapController() {
     return () => {
       maxBtn?.removeEventListener('click', handleMax);
     };
-  }, [isConnected, isLoadingBalances, getBalanceFormatted, getBalance, fromTokenInfo, toTokenInfo]);
+  }, [isConnected, isLoadingBalances, balanceError, getBalanceFormatted, getBalance, fromTokenInfo, toTokenInfo]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 20: DOM SYNC EFFECTS - Settings Modal

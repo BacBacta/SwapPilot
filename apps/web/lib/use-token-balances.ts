@@ -34,6 +34,7 @@ export interface UseTokenBalancesReturn {
   isLoading: boolean;
   isConnected: boolean;
   address: string | undefined;
+  error: Error | null;
   getBalance: (token: Pick<TokenInfo, "address" | "symbol">) => string;
   getBalanceFormatted: (token: Pick<TokenInfo, "address" | "symbol">) => string;
   refetch: () => void;
@@ -49,19 +50,30 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
   const erc20Tokens = useMemo(() => tokens.filter((t) => !t.isNative), [tokens]);
 
   // Fetch native BNB balance
-  const { data: nativeBalance, refetch: refetchNative } = useBalance({
+  const {
+    data: nativeBalance,
+    isLoading: isLoadingNative,
+    error: nativeError,
+    refetch: refetchNative,
+  } = useBalance({
     address,
     chainId: bsc.id,
     query: {
       enabled: isConnected && !!address && !!nativeToken,
-      // Longer stale time - balance updates are triggered manually after swaps
       staleTime: 15_000,
-      refetchInterval: false,
+      refetchInterval: 30_000,
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
     },
   });
 
   // Batch read ERC20 balances
-  const { data: erc20Balances, isLoading, refetch: refetchErc20 } = useReadContracts({
+  const {
+    data: erc20Balances,
+    isLoading: isLoadingErc20,
+    error: erc20Error,
+    refetch: refetchErc20,
+  } = useReadContracts({
     contracts: erc20Tokens.map((token) => ({
       address: token.address,
       abi: ERC20_ABI,
@@ -71,11 +83,20 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     })),
     query: {
       enabled: isConnected && !!address,
-      // Longer stale time - balance updates are triggered manually after swaps
       staleTime: 15_000,
-      refetchInterval: false,
+      refetchInterval: 30_000,
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
     },
   });
+
+  // Combine loading & error states from both queries
+  const isLoading = isLoadingNative || isLoadingErc20;
+  const error = useMemo<Error | null>(() => {
+    if (nativeError) return nativeError;
+    if (erc20Error) return erc20Error;
+    return null;
+  }, [nativeError, erc20Error]);
 
   // Parse balances into a map
   const balances = useMemo(() => {
@@ -114,13 +135,19 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     return result;
   }, [nativeBalance, nativeToken, erc20Balances, erc20Tokens]);
 
-  const getBalance = (token: Pick<TokenInfo, "address" | "symbol">): string => {
-    return balances[token.address]?.balance ?? "0";
-  };
+  const getBalance = useCallback(
+    (token: Pick<TokenInfo, "address" | "symbol">): string => {
+      return balances[token.address]?.balance ?? "0";
+    },
+    [balances],
+  );
 
-  const getBalanceFormatted = (token: Pick<TokenInfo, "address" | "symbol">): string => {
-    return balances[token.address]?.balanceFormatted ?? "0.0000";
-  };
+  const getBalanceFormatted = useCallback(
+    (token: Pick<TokenInfo, "address" | "symbol">): string => {
+      return balances[token.address]?.balanceFormatted ?? "0.0000";
+    },
+    [balances],
+  );
 
   const refetch = useCallback(() => {
     console.info("[balances] refetching balances...");
@@ -129,11 +156,17 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
     refetchErc20({ cancelRefetch: true });
   }, [refetchNative, refetchErc20]);
 
+  // Log errors for diagnostics
+  if (error) {
+    console.warn("[balances] fetch error:", error.message);
+  }
+
   return {
     balances,
     isLoading,
     isConnected,
     address,
+    error,
     getBalance,
     getBalanceFormatted,
     refetch,
