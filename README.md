@@ -54,6 +54,11 @@ packages/    # adapters, scoring, shared, config
 docs/        # architecture, runbooks
 ```
 
+## Security
+
+- Vulnerability reporting: security@swappilot.xyz
+- See SECURITY.md for scope and reporting details.
+
 ## License
 
 MIT

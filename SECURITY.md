@@ -137,7 +137,7 @@ Users should independently verify the security of any protocol they interact wit
 ## Contact
 
 For non-security-related questions:
-- Email: hello@swappilot.xyz
+- Email: security@swappilot.xyz
 - Twitter: [@SwapPilot](https://twitter.com/swappilot)
 - Telegram: [t.me/swappilot](https://t.me/swappilot)
 - GitHub: [github.com/BacBacta/SwapPilot](https://github.com/BacBacta/SwapPilot)
