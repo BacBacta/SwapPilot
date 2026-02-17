@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { escapeHtml } from "@/lib/sanitize";
+import { escapeHtml, setSanitizedHtml } from "@/lib/sanitize";
 
 type ProviderStatus = {
   providerId: string;
@@ -204,36 +204,52 @@ function setupIntegrationsSpotlightParallax(showcase: HTMLElement): () => void {
 async function loadDynamicData(signal: AbortSignal): Promise<void> {
   const baseUrl = getApiBaseUrl();
 
-  // Load all data in parallel
-  const [healthResult, providersResult, quoteResult, feeInfoResult] = await Promise.allSettled([
-    fetchHealth(baseUrl, signal),
-    fetchProviders(baseUrl, signal),
-    fetchLiveQuote(baseUrl, signal),
-    fetchFeeInfo(baseUrl, signal),
-  ]);
+  // Kick off all requests in parallel, but apply results as soon as each resolves.
+  // This avoids a "blank" feeling if one endpoint is slow.
+  let latestProviders: ProviderStatusResponse | null = null;
+  let latestFeeInfo: FeeInfo | null = null;
 
-  // Update provider count in hero
-  if (providersResult.status === "fulfilled") {
-    updateProviderCount(providersResult.value);
-    updateIntegrationsSection(providersResult.value);
-  }
+  const applyFaq = () => {
+    updateFaqSection({ providers: latestProviders, feeInfo: latestFeeInfo });
+  };
 
-  // Ensure the FAQ content matches the deployed app (client-side, no caching surprises)
-  updateFaqSection({
-    providers: providersResult.status === "fulfilled" ? providersResult.value : null,
-    feeInfo: feeInfoResult.status === "fulfilled" ? feeInfoResult.value : null,
-  });
+  void fetchProviders(baseUrl, signal)
+    .then((providers) => {
+      latestProviders = providers;
+      updateProviderCount(providers);
+      updateIntegrationsSection(providers);
+      applyFaq();
+    })
+    .catch(() => {
+      // keep defaults
+      applyFaq();
+    });
 
-  // Update status indicator if health is available
-  if (healthResult.status === "fulfilled") {
-    updateHealthBadge(healthResult.value);
-  }
+  void fetchFeeInfo(baseUrl, signal)
+    .then((feeInfo) => {
+      latestFeeInfo = feeInfo;
+      applyFaq();
+    })
+    .catch(() => {
+      applyFaq();
+    });
 
-  // Update live quote and BEQ demo
-  if (quoteResult.status === "fulfilled") {
-    updateLiveQuote(quoteResult.value);
-    updateBEQDemo(quoteResult.value);
-  }
+  void fetchHealth(baseUrl, signal)
+    .then((health) => {
+      updateHealthBadge(health);
+    })
+    .catch(() => {
+      // ignore
+    });
+
+  void fetchLiveQuote(baseUrl, signal)
+    .then((quote) => {
+      updateLiveQuote(quote);
+      updateBEQDemo(quote);
+    })
+    .catch(() => {
+      // ignore
+    });
 }
 
 async function fetchFeeInfo(baseUrl: string, signal: AbortSignal): Promise<FeeInfo> {
@@ -261,18 +277,20 @@ function updateFaqSection({ providers, feeInfo }: { providers: ProviderStatusRes
   const distribution = feeInfo?.distribution;
 
   const feePercent = typeof feeBps === "number" ? (feeBps / 100).toFixed(2) : null;
+  const safeFeePercent = feePercent ? escapeHtml(feePercent) : null;
+  const safeThreshold = typeof freeThresholdUsd === "number" ? escapeHtml(String(freeThresholdUsd)) : null;
   const feeLine =
-    feePercent && typeof freeThresholdUsd === "number"
-      ? `SwapPilot charges <strong>${feePercent}%</strong> on swaps of <strong>$${freeThresholdUsd}</strong> or more. Swaps under $${freeThresholdUsd} are <strong>free</strong>.`
+    safeFeePercent && safeThreshold
+      ? `SwapPilot charges <strong>${safeFeePercent}%</strong> on swaps of <strong>$${safeThreshold}</strong> or more. Swaps under $${safeThreshold} are <strong>free</strong>.`
       : "SwapPilot charges a low platform fee on eligible swaps.";
 
   const distributionLine =
     distribution
-      ? `Fee distribution: <strong>${distribution.burnPercent}%</strong> buy & burn PILOT, <strong>${distribution.treasuryPercent}%</strong> treasury, <strong>${distribution.referralPercent}%</strong> referral rewards.`
+      ? `Fee distribution: <strong>${escapeHtml(String(distribution.burnPercent))}%</strong> buy & burn PILOT, <strong>${escapeHtml(String(distribution.treasuryPercent))}%</strong> treasury, <strong>${escapeHtml(String(distribution.referralPercent))}%</strong> referral rewards.`
       : "";
 
   const providerLine = typeof providersCount === "number"
-    ? `SwapPilot compares quotes from <strong>${providersCount}</strong> integrated providers to find you the best execution on BNB Chain.`
+    ? `SwapPilot compares quotes from <strong>${escapeHtml(String(providersCount))}</strong> integrated providers to find you the best execution on BNB Chain.`
     : "SwapPilot compares quotes from multiple integrated providers to find you the best execution on BNB Chain.";
 
   const items = [
@@ -302,21 +320,30 @@ function updateFaqSection({ providers, feeInfo }: { providers: ProviderStatusRes
     },
   ] as const;
 
-  faqList.innerHTML = items
-    .map(
-      (it) => `
-        <div class="faq-item">
-          <button class="faq-question" type="button">
-            ${it.q}
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <p>${it.a}</p>
-          </div>
-        </div>
-      `.trim(),
-    )
-    .join("\n");
+  faqList.replaceChildren();
+  for (const it of items) {
+    const item = document.createElement("div");
+    item.className = "faq-item";
+
+    const button = document.createElement("button");
+    button.className = "faq-question";
+    button.type = "button";
+    button.append(document.createTextNode(it.q));
+    const icon = document.createElement("span");
+    icon.className = "faq-icon";
+    icon.textContent = "+";
+    button.appendChild(icon);
+
+    const answer = document.createElement("div");
+    answer.className = "faq-answer";
+    const p = document.createElement("p");
+    // Answers intentionally contain limited markup (<strong>). Insert via sanitized fragment.
+    setSanitizedHtml(p, it.a);
+    answer.appendChild(p);
+
+    item.append(button, answer);
+    faqList.appendChild(item);
+  }
 
   // Bind accordion behavior once via event delegation (scripts are stripped from templates).
   if (!faqList.dataset.faqBound) {
@@ -462,7 +489,7 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
   statusEl.textContent = `${aggregators.length} aggregators + ${dexes.length} DEXes connected • ${operational}/${data.providers.length} operational`;
 
   // Update logos - generate from live providers
-  logosEl.innerHTML = "";
+  logosEl.replaceChildren();
   
   // Provider logo URLs (reliable CDN sources and official logos)
   const providerLogos: Record<string, { name: string; logo: string }> = {
@@ -574,32 +601,38 @@ function updateIntegrationsSection(data: ProviderStatusResponse): void {
     div.className = "integration-logo";
     
     const initials = getInitials(displayName);
-    const safeDisplayName = escapeHtml(displayName);
-    const safeLogo = config?.logo ? escapeHtml(config.logo) : "";
-    const safeInitials = escapeHtml(initials);
-    
-    // Create image with fallback to initials
-    div.innerHTML = `
-      <div class="provider-img-wrapper">
-        <img 
-          src="${safeLogo}" 
-          alt="${safeDisplayName}" 
-          class="provider-img"
-        />
-        <div class="provider-initials" style="display: ${config?.logo ? 'none' : 'flex'};">${safeInitials}</div>
-      </div>
-      <span class="provider-name">${safeDisplayName}</span>
-    `;
-    
-    // Add image error handler safely via addEventListener
-    const img = div.querySelector('img');
-    if (img) {
-      img.addEventListener('error', () => {
-        img.style.display = 'none';
-        const initialsEl = img.nextElementSibling as HTMLElement | null;
-        if (initialsEl) initialsEl.style.display = 'flex';
-      });
+    const wrapper = document.createElement("div");
+    wrapper.className = "provider-img-wrapper";
+
+    const img = document.createElement("img");
+    img.className = "provider-img";
+    img.alt = displayName;
+
+    const initialsEl = document.createElement("div");
+    initialsEl.className = "provider-initials";
+    initialsEl.textContent = initials;
+
+    const logoUrl = config?.logo || "";
+    if (logoUrl) {
+      img.src = logoUrl;
+      initialsEl.style.display = "none";
+    } else {
+      img.style.display = "none";
+      initialsEl.style.display = "flex";
     }
+
+    img.addEventListener("error", () => {
+      img.style.display = "none";
+      initialsEl.style.display = "flex";
+    });
+
+    wrapper.append(img, initialsEl);
+
+    const name = document.createElement("span");
+    name.className = "provider-name";
+    name.textContent = displayName;
+
+    div.append(wrapper, name);
     
     div.title = displayName;
     logosEl.appendChild(div);

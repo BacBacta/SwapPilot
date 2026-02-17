@@ -49,7 +49,8 @@ const connectors = connectorsForWallets(
       groupName: "Other",
       wallets: [
         ...(walletConnectEnabled ? [walletConnectWallet] : []),
-        injectedWallet,
+        // Do not include injectedWallet twice. When multi-injected discovery is enabled,
+        // MetaMask can surface as `io.metamask` and duplicate entries trigger React key warnings.
       ],
     },
   ],

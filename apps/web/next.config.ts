@@ -5,12 +5,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Allow dev origins for VS Code Simple Browser, localhost variants, and Codespaces
   allowedDevOrigins: [
-    'http://127.0.0.1:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1',
-    'http://localhost',
-    '127.0.0.1',
     'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '*.app.github.dev',
+    '*.github.dev',
+    '*.githubpreview.dev',
+    '*.preview.app.github.dev',
   ],
   // Handle optional dependencies that may not be available (WalletConnect, MetaMask SDK)
   webpack: (config) => {

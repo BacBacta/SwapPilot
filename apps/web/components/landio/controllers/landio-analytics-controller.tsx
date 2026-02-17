@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { escapeHtml, setSanitizedHtml } from "@/lib/sanitize";
 
 type VolumeSummary = {
   volumeUsd: number;
@@ -35,7 +35,7 @@ function setText(id: string, text: string) {
 function setHtml(id: string, html: string) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = sanitizeHtml(html);
+  setSanitizedHtml(el, html);
 }
 
 export function LandioAnalyticsController() {
@@ -83,13 +83,17 @@ export function LandioAnalyticsController() {
         const maxVolume = dailyJson.reduce((max, day) => Math.max(max, day.volumeUsd), 0);
         const rows = dailyJson
           .map((day) => {
-            const width = maxVolume ? Math.max((day.volumeUsd / maxVolume) * 100, 4) : 4;
+            const widthRaw = maxVolume ? Math.max((day.volumeUsd / maxVolume) * 100, 4) : 4;
+            const width = Math.max(0, Math.min(100, Number.isFinite(widthRaw) ? widthRaw : 4));
+            const safeDate = escapeHtml(String(day.date ?? ""));
+            const safeValue = escapeHtml(formatUsd(day.volumeUsd ?? 0));
+            const safeSwaps = escapeHtml(String(day.swaps ?? 0));
             return `
               <div class="analytics-row">
-                <div class="analytics-muted">${day.date}</div>
+                <div class="analytics-muted">${safeDate}</div>
                 <div class="analytics-bar"><div class="analytics-bar-fill" style="width:${width}%"></div></div>
-                <div class="analytics-value">${formatUsd(day.volumeUsd)}</div>
-                <div class="analytics-count">${day.swaps}</div>
+                <div class="analytics-value">${safeValue}</div>
+                <div class="analytics-count">${safeSwaps}</div>
               </div>
             `;
           })

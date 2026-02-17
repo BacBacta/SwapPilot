@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { LandioNav } from "./landio-nav";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import Link from "next/link";
 import parse from "html-react-parser";
 
@@ -22,6 +22,9 @@ function sanitizeHtml(html: string): string {
     // Remove data: URIs in src (potential XSS via data:text/html)
     .replace(/src\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, 'src=""');
 }
+
+  const sanitizeHtmlCached = cache((html: string) => sanitizeHtml(html));
+  const parseHtmlCached = cache((html: string) => parse(html));
 
 // Static SSR fallback navigation - shown instantly while JS loads
 function NavFallback() {
@@ -47,8 +50,8 @@ function NavFallback() {
 
 export function LandioTemplate({ inlineCss, bodyHtml, after }: { inlineCss?: string; bodyHtml: string; after?: ReactNode }) {
   // Sanitize HTML inputs to prevent XSS (H-1 DappBay audit)
-  const safeBodyHtml = sanitizeHtml(bodyHtml);
-  const safeCss = inlineCss ? sanitizeHtml(inlineCss) : undefined;
+  const safeBodyHtml = sanitizeHtmlCached(bodyHtml);
+  const safeCss = inlineCss ? sanitizeHtmlCached(inlineCss) : undefined;
 
   return (
     <>
@@ -56,7 +59,7 @@ export function LandioTemplate({ inlineCss, bodyHtml, after }: { inlineCss?: str
       <Suspense fallback={<NavFallback />}>
         <LandioNav />
       </Suspense>
-      <div>{parse(safeBodyHtml)}</div>
+      <div>{parseHtmlCached(safeBodyHtml)}</div>
       {after ?? null}
     </>
   );

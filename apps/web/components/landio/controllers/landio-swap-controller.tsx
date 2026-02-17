@@ -13,7 +13,7 @@ import { useTokenPrices } from "@/lib/hooks/use-token-prices";
 import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useTokenApproval } from "@/lib/hooks/use-token-approval";
 import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
-import { sanitizeHtml, escapeHtml } from "@/lib/sanitize";
+import { escapeHtml, setSanitizedHtml } from "@/lib/sanitize";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
 import { TOKEN_ICONS } from "@/components/ui/token-image";
@@ -139,7 +139,7 @@ function setText(id: string, text: string) {
 function setHtml(selector: string, html: string) {
   const el = document.querySelector(selector);
   if (!el) return;
-  el.innerHTML = sanitizeHtml(html);
+  setSanitizedHtml(el, html);
 }
 
 function setDisplay(id: string, display: string) {
@@ -290,7 +290,7 @@ function renderProviders(
   }
   
   // Clear existing items
-  listContainer.innerHTML = "";
+  listContainer.replaceChildren();
 
   const displayQuotes = quotes.slice(0, Math.max(1, visibleCount));
   const hasMore = quotes.length > displayQuotes.length;
@@ -331,7 +331,7 @@ function renderProviders(
     const confidenceText = confidence !== null ? `${confidence}%` : "";
 
     // Rank badge
-    const rankBadge = idx < 3 ? RANK_BADGES[idx] : `#${idx + 1}`;
+    const rankBadge = idx < 3 ? (RANK_BADGES[idx] ?? `#${idx + 1}`) : `#${idx + 1}`;
 
     // MEV and Slippage badges
     const mevLevel = q.signals?.mevExposure?.level;
@@ -365,26 +365,45 @@ function renderProviders(
       savingsText = formatSignedAmount(diff, toTokenInfo.decimals, toTokenSymbol);
     }
 
-    const providerIdLower = (q.providerId ?? "").toLowerCase();
+    const providerIdRaw = q.providerId ?? "";
+    const providerIdLower = providerIdRaw.toLowerCase();
+    const safeProviderId = escapeHtml(providerIdRaw || "—");
     const isCompareSelected = compareMode && compareProviderIds.includes(providerIdLower);
-    const compareButton = compareMode
-      ? `<button class="compare-toggle" data-provider="${q.providerId}" style="border: 1px solid ${isCompareSelected ? "var(--accent)" : "var(--border)"}; background: ${isCompareSelected ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${isCompareSelected ? "var(--accent)" : "var(--text-secondary)"}; border-radius: 8px; padding: 2px 8px; font-size: 11px; cursor: pointer;">${isCompareSelected ? "✓ Compared" : "+ Compare"}</button>`
+    const safeRankBadge = escapeHtml(rankBadge);
+    const providerRateText = `${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}`;
+    const safeProviderRate = escapeHtml(providerRateText);
+    const safeOut = escapeHtml(out);
+    const safeToTokenSymbol = escapeHtml(toTokenSymbol);
+    const safeSavingsText = escapeHtml(savingsText);
+
+    const compareButtonHtml = compareMode
+      ? `
+          <button
+            class="compare-toggle"
+            data-provider="${safeProviderId}"
+            style="border: 1px solid ${isCompareSelected ? "var(--accent)" : "var(--border)"}; background: ${isCompareSelected ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${isCompareSelected ? "var(--accent)" : "var(--text-secondary)"}; border-radius: 8px; padding: 2px 8px; font-size: 11px; cursor: pointer;"
+            type="button"
+          >${escapeHtml(isCompareSelected ? "✓ Compared" : "+ Compare")}</button>
+        `
       : "";
 
-    item.innerHTML = `
-      <div class="provider-left">
-        <div class="provider-logo">${rankBadge}</div>
-        <div>
-          <div class="provider-name">${q.providerId}</div>
-          <div class="provider-rate">${beq !== null ? `BEQ ${beq}` : ""}${confidenceText ? ` • 🎯${confidenceText}` : ""}${deltaPercent ? ` • ${deltaPercent}` : ""}</div>
+    setSanitizedHtml(
+      item,
+      `
+        <div class="provider-left">
+          <div class="provider-logo">${safeRankBadge}</div>
+          <div>
+            <div class="provider-name">${safeProviderId}</div>
+            <div class="provider-rate">${safeProviderRate}</div>
+          </div>
         </div>
-      </div>
-      <div class="provider-right">
-        ${compareButton}
-        <div class="provider-output">${out} ${toTokenSymbol}</div>
-        <div class="provider-savings">${savingsText}</div>
-      </div>
-    `;
+        <div class="provider-right">
+          ${compareButtonHtml}
+          <div class="provider-output">${safeOut} ${safeToTokenSymbol}</div>
+          <div class="provider-savings">${safeSavingsText}</div>
+        </div>
+      `,
+    );
 
     if (compareMode) {
       const compareBtn = item.querySelector<HTMLButtonElement>(".compare-toggle");
@@ -487,21 +506,24 @@ function updateSelectedProviderPreview(
   const out = formatAmount(quote.normalized.buyAmount ?? quote.raw.buyAmount, toTokenInfo.decimals);
   const beq = typeof quote.score?.beqScore === "number" ? Math.round(quote.score.beqScore) : null;
   
-  preview.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000;">🥇</div>
-        <div>
-          <div style="font-weight: 600; font-size: 13px;">${quote.providerId}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">${beq !== null ? `BEQ ${beq}` : "Selected"}</div>
+  setSanitizedHtml(
+    preview,
+    `
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000;">🥇</div>
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">${escapeHtml(quote.providerId ?? "—")}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(beq !== null ? `BEQ ${beq}` : "Selected")}</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-weight: 700; font-size: 14px;">${escapeHtml(out)} ${escapeHtml(toTokenSymbol)}</div>
+          <div style="font-size: 11px; color: var(--accent);">Click to expand ▼</div>
         </div>
       </div>
-      <div style="text-align: right;">
-        <div style="font-weight: 700; font-size: 14px;">${out} ${toTokenSymbol}</div>
-        <div style="font-size: 11px; color: var(--accent);">Click to expand ▼</div>
-      </div>
-    </div>
-  `;
+    `,
+  );
 }
 
 function selectActiveQuotes(params: {
@@ -1015,13 +1037,16 @@ export function LandioSwapController() {
         const container = document.getElementById("providersContainer");
         if (container) {
           const modeLabel = capturedMode === "SAFE" ? "Safe" : capturedMode === "DEGEN" ? "Turbo" : "Balanced";
-          container.innerHTML = `
-            <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
-              <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
-              <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
-              <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
-            </div>
-          `;
+          setSanitizedHtml(
+            container,
+            `
+              <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
+                <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${escapeHtml(modeLabel)} mode</div>
+                <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+              </div>
+            `,
+          );
         }
         
         swapContainer?.classList.remove("analyzing-state");
@@ -1258,14 +1283,25 @@ export function LandioSwapController() {
     const fromBalanceLabel = document.getElementById('fromBalanceLabel');
     const toBalanceLabel = document.getElementById('toBalanceLabel');
 
+    const renderFromBalance = (labelEl: HTMLElement, balanceText: string) => {
+      const btn = document.createElement("button");
+      btn.className = "max-btn";
+      btn.type = "button";
+      btn.textContent = "MAX";
+      labelEl.replaceChildren(
+        document.createTextNode(`Balance: ${balanceText} `),
+        btn,
+      );
+    };
+
     if (fromBalanceLabel && fromTokenInfo) {
       if (isConnected && !isLoadingBalances) {
         const balance = getBalanceFormatted(fromTokenInfo);
-        fromBalanceLabel.innerHTML = `Balance: ${balance} <button class="max-btn">MAX</button>`;
+        renderFromBalance(fromBalanceLabel as HTMLElement, balance);
       } else if (isConnected && isLoadingBalances) {
-        fromBalanceLabel.innerHTML = `Balance: ... <button class="max-btn">MAX</button>`;
+        renderFromBalance(fromBalanceLabel as HTMLElement, "...");
       } else {
-        fromBalanceLabel.innerHTML = `Balance: -- <button class="max-btn">MAX</button>`;
+        renderFromBalance(fromBalanceLabel as HTMLElement, "--");
       }
     }
 
@@ -1598,13 +1634,16 @@ export function LandioSwapController() {
           const container = document.getElementById("providersContainer");
           if (container) {
             const modeLabel = currentSettings.mode === "SAFE" ? "Safe" : currentSettings.mode === "DEGEN" ? "Turbo" : "Balanced";
-            container.innerHTML = `
-              <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
-                <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
-                <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${modeLabel} mode</div>
-                <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
-              </div>
-            `;
+            setSanitizedHtml(
+              container,
+              `
+                <div style="padding: 24px; text-align: center; color: var(--text-muted, #888);">
+                  <div style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">No quotes available in ${escapeHtml(modeLabel)} mode</div>
+                  <div style="font-size: 12px;">This token may be high-risk. Try switching to Balanced or Turbo mode.</div>
+                </div>
+              `,
+            );
             setDisplay("providersContainer", "block");
           }
           
@@ -1900,10 +1939,28 @@ export function LandioSwapController() {
             warning.id = warningId;
             warning.style.cssText =
               "margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.08);color:#ff6b6b;font-size:12px;";
-            warning.innerHTML =
-              `<div class=\"token-security-title\" style=\"font-weight:600;\">${isSecurityUncertain ? "Token risk detected" : "Sellability uncertain"}</div>` +
-              `<div class=\"token-security-body\" style=\"margin-top:4px;opacity:0.9;\">${isSecurityUncertain ? "A security source flagged elevated risk. We’ve paused execution to protect you." : sellabilityWarningBody}</div>` +
-              "<button id=\"tokenSecurityOverride\" class=\"token-security-override\" style=\"margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;\">Continue in Expert Mode</button>";
+            const title = document.createElement("div");
+            title.className = "token-security-title";
+            title.style.fontWeight = "600";
+            title.textContent = isSecurityUncertain ? "Token risk detected" : "Sellability uncertain";
+
+            const body = document.createElement("div");
+            body.className = "token-security-body";
+            body.style.marginTop = "4px";
+            body.style.opacity = "0.9";
+            body.textContent = isSecurityUncertain
+              ? "A security source flagged elevated risk. We’ve paused execution to protect you."
+              : sellabilityWarningBody;
+
+            const button = document.createElement("button");
+            button.id = "tokenSecurityOverride";
+            button.className = "token-security-override";
+            button.type = "button";
+            button.style.cssText =
+              "margin-top:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,107,107,0.35);background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600;font-size:11px;cursor:pointer;";
+            button.textContent = "Continue in Expert Mode";
+
+            warning.append(title, body, button);
             swapContainer?.appendChild(warning);
             const overrideBtn = document.getElementById("tokenSecurityOverride") as HTMLButtonElement | null;
             if (overrideBtn) {
@@ -2391,7 +2448,11 @@ export function LandioSwapController() {
       // Create receipt info row
       receiptRow = document.createElement("div");
       receiptRow.className = "detail-row receipt-info";
-      receiptRow.innerHTML = `<span>Why Recommended</span><span class="receipt-reason"></span>`;
+      const left = document.createElement("span");
+      left.textContent = "Why Recommended";
+      const right = document.createElement("span");
+      right.className = "receipt-reason";
+      receiptRow.append(left, right);
       detailsContent.appendChild(receiptRow);
     }
 
@@ -2473,39 +2534,63 @@ export function LandioSwapController() {
     const selectedProviders = (response.rankedQuotes ?? []).filter((q) =>
       compareProviderIds.includes((q.providerId ?? "").toLowerCase())
     );
-    const chips = selectedProviders
-      .map(
-        (q) =>
-          `<span style="display:inline-flex; align-items:center; gap:6px; padding: 4px 8px; border-radius: 999px; background: rgba(0,255,136,0.12); color: var(--accent); font-size: 11px;">${q.providerId}</span>`
-      )
-      .join(" ");
 
     const countText = compareMode ? `${compareProviderIds.length}/3 selected` : "Optional";
     const toggleLabel = compareMode ? "Compare mode: ON" : "Compare 2–3 providers";
 
-    bar.innerHTML = `
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <button id="compareToggleBtn" style="padding:6px 10px; border-radius: 8px; border: 1px solid var(--border); background: ${compareMode ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${compareMode ? "var(--accent)" : "var(--text-secondary)"}; font-size: 12px; cursor: pointer;">
-          ${toggleLabel}
-        </button>
-        <span style="font-size:12px; color: var(--text-muted);">${countText}</span>
-        ${compareMode ? `<div style="display:flex; gap:6px; flex-wrap:wrap;">${chips || '<span style="font-size:12px; color: var(--text-muted);">Select up to 3 providers</span>'}</div>` : ""}
-        ${compareProviderIds.length > 0 ? `<button id="compareClearBtn" style="margin-left:auto; padding:6px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer;">Clear</button>` : ""}
-      </div>
-    `;
+    bar.replaceChildren();
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex; align-items:center; gap:8px; flex-wrap:wrap;";
 
-    const toggleBtn = bar.querySelector<HTMLButtonElement>("#compareToggleBtn");
-    if (toggleBtn) {
-      toggleBtn.onclick = () => {
-        if (compareMode) setCompareProviderIds([]);
-        setCompareMode(!compareMode);
-      };
+    const toggleBtn = document.createElement("button");
+    toggleBtn.id = "compareToggleBtn";
+    toggleBtn.type = "button";
+    toggleBtn.style.cssText = `padding:6px 10px; border-radius: 8px; border: 1px solid var(--border); background: ${compareMode ? "rgba(0,255,136,0.12)" : "transparent"}; color: ${compareMode ? "var(--accent)" : "var(--text-secondary)"}; font-size: 12px; cursor: pointer;`;
+    toggleBtn.textContent = toggleLabel;
+    toggleBtn.onclick = () => {
+      if (compareMode) setCompareProviderIds([]);
+      setCompareMode(!compareMode);
+    };
+
+    const count = document.createElement("span");
+    count.style.cssText = "font-size:12px; color: var(--text-muted);";
+    count.textContent = countText;
+
+    row.append(toggleBtn, count);
+
+    if (compareMode) {
+      const chipsWrap = document.createElement("div");
+      chipsWrap.style.cssText = "display:flex; gap:6px; flex-wrap:wrap;";
+
+      if (selectedProviders.length > 0) {
+        for (const q of selectedProviders) {
+          const chip = document.createElement("span");
+          chip.style.cssText =
+            "display:inline-flex; align-items:center; gap:6px; padding: 4px 8px; border-radius: 999px; background: rgba(0,255,136,0.12); color: var(--accent); font-size: 11px;";
+          chip.textContent = q.providerId ?? "—";
+          chipsWrap.appendChild(chip);
+        }
+      } else {
+        const hint = document.createElement("span");
+        hint.style.cssText = "font-size:12px; color: var(--text-muted);";
+        hint.textContent = "Select up to 3 providers";
+        chipsWrap.appendChild(hint);
+      }
+      row.appendChild(chipsWrap);
     }
 
-    const clearBtn = bar.querySelector<HTMLButtonElement>("#compareClearBtn");
-    if (clearBtn) {
+    if (compareProviderIds.length > 0) {
+      const clearBtn = document.createElement("button");
+      clearBtn.id = "compareClearBtn";
+      clearBtn.type = "button";
+      clearBtn.style.cssText =
+        "margin-left:auto; padding:6px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer;";
+      clearBtn.textContent = "Clear";
       clearBtn.onclick = () => setCompareProviderIds([]);
+      row.appendChild(clearBtn);
     }
+
+    bar.appendChild(row);
 
     // Show comparison results table when 2+ providers selected
     let compareResults = container.querySelector("#compareResultsTable") as HTMLElement | null;
@@ -2537,24 +2622,56 @@ export function LandioSwapController() {
       }, "0");
       const bestBeq = Math.max(...rows.map((r) => (typeof r.beq === "number" ? r.beq : 0)));
 
-      compareResults.innerHTML = `
-        <div style="margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr 0.6fr 0.6fr 0.6fr; gap: 1px; background: var(--border); font-size: 11px;">
-            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary);">Provider</div>
-            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: right;">Output</div>
-            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: center;">BEQ</div>
-            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: center;">MEV</div>
-            <div style="background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); text-align: right;">Gas</div>
-            ${rows.map((r) => `
-              <div style="background: var(--bg-card); padding: 8px 10px; font-weight: 500;">${r.providerId}</div>
-              <div style="background: var(--bg-card); padding: 8px 10px; text-align: right; font-weight: 600; color: ${r.output === bestOutput ? "var(--accent)" : "var(--text-primary)"};">${r.output}</div>
-              <div style="background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${r.beq === bestBeq ? "var(--accent)" : "var(--text-muted)"};">${r.beq}</div>
-              <div style="background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${r.mev === "LOW" ? "var(--ok)" : r.mev === "HIGH" ? "var(--error)" : "var(--text-muted)"};">${r.mev}</div>
-              <div style="background: var(--bg-card); padding: 8px 10px; text-align: right; color: var(--text-muted);">${r.gas}</div>
-            `).join("")}
-          </div>
-        </div>
-      `;
+      compareResults.replaceChildren();
+      const outer = document.createElement("div");
+      outer.style.cssText = "margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;";
+
+      const grid = document.createElement("div");
+      grid.style.cssText =
+        "display: grid; grid-template-columns: 1fr 1fr 0.6fr 0.6fr 0.6fr; gap: 1px; background: var(--border); font-size: 11px;";
+
+      const headerCell = (text: string, extra: string) => {
+        const cell = document.createElement("div");
+        cell.style.cssText = `background: var(--bg-card-inner); padding: 8px 10px; font-weight: 600; color: var(--text-secondary); ${extra}`;
+        cell.textContent = text;
+        return cell;
+      };
+
+      grid.append(
+        headerCell("Provider", ""),
+        headerCell("Output", "text-align: right;"),
+        headerCell("BEQ", "text-align: center;"),
+        headerCell("MEV", "text-align: center;"),
+        headerCell("Gas", "text-align: right;"),
+      );
+
+      for (const r of rows) {
+        const provider = document.createElement("div");
+        provider.style.cssText = "background: var(--bg-card); padding: 8px 10px; font-weight: 500;";
+        provider.textContent = r.providerId ?? "—";
+
+        const output = document.createElement("div");
+        output.style.cssText = `background: var(--bg-card); padding: 8px 10px; text-align: right; font-weight: 600; color: ${r.output === bestOutput ? "var(--accent)" : "var(--text-primary)"};`;
+        output.textContent = r.output;
+
+        const beq = document.createElement("div");
+        beq.style.cssText = `background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${r.beq === bestBeq ? "var(--accent)" : "var(--text-muted)"};`;
+        beq.textContent = String(r.beq);
+
+        const mev = document.createElement("div");
+        const mevColor = r.mev === "LOW" ? "var(--ok)" : r.mev === "HIGH" ? "var(--error)" : "var(--text-muted)";
+        mev.style.cssText = `background: var(--bg-card); padding: 8px 10px; text-align: center; color: ${mevColor};`;
+        mev.textContent = String(r.mev);
+
+        const gas = document.createElement("div");
+        gas.style.cssText = "background: var(--bg-card); padding: 8px 10px; text-align: right; color: var(--text-muted);";
+        gas.textContent = r.gas;
+
+        grid.append(provider, output, beq, mev, gas);
+      }
+
+      outer.appendChild(grid);
+      compareResults.appendChild(outer);
       compareResults.style.display = "block";
     } else {
       compareResults.style.display = "none";
@@ -2788,15 +2905,19 @@ export function LandioSwapController() {
     const p0 = path[0] ?? "—";
     const p1 = path[1] ?? "—";
     const p2 = path[2] ?? "—";
+    const safeP0 = escapeHtml(p0);
+    const safeP1 = escapeHtml(p1);
+    const safeP2 = escapeHtml(p2);
+    const safeProviderId = escapeHtml(selected.providerId ?? "—");
     const routeHtml =
-      `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p0.slice(0, 1)}</div><span class="route-token-name">${p0}</span></div></div>` +
+      `<div class="route-step"><div class="route-token"><div class="route-token-icon">${escapeHtml(p0.slice(0, 1))}</div><span class="route-token-name">${safeP0}</span></div></div>` +
       `<span class="route-arrow">→</span>` +
-      `<span class="route-dex">${selected.providerId ?? "—"}</span>` +
+      `<span class="route-dex">${safeProviderId}</span>` +
       `<span class="route-arrow">→</span>` +
       (path.length === 3
-        ? `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1}</div><span class="route-token-name">${p1}</span></div></div><span class="route-arrow">→</span>` +
-          `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p2.slice(0, 1)}</div><span class="route-token-name">${p2}</span></div></div>`
-        : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${p1.slice(0, 1)}</div><span class="route-token-name">${p1}</span></div></div>`);
+        ? `<div class="route-step"><div class="route-token"><div class="route-token-icon">${safeP1}</div><span class="route-token-name">${safeP1}</span></div></div><span class="route-arrow">→</span>` +
+          `<div class="route-step"><div class="route-token"><div class="route-token-icon">${escapeHtml(p2.slice(0, 1))}</div><span class="route-token-name">${safeP2}</span></div></div>`
+        : `<div class="route-step"><div class="route-token"><div class="route-token-icon">${escapeHtml(p1.slice(0, 1))}</div><span class="route-token-name">${safeP1}</span></div></div>`);
     setHtml("#routeContainer .route-path", routeHtml);
 
   }, [selected, response, toTokenInfo, fromTokenInfo, resolveToken, scoringMode, getPrice, gasPrice]);
@@ -2866,7 +2987,7 @@ export function LandioSwapController() {
         background: rgba(245, 158, 11, 0.1);
         border-radius: 8px;
       `;
-      warning.innerHTML = `⚠️ This token has a ${buyTax.toFixed(1)}% buy tax. Actual amount received will be less.`;
+      warning.textContent = `⚠️ This token has a ${buyTax.toFixed(1)}% buy tax. Actual amount received will be less.`;
       toTokenBox.appendChild(warning);
     }
   }, [selected]);
@@ -2894,7 +3015,7 @@ export function LandioSwapController() {
         background: rgba(255, 107, 107, 0.1);
         border-radius: 8px;
       `;
-      warning.innerHTML = `⚠️ Insufficient ${fromTokenSymbol} balance`;
+      warning.textContent = `⚠️ Insufficient ${fromTokenSymbol} balance`;
       fromTokenBox.appendChild(warning);
     }
   }, [hasInsufficientBalance, isConnected, fromTokenSymbol]);
@@ -3079,7 +3200,7 @@ export function LandioSwapController() {
       const btn = document.createElement("button");
       btn.className = `preset-btn${settings.mode === mode.key ? ' active' : ''}`;
       btn.title = mode.description;
-      btn.innerHTML = `${mode.icon} ${mode.label}`;
+      btn.textContent = `${mode.icon} ${mode.label}`;
       btn.style.cssText = `
         flex: 1;
         padding: 10px 12px;
@@ -3263,11 +3384,20 @@ export function LandioSwapController() {
         padding: 12px;
         text-align: center;
       `;
-      card.innerHTML = `
-        <div style="font-size: 16px; margin-bottom: 4px;">${stat.icon}</div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">${stat.label}</div>
-        <div style="font-size: 14px; font-weight: 600; color: ${stat.color || 'var(--text-primary)'};" title="${stat.title || ''}">${stat.value}</div>
-      `;
+      const icon = document.createElement("div");
+      icon.style.cssText = "font-size: 16px; margin-bottom: 4px;";
+      icon.textContent = stat.icon;
+
+      const label = document.createElement("div");
+      label.style.cssText = "font-size: 11px; color: var(--text-muted); margin-bottom: 2px;";
+      label.textContent = stat.label;
+
+      const value = document.createElement("div");
+      value.style.cssText = `font-size: 14px; font-weight: 600; color: ${stat.color || 'var(--text-primary)'};`;
+      value.title = stat.title || "";
+      value.textContent = stat.value;
+
+      card.append(icon, label, value);
       statCardsContainer.appendChild(card);
     });
 
@@ -3300,11 +3430,18 @@ export function LandioSwapController() {
       font-size: 12px;
       font-weight: 600;
     `;
-    badge.innerHTML = `
-      <span>${tierDisplay.emoji}</span>
-      <span style="color: var(--text-secondary);">${tierDisplay.name}</span>
-      <span style="color: var(--ok);">-${pilotTierInfo.discountPercent}%</span>
-    `;
+    const emoji = document.createElement("span");
+    emoji.textContent = tierDisplay.emoji;
+
+    const name = document.createElement("span");
+    name.style.color = "var(--text-secondary)";
+    name.textContent = tierDisplay.name;
+
+    const discount = document.createElement("span");
+    discount.style.color = "var(--ok)";
+    discount.textContent = `-${pilotTierInfo.discountPercent}%`;
+
+    badge.append(emoji, name, discount);
     badge.title = `PILOT Balance: ${pilotTierInfo.balanceFormatted} PILOT`;
 
     // Insert in the header area
@@ -3410,29 +3547,36 @@ export function LandioSwapController() {
       padding-top: 12px;
       border-top: 1px dashed var(--border);
     `;
-    feeSection.innerHTML = `
-      <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Fee Breakdown</div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
-        <span style="color: var(--text-muted);">Base Fee</span>
-        <span>${formatFee(feeInfo.baseFeesBps)}</span>
-      </div>
-      ${feeInfo.discountPercent > 0 ? `
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
-        <span style="color: var(--text-muted);">PILOT Discount</span>
-        <span style="color: var(--ok);">-${feeInfo.discountPercent}%</span>
-      </div>
-      ` : ''}
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
-        <span style="color: var(--text-muted);">Final Fee</span>
-        <span style="font-weight: 600; color: var(--accent);">${formatFee(feeInfo.finalFeeBps)}</span>
-      </div>
-      ${feeInfo.feeAmountUsd > 0 ? `
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;">
-        <span style="color: var(--text-muted);">Fee Amount</span>
-        <span>~$${feeInfo.feeAmountUsd.toFixed(2)}</span>
-      </div>
-      ` : ''}
-    `;
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;";
+    title.textContent = "Fee Breakdown";
+
+    const makeRow = (labelText: string, valueText: string, valueCssText?: string) => {
+      const row = document.createElement("div");
+      row.className = "detail-row";
+      row.style.cssText = "display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px;";
+      const left = document.createElement("span");
+      left.style.color = "var(--text-muted)";
+      left.textContent = labelText;
+      const right = document.createElement("span");
+      if (valueCssText) right.style.cssText = valueCssText;
+      right.textContent = valueText;
+      row.append(left, right);
+      return row;
+    };
+
+    feeSection.appendChild(title);
+    feeSection.appendChild(makeRow("Base Fee", formatFee(feeInfo.baseFeesBps)));
+    if (feeInfo.discountPercent > 0) {
+      feeSection.appendChild(makeRow("PILOT Discount", `-${feeInfo.discountPercent}%`, "color: var(--ok);"));
+    }
+    feeSection.appendChild(
+      makeRow("Final Fee", formatFee(feeInfo.finalFeeBps), "font-weight: 600; color: var(--accent);"),
+    );
+    if (feeInfo.feeAmountUsd > 0) {
+      feeSection.appendChild(makeRow("Fee Amount", `~$${feeInfo.feeAmountUsd.toFixed(2)}`));
+    }
 
     detailsContent.appendChild(feeSection);
   }, [feeInfo]);
@@ -3464,7 +3608,7 @@ export function LandioSwapController() {
       font-size: 18px;
       margin-right: 8px;
     `;
-    historyBtn.innerHTML = "📜";
+    historyBtn.textContent = "📜";
     historyBtn.title = "Transaction History";
     historyBtn.onclick = () => setHistoryOpen(true);
     historyBtn.onmouseover = () => {

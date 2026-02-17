@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { sanitizeHtml, escapeHtml } from "@/lib/sanitize";
+import { escapeHtml, setSanitizedHtml } from "@/lib/sanitize";
 
 type ProviderStatus = {
   providerId: string;
@@ -102,6 +102,16 @@ function statusToText(status: ProviderStatus["status"]): string {
 function formatLatency(latencyMs: number): string {
   if (!Number.isFinite(latencyMs)) return "—";
   return `${Math.round(latencyMs)}ms`;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit | undefined, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const t = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...(init ?? {}), signal: controller.signal });
+  } finally {
+    window.clearTimeout(t);
+  }
 }
 
 export function LandioStatusController() {
@@ -352,29 +362,37 @@ export function LandioStatusController() {
       const chart = uptime.querySelector<HTMLElement>(".uptime-chart");
       if (chart) {
         if (data.days.length === 0 || data.totalChecks === 0) {
-          chart.innerHTML = `
-            <div class="uptime-placeholder">
-              <div class="uptime-placeholder-icon">📊</div>
-              <div class="uptime-placeholder-text">Building uptime history...</div>
-              <div class="uptime-placeholder-subtext">Data will appear as the system is monitored</div>
-            </div>
-          `;
+          setSanitizedHtml(
+            chart,
+            `
+              <div class="uptime-placeholder">
+                <div class="uptime-placeholder-icon">📊</div>
+                <div class="uptime-placeholder-text">Building uptime history...</div>
+                <div class="uptime-placeholder-subtext">Data will appear as the system is monitored</div>
+              </div>
+            `,
+          );
         } else {
           // Render uptime bars
           const bars = data.days.map((day) => {
             const statusClass = day.status === "ok" ? "ok" : day.status === "partial" ? "partial" : "down";
-            const tooltip = `${day.date}: ${day.checksOk}/${day.checksTotal} checks OK`;
+            const tooltipRaw = `${day.date}: ${day.checksOk}/${day.checksTotal} checks OK`;
+            const tooltip = escapeHtml(tooltipRaw);
             return `<div class="uptime-bar ${statusClass}" title="${tooltip}"></div>`;
           }).join("");
-          
-          chart.innerHTML = bars;
+
+          setSanitizedHtml(chart, bars);
         }
       }
 
       // Update labels
       const labels = uptime.querySelector<HTMLElement>(".uptime-labels");
       if (labels && data.days.length > 0) {
-        labels.innerHTML = `<span>${data.days.length} days ago</span><span>Today</span>`;
+        const left = document.createElement("span");
+        left.textContent = `${data.days.length} days ago`;
+        const right = document.createElement("span");
+        right.textContent = "Today";
+        labels.replaceChildren(left, right);
       }
     };
 
@@ -383,17 +401,20 @@ export function LandioStatusController() {
       if (!incidents) return;
 
       const header = incidents.querySelector<HTMLElement>(".incidents-header");
-      incidents.innerHTML = "";
+      incidents.replaceChildren();
       if (header) incidents.appendChild(header);
 
       if (data.incidents.length === 0) {
         const empty = document.createElement("div");
         empty.className = "no-incidents";
-        empty.innerHTML = `
-          <div class="no-incidents-icon">✅</div>
-          <h4>No recent incidents</h4>
-          <p>All systems have been operating normally.</p>
-        `;
+        const icon = document.createElement("div");
+        icon.className = "no-incidents-icon";
+        icon.textContent = "✅";
+        const title = document.createElement("h4");
+        title.textContent = "No recent incidents";
+        const body = document.createElement("p");
+        body.textContent = "All systems have been operating normally.";
+        empty.append(icon, title, body);
         incidents.appendChild(empty);
         return;
       }
@@ -404,6 +425,13 @@ export function LandioStatusController() {
         item.className = "incident-item";
         
         const startDate = new Date(incident.startedAt);
+        const startDateText = escapeHtml(
+          startDate.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          }),
+        );
         const statusClass = incident.status === "resolved" ? "resolved" : "active";
         const statusText = incident.status.charAt(0).toUpperCase() + incident.status.slice(1);
         const severityIcon = incident.severity === "critical" ? "🔴" : incident.severity === "major" ? "🟠" : "🟡";
@@ -424,22 +452,21 @@ export function LandioStatusController() {
           `;
         }
 
-        item.innerHTML = `
-          <div class="incident-header">
-            <div>
-              <div class="incident-title">${severityIcon} ${escapeHtml(incident.title)}</div>
-              <div class="incident-date">${startDate.toLocaleDateString("en-US", { 
-                month: "long", 
-                day: "numeric", 
-                year: "numeric" 
-              })}</div>
+        setSanitizedHtml(
+          item,
+          `
+            <div class="incident-header">
+              <div>
+                <div class="incident-title">${severityIcon} ${escapeHtml(incident.title)}</div>
+                <div class="incident-date">${startDateText}</div>
+              </div>
+              <span class="incident-status ${statusClass}">${escapeHtml(statusText)}</span>
             </div>
-            <span class="incident-status ${statusClass}">${escapeHtml(statusText)}</span>
-          </div>
-          <div class="incident-timeline">
-            ${updatesHtml}
-          </div>
-        `;
+            <div class="incident-timeline">
+              ${updatesHtml}
+            </div>
+          `,
+        );
         
         incidents.appendChild(item);
       }
@@ -447,34 +474,46 @@ export function LandioStatusController() {
 
     const load = async () => {
       try {
-        // Fetch health endpoint with latency measurement
+        // Run all requests in parallel so the page fills fast.
+        const timeoutMs = 3_000;
+
         const healthStart = performance.now();
-        const healthRes = await fetch(`${baseUrl}/health`, { cache: "no-store" });
-        const healthLatency = performance.now() - healthStart;
-        
-        if (healthRes.ok) {
-          const healthJson = (await healthRes.json()) as HealthResponse;
-          updateApiCard(healthJson, healthLatency);
+        const healthP = fetchWithTimeout(`${baseUrl}/health`, { cache: "no-store" }, timeoutMs);
+        const providersP = fetchWithTimeout(`${baseUrl}/v1/providers/status`, { cache: "no-store" }, timeoutMs);
+        const uptimeP = fetchWithTimeout(`${baseUrl}/v1/status/uptime?days=90`, { cache: "no-store" }, timeoutMs);
+        const incidentsP = fetchWithTimeout(`${baseUrl}/v1/status/incidents?limit=10`, { cache: "no-store" }, timeoutMs);
+
+        const [healthR, providersR, uptimeR, incidentsR] = await Promise.allSettled([
+          healthP,
+          providersP,
+          uptimeP,
+          incidentsP,
+        ]);
+
+        if (healthR.status === "fulfilled") {
+          const healthLatency = performance.now() - healthStart;
+          if (healthR.value.ok) {
+            const healthJson = (await healthR.value.json()) as HealthResponse;
+            updateApiCard(healthJson, healthLatency);
+          } else {
+            updateApiCard({ status: "down" }, healthLatency);
+          }
+        } else {
+          updateApiCard({ status: "down" }, 0);
         }
 
-        // Fetch providers status
-        const res = await fetch(`${baseUrl}/v1/providers/status`, { cache: "no-store" });
-        if (res.ok) {
-          const json = (await res.json()) as ProviderStatusResponse;
+        if (providersR.status === "fulfilled" && providersR.value.ok) {
+          const json = (await providersR.value.json()) as ProviderStatusResponse;
           apply(json);
         }
 
-        // Fetch uptime data
-        const uptimeRes = await fetch(`${baseUrl}/v1/status/uptime?days=90`, { cache: "no-store" });
-        if (uptimeRes.ok) {
-          const uptimeJson = (await uptimeRes.json()) as UptimeResponse;
+        if (uptimeR.status === "fulfilled" && uptimeR.value.ok) {
+          const uptimeJson = (await uptimeR.value.json()) as UptimeResponse;
           applyUptime(uptimeJson);
         }
 
-        // Fetch incidents
-        const incidentsRes = await fetch(`${baseUrl}/v1/status/incidents?limit=10`, { cache: "no-store" });
-        if (incidentsRes.ok) {
-          const incidentsJson = (await incidentsRes.json()) as IncidentsResponse;
+        if (incidentsR.status === "fulfilled" && incidentsR.value.ok) {
+          const incidentsJson = (await incidentsR.value.json()) as IncidentsResponse;
           applyIncidents(incidentsJson);
         }
       } catch {
