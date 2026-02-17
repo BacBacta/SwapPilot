@@ -593,9 +593,14 @@ export function LandioSwapController() {
   const [fromTokenSymbol, setFromTokenSymbol] = useState("BNB");
   const [toTokenSymbol, setToTokenSymbol] = useState("ETH");
   const [fromAmountWei, setFromAmountWei] = useState("0");
+  const fromAmountWeiRef = useRef(fromAmountWei);
   const [fromAmountValue, setFromAmountValue] = useState(0);
   const [toAmountValue, setToAmountValue] = useState(0);
   const [swapValueUsd, setSwapValueUsd] = useState(0);
+
+  useEffect(() => {
+    fromAmountWeiRef.current = fromAmountWei;
+  }, [fromAmountWei]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 3: UI CONTROL STATE (Modals, Drawers, Toggles)
@@ -635,8 +640,14 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   const [response, setResponse] = useState<QuoteResponse | null>(null);
   const [selected, setSelected] = useState<RankedQuote | null>(null);
+  const selectedRef = useRef<RankedQuote | null>(null);
   const [receipt, setReceipt] = useState<DecisionReceipt | null>(null);
   const selectedProviderIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
+
   const setSelectedQuote = useCallback((quote: RankedQuote | null) => {
     console.debug("[swap][select] setSelectedQuote", {
       providerId: quote?.providerId ?? null,
@@ -2018,17 +2029,18 @@ export function LandioSwapController() {
     // Swap button action - use buildTx for capable providers, fallback to deepLink
     const swapBtn = document.getElementById("swapBtn") as HTMLButtonElement | null;
     const onSwap = async () => {
-      if (!selected || !fromTokenInfo || !toTokenInfo || !address) return;
+      const selectedQuote = selectedRef.current;
+      if (!selectedQuote || !fromTokenInfo || !toTokenInfo || !address) return;
 
-      const hasBuildTx = selected.capabilities?.buildTx === true;
+      const hasBuildTx = selectedQuote.capabilities?.buildTx === true;
 
       if (!hasBuildTx) {
         // Fallback to deepLink for providers without buildTx
-        if (selected.deepLink) {
-          window.open(selected.deepLink, "_blank", "noopener,noreferrer");
-          toast.info("Opening external swap", `Redirecting to ${selected.providerId}`);
+        if (selectedQuote.deepLink) {
+          window.open(selectedQuote.deepLink, "_blank", "noopener,noreferrer");
+          toast.info("Opening external swap", `Redirecting to ${selectedQuote.providerId}`);
         } else {
-          toast.error("No execution method", `${selected.providerId} doesn't support direct swaps`);
+          toast.error("No execution method", `${selectedQuote.providerId} doesn't support direct swaps`);
         }
         return;
       }
@@ -2050,7 +2062,7 @@ export function LandioSwapController() {
         fromAmount: fromAmountInputEl?.value || "0",
         toAmount: toAmountInputEl?.value || "0",
         status: "pending",
-        providerId: selected.providerId,
+        providerId: selectedQuote.providerId,
       };
       setTxHistory((prev) => {
         const updated = [pendingTx, ...prev].slice(0, 50);
@@ -2058,7 +2070,7 @@ export function LandioSwapController() {
         return updated;
       });
 
-      const loadingToastId = toast.loading("Building transaction...", `Preparing swap via ${selected.providerId}`);
+      const loadingToastId = toast.loading("Building transaction...", `Preparing swap via ${selectedQuote.providerId}`);
 
       try {
         setSwapBtnText("Building...");
@@ -2066,19 +2078,19 @@ export function LandioSwapController() {
 
         // Use the state-stored amount which may have been capped to exact balance
         // This prevents TRANSFER_FROM_FAILED errors due to rounding differences
-        const sellAmountWei = fromAmountWei || toWei(fromAmountInputEl?.value ?? "0", fromTokenInfo.decimals);
+        const sellAmountWei = fromAmountWeiRef.current || toWei(fromAmountInputEl?.value ?? "0", fromTokenInfo.decimals);
 
         // Step 1: Build the transaction
         const tx = await buildTransaction({
-          providerId: selected.providerId,
+          providerId: selectedQuote.providerId,
           sellToken: fromTokenInfo.address,
           buyToken: toTokenInfo.address,
           sellAmount: sellAmountWei,
           slippageBps: effectiveSlippageBps, // Use dynamic slippage
           sellTokenDecimals: fromTokenInfo.decimals,
           buyTokenDecimals: toTokenInfo.decimals,
-          quoteRaw: selected.raw,
-          quoteNormalized: selected.normalized,
+          quoteRaw: selectedQuote.raw,
+          quoteNormalized: selectedQuote.normalized,
         });
 
         if (!tx) {
@@ -2307,7 +2319,6 @@ export function LandioSwapController() {
     effectiveSlippageBps,
     executeSwap,
     feeInfo,
-    fromAmountWei,
     fromTokenInfo,
     fromTokenSymbol,
     getBalance,
@@ -2317,14 +2328,12 @@ export function LandioSwapController() {
     pilotTierInfo,
     resetSwap,
     resolveToken,
-    selected,
     setSelectedQuote,
     toast,
     toTokenInfo,
     toTokenSymbol,
     toggleCompareProvider,
     updateSettings,
-    visibleProvidersCount,
     withTimeout,
   ]);
 
