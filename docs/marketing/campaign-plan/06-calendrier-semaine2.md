@@ -206,7 +206,7 @@ Questions? Ask below 👇
 ```
 📊 POLL: Which feature should we build next?
 
-🔵 Multi-chain (ETH, Arbitrum, Polygon)
+🔵 Multi-chain (planned: additional EVM chains)
 🟢 Limit orders
 🟡 Price alerts
 🔴 Mobile app

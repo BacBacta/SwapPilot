@@ -31,12 +31,16 @@ The following are in scope for vulnerability reports:
 
 ### Smart Contracts (High Priority)
 - **PILOTToken** (`0xe3f77E20226fdc7BA85E495158615dEF83b48192`)
-- **FeeCollector** (`0xEe841Def61326C116F92e71FceF8cb11FBC05034`)
-- **ReferralRewards** (`0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E`)
-- **ReferralPool** (if deployed)
+- **FeeCollectorV2** (`0x2083B8b745Ff78c6a00395b1800469c0Dddc966c`)
+- **TimelockController** (`0xF98a25C78Ba1B8d7bC2D816993faD7E7f825B75b`)
+- **ReferralRewards** (`0xFC2B872F6eD62fD28eE789E35862E69adeB82698`)
+- **ReferralPool** (`0xC02CE39b6807B146397e12Eeb76DaeEDa840e055`)
+
+**Deprecated (legacy, not active):**
+- **FeeCollector (V1)** (`0xEe841Def61326C116F92e71FceF8cb11FBC05034`)
 
 ### Web Application
-- Frontend (https://swappilot.xyz)
+- Frontend (https://app-swappilot.xyz)
 - API (https://swappilot-api.fly.dev)
 
 ### Infrastructure

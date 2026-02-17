@@ -256,7 +256,7 @@ vercel --prod
 Current owner: Safe → New owner: Timelock
 
 ```bash
-export REFERRAL_REWARDS=0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E
+export REFERRAL_REWARDS=0xFC2B872F6eD62fD28eE789E35862E69adeB82698
 ```
 
 Via Safe transaction:
@@ -380,9 +380,9 @@ Create `CONTRACT_ADDRESSES.md`:
 | Contract | Address | Owner | Status |
 |---|---|---|---|
 | PILOTToken | 0xe3f77E20226fdc7BA85E495158615dEF83b48192 | Renounced | Immutable |
-| FeeCollectorV2 | 0x... | TimelockController | Active |
-| ReferralRewards | 0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E | TimelockController | Active |
-| TimelockController | 0x... | Decentralized | 24h delay |
+| FeeCollectorV2 | 0x2083B8b745Ff78c6a00395b1800469c0Dddc966c | TimelockController | Active |
+| ReferralRewards | 0xFC2B872F6eD62fD28eE789E35862E69adeB82698 | TimelockController | Active |
+| TimelockController | 0xF98a25C78Ba1B8d7bC2D816993faD7E7f825B75b | Decentralized | 24h delay |
 | Safe Multisig | 0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8 | Signers | Proposer/Executor |
 
 **Deprecated:**

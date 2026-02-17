@@ -41,12 +41,6 @@
 ### 24 Mar – 13 Apr 2026
 - **Advanced Features (Phase 2)**: price alerts + favorite tokens + custom lists
 
-### 14 Apr – 04 May 2026
-- **Multi-Chain Support (Phase 2)**: Ethereum + Arbitrum adapters (beta)
-
-### 05 May – 25 May 2026
-- **Multi-Chain Support (Phase 2)**: Polygon + Base adapters (beta)
-
 ### 26 May – 15 Jun 2026
 - **Cross-Chain Swaps (Phase 3)**: bridge evaluation + routing POC
 - **Cross-Chain Risk**: preliminary risk factors in BEQ
@@ -59,12 +53,6 @@
 - **Mobile App (Phase 3)**: React Native prototype + push notifications POC
 
 ---
-
-### Multi-Chain Support
-- [ ] Ethereum Mainnet
-- [ ] Arbitrum One
-- [ ] Polygon
-- [ ] Base
 
 ### Analytics Dashboard
 - [ ] Trade history

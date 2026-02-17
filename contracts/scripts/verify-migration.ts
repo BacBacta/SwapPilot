@@ -24,10 +24,10 @@ async function main() {
   console.log("=" .repeat(60));
   
   const addresses: MigrationAddresses = {
-    feeCollectorV1: "0xEe84a7Ab26bcCBc0E45cC1e1A915FbBFfa185034",
+    feeCollectorV1: "0xEe841Def61326C116F92e71FceF8cb11FBC05034",
     feeCollectorV2: process.env.FEE_COLLECTOR_V2 || "",
     timelock: process.env.TIMELOCK_ADDRESS || null,
-    referralRewards: "0x3b39d37F4bB831AD7783D982a46cAb85AA887d3E",
+    referralRewards: "0xFC2B872F6eD62fD28eE789E35862E69adeB82698",
     pilotToken: "0xe3f77E20226fdc7BA85E495158615dEF83b48192",
     safe: "0xdB400CfA216bb9e4a4F4def037ec3E8018B871a8",
   };

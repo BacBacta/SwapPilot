@@ -84,7 +84,7 @@ Campaign ends [DATE]. Don't miss out!
 | Champ | Valeur |
 |-------|--------|
 | **Name** | SwapPilot Early Supporter |
-| **Chain** | BNB Chain (ou Polygon pour gas bas) |
+| **Chain** | BNB Chain (BSC) |
 | **Supply** | Unlimited |
 | **Image** | [Upload 1024×1024] |
 

@@ -92,7 +92,7 @@ Checklist verification:
 - Type: Quest Campaign
 - Duree: 21 jours
 - Reward: OAT "SwapPilot Early Supporter" + airdrops TGE
-- Chain OAT: BSC ou Polygon
+- Chain OAT: BSC
 
 3.3 Quests Galxe (J1 - J15)
 Semaine 1:
