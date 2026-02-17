@@ -1,5 +1,5 @@
 import { LandioTemplate } from "@/components/landio";
-import { loadLandioTemplate } from "@/lib/landio/templates";
+import { loadLandioTemplateCached as loadLandioTemplate } from "@/lib/landio/templates";
 
 export default async function Page() {
   const tpl = await loadLandioTemplate("terms.html");

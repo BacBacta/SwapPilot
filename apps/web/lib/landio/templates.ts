@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { cache } from "react";
 
 export type LandioTemplate = {
   inlineCss: string;
@@ -52,3 +53,8 @@ export async function loadLandioTemplate(fileName: string): Promise<LandioTempla
     bodyHtml: cleanedBody.trim(),
   };
 }
+
+// Memoized version to avoid repeated disk reads and regex processing.
+// Safe because templates are static build artifacts under /public/landio.
+export const loadLandioTemplateCached = cache(loadLandioTemplate);
+

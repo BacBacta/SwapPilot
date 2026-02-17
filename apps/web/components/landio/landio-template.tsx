@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { LandioNav } from "./landio-nav";
 import { Suspense } from "react";
 import Link from "next/link";
+import parse from "html-react-parser";
 
 /**
  * Sanitize HTML by stripping <script>, on* event handlers, javascript: URIs,
@@ -51,11 +52,11 @@ export function LandioTemplate({ inlineCss, bodyHtml, after }: { inlineCss?: str
 
   return (
     <>
-      {safeCss ? <style dangerouslySetInnerHTML={{ __html: safeCss }} /> : null}
+      {safeCss ? <style>{safeCss}</style> : null}
       <Suspense fallback={<NavFallback />}>
         <LandioNav />
       </Suspense>
-      <div dangerouslySetInnerHTML={{ __html: safeBodyHtml }} />
+      <div>{parse(safeBodyHtml)}</div>
       {after ?? null}
     </>
   );

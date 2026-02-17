@@ -2,6 +2,10 @@ import Link from 'next/link'
 
 type TokenTab = 'claim' | 'airdrop'
 
+// This page is intentionally a static "Coming soon" surface.
+// Keeping it static improves navigation latency (no per-request server work).
+export const dynamic = 'force-static'
+
 const tabConfig: Record<TokenTab, { title: string; subtitle: string }> = {
   claim: {
     title: 'Claim token',
@@ -13,14 +17,9 @@ const tabConfig: Record<TokenTab, { title: string; subtitle: string }> = {
   },
 }
 
-export default async function TokenPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
-  const params = await searchParams
-  const activeTab: TokenTab = params.tab === 'airdrop' ? 'airdrop' : 'claim'
-  const current = tabConfig[activeTab]
+export default function TokenPage() {
+  const activeTab: TokenTab = 'claim'
+  const current = tabConfig.claim
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -36,20 +35,15 @@ export default async function TokenPage({
         <div className="mb-6 flex flex-wrap gap-3 rounded-[16px] border border-[var(--border)] bg-[var(--bg-card)] p-3">
           <Link
             href="/token?tab=claim"
-            className={`btn pointer-events-none select-none ${
-              activeTab === 'claim' ? 'btn-primary' : 'btn-secondary'
-            }`}
-            aria-current={activeTab === 'claim' ? 'page' : undefined}
+            className="btn btn-primary pointer-events-none select-none"
+            aria-current="page"
             aria-disabled="true"
           >
             <span className="blur-[1.5px]">Claim token</span>
           </Link>
           <Link
             href="/token?tab=airdrop"
-            className={`btn pointer-events-none select-none ${
-              activeTab === 'airdrop' ? 'btn-primary' : 'btn-secondary'
-            }`}
-            aria-current={activeTab === 'airdrop' ? 'page' : undefined}
+            className="btn btn-secondary pointer-events-none select-none"
             aria-disabled="true"
           >
             <span className="blur-[1.5px]">Airdrop</span>
@@ -71,7 +65,7 @@ export default async function TokenPage({
               <h2 className="text-2xl font-semibold">{current.title}</h2>
               <p className="mt-2 text-[var(--text-secondary)]">{current.subtitle}</p>
             </div>
-            <span className="badge">{activeTab === 'claim' ? 'Live' : 'Campaign'}</span>
+            <span className="badge">Live</span>
           </div>
 
           {activeTab === 'claim' ? (

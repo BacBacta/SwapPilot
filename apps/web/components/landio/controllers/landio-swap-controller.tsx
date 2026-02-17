@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAccount, useGasPrice } from "wagmi";
-import { type Address, erc20Abi, maxUint256 } from "viem";
+import { type Address, erc20Abi } from "viem";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { bsc } from "viem/chains";
 import { getReceipt, postQuotes } from "@/lib/api";
@@ -2079,7 +2079,8 @@ export function LandioSwapController() {
                   address: fromTokenInfo.address as `0x${string}`,
                   abi: erc20Abi,
                   functionName: "approve",
-                  args: [tx.approvalAddress as `0x${string}`, maxUint256],
+                  // DappBay hardening: approve exact amount (no infinite approval)
+                  args: [tx.approvalAddress as `0x${string}`, sellAmountBigInt],
                   account: address as `0x${string}`,
                 }),
                 60_000,
@@ -3503,15 +3504,34 @@ export function LandioSwapController() {
       const imageUrl = logoUrl ? getOptimizedImageUrl(logoUrl) : null;
       
       if (imageUrl) {
-        // Use image logo
-        iconEl.innerHTML = `<img src="${imageUrl}" alt="${token.symbol}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${token.symbol.slice(0, 2)}</span>`;
-        iconEl.className = 'token-icon';
-        (iconEl as HTMLElement).style.cssText = 'width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+        // Avoid innerHTML injection: build DOM nodes safely (XSS hardening).
+        const host = iconEl as HTMLElement;
+        host.replaceChildren();
+        host.className = 'token-icon';
+        host.style.cssText = 'width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = token.symbol;
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+
+        const fallback = document.createElement('span');
+        fallback.textContent = token.symbol.slice(0, 2);
+        fallback.style.cssText = 'display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700;font-size:10px;';
+
+        img.addEventListener('error', () => {
+          img.style.display = 'none';
+          fallback.style.display = 'flex';
+        });
+
+        host.appendChild(img);
+        host.appendChild(fallback);
       } else {
         // Fallback to initials
-        iconEl.className = `token-icon ${token.symbol.toLowerCase()}`;
-        iconEl.textContent = token.symbol.slice(0, 2);
-        (iconEl as HTMLElement).style.cssText = '';
+        const host = iconEl as HTMLElement;
+        host.className = 'token-icon';
+        host.textContent = token.symbol.slice(0, 2);
+        host.style.cssText = '';
       }
     };
     

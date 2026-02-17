@@ -53,6 +53,11 @@ export default function WireframesPage() {
               Voir 10 modèles UI (Wireframe A)
             </Link>
           </p>
+          <p className="mt-2 text-sm">
+            <Link className="underline" href="/wireframes/autopilot-assiste">
+              Démo UI — Autopilot assisté (bundle signé)
+            </Link>
+          </p>
         </div>
         <Link href="/">
           <Button variant="outline">Retour</Button>

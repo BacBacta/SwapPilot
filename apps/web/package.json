@@ -19,6 +19,7 @@
     "@tanstack/react-query": "^5.90.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "html-react-parser": "^5.2.17",
     "next": "^15.5.12",
     "posthog-js": "^1.347.2",
     "react": "^19.1.0",

@@ -1,5 +1,5 @@
 import { LandioTemplate } from "@/components/landio";
-import { loadLandioTemplate } from "@/lib/landio/templates";
+import { loadLandioTemplateCached as loadLandioTemplate } from "@/lib/landio/templates";
 import { DynamicRewardsController } from "@/components/landio/controllers/client-controllers";
 
 export default async function Page() {

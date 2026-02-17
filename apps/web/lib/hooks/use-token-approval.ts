@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAccount, useChainId, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { erc20Abi, type Address, maxUint256 } from "viem";
+import { erc20Abi, type Address } from "viem";
 
 export type UseTokenApprovalParams = {
   tokenAddress: Address | undefined;
@@ -133,22 +133,23 @@ export function useTokenApproval({
     return allowance >= amount;
   }, [isNativeToken, allowance, amount]);
 
-  // Approve infinite (max uint256)
+  // Approve exact amount (default). Keeping a single safe approval mode reduces drainer-like patterns.
   const approve = useCallback(() => {
     if (!tokenAddress || !spenderAddress) return;
     console.info("[swap][approve] request", {
       tokenAddress,
       spenderAddress,
-      mode: "infinite",
+      mode: "exact",
+      exactAmount: amount.toString(),
     });
     setError(null);
     writeContract({
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "approve",
-      args: [spenderAddress, maxUint256],
+      args: [spenderAddress, amount],
     });
-  }, [tokenAddress, spenderAddress, writeContract]);
+  }, [tokenAddress, spenderAddress, writeContract, amount]);
 
   // Approve exact amount
   const approveExact = useCallback((exactAmount: bigint) => {
