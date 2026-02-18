@@ -82,7 +82,8 @@ export function useTokenBalances(tokens: TokenInfo[] = []): UseTokenBalancesRetu
       chainId: bsc.id,
     })),
     query: {
-      enabled: isConnected && !!address,
+      // Only run when connected, address is known, and there are ERC-20 tokens to query
+      enabled: isConnected && !!address && erc20Tokens.length > 0,
       staleTime: 15_000,
       refetchInterval: 30_000,
       retry: 3,

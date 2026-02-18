@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { CardDark } from "@/components/ui/surfaces";
 import { Button, Pill, Badge } from "@/components/ui/primitives";
 import { triggerRainbowKitConnect } from "@/lib/wallet/connect-guard";
@@ -38,6 +38,7 @@ import { useExecuteSwap } from "@/lib/hooks/use-execute-swap";
 import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import { useAnalytics } from "@/components/providers/posthog-provider";
 import type { RankedQuote } from "@swappilot/shared";
+import { erc20Abi } from "viem";
 import type { Address } from "viem";
 
 // Gas reserve for native token swaps (0.001 BNB ~ enough for 2-3 transactions on BSC)
@@ -235,6 +236,9 @@ export function SwapInterface() {
 
   // Real swap execution hooks
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
+  // Wagmi-managed clients — work with all wallet types (MetaMask, WalletConnect, Coinbase, etc.)
+  const swapPublicClient = usePublicClient();
+  const { data: swapWalletClient } = useWalletClient();
   const { 
     status: swapStatus, 
     error: swapError, 
@@ -603,21 +607,17 @@ export function SwapInterface() {
       const isNativeToken = fromTokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
                             fromTokenInfo.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
 
-      // Manually check allowance since the hook may not have updated yet with new spender
+      // Manually check allowance since the hook may not have updated yet with new spender.
+      // Use the wagmi-managed publicClient/walletClient so all wallet types work
+      // (MetaMask, WalletConnect, Coinbase Wallet, etc.).
       if (!isNativeToken && tx.approvalAddress) {
-        // Read current allowance directly
-        const { readContract } = await import("viem/actions");
-        const { createPublicClient, http, erc20Abi } = await import("viem");
-        const { bsc } = await import("viem/chains");
-        
-        const publicClient = createPublicClient({
-          chain: bsc,
-          transport: http(),
-        });
+        if (!swapPublicClient) {
+          throw new Error("RPC client not ready — please try again");
+        }
 
         let currentAllowance = 0n;
         try {
-          currentAllowance = await publicClient.readContract({
+          currentAllowance = await swapPublicClient.readContract({
             address: fromTokenInfo.address as `0x${string}`,
             abi: erc20Abi,
             functionName: "allowance",
@@ -644,19 +644,20 @@ export function SwapInterface() {
             message: `Approve ${fromToken} for ${spenderShort}`,
           });
 
-          // Request approval and wait for it
-          const { writeContract, waitForTransactionReceipt } = await import("viem/actions");
-          const { createWalletClient, custom } = await import("viem");
-          
-          try {
-            // Create wallet client from window.ethereum
-            const walletClient = createWalletClient({
-              chain: bsc,
-              transport: custom((window as any).ethereum),
+          // Send approval via wagmi walletClient — supports MetaMask, WalletConnect, Coinbase, Trust, etc.
+          if (!swapWalletClient) {
+            toast.updateToast(loadingToastId, {
+              type: "error",
+              title: "Wallet not ready",
+              message: "Please reconnect your wallet and try again",
             });
+            updateTransaction(txId, { status: "failed" });
+            console.groupEnd();
+            return;
+          }
 
-            // Send approval transaction
-            const approvalHash = await walletClient.writeContract({
+          try {
+            const approvalHash = await swapWalletClient.writeContract({
               address: fromTokenInfo.address as `0x${string}`,
               abi: erc20Abi,
               functionName: "approve",
@@ -672,8 +673,8 @@ export function SwapInterface() {
               message: "Confirming on blockchain",
             });
 
-            // Wait for approval to be confirmed
-            await publicClient.waitForTransactionReceipt({
+            // Wait for approval to be confirmed using the wagmi publicClient
+            await swapPublicClient.waitForTransactionReceipt({
               hash: approvalHash,
               confirmations: 1,
             });
