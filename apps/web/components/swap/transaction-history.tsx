@@ -235,6 +235,11 @@ function TransactionRow({
             <span>•</span>
             <span className="flex-shrink-0">{timeAgo}</span>
           </div>
+          {transaction.hash && (
+            <div className="mt-0.5 font-mono text-micro text-sp-muted2 truncate">
+              {transaction.hash.slice(0, 24)}…{transaction.hash.slice(-12)}
+            </div>
+          )}
         </button>
 
         {/* Explorer link - always visible for completed transactions */}
@@ -278,7 +283,7 @@ function TransactionRow({
               <div className="flex items-center justify-between text-micro">
                 <span className="text-sp-muted">Tx Hash</span>
                 <span className="font-mono text-sp-text truncate ml-2">
-                  {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
+                  {transaction.hash.slice(0, 24)}…{transaction.hash.slice(-12)}
                 </span>
               </div>
               <a
