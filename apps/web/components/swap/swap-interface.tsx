@@ -766,6 +766,16 @@ export function SwapInterface() {
     }
   };
 
+  // Attach txHash to the pending transaction as soon as it is broadcast
+  useEffect(() => {
+    if (txHash && swapStatus === "pending") {
+      const pendingTx = transactions.find((t) => t.status === "pending" && !t.hash);
+      if (pendingTx) {
+        updateTransaction(pendingTx.id, { hash: txHash });
+      }
+    }
+  }, [txHash, swapStatus, transactions, updateTransaction]);
+
   // Watch for transaction completion
   useEffect(() => {
     if (isSwapSuccess && txHash) {
