@@ -235,9 +235,9 @@ function TransactionRow({
             <span>•</span>
             <span className="flex-shrink-0">{timeAgo}</span>
           </div>
-          {transaction.hash && (
+          {transaction.status === "success" && transaction.hash && (
             <div className="mt-0.5 font-mono text-micro text-sp-muted2 truncate">
-              {transaction.hash.slice(0, 24)}…{transaction.hash.slice(-12)}
+              {transaction.hash.slice(0, 10)}…
             </div>
           )}
         </button>
