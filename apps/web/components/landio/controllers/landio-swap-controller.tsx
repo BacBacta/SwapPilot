@@ -4153,6 +4153,11 @@ export function LandioSwapController() {
                     <span>{new Date(tx.timestamp).toLocaleString()}</span>
                     <span>{tx.providerId}</span>
                   </div>
+                  {tx.status === 'success' && tx.txHash && (
+                    <div style={{ marginTop: '4px', fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                      {tx.txHash.slice(0, 10)}…
+                    </div>
+                  )}
                   {tx.txHash && (
                     <a
                       href={`https://bscscan.com/tx/${tx.txHash}`}
