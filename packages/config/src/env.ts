@@ -57,7 +57,14 @@ export const EnvSchema = z.object({
     .default(false),
 
   // Risk heuristics
-  RISK_KNOWN_TOKENS: z.string().default(''),
+  RISK_KNOWN_TOKENS: z.string().default([
+    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+    '0x55d398326f99059fF775485246999027B3197955', // USDT
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', // USDC
+    '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB
+    '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // WETH
+    '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', // CAKE
+  ].join(',')),
   RISK_MEME_TOKENS: z.string().default(''),
 
   // PancakeSwap (DEX) quoting

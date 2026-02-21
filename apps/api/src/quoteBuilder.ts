@@ -743,7 +743,7 @@ async function buildQuotesImpl(
 
   const receipt: DecisionReceipt = {
     id: receiptId,
-    createdAt: new Date(0).toISOString(),
+    createdAt: new Date().toISOString(),
     request: parsed,
     bestExecutableQuoteProviderId,
     bestRawOutputProviderId,

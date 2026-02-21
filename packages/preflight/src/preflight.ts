@@ -169,11 +169,9 @@ export function createPreflightClient(config: RpcConfig): PreflightClient {
       }
 
       const urls = config.urls.slice(0, Math.max(1, Math.min(config.quorum, config.urls.length)));
-      const results: RpcSimulationResult[] = [];
-
-      for (const rpcUrl of urls) {
-        results.push(await simulateOnce({ rpcUrl, timeoutMs: config.timeoutMs, tx }));
-      }
+      const results = await Promise.all(
+        urls.map(rpcUrl => simulateOnce({ rpcUrl, timeoutMs: config.timeoutMs, tx }))
+      );
 
       const merged = mergeQuorumResults(results, tx.expectedBuyAmount);
       return merged;

@@ -42,8 +42,6 @@ import {
   OdosAdapter,
   OpenOceanAdapter,
   ZeroXAdapter,
-  UniswapV3Adapter,
-  UniswapV2Adapter,
   ThenaAdapter,
   PROVIDERS,
   type Adapter,
@@ -683,22 +681,6 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     timeoutMs: 4000,
   });
 
-  const uniswapV3Adapter = new UniswapV3Adapter({
-    chainId: 56,
-    rpcUrl: config.rpc.bscUrls[0] ?? null,
-    quoterAddress: null, // Will use default BSC quoter
-    weth: config.pancakeswap.wbnb,
-    quoteTimeoutMs: 5000,
-  });
-
-  const uniswapV2Adapter = new UniswapV2Adapter({
-    chainId: 56,
-    rpcUrl: config.rpc.bscUrls[0] ?? null,
-    routerAddress: null, // Will use default BSC router (PancakeSwap V2 fork)
-    weth: config.pancakeswap.wbnb,
-    quoteTimeoutMs: 5000,
-  });
-
   const thenaAdapter = new ThenaAdapter({
     chainId: 56,
     rpcUrl: config.rpc.bscUrls[0] ?? null,
@@ -715,8 +697,6 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     ['odos', odosAdapter],
     ['openocean', openOceanAdapter],
     ['0x', zeroXAdapter],
-    ['uniswap-v3', uniswapV3Adapter],
-    ['uniswap-v2', uniswapV2Adapter],
     ['thena', thenaAdapter],
   ]);
 
