@@ -52,6 +52,7 @@ import { FileReceiptStore } from './store/fileReceiptStore';
 import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
 import { FileSwapLogStore } from './store/fileSwapLogStore';
 import { MemorySwapLogStore, type SwapLogStore } from './store/swapLogStore';
+import { uploadToGreenfield } from './greenfield/greenfieldArchiver';
 
 import rateLimit from '@fastify/rate-limit';
 
@@ -937,6 +938,14 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
 
       await receiptStore.put(receipt);
 
+      // GF: async archival — never blocks the response
+      setImmediate(() => {
+        if (!config.greenfield.enabled) return;
+        uploadToGreenfield(receipt, config.greenfield).catch((err: unknown) => {
+          request.log.warn({ err }, 'greenfield_archival_failed');
+        });
+      });
+
       // Track BEQ win rate and uplift
       if (config.metrics.enabled && rankedQuotes.length > 0) {
         const beqMatch = beqRecommendedProviderId === bestRawOutputProviderId;
@@ -1051,6 +1060,14 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       });
 
       await receiptStore.put(receipt);
+
+      // GF: async archival — never blocks the response
+      setImmediate(() => {
+        if (!config.greenfield.enabled) return;
+        uploadToGreenfield(receipt, config.greenfield).catch((err: unknown) => {
+          request.log.warn({ err }, 'greenfield_archival_failed');
+        });
+      });
 
       // Track BEQ win rate and uplift (POST handler)
       if (config.metrics.enabled && rankedQuotes.length > 0) {

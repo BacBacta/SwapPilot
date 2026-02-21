@@ -132,6 +132,14 @@ export const EnvSchema = z.object({
   HASHDIT_BASE_URL: z.string().default('https://api.hashdit.io'),
   HASHDIT_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(2_500),
   HASHDIT_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(10 * 60 * 1000),
+
+  // BNB Greenfield — async receipt archival (ADR-007 GF)
+  GREENFIELD_ENABLED: z.coerce.boolean().default(false),
+  GREENFIELD_ENDPOINT: z.string().default('https://gnfd-tendermint-fullnode-mainnet-us.bnbchain.org'),
+  GREENFIELD_SP_ENDPOINT: z.string().default('https://gnfd-bsc-sp1.bnbchain.org'),
+  GREENFIELD_CHAIN_ID: z.coerce.number().int().default(1017),
+  GREENFIELD_BUCKET: z.string().default('swappilot-receipts-prod'),
+  GREENFIELD_PRIVATE_KEY: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -215,6 +223,14 @@ export type AppConfig = {
     baseUrl: string;
     timeoutMs: number;
     cacheTtlMs: number;
+  };
+  greenfield: {
+    enabled: boolean;
+    endpoint: string;
+    spEndpoint: string;
+    chainId: number;
+    bucket: string;
+    privateKey: string;
   };
 };
 
@@ -315,6 +331,14 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       baseUrl: env.HASHDIT_BASE_URL.trim(),
       timeoutMs: env.HASHDIT_TIMEOUT_MS,
       cacheTtlMs: env.HASHDIT_CACHE_TTL_MS,
+    },
+    greenfield: {
+      enabled: env.NODE_ENV === 'test' ? false : env.GREENFIELD_ENABLED,
+      endpoint: env.GREENFIELD_ENDPOINT.trim(),
+      spEndpoint: env.GREENFIELD_SP_ENDPOINT.trim(),
+      chainId: env.GREENFIELD_CHAIN_ID,
+      bucket: env.GREENFIELD_BUCKET.trim(),
+      privateKey: env.GREENFIELD_PRIVATE_KEY.trim(),
     },
   };
 }

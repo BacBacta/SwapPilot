@@ -206,6 +206,14 @@ describe('Option 1 API', () => {
           timeoutMs: 2500,
           cacheTtlMs: 600_000,
         },
+        greenfield: {
+          enabled: false,
+          endpoint: '',
+          spEndpoint: '',
+          chainId: 1017,
+          bucket: '',
+          privateKey: '',
+        },
       },
       preflightClient: {
         async verify() {
@@ -341,6 +349,14 @@ describe('Option 1 API', () => {
           baseUrl: 'https://api.hashdit.io',
           timeoutMs: 2500,
           cacheTtlMs: 600_000,
+        },
+        greenfield: {
+          enabled: false,
+          endpoint: '',
+          spEndpoint: '',
+          chainId: 1017,
+          bucket: '',
+          privateKey: '',
         },
       },
       preflightClient: {
