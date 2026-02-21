@@ -37,3 +37,4 @@ temp-ui-kit/
 
 # Sentry Config File
 .env.sentry-build-plugin
+scripts/greenfield-keygen-output.txt
