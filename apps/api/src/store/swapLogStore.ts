@@ -15,6 +15,10 @@ export type SwapLog = {
   timestamp: string;
   status: SwapLogStatus;
   source?: 'app' | 'api' | 'relayer' | undefined;
+  // FL fields — populated after on-chain confirmation
+  actualSlippage?: number | undefined;
+  gasUsdActual?: string | undefined;
+  beqScore?: number | undefined;
 };
 
 export type SwapLogQuery = {

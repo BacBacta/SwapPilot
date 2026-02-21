@@ -1114,6 +1114,10 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     timestamp: z.string().datetime().optional(),
     status: z.enum(['success', 'failed']).default('success'),
     source: z.enum(['app', 'api', 'relayer']).optional(),
+    // FL fields — populated after on-chain confirmation
+    actualSlippage: z.number().min(-1).max(10).optional(),
+    gasUsdActual: z.string().optional(),
+    beqScore: z.number().min(0).max(100).optional(),
   });
 
   const VolumeQuerySchema = z.object({
@@ -1138,6 +1142,48 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       const payload = request.body;
       const timestamp = payload.timestamp ?? new Date().toISOString();
       await swapLogStore.append({ ...payload, timestamp });
+      return { ok: true } as const;
+    },
+  );
+
+  // ─── FL: public endpoint for frontend swap confirmation ───────────
+  // Called by the dApp after the user's transaction is mined.
+  // No admin token required — data is analytics-only, not sensitive.
+  const SwapConfirmSchema = z.object({
+    chainId: z.number().int().positive(),
+    txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+    wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    providerId: z.string(),
+    sellToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    buyToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    sellAmount: z.string(),
+    buyAmount: z.string(),
+    expectedBuyAmount: z.string().optional(),
+    beqRecommendedProviderId: z.string().optional(),
+    amountUsd: z.string().optional().nullable(),
+    status: z.enum(['success', 'failed']).default('success'),
+    actualSlippage: z.number().min(-1).max(10).optional(),
+    gasUsdActual: z.string().optional(),
+    beqScore: z.number().min(0).max(100).optional(),
+  });
+
+  api.post(
+    '/v1/swaps/confirm',
+    {
+      schema: {
+        body: SwapConfirmSchema,
+        response: {
+          200: z.object({ ok: z.literal(true) }),
+        },
+      },
+    },
+    async (request) => {
+      const payload = request.body;
+      await swapLogStore.append({
+        ...payload,
+        source: 'app',
+        timestamp: new Date().toISOString(),
+      });
       return { ok: true } as const;
     },
   );
@@ -1400,6 +1446,94 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
       }
 
       return { total, matches, winRate: total > 0 ? matches / total : 0 };
+    },
+  );
+
+  // ─── FL: Provider performance stats for ML training ──────────────
+  const ProviderStatsQuerySchema = z.object({
+    days: z.coerce.number().int().min(1).max(365).default(30),
+  });
+
+  api.get(
+    '/v1/analytics/provider-stats',
+    {
+      preHandler: requireAdminToken,
+      schema: {
+        querystring: ProviderStatsQuerySchema,
+        response: {
+          200: z.object({
+            period: z.object({ from: z.string(), to: z.string(), days: z.number().int() }),
+            swapCount: z.number().int(),
+            providers: z.array(z.object({
+              providerId: z.string(),
+              swapCount: z.number().int(),
+              successRate: z.number(),
+              avgSlippage: z.number().nullable(),
+              avgSlippageGap: z.number().nullable(),
+              beqWinRate: z.number().nullable(),
+              beqNominated: z.number().int(),
+            })),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const { days } = request.query;
+      const to = new Date();
+      const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+      const logs = await swapLogStore.list({ from, to });
+
+      type ProviderBucket = {
+        total: number;
+        success: number;
+        slippages: number[];
+        slippageGaps: number[];
+        beqNominated: number;
+        beqWins: number;
+      };
+      const byProvider = new Map<string, ProviderBucket>();
+
+      for (const log of logs) {
+        if (!log.providerId) continue;
+        if (!byProvider.has(log.providerId)) {
+          byProvider.set(log.providerId, { total: 0, success: 0, slippages: [], slippageGaps: [], beqNominated: 0, beqWins: 0 });
+        }
+        const b = byProvider.get(log.providerId)!;
+        b.total++;
+        if (log.status === 'success') b.success++;
+        if (typeof log.actualSlippage === 'number') b.slippages.push(log.actualSlippage);
+        if (log.expectedBuyAmount && log.buyAmount) {
+          const expected = Number(log.expectedBuyAmount);
+          const actual = Number(log.buyAmount);
+          if (expected > 0 && Number.isFinite(actual)) {
+            b.slippageGaps.push((expected - actual) / expected);
+          }
+        }
+        if (log.beqRecommendedProviderId) {
+          if (log.providerId === log.beqRecommendedProviderId) {
+            b.beqNominated++;
+            b.beqWins++;
+          }
+        }
+      }
+
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+
+      const providers = Array.from(byProvider.entries()).map(([providerId, b]) => ({
+        providerId,
+        swapCount: b.total,
+        successRate: b.total > 0 ? b.success / b.total : 0,
+        avgSlippage: avg(b.slippages),
+        avgSlippageGap: avg(b.slippageGaps),
+        beqWinRate: b.beqNominated > 0 ? b.beqWins / b.beqNominated : null,
+        beqNominated: b.beqNominated,
+      })).sort((a, b) => b.swapCount - a.swapCount);
+
+      return {
+        period: { from: from.toISOString(), to: to.toISOString(), days },
+        swapCount: logs.length,
+        providers,
+      };
     },
   );
 
