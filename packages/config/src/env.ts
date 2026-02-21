@@ -124,6 +124,14 @@ export const EnvSchema = z.object({
   DEXSCREENER_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1_200),
   DEXSCREENER_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(2 * 60 * 1000),
   DEXSCREENER_MIN_LIQUIDITY_USD: z.coerce.number().min(0).max(10_000_000).default(100),
+
+  // HashDit token security (BSC-native, gated API)
+  HASHDIT_ENABLED: z.coerce.boolean().default(false),
+  HASHDIT_APP_ID: z.string().default(''),
+  HASHDIT_APP_SECRET: z.string().default(''),
+  HASHDIT_BASE_URL: z.string().default('https://api.hashdit.io'),
+  HASHDIT_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(2_500),
+  HASHDIT_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(10 * 60 * 1000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -199,6 +207,14 @@ export type AppConfig = {
     timeoutMs: number;
     cacheTtlMs: number;
     minLiquidityUsd: number;
+  };
+  hashdit: {
+    enabled: boolean;
+    appId: string;
+    appSecret: string;
+    baseUrl: string;
+    timeoutMs: number;
+    cacheTtlMs: number;
   };
 };
 
@@ -291,6 +307,14 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       timeoutMs: env.DEXSCREENER_TIMEOUT_MS,
       cacheTtlMs: env.DEXSCREENER_CACHE_TTL_MS,
       minLiquidityUsd: env.DEXSCREENER_MIN_LIQUIDITY_USD,
+    },
+    hashdit: {
+      enabled: env.NODE_ENV === 'test' ? false : env.HASHDIT_ENABLED,
+      appId: env.HASHDIT_APP_ID.trim(),
+      appSecret: env.HASHDIT_APP_SECRET.trim(),
+      baseUrl: env.HASHDIT_BASE_URL.trim(),
+      timeoutMs: env.HASHDIT_TIMEOUT_MS,
+      cacheTtlMs: env.HASHDIT_CACHE_TTL_MS,
     },
   };
 }

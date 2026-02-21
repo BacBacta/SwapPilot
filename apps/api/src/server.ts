@@ -900,6 +900,17 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           }
         : undefined;
 
+      const hashditDeps = config.hashdit.enabled
+        ? {
+            enabled: config.hashdit.enabled,
+            appId: config.hashdit.appId,
+            appSecret: config.hashdit.appSecret,
+            baseUrl: config.hashdit.baseUrl,
+            timeoutMs: config.hashdit.timeoutMs,
+            cacheTtlMs: config.hashdit.cacheTtlMs,
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -921,6 +932,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
         ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
+        ...(hashditDeps ? { hashdit: hashditDeps } : {}),
       });
 
       await receiptStore.put(receipt);
@@ -1003,6 +1015,17 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
           }
         : undefined;
 
+      const hashditDeps = config.hashdit.enabled
+        ? {
+            enabled: config.hashdit.enabled,
+            appId: config.hashdit.appId,
+            appSecret: config.hashdit.appSecret,
+            baseUrl: config.hashdit.baseUrl,
+            timeoutMs: config.hashdit.timeoutMs,
+            cacheTtlMs: config.hashdit.cacheTtlMs,
+          }
+        : undefined;
+
       const {
         receiptId,
         rankedQuotes,
@@ -1024,6 +1047,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
         ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
+        ...(hashditDeps ? { hashdit: hashditDeps } : {}),
       });
 
       await receiptStore.put(receipt);

@@ -198,6 +198,14 @@ describe('Option 1 API', () => {
           cacheTtlMs: 120_000,
           minLiquidityUsd: 100,
         },
+        hashdit: {
+          enabled: false,
+          appId: '',
+          appSecret: '',
+          baseUrl: 'https://api.hashdit.io',
+          timeoutMs: 2500,
+          cacheTtlMs: 600_000,
+        },
       },
       preflightClient: {
         async verify() {
@@ -325,6 +333,14 @@ describe('Option 1 API', () => {
           timeoutMs: 1200,
           cacheTtlMs: 120_000,
           minLiquidityUsd: 100,
+        },
+        hashdit: {
+          enabled: false,
+          appId: '',
+          appSecret: '',
+          baseUrl: 'https://api.hashdit.io',
+          timeoutMs: 2500,
+          cacheTtlMs: 600_000,
         },
       },
       preflightClient: {

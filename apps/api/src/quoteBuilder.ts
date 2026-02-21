@@ -35,6 +35,7 @@ import { getProviderConcurrencyLimiter } from './obs/providerConcurrency';
 import { assessOnchainSellability } from './risk/onchainSellability';
 import { assessDexScreenerSellability } from './risk/dexScreener';
 import { assessTokenSecuritySellability } from './risk/tokenSecurity';
+import { assessHashditSellability } from './risk/hashdit';
 
 type Logger = {
   info(obj: unknown, msg?: string): void;
@@ -170,6 +171,14 @@ export function buildQuotes(
       cacheTtlMs: number;
       minLiquidityUsd: number;
     };
+    hashdit?: {
+      enabled: boolean;
+      appId: string;
+      appSecret: string;
+      baseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -221,6 +230,14 @@ async function buildQuotesImpl(
       cacheTtlMs: number;
       minLiquidityUsd: number;
     };
+    hashdit?: {
+      enabled: boolean;
+      appId: string;
+      appSecret: string;
+      baseUrl: string;
+      timeoutMs: number;
+      cacheTtlMs: number;
+    };
   },
 ): Promise<{
   receiptId: string;
@@ -242,6 +259,7 @@ async function buildQuotesImpl(
   const sellability = deps.sellability;
   const tokenSecurity = deps.tokenSecurity;
   const dexScreener = deps.dexScreener;
+  const hashdit = deps.hashdit;
   const quoteCache = deps.quoteCache;
   const quoteCacheTtlSeconds = deps.quoteCacheTtlSeconds ?? 10;
 
@@ -521,7 +539,7 @@ async function buildQuotesImpl(
       const buyTokenForSecurityCheck = resolveTokenForSecurityCheck(parsed.buyToken, parsed.chainId);
       
       // Run all security checks in parallel with individual deadlines
-      const [onchainSellability, dexScreenerSellability, tokenSecuritySellability] = await Promise.all([
+      const [onchainSellability, dexScreenerSellability, tokenSecuritySellability, hashditSellability] = await Promise.all([
         rpc
           ? withDeadline(assessOnchainSellability({
               chainId: parsed.chainId,
@@ -569,6 +587,14 @@ async function buildQuotesImpl(
               },
             }), 2000)
           : null,
+
+        hashdit?.enabled
+          ? withDeadline(assessHashditSellability({
+              chainId: parsed.chainId,
+              token: buyTokenForSecurityCheck,
+              config: hashdit,
+            }), 2500)
+          : null,
       ]);
 
       // Merge sellability signals intelligently:
@@ -586,16 +612,23 @@ async function buildQuotesImpl(
                 ...onchainSellability.reasons,
                 ...(dexScreenerSellability?.reasons ?? []),
                 ...(tokenSecuritySellability?.reasons ?? []),
+                ...(hashditSellability?.reasons ?? []),
               ];
               const maxConfidence = Math.max(
                 riskSignals.sellability.confidence,
                 onchainSellability.confidence,
                 dexScreenerSellability?.confidence ?? 0,
                 tokenSecuritySellability?.confidence ?? 0,
+                hashditSellability?.confidence ?? 0,
               );
 
               // Token security FAIL should override everything (honeypot/cannot-sell/tax).
               if (tokenSecuritySellability?.status === 'FAIL' && tokenSecuritySellability.confidence >= 0.8) {
+                return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
+              }
+
+              // HashDit FAIL with good confidence = definitive FAIL (honeypot/high-risk contract).
+              if (hashditSellability?.status === 'FAIL' && hashditSellability.confidence >= 0.8) {
                 return { status: 'FAIL' as const, confidence: maxConfidence, reasons };
               }
 
