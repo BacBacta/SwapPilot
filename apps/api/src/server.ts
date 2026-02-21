@@ -53,6 +53,9 @@ import { MemoryReceiptStore, type ReceiptStore } from './store/receiptStore';
 import { FileSwapLogStore } from './store/fileSwapLogStore';
 import { MemorySwapLogStore, type SwapLogStore } from './store/swapLogStore';
 import { uploadToGreenfield } from './greenfield/greenfieldArchiver';
+import { createMLEngine } from './ml/index';
+import { parseIntent } from './intent/intentSolver';
+import { createMCPClient } from './intent/mcpClient';
 
 import rateLimit from '@fastify/rate-limit';
 
@@ -620,6 +623,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
     });
 
   const riskEngine = options.riskEngine ?? createRiskEngine(config.risk);
+  const mlEngine = createMLEngine(config.ml);
 
   const quoteCache: QuoteCache =
     options.quoteCache ??
@@ -934,6 +938,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
         ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
         ...(hashditDeps ? { hashdit: hashditDeps } : {}),
+        mlEngine,
       });
 
       await receiptStore.put(receipt);
@@ -1057,6 +1062,7 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
         ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
         ...(hashditDeps ? { hashdit: hashditDeps } : {}),
+        mlEngine,
       });
 
       await receiptStore.put(receipt);
@@ -1729,6 +1735,207 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         quotesP95Ms: percentile(allValues, 0.95),
         quotesP99Ms: percentile(allValues, 0.99),
         totalRequests: totalCount,
+      };
+    },
+  );
+
+  // ─── M2: Intent routes ───────────────────────────────────────────
+  const IntentParseRequestSchema = z.object({
+    text: z.string().min(1).max(2000),
+  });
+
+  const IntentParseResponseSchema = z.object({
+    parsedRequest: z.object({
+      chainId: z.number(),
+      sellToken: z.string(),
+      buyToken: z.string(),
+      sellAmount: z.string(),
+      slippageBps: z.number(),
+      mode: z.enum(['SAFE', 'NORMAL', 'DEGEN']).optional(),
+    }),
+    confidence: z.number().min(0).max(1),
+    explanation: z.string(),
+    clarifications: z.array(z.string()).optional(),
+  });
+
+  api.post(
+    '/v1/intent/parse',
+    {
+      schema: {
+        body: IntentParseRequestSchema,
+        response: {
+          200: IntentParseResponseSchema,
+          501: z.object({ message: z.string() }),
+          400: z.object({ message: z.string() }),
+          422: z.object({ message: z.string(), details: z.string().optional() }),
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!config.intent.enabled) {
+        return reply.code(501).send({ message: 'intent_not_enabled' });
+      }
+
+      const mcp = config.intent.mcpBnbServerUrl
+        ? createMCPClient(config.intent.mcpBnbServerUrl, 2000)
+        : null;
+
+      try {
+        const result = await parseIntent(request.body.text, config.intent, mcp);
+
+        if (result.clarifications && result.clarifications.length > 0 && result.confidence < 0.5) {
+          return reply.code(422).send({
+            message: 'intent_needs_clarification',
+            details: result.clarifications.join(' | '),
+          });
+        }
+
+        return result;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'intent_parse_failed';
+        if (msg === 'llm_unavailable') {
+          return reply.code(501).send({ message: 'llm_unavailable' });
+        }
+        return reply.code(400).send({ message: msg });
+      } finally {
+        if (mcp) await mcp.close();
+      }
+    },
+  );
+
+  api.post(
+    '/v1/intent/quote',
+    {
+      schema: {
+        body: IntentParseRequestSchema,
+        response: {
+          200: QuoteResponseSchema,
+          501: z.object({ message: z.string() }),
+          400: z.object({ message: z.string() }),
+          422: z.object({ message: z.string(), details: z.string().optional() }),
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!config.intent.enabled) {
+        return reply.code(501).send({ message: 'intent_not_enabled' });
+      }
+
+      const mcp = config.intent.mcpBnbServerUrl
+        ? createMCPClient(config.intent.mcpBnbServerUrl, 2000)
+        : null;
+
+      let parsed;
+      try {
+        const intentResult = await parseIntent(request.body.text, config.intent, mcp);
+
+        if (intentResult.clarifications && intentResult.clarifications.length > 0 && intentResult.confidence < 0.5) {
+          return reply.code(422).send({
+            message: 'intent_needs_clarification',
+            details: intentResult.clarifications.join(' | '),
+          });
+        }
+        parsed = intentResult.parsedRequest;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'intent_parse_failed';
+        return reply.code(400).send({ message: msg });
+      } finally {
+        if (mcp) await mcp.close();
+      }
+
+      // Forward to the same quote pipeline
+      const sellabilityDeps = config.sellability
+        ? {
+            multicall3Address: config.sellability.multicall3Address,
+            baseTokensBsc: config.sellability.baseTokensBsc,
+            pancake: {
+              v2Factory: config.pancakeswap.v2Factory,
+              v3Factory: config.pancakeswap.v3Factory,
+              wbnb: config.pancakeswap.wbnb,
+            },
+          }
+        : undefined;
+
+      const tokenSecurityDeps = config.tokenSecurity
+        ? {
+            enabled: config.tokenSecurity.enabled,
+            goPlusEnabled: config.tokenSecurity.goPlusEnabled,
+            goPlusBaseUrl: config.tokenSecurity.goPlusBaseUrl,
+            honeypotIsEnabled: config.tokenSecurity.honeypotIsEnabled,
+            honeypotIsBaseUrl: config.tokenSecurity.honeypotIsBaseUrl,
+            bscScanEnabled: config.tokenSecurity.bscScanEnabled,
+            bscScanBaseUrl: config.tokenSecurity.bscScanBaseUrl,
+            bscScanApiKey: config.tokenSecurity.bscScanApiKey,
+            timeoutMs: config.tokenSecurity.timeoutMs,
+            cacheTtlMs: config.tokenSecurity.cacheTtlMs,
+            taxStrictMaxPercent: config.tokenSecurity.taxStrictMaxPercent,
+            fallbackMinLiquidityUsd: config.tokenSecurity.fallbackMinLiquidityUsd,
+          }
+        : undefined;
+
+      const dexScreenerDeps = config.dexScreener
+        ? {
+            enabled: config.dexScreener.enabled,
+            baseUrl: config.dexScreener.baseUrl,
+            timeoutMs: config.dexScreener.timeoutMs,
+            cacheTtlMs: config.dexScreener.cacheTtlMs,
+            minLiquidityUsd: config.dexScreener.minLiquidityUsd,
+          }
+        : undefined;
+
+      const hashditDeps = config.hashdit.enabled
+        ? {
+            enabled: config.hashdit.enabled,
+            appId: config.hashdit.appId,
+            appSecret: config.hashdit.appSecret,
+            baseUrl: config.hashdit.baseUrl,
+            timeoutMs: config.hashdit.timeoutMs,
+            cacheTtlMs: config.hashdit.cacheTtlMs,
+          }
+        : undefined;
+
+      const {
+        receiptId,
+        rankedQuotes,
+        bestRawQuotes,
+        bestExecutableQuoteProviderId,
+        bestRawOutputProviderId,
+        beqRecommendedProviderId,
+        receipt,
+      } = await buildQuotes(parsed, {
+        preflightClient,
+        riskEngine,
+        adapters,
+        quoteCache,
+        quoteCacheTtlSeconds: config.redis.quoteCacheTtlSeconds,
+        logger: request.log,
+        metrics,
+        providerHealth,
+        rpc: { bscUrls: config.rpc.bscUrls, timeoutMs: config.rpc.timeoutMs },
+        ...(sellabilityDeps ? { sellability: sellabilityDeps } : {}),
+        ...(tokenSecurityDeps ? { tokenSecurity: tokenSecurityDeps } : {}),
+        ...(dexScreenerDeps ? { dexScreener: dexScreenerDeps } : {}),
+        ...(hashditDeps ? { hashdit: hashditDeps } : {}),
+        mlEngine,
+      });
+
+      await receiptStore.put(receipt);
+
+      setImmediate(() => {
+        if (!config.greenfield.enabled) return;
+        uploadToGreenfield(receipt, config.greenfield).catch((err: unknown) => {
+          request.log.warn({ err }, 'greenfield_archival_failed');
+        });
+      });
+
+      return {
+        receiptId,
+        rankedQuotes,
+        bestRawQuotes,
+        bestExecutableQuoteProviderId,
+        bestRawOutputProviderId,
+        beqRecommendedProviderId,
+        receipt,
       };
     },
   );

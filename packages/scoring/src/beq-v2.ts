@@ -65,8 +65,12 @@ export type BeqV2Components = {
   preflightFactor: number;
   /** Combined quality multiplier = reliability × sellability */
   qualityMultiplier: number;
-  /** Combined risk multiplier = risk × preflight */
+  /** Combined risk multiplier = risk × preflight × mlConfidenceFactor */
   riskMultiplier: number;
+  /** ML confidence factor: 0-1, default 1.0 (no penalty when ML disabled) */
+  mlConfidenceFactor?: number;
+  /** Agent trust factor: 0-1, default 1.0 (no penalty when < 100 swaps) */
+  agentTrustFactor?: number;
 };
 
 export type BeqV2Output = {
@@ -488,12 +492,21 @@ export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
   }
 
   // 7. Calculate combined multipliers
-  const qualityMultiplier = reliabilityFactor * sellabilityFactor;
-  const riskMultiplier = riskFactor * preflightFactor;
+  // mlConfidenceFactor: from signals.ml.confidence if ML enabled, else 1.0 (no penalty)
+  const mlSignal = input.signals.ml;
+  const mlConfidenceFactor = mlSignal?.enabled && mlSignal.confidence != null
+    ? mlSignal.confidence
+    : 1.0;
+
+  // agentTrustFactor: 1.0 by default (cold-start guard — no penalty without data)
+  const agentTrustFactor = 1.0;
+
+  const qualityMultiplier = reliabilityFactor * sellabilityFactor * agentTrustFactor;
+  const riskMultiplier = riskFactor * preflightFactor * mlConfidenceFactor;
 
   // 8. Calculate final BEQ score (0-100)
-  const beqScore = disqualified 
-    ? 0 
+  const beqScore = disqualified
+    ? 0
     : outputScore * qualityMultiplier * riskMultiplier;
 
   // Round to 2 decimal places for display
@@ -513,6 +526,8 @@ export function computeBeqScoreV2(input: BeqV2Input): BeqV2Output {
       preflightFactor: Math.round(preflightFactor * 1000) / 1000,
       qualityMultiplier: Math.round(qualityMultiplier * 1000) / 1000,
       riskMultiplier: Math.round(riskMultiplier * 1000) / 1000,
+      mlConfidenceFactor: Math.round(mlConfidenceFactor * 1000) / 1000,
+      agentTrustFactor: Math.round(agentTrustFactor * 1000) / 1000,
     },
     disqualified,
     explanation,

@@ -150,6 +150,14 @@ export const RiskSignalsSchema = z.object({
     })
     .optional(),
   preflight: PreflightResultSchema.optional(),
+  ml: z
+    .object({
+      enabled: z.boolean(),
+      modelVersion: z.string().optional(),
+      confidence: z.number().min(0).max(1).optional(),
+      source: z.enum(['ml', 'heuristic', 'mixed']).optional(),
+    })
+    .optional(),
 });
 
 export type RiskSignals = z.infer<typeof RiskSignalsSchema>;
@@ -174,8 +182,12 @@ export const BeqV2ComponentsSchema = z.object({
   preflightFactor: z.number().min(0).max(1),
   /** Combined quality multiplier = reliability × sellability */
   qualityMultiplier: z.number().min(0).max(1),
-  /** Combined risk multiplier = risk × preflight */
+  /** Combined risk multiplier = risk × preflight × mlConfidenceFactor */
   riskMultiplier: z.number().min(0).max(1),
+  /** ML confidence factor: 0-1, default 1.0 (no penalty when ML disabled) */
+  mlConfidenceFactor: z.number().min(0).max(1).optional(),
+  /** Agent trust factor: 0-1, default 1.0 (no penalty when < 100 swaps) */
+  agentTrustFactor: z.number().min(0).max(1).optional(),
 });
 
 export type BeqV2Components = z.infer<typeof BeqV2ComponentsSchema>;

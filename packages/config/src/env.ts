@@ -133,6 +133,22 @@ export const EnvSchema = z.object({
   HASHDIT_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(2_500),
   HASHDIT_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(10 * 60 * 1000),
 
+  // ML Engine (ADR-007 M1) — ONNX inference for risk signals
+  ML_ENABLED: z.coerce.boolean().default(false),
+  ML_MODELS_PATH: z.string().default('/app/models'),
+  ML_INFERENCE_TIMEOUT_MS: z.coerce.number().int().min(1).max(1000).default(25),
+  ML_MODEL_VERSION: z.string().default('v1.0.0'),
+
+  // Intent Solver (ADR-007 M2) — LLM + MCP
+  INTENT_ENABLED: z.coerce.boolean().default(false),
+  INTENT_LLM_PROVIDER: z.enum(['claude', 'openai']).default('claude'),
+  INTENT_LLM_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  OPENAI_API_KEY: z.string().default(''),
+  MCP_BNB_SERVER_URL: z.string().default('http://localhost:3002/sse'),
+  INTENT_TIMEOUT_MS: z.coerce.number().int().min(100).max(30_000).default(3000),
+  INTENT_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(20),
+
   // BNB Greenfield — async receipt archival (ADR-007 GF)
   GREENFIELD_ENABLED: z.coerce.boolean().default(false),
   GREENFIELD_ENDPOINT: z.string().default('https://gnfd-tendermint-fullnode-mainnet-us.bnbchain.org'),
@@ -223,6 +239,22 @@ export type AppConfig = {
     baseUrl: string;
     timeoutMs: number;
     cacheTtlMs: number;
+  };
+  ml: {
+    enabled: boolean;
+    modelsPath: string;
+    inferenceTimeoutMs: number;
+    modelVersion: string;
+  };
+  intent: {
+    enabled: boolean;
+    llmProvider: 'claude' | 'openai';
+    llmModel: string;
+    anthropicApiKey: string | null;
+    openaiApiKey: string | null;
+    mcpBnbServerUrl: string;
+    timeoutMs: number;
+    rateLimitMax: number;
   };
   greenfield: {
     enabled: boolean;
@@ -331,6 +363,22 @@ export function loadConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
       baseUrl: env.HASHDIT_BASE_URL.trim(),
       timeoutMs: env.HASHDIT_TIMEOUT_MS,
       cacheTtlMs: env.HASHDIT_CACHE_TTL_MS,
+    },
+    ml: {
+      enabled: env.NODE_ENV === 'test' ? false : env.ML_ENABLED,
+      modelsPath: env.ML_MODELS_PATH.trim(),
+      inferenceTimeoutMs: env.ML_INFERENCE_TIMEOUT_MS,
+      modelVersion: env.ML_MODEL_VERSION.trim(),
+    },
+    intent: {
+      enabled: env.NODE_ENV === 'test' ? false : env.INTENT_ENABLED,
+      llmProvider: env.INTENT_LLM_PROVIDER,
+      llmModel: env.INTENT_LLM_MODEL.trim(),
+      anthropicApiKey: env.ANTHROPIC_API_KEY.trim().length > 0 ? env.ANTHROPIC_API_KEY.trim() : null,
+      openaiApiKey: env.OPENAI_API_KEY.trim().length > 0 ? env.OPENAI_API_KEY.trim() : null,
+      mcpBnbServerUrl: env.MCP_BNB_SERVER_URL.trim(),
+      timeoutMs: env.INTENT_TIMEOUT_MS,
+      rateLimitMax: env.INTENT_RATE_LIMIT_MAX,
     },
     greenfield: {
       enabled: env.NODE_ENV === 'test' ? false : env.GREENFIELD_ENABLED,

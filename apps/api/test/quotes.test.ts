@@ -214,6 +214,22 @@ describe('Option 1 API', () => {
           bucket: '',
           privateKey: '',
         },
+        ml: {
+          enabled: false,
+          modelsPath: '',
+          inferenceTimeoutMs: 25,
+          modelVersion: 'v1.0.0',
+        },
+        intent: {
+          enabled: false,
+          llmProvider: 'claude' as const,
+          llmModel: 'claude-haiku-4-5-20251001',
+          anthropicApiKey: null,
+          openaiApiKey: null,
+          mcpBnbServerUrl: '',
+          timeoutMs: 3000,
+          rateLimitMax: 20,
+        },
       },
       preflightClient: {
         async verify() {
@@ -357,6 +373,22 @@ describe('Option 1 API', () => {
           chainId: 1017,
           bucket: '',
           privateKey: '',
+        },
+        ml: {
+          enabled: false,
+          modelsPath: '',
+          inferenceTimeoutMs: 25,
+          modelVersion: 'v1.0.0',
+        },
+        intent: {
+          enabled: false,
+          llmProvider: 'claude' as const,
+          llmModel: 'claude-haiku-4-5-20251001',
+          anthropicApiKey: null,
+          openaiApiKey: null,
+          mcpBnbServerUrl: '',
+          timeoutMs: 3000,
+          rateLimitMax: 20,
         },
       },
       preflightClient: {

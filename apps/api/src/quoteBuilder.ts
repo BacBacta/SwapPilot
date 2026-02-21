@@ -36,6 +36,7 @@ import { assessOnchainSellability } from './risk/onchainSellability';
 import { assessDexScreenerSellability } from './risk/dexScreener';
 import { assessTokenSecuritySellability } from './risk/tokenSecurity';
 import { assessHashditSellability } from './risk/hashdit';
+import type { MLEngine } from './ml/index';
 
 type Logger = {
   info(obj: unknown, msg?: string): void;
@@ -179,6 +180,7 @@ export function buildQuotes(
       timeoutMs: number;
       cacheTtlMs: number;
     };
+    mlEngine?: MLEngine;
   },
 ): Promise<{
   receiptId: string;
@@ -238,6 +240,7 @@ async function buildQuotesImpl(
       timeoutMs: number;
       cacheTtlMs: number;
     };
+    mlEngine?: MLEngine;
   },
 ): Promise<{
   receiptId: string;
@@ -745,13 +748,28 @@ async function buildQuotesImpl(
           } as const),
       };
 
+      // M1: ML enrichment — replaces heuristic placeholder signals when ML_ENABLED=true.
+      // When ML_ENABLED=false (default), adds ml:{enabled:false} and leaves signals untouched.
+      const mlEngine = deps.mlEngine as
+        | ({ enrich(input: { signals: typeof enrichedSignals; sourceType: 'dex' | 'aggregator'; integrationConfidence: number; estimatedGas?: number | null }): Promise<typeof enrichedSignals> } & object)
+        | undefined;
+
+      const finalSignals = mlEngine
+        ? await mlEngine.enrich({
+            signals: enrichedSignals,
+            sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
+            integrationConfidence: providerMeta.get(item.provider.providerId)?.integrationConfidence ?? 1.0,
+            estimatedGas: item.raw.estimatedGas,
+          })
+        : enrichedSignals;
+
       return {
         providerId: item.provider.providerId,
         sourceType: item.provider.category === 'dex' ? 'dex' : 'aggregator',
         capabilities: item.capabilities,
         raw: item.raw,
         normalized: item.normalized,
-        signals: enrichedSignals,
+        signals: finalSignals,
         score: { beqScore: 0, rawOutputRank: 0 },
         deepLink: item.deepLink.url,
       };
