@@ -209,13 +209,18 @@ git push origin main
 
 **Fly.io** (apps/api):
 ```bash
-fly secrets set FEE_COLLECTOR=0x... -a swappilot-api
+fly secrets set FEE_COLLECTOR_V2=0x2083B8b745Ff78c6a00395b1800469c0Dddc966c -a swappilot-api
+fly secrets set TIMELOCK_CONTROLLER=0xF98a25C78Ba1B8d7bC2D816993faD7E7f825B75b -a swappilot-api
 ```
 
 **Vercel** (apps/web):
 ```bash
-vercel env add NEXT_PUBLIC_FEE_COLLECTOR
-# Paste: 0x...
+vercel env add NEXT_PUBLIC_API_URL
+# Paste: https://swappilot-api.fly.dev
+# Select: Production
+
+vercel env add NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+# Paste: <your WalletConnect Cloud project id>
 # Select: Production
 ```
 
