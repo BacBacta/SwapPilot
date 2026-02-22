@@ -628,6 +628,7 @@ export function LandioSwapController() {
   const successToastShownRef = useRef<string | null>(null); // Track txHash to prevent duplicate toasts
   const errorToastShownRef = useRef<string | null>(null); // Track error to prevent duplicate error toasts
   const manualApprovalDoneRef = useRef(false); // Track if manual approval was done in-swap to prevent button loop
+  const pendingIntentAutoExecuteRef = useRef(false); // Set true by AI Intent "Confirm & Swap" → auto-clicks swapBtn once quotes load
   // Ref to store current values for debounced callback (avoids stale closures)
   const currentParamsRef = useRef<{
     fromTokenInfo: TokenInfo | null;
@@ -1010,7 +1011,16 @@ export function LandioSwapController() {
       } else {
         setSelectedQuote(best); // Initial selection
       }
-      
+
+      // Auto-execute if triggered from AI Intent "Confirm & Swap"
+      if (pendingIntentAutoExecuteRef.current && best) {
+        pendingIntentAutoExecuteRef.current = false;
+        setTimeout(() => {
+          const swapBtn = document.getElementById('swapBtn') as HTMLButtonElement | null;
+          if (swapBtn && !swapBtn.disabled) swapBtn.click();
+        }, 250);
+      }
+
       // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
       if (activeQuotes.length === 0) {
         const diagnostics = (() => {
@@ -3415,11 +3425,25 @@ export function LandioSwapController() {
 
     // --- AI Intent panel (only in ai-intent mode) ---
     if (inputMode !== "ai-intent") {
+      // Ensure swap form is visible when in manual mode
+      document.querySelectorAll<HTMLElement>('[data-hidden-by-intent="1"]').forEach(el => {
+        el.style.display = '';
+        delete el.dataset.hiddenByIntent;
+      });
       return () => {
         document.querySelector('.input-mode-toggle')?.remove();
         document.querySelector('.intent-panel')?.remove();
       };
     }
+
+    // Hide the swap form so only the intent panel is shown ("one thing at a time")
+    const SWAP_FORM_SELECTORS = '.token-input-box, .swap-arrow-container, #swapBtn, .stat-cards-grid, #beqContainer, #routeContainer, #providersContainer, #detailsToggle, #cancelSwapBtn, .quick-amounts';
+    document.querySelectorAll<HTMLElement>(SWAP_FORM_SELECTORS).forEach(el => {
+      if (!el.dataset.hiddenByIntent) {
+        el.dataset.hiddenByIntent = '1';
+        el.style.display = 'none';
+      }
+    });
 
     const panel = document.createElement("div");
     panel.className = "intent-panel";
@@ -3666,15 +3690,6 @@ export function LandioSwapController() {
     };
 
     // ── Preview card (Feature #7) ─────────────────────────────────────────────
-    const QUOTE_MODES = [
-      { key: 'SAFE',   label: '🛡️ Safe',     desc: 'Lower risk, may have slightly less optimal rates' },
-      { key: 'NORMAL', label: '⚖️ Balanced', desc: 'Balanced between safety and rate optimization' },
-      { key: 'DEGEN',  label: '⚡ Turbo',    desc: 'Maximum rate optimization, higher risk tolerance' },
-    ] as const;
-    const SCORING_MODES = [
-      { key: 'BEQ', label: 'BEQ', desc: 'Best Execution Quality score (recommended)' },
-      { key: 'RAW', label: 'Raw', desc: 'Raw quote comparison without scoring' },
-    ] as const;
 
     const showPreview = (data: {
       sellTokenInfo: typeof BASE_TOKENS[number] | undefined;
@@ -3684,6 +3699,9 @@ export function LandioSwapController() {
       confidence: number;
       explanation: string;
     }) => {
+      // Remove any existing preview card before creating a new one (prevents stacking)
+      panel.querySelector('.intent-preview-card')?.remove();
+
       inputRow.style.display = 'none';
       statusDiv.style.display = 'none';
 
@@ -3703,189 +3721,114 @@ export function LandioSwapController() {
       const card = document.createElement('div');
       card.className = 'intent-preview-card';
       card.style.cssText = `
-        display: flex; flex-direction: column; gap: 10px;
-        padding: 14px; background: var(--bg-card-inner);
-        border: 1px solid var(--ok, #00ff88); border-radius: 14px;
+        display: flex; flex-direction: column; gap: 12px;
+        padding: 16px; background: var(--bg-card-inner);
+        border: 1.5px solid var(--ok, #00e676); border-radius: 16px;
+        box-shadow: 0 0 0 4px rgba(0,230,118,0.06);
       `;
 
-      // Header
+      // ── Header ──────────────────────────────────────────────────────────────
       const cardHeader = document.createElement('div');
       cardHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
       cardHeader.innerHTML = `
-        <span style="font-size:13px;font-weight:700;color:var(--text-primary)">✦ Swap preview</span>
-        <span style="font-size:12px;color:var(--text-muted)">${badge} ${Math.round(confidence * 100)}% confidence</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text-primary)">Swap preview</span>
+        <span style="font-size:11px;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);padding:3px 9px;border-radius:20px;">${badge} ${Math.round(confidence * 100)}% confidence</span>
       `;
       card.appendChild(cardHeader);
 
-      // Sell row
+      // ── Sell row ─────────────────────────────────────────────────────────────
       if (st) {
-        const sellUsd = sellPrice ? `($${(sellAmountHuman * sellPrice).toFixed(2)})` : '';
+        const sellUsd = sellPrice ? `$${(sellAmountHuman * sellPrice).toFixed(2)}` : '';
         const sellRow = document.createElement('div');
-        sellRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
+        sellRow.style.cssText = 'display: flex; justify-content: space-between; align-items: baseline;';
         sellRow.innerHTML = `
-          <span style="color:var(--text-muted)">You sell</span>
-          <span style="font-weight:600;color:var(--text-primary)">${fmtAmount(sellAmountHuman)} ${st.symbol} <span style="color:var(--text-muted);font-weight:400">${sellUsd}</span></span>
+          <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">You sell</span>
+          <div style="text-align:right">
+            <div style="font-size:15px;font-weight:700;color:var(--text-primary)">${fmtAmount(sellAmountHuman)} ${st.symbol}</div>
+            ${sellUsd ? `<div style="font-size:12px;color:var(--text-muted)">${sellUsd}</div>` : ''}
+          </div>
         `;
         card.appendChild(sellRow);
       }
 
-      // Buy row
+      // ── Buy row ──────────────────────────────────────────────────────────────
       if (bt) {
         const buyUsd = (estimatedBuyAmount && buyPrice)
-          ? `(~$${(estimatedBuyAmount * buyPrice).toFixed(2)})`
-          : '';
+          ? `~$${(estimatedBuyAmount * buyPrice).toFixed(2)}` : '';
         const buyRow = document.createElement('div');
-        buyRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
+        buyRow.style.cssText = 'display: flex; justify-content: space-between; align-items: baseline;';
         buyRow.innerHTML = `
-          <span style="color:var(--text-muted)">You receive</span>
-          <span style="font-weight:600;color:var(--text-primary)">≈ ${estimatedBuyAmount ? fmtAmount(estimatedBuyAmount) : '—'} ${bt.symbol} <span style="color:var(--text-muted);font-weight:400">${buyUsd}</span></span>
+          <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">You receive</span>
+          <div style="text-align:right">
+            <div style="font-size:15px;font-weight:700;color:var(--ok,#00e676)">≈ ${estimatedBuyAmount ? fmtAmount(estimatedBuyAmount) : '—'} ${bt.symbol}</div>
+            ${buyUsd ? `<div style="font-size:12px;color:var(--text-muted)">${buyUsd}</div>` : ''}
+          </div>
         `;
         card.appendChild(buyRow);
       }
 
-      // Separator
-      const sep1 = document.createElement('div'); sep1.style.cssText = 'height:1px;background:var(--border)'; card.appendChild(sep1);
+      // ── Separator ────────────────────────────────────────────────────────────
+      const sep1 = document.createElement('div');
+      sep1.style.cssText = 'height:1px;background:var(--border)';
+      card.appendChild(sep1);
 
-      // ── Quote mode selector (Safe / Balanced / Turbo) ──────────────────────
-      const qmLabel = document.createElement('div');
-      qmLabel.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
-      qmLabel.textContent = 'Mode';
-      card.appendChild(qmLabel);
-
-      let activeQMode = req.mode as 'SAFE' | 'NORMAL' | 'DEGEN';
-      const qmRow = document.createElement('div');
-      qmRow.style.cssText = 'display: flex; gap: 6px;';
-      const qmBtns: HTMLButtonElement[] = [];
-
-      const renderQmBtns = () => {
-        qmBtns.forEach((b, i) => {
-          const isActive = QUOTE_MODES[i]!.key === activeQMode;
-          b.style.background = isActive ? 'var(--accent-dim, rgba(240,185,11,0.15))' : 'var(--bg-card)';
-          b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
-          b.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
-        });
-      };
-
-      QUOTE_MODES.forEach((m) => {
-        const b = document.createElement('button');
-        b.textContent = m.label;
-        b.title = m.desc;
-        b.style.cssText = `flex:1;padding:7px 6px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;`;
-        b.onclick = () => {
-          activeQMode = m.key;
-          renderQmBtns();
-          updateSettingsRef.current({ mode: m.key });
-        };
-        qmBtns.push(b);
-        qmRow.appendChild(b);
-      });
-      renderQmBtns();
-      card.appendChild(qmRow);
-
-      // ── Scoring mode selector (BEQ / RAW) ──────────────────────────────────
-      const smLabel = document.createElement('div');
-      smLabel.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
-      smLabel.textContent = 'Scoring';
-      card.appendChild(smLabel);
-
-      let activeScoring = scoringModeRef.current as 'BEQ' | 'RAW';
-      const smRow = document.createElement('div');
-      smRow.style.cssText = 'display: flex; gap: 6px;';
-      const smBtns: HTMLButtonElement[] = [];
-
-      const renderSmBtns = () => {
-        smBtns.forEach((b, i) => {
-          const isActive = SCORING_MODES[i]!.key === activeScoring;
-          b.style.background = isActive ? 'var(--accent-dim, rgba(240,185,11,0.15))' : 'var(--bg-card)';
-          b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
-          b.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
-        });
-      };
-
-      SCORING_MODES.forEach((m) => {
-        const b = document.createElement('button');
-        b.textContent = m.label;
-        b.title = m.desc;
-        b.style.cssText = `flex:1;padding:7px 6px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;`;
-        b.onclick = () => {
-          activeScoring = m.key;
-          renderSmBtns();
-          setScoringModeRef.current(m.key);
-        };
-        smBtns.push(b);
-        smRow.appendChild(b);
-      });
-      renderSmBtns();
-      card.appendChild(smRow);
-
-      // Separator
-      const sep2 = document.createElement('div'); sep2.style.cssText = 'height:1px;background:var(--border)'; card.appendChild(sep2);
-
-      // ── Route + Gas (fetched in background) ────────────────────────────────
-      const routeRow = document.createElement('div');
-      routeRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
-      routeRow.innerHTML = `
-        <span>Route</span>
-        <span class="preview-route">⟳ Fetching…</span>
+      // ── Details grid 2×2 (Route / Gas / Slippage / Network) ─────────────────
+      const detailsGrid = document.createElement('div');
+      detailsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px;';
+      detailsGrid.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Route</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)" class="preview-route">—</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Est. gas</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)" class="preview-gas">—</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Slippage</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${(slippageBps / 100).toFixed(1)}%</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Network</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">BNB Chain</div>
+        </div>
       `;
-      card.appendChild(routeRow);
+      card.appendChild(detailsGrid);
 
-      const gasRow = document.createElement('div');
-      gasRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
-      gasRow.innerHTML = `
-        <span>Est. gas</span>
-        <span class="preview-gas">⟳ Fetching…</span>
-      `;
-      card.appendChild(gasRow);
-
-      // Fetch a real quote in background for route + gas
+      // Fetch route + gas in background, update the grid cells
       if (req.sellAmount !== '0' && st && bt) {
         postQuotes({ request: req as Parameters<typeof postQuotes>[0]['request'], timeoutMs: 8_000 })
           .then((qr) => {
             const best = qr.rankedQuotes?.[0];
             if (!best) return;
-            const routeEl = card.querySelector('.preview-route');
-            const gasEl = card.querySelector('.preview-gas');
+            const routeEl = detailsGrid.querySelector('.preview-route');
+            const gasEl   = detailsGrid.querySelector('.preview-gas');
             if (routeEl) routeEl.textContent = best.providerId ?? '—';
             if (gasEl) {
               const gasUsd = best.normalized?.estimatedGasUsd;
               gasEl.textContent = gasUsd ? `~$${parseFloat(gasUsd).toFixed(3)}` : '—';
             }
           })
-          .catch(() => {
-            const routeEl = card.querySelector('.preview-route');
-            if (routeEl) routeEl.textContent = 'Available after confirm';
-            const gasEl = card.querySelector('.preview-gas');
-            if (gasEl) gasEl.textContent = '—';
-          });
-      } else {
-        const routeEl = card.querySelector('.preview-route');
-        if (routeEl) routeEl.textContent = 'Available after confirm';
-        const gasEl = card.querySelector('.preview-gas');
-        if (gasEl) gasEl.textContent = '—';
+          .catch(() => { /* cells stay at '—' */ });
       }
 
-      // Slippage row
-      const slippageRow = document.createElement('div');
-      slippageRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
-      slippageRow.innerHTML = `<span>Slippage</span><span>${(slippageBps / 100).toFixed(1)}%</span>`;
-      card.appendChild(slippageRow);
-
-      // Explanation
+      // ── Explanation chip ─────────────────────────────────────────────────────
       if (explanation) {
         const expEl = document.createElement('div');
-        expEl.style.cssText = 'font-size: 11px; color: var(--text-muted); font-style: italic; padding-top: 2px;';
+        expEl.style.cssText = 'font-size:11px;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:7px 10px;line-height:1.5;';
         expEl.textContent = explanation;
         card.appendChild(expEl);
       }
 
-      // Action buttons
+      // ── Action buttons ───────────────────────────────────────────────────────
       const btnRow = document.createElement('div');
       btnRow.style.cssText = 'display: flex; gap: 8px; margin-top: 2px;';
 
       const modifyBtn = document.createElement('button');
-      modifyBtn.textContent = '← Edit';
-      modifyBtn.style.cssText = `flex:1;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;`;
+      modifyBtn.textContent = 'Edit';
+      modifyBtn.style.cssText = `flex:1;padding:12px;border-radius:12px;background:transparent;border:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:border-color 0.15s,color 0.15s;`;
+      modifyBtn.onmouseenter = () => { modifyBtn.style.borderColor = 'var(--border-light)'; modifyBtn.style.color = 'var(--text-primary)'; };
+      modifyBtn.onmouseleave = () => { modifyBtn.style.borderColor = 'var(--border)'; modifyBtn.style.color = 'var(--text-muted)'; };
       modifyBtn.onclick = () => {
         card.remove();
         inputRow.style.display = 'flex';
@@ -3897,18 +3840,25 @@ export function LandioSwapController() {
       };
 
       const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = 'Confirm & Swap →';
-      confirmBtn.style.cssText = `flex:2;padding:10px;border-radius:10px;background:var(--accent);border:none;font-size:13px;font-weight:700;color:#000;cursor:pointer;transition:opacity 0.15s;`;
-      confirmBtn.onmouseenter = () => { confirmBtn.style.opacity = '0.85'; };
-      confirmBtn.onmouseleave = () => { confirmBtn.style.opacity = '1'; };
+      confirmBtn.textContent = 'Confirm & Swap';
+      confirmBtn.style.cssText = `flex:2;padding:12px 16px;border-radius:12px;background:var(--accent);border:none;font-size:14px;font-weight:700;color:#000;cursor:pointer;transition:opacity 0.15s,transform 0.1s;`;
+      confirmBtn.onmouseenter = () => { confirmBtn.style.opacity = '0.88'; confirmBtn.style.transform = 'translateY(-1px)'; };
+      confirmBtn.onmouseleave = () => { confirmBtn.style.opacity = '1'; confirmBtn.style.transform = ''; };
       confirmBtn.onclick = () => {
+        // Signal auto-execution once quotes load (prevents user from having to click Swap again)
+        pendingIntentAutoExecuteRef.current = true;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing…';
+        confirmBtn.style.opacity = '0.7';
+
         if (st) setFromTokenSymbol(st.symbol);
         if (bt) setToTokenSymbol(bt.symbol);
         if (st && sellAmountHuman > 0) {
           const fromInput = document.getElementById('fromAmount') as HTMLInputElement | null;
           if (fromInput) {
             fromInput.value = fmtAmount(sellAmountHuman);
-            setTimeout(() => fromInput.dispatchEvent(new Event('input', { bubbles: true })), 100);
+            // Short delay to let React state settle before firing input event
+            setTimeout(() => fromInput.dispatchEvent(new Event('input', { bubbles: true })), 150);
           }
         }
         setInputMode('manual');
@@ -4140,6 +4090,11 @@ export function LandioSwapController() {
     return () => {
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
+      // Restore swap form elements when leaving ai-intent mode
+      document.querySelectorAll<HTMLElement>('[data-hidden-by-intent="1"]').forEach(el => {
+        el.style.display = '';
+        delete el.dataset.hiddenByIntent;
+      });
     };
   }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics, balances, isConnected, getPrice]);
 
