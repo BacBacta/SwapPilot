@@ -7,6 +7,7 @@ import { TokenRegistryProvider } from "@/components/providers/token-registry-pro
 import { ToastProvider } from "@/components/ui/toast";
 import { Web3Provider } from "@/components/providers/web3-provider";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
+import { FrontendLoggerProvider } from "@/components/providers/frontend-logger-provider";
 import { LandioNav } from "@/components/landio/landio-nav";
 import { LandioFooter } from "@/components/landio/landio-footer";
 
@@ -62,7 +63,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       <ThemeProvider>
         <SettingsProvider>
           <TokenRegistryProvider>
-            <Web3Provider>{content}</Web3Provider>
+            <Web3Provider>
+              <FrontendLoggerProvider />
+              {content}
+            </Web3Provider>
           </TokenRegistryProvider>
         </SettingsProvider>
       </ThemeProvider>
