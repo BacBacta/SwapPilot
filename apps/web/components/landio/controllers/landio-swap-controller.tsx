@@ -3427,7 +3427,7 @@ export function LandioSwapController() {
         // Header
         const assetsHeader = document.createElement('div');
         assetsHeader.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
-        assetsHeader.textContent = 'Tes actifs';
+        assetsHeader.textContent = 'Your assets';
         panel.appendChild(assetsHeader);
 
         // Token chips row
@@ -3459,7 +3459,7 @@ export function LandioSwapController() {
         // Suggestion chips
         const suggestHeader = document.createElement('div');
         suggestHeader.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;';
-        suggestHeader.textContent = 'Suggestions rapides';
+        suggestHeader.textContent = 'Quick suggestions';
         panel.appendChild(suggestHeader);
 
         const suggestRow = document.createElement('div');
@@ -3484,7 +3484,7 @@ export function LandioSwapController() {
           const allBtn = document.createElement('button');
           allBtn.style.cssText = btnStyle;
           allBtn.textContent = `Swap ${bal} ${t.symbol} → ${targetSymbol}`;
-          allBtn.title = `Swap tout ton ${t.symbol} en ${targetSymbol}`;
+          allBtn.title = `Swap all your ${t.symbol} to ${targetSymbol}`;
           allBtn.onmouseenter = () => { allBtn.style.background = 'rgba(240,185,11,0.1)'; };
           allBtn.onmouseleave = () => { allBtn.style.background = 'var(--bg-card-inner)'; };
           allBtn.onclick = () => {
@@ -3499,12 +3499,12 @@ export function LandioSwapController() {
           const halfBal = (parseFloat(bal) / 2).toFixed(parseFloat(bal) >= 1 ? 4 : 6);
           const halfBtn = document.createElement('button');
           halfBtn.style.cssText = btnStyle;
-          halfBtn.textContent = `Moitié ${t.symbol} → ${targetSymbol}`;
-          halfBtn.title = `Swap la moitié de ton ${t.symbol} (${halfBal}) en ${targetSymbol}`;
+          halfBtn.textContent = `Half ${t.symbol} → ${targetSymbol}`;
+          halfBtn.title = `Swap half your ${t.symbol} (${halfBal}) to ${targetSymbol}`;
           halfBtn.onmouseenter = () => { halfBtn.style.background = 'rgba(240,185,11,0.1)'; };
           halfBtn.onmouseleave = () => { halfBtn.style.background = 'var(--bg-card-inner)'; };
           halfBtn.onclick = () => {
-            const intentText = `Swap ${halfBal} ${t.symbol} to ${targetSymbol}`;
+            const intentText = `Swap ${halfBal} ${t.symbol} for ${targetSymbol}`;
             const taEl = panel.querySelector('textarea') as HTMLTextAreaElement | null;
             if (taEl) taEl.value = intentText;
             void handleAnalyze(intentText);
@@ -3586,7 +3586,7 @@ export function LandioSwapController() {
 
       const header = document.createElement('div');
       header.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--accent, #f0b90b); margin-bottom: 4px;';
-      header.textContent = '✦ Clarification needed';
+      header.textContent = '✦ One more thing…';
       clarificationPanel.appendChild(header);
 
       const inputs: HTMLInputElement[] = [];
@@ -3597,7 +3597,7 @@ export function LandioSwapController() {
 
         const inp = document.createElement('input');
         inp.type = 'text';
-        inp.placeholder = 'Your answer…';
+        inp.placeholder = 'Type your answer…';
         inp.style.cssText = `
           border-radius: 8px;
           border: 1px solid var(--border);
@@ -3616,7 +3616,7 @@ export function LandioSwapController() {
       });
 
       const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = 'Confirm →';
+      confirmBtn.textContent = 'Submit →';
       confirmBtn.style.cssText = `
         align-self: flex-end;
         border-radius: 8px;
@@ -3688,8 +3688,8 @@ export function LandioSwapController() {
       const cardHeader = document.createElement('div');
       cardHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
       cardHeader.innerHTML = `
-        <span style="font-size:13px;font-weight:700;color:var(--text-primary)">✦ Swap confirmé</span>
-        <span style="font-size:12px;color:var(--text-muted)">${badge} ${Math.round(confidence * 100)}% confiance</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text-primary)">✦ Swap preview</span>
+        <span style="font-size:12px;color:var(--text-muted)">${badge} ${Math.round(confidence * 100)}% confidence</span>
       `;
       card.appendChild(cardHeader);
 
@@ -3699,7 +3699,7 @@ export function LandioSwapController() {
         const sellRow = document.createElement('div');
         sellRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
         sellRow.innerHTML = `
-          <span style="color:var(--text-muted)">Tu vends</span>
+          <span style="color:var(--text-muted)">You sell</span>
           <span style="font-weight:600;color:var(--text-primary)">${fmtAmount(sellAmountHuman)} ${st.symbol} <span style="color:var(--text-muted);font-weight:400">${sellUsd}</span></span>
         `;
         card.appendChild(sellRow);
@@ -3713,7 +3713,7 @@ export function LandioSwapController() {
         const buyRow = document.createElement('div');
         buyRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
         buyRow.innerHTML = `
-          <span style="color:var(--text-muted)">Tu reçois</span>
+          <span style="color:var(--text-muted)">You receive</span>
           <span style="font-weight:600;color:var(--text-primary)">≈ ${estimatedBuyAmount ? fmtAmount(estimatedBuyAmount) : '—'} ${bt.symbol} <span style="color:var(--text-muted);font-weight:400">${buyUsd}</span></span>
         `;
         card.appendChild(buyRow);
@@ -3746,7 +3746,7 @@ export function LandioSwapController() {
       btnRow.style.cssText = 'display: flex; gap: 8px; margin-top: 2px;';
 
       const modifyBtn = document.createElement('button');
-      modifyBtn.textContent = '← Modifier';
+      modifyBtn.textContent = '← Edit';
       modifyBtn.style.cssText = `
         flex: 1; padding: 10px; border-radius: 10px;
         background: transparent; border: 1px solid var(--border);
@@ -3763,7 +3763,7 @@ export function LandioSwapController() {
       };
 
       const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = 'Confirmer & Swapper →';
+      confirmBtn.textContent = 'Confirm & Swap →';
       confirmBtn.style.cssText = `
         flex: 2; padding: 10px; border-radius: 10px;
         background: var(--accent); border: none;
@@ -3883,20 +3883,10 @@ export function LandioSwapController() {
           unknownTokenWarnings.push(`Buy token (${req.buyToken.substring(0, 10)}…) not in verified list`);
         }
 
-        if (sellTokenInfo) setFromTokenSymbol(sellTokenInfo.symbol);
-        if (buyTokenInfo)  setToTokenSymbol(buyTokenInfo.symbol);
-
-        // Pre-fill the sell amount via DOM (triggers quote fetch)
-        if (sellTokenInfo && req.sellAmount && req.sellAmount !== "0") {
-          const humanAmount = Number(BigInt(req.sellAmount)) / 10 ** sellTokenInfo.decimals;
-          const fromInput = document.getElementById('fromAmount') as HTMLInputElement | null;
-          if (fromInput) {
-            fromInput.value = humanAmount.toFixed(humanAmount >= 1 ? 4 : 6);
-            setTimeout(() => {
-              fromInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }, 100);
-          }
-        }
+        // NOTE: setFromTokenSymbol/setToTokenSymbol/DOM pre-fill are intentionally deferred
+        // to confirmBtn.onclick in showPreview() — calling them here causes the useEffect
+        // to re-run (balances dependency changes), destroying the panel before the preview card
+        // can be appended to it.
 
         const confidence = result.confidence;
         const clarifications = result.clarifications ?? [];
