@@ -3514,7 +3514,7 @@ export function LandioSwapController() {
 
         tokensWithBal.slice(0, 3).forEach((t) => {
           const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
-          const bal = balances[addr]?.balanceFormatted ?? '0';
+          const bal = balancesRef.current[addr]?.balanceFormatted ?? '0';
           const isStable = ['USDT', 'USDC', 'BUSD', 'DAI'].includes(t.symbol);
           const targetSymbol = isStable ? 'BNB' : 'USDT';
           const targetToken = BASE_TOKENS.find((x) => x.symbol === targetSymbol);
@@ -4096,7 +4096,7 @@ export function LandioSwapController() {
         delete el.dataset.hiddenByIntent;
       });
     };
-  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics, balances, isConnected, getPrice]);
+  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics]);
 
   // Add StatCard grid (Network/Slippage/Platform Fee)
   useEffect(() => {
