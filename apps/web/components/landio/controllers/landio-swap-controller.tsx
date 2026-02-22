@@ -711,10 +711,11 @@ export function LandioSwapController() {
   // SECTION 9: PRICES HOOK
   // ═══════════════════════════════════════════════════════════════════════════
   const priceTokenAddresses = useMemo(() => {
-    const addresses: string[] = [];
-    if (fromTokenInfo) addresses.push(fromTokenInfo.address);
-    if (toTokenInfo) addresses.push(toTokenInfo.address);
-    return addresses;
+    const baseAddresses = BASE_TOKENS.map((t) => t.address);
+    const extra: string[] = [];
+    if (fromTokenInfo && !baseAddresses.includes(fromTokenInfo.address)) extra.push(fromTokenInfo.address);
+    if (toTokenInfo   && !baseAddresses.includes(toTokenInfo.address))   extra.push(toTokenInfo.address);
+    return [...baseAddresses, ...extra];
   }, [fromTokenInfo, toTokenInfo]);
 
   const { formatUsd, getPrice, prices } = useTokenPrices(priceTokenAddresses);
@@ -723,13 +724,13 @@ export function LandioSwapController() {
   // SECTION 10: BALANCES HOOK
   // ═══════════════════════════════════════════════════════════════════════════
   const balanceTokens = useMemo(() => {
-    const tokens = [];
-    if (fromTokenInfo) tokens.push(fromTokenInfo);
-    if (toTokenInfo) tokens.push(toTokenInfo);
-    return tokens.length > 0 ? tokens : BASE_TOKENS.slice(0, 2);
+    const extra: TokenInfo[] = [];
+    if (fromTokenInfo && !BASE_TOKENS.find((t) => t.address.toLowerCase() === fromTokenInfo.address.toLowerCase())) extra.push(fromTokenInfo);
+    if (toTokenInfo   && !BASE_TOKENS.find((t) => t.address.toLowerCase() === toTokenInfo.address.toLowerCase()))   extra.push(toTokenInfo);
+    return [...BASE_TOKENS, ...extra];
   }, [fromTokenInfo, toTokenInfo]);
 
-  const { getBalanceFormatted, getBalance, isLoading: isLoadingBalances, error: balanceError, refetch: refetchBalances } = useTokenBalances(balanceTokens);
+  const { balances, getBalanceFormatted, getBalance, isLoading: isLoadingBalances, error: balanceError, refetch: refetchBalances } = useTokenBalances(balanceTokens);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 11: SWAP EXECUTION HOOK
@@ -3413,6 +3414,113 @@ export function LandioSwapController() {
       gap: 8px;
     `;
 
+    // ── Wallet-aware suggestions (Feature #1) ─────────────────────────────────
+    if (isConnected) {
+      const WBNB_ADDR_S = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+      const NATIVE_BNB_S = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+      const tokensWithBal = BASE_TOKENS.filter((t) => {
+        const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
+        return parseFloat(balances[addr]?.balanceFormatted ?? '0') > 0.0001;
+      });
+
+      if (tokensWithBal.length > 0) {
+        // Header
+        const assetsHeader = document.createElement('div');
+        assetsHeader.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
+        assetsHeader.textContent = 'Tes actifs';
+        panel.appendChild(assetsHeader);
+
+        // Token chips row
+        const tokenRow = document.createElement('div');
+        tokenRow.style.cssText = 'display: flex; gap: 6px; flex-wrap: wrap;';
+
+        tokensWithBal.forEach((t) => {
+          const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
+          const bal = balances[addr]?.balanceFormatted ?? '0.0000';
+          const price = getPrice(t.address);
+          const usd = price ? `$${(parseFloat(bal) * price).toFixed(2)}` : '';
+
+          const chip = document.createElement('div');
+          chip.style.cssText = `
+            display: flex; flex-direction: column; align-items: center;
+            padding: 6px 10px; background: var(--bg-card-inner);
+            border: 1px solid var(--border); border-radius: 10px;
+            cursor: default; min-width: 64px;
+          `;
+          chip.innerHTML = `
+            <span style="font-size:12px;font-weight:700;color:var(--text-primary)">${t.symbol}</span>
+            <span style="font-size:11px;color:var(--text-muted)">${bal}</span>
+            ${usd ? `<span style="font-size:10px;color:var(--text-muted)">${usd}</span>` : ''}
+          `;
+          tokenRow.appendChild(chip);
+        });
+        panel.appendChild(tokenRow);
+
+        // Suggestion chips
+        const suggestHeader = document.createElement('div');
+        suggestHeader.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;';
+        suggestHeader.textContent = 'Suggestions rapides';
+        panel.appendChild(suggestHeader);
+
+        const suggestRow = document.createElement('div');
+        suggestRow.style.cssText = 'display: flex; gap: 6px; flex-wrap: wrap;';
+
+        const btnStyle = `
+          padding: 6px 12px; background: var(--bg-card-inner);
+          border: 1px solid var(--accent, #f0b90b); border-radius: 20px;
+          font-size: 12px; font-weight: 500; color: var(--accent, #f0b90b);
+          cursor: pointer; white-space: nowrap; transition: background 0.15s;
+        `;
+
+        tokensWithBal.slice(0, 3).forEach((t) => {
+          const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
+          const bal = balances[addr]?.balanceFormatted ?? '0';
+          const isStable = ['USDT', 'USDC', 'BUSD', 'DAI'].includes(t.symbol);
+          const targetSymbol = isStable ? 'BNB' : 'USDT';
+          const targetToken = BASE_TOKENS.find((x) => x.symbol === targetSymbol);
+          if (!targetToken) return;
+
+          // "Swap tout" suggestion
+          const allBtn = document.createElement('button');
+          allBtn.style.cssText = btnStyle;
+          allBtn.textContent = `Swap ${bal} ${t.symbol} → ${targetSymbol}`;
+          allBtn.title = `Swap tout ton ${t.symbol} en ${targetSymbol}`;
+          allBtn.onmouseenter = () => { allBtn.style.background = 'rgba(240,185,11,0.1)'; };
+          allBtn.onmouseleave = () => { allBtn.style.background = 'var(--bg-card-inner)'; };
+          allBtn.onclick = () => {
+            const intentText = `Swap ${bal} ${t.symbol} to ${targetSymbol}`;
+            const taEl = panel.querySelector('textarea') as HTMLTextAreaElement | null;
+            if (taEl) taEl.value = intentText;
+            void handleAnalyze(intentText);
+          };
+          suggestRow.appendChild(allBtn);
+
+          // "Moitié" suggestion
+          const halfBal = (parseFloat(bal) / 2).toFixed(parseFloat(bal) >= 1 ? 4 : 6);
+          const halfBtn = document.createElement('button');
+          halfBtn.style.cssText = btnStyle;
+          halfBtn.textContent = `Moitié ${t.symbol} → ${targetSymbol}`;
+          halfBtn.title = `Swap la moitié de ton ${t.symbol} (${halfBal}) en ${targetSymbol}`;
+          halfBtn.onmouseenter = () => { halfBtn.style.background = 'rgba(240,185,11,0.1)'; };
+          halfBtn.onmouseleave = () => { halfBtn.style.background = 'var(--bg-card-inner)'; };
+          halfBtn.onclick = () => {
+            const intentText = `Swap ${halfBal} ${t.symbol} to ${targetSymbol}`;
+            const taEl = panel.querySelector('textarea') as HTMLTextAreaElement | null;
+            if (taEl) taEl.value = intentText;
+            void handleAnalyze(intentText);
+          };
+          suggestRow.appendChild(halfBtn);
+        });
+
+        if (suggestRow.children.length > 0) panel.appendChild(suggestRow);
+
+        // Separator
+        const sep = document.createElement('div');
+        sep.style.cssText = 'height: 1px; background: var(--border); margin: 4px 0;';
+        panel.appendChild(sep);
+      }
+    }
+
     const inputRow = document.createElement("div");
     inputRow.style.cssText = "display: flex; gap: 8px; align-items: flex-end;";
 
@@ -3539,6 +3647,147 @@ export function LandioSwapController() {
       });
 
       clarificationPanel.appendChild(confirmBtn);
+    };
+
+    // ── Preview card (Feature #7) ─────────────────────────────────────────────
+    // Shown after a successful parse instead of auto-switching to manual.
+    // The user sees a structured summary and can Confirm or go back to edit.
+    const showPreview = (data: {
+      sellTokenInfo: typeof BASE_TOKENS[number] | undefined;
+      buyTokenInfo:  typeof BASE_TOKENS[number] | undefined;
+      sellAmountHuman: number;
+      slippageBps: number;
+      mode: string;
+      confidence: number;
+      explanation: string;
+    }) => {
+      inputRow.style.display = 'none';
+      statusDiv.style.display  = 'none';
+
+      const { sellTokenInfo: st, buyTokenInfo: bt, sellAmountHuman, slippageBps, mode, confidence, explanation } = data;
+
+      // Estimate buy amount from prices
+      const sellPrice = st ? getPrice(st.address) : null;
+      const buyPrice  = bt ? getPrice(bt.address)  : null;
+      const estimatedBuyAmount = (sellPrice && buyPrice && buyPrice > 0)
+        ? (sellAmountHuman * sellPrice) / buyPrice
+        : null;
+
+      const fmtAmount = (n: number) => n >= 1 ? n.toFixed(4) : n.toFixed(6);
+      const badge = confidence >= 0.8 ? '🟢' : confidence >= 0.5 ? '🟡' : '🔴';
+
+      const card = document.createElement('div');
+      card.className = 'intent-preview-card';
+      card.style.cssText = `
+        display: flex; flex-direction: column; gap: 10px;
+        padding: 14px; background: var(--bg-card-inner);
+        border: 1px solid var(--ok, #00ff88); border-radius: 14px;
+      `;
+
+      // Header
+      const cardHeader = document.createElement('div');
+      cardHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+      cardHeader.innerHTML = `
+        <span style="font-size:13px;font-weight:700;color:var(--text-primary)">✦ Swap confirmé</span>
+        <span style="font-size:12px;color:var(--text-muted)">${badge} ${Math.round(confidence * 100)}% confiance</span>
+      `;
+      card.appendChild(cardHeader);
+
+      // Sell row
+      if (st) {
+        const sellUsd = sellPrice ? `(${`$${(sellAmountHuman * sellPrice).toFixed(2)}`})` : '';
+        const sellRow = document.createElement('div');
+        sellRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
+        sellRow.innerHTML = `
+          <span style="color:var(--text-muted)">Tu vends</span>
+          <span style="font-weight:600;color:var(--text-primary)">${fmtAmount(sellAmountHuman)} ${st.symbol} <span style="color:var(--text-muted);font-weight:400">${sellUsd}</span></span>
+        `;
+        card.appendChild(sellRow);
+      }
+
+      // Buy row
+      if (bt) {
+        const buyUsd = (estimatedBuyAmount && buyPrice)
+          ? `(~$${(estimatedBuyAmount * buyPrice).toFixed(2)})`
+          : '';
+        const buyRow = document.createElement('div');
+        buyRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
+        buyRow.innerHTML = `
+          <span style="color:var(--text-muted)">Tu reçois</span>
+          <span style="font-weight:600;color:var(--text-primary)">≈ ${estimatedBuyAmount ? fmtAmount(estimatedBuyAmount) : '—'} ${bt.symbol} <span style="color:var(--text-muted);font-weight:400">${buyUsd}</span></span>
+        `;
+        card.appendChild(buyRow);
+      }
+
+      // Separator
+      const divider = document.createElement('div');
+      divider.style.cssText = 'height: 1px; background: var(--border);';
+      card.appendChild(divider);
+
+      // Meta row (mode + slippage)
+      const metaRow = document.createElement('div');
+      metaRow.style.cssText = 'display: flex; gap: 12px; font-size: 11px; color: var(--text-muted);';
+      metaRow.innerHTML = `
+        <span>Mode <strong style="color:var(--text-primary)">${mode}</strong></span>
+        <span>Slippage <strong style="color:var(--text-primary)">${(slippageBps / 100).toFixed(1)}%</strong></span>
+      `;
+      card.appendChild(metaRow);
+
+      // Explanation (small)
+      if (explanation) {
+        const expEl = document.createElement('div');
+        expEl.style.cssText = 'font-size: 11px; color: var(--text-muted); font-style: italic;';
+        expEl.textContent = explanation;
+        card.appendChild(expEl);
+      }
+
+      // Action buttons
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display: flex; gap: 8px; margin-top: 2px;';
+
+      const modifyBtn = document.createElement('button');
+      modifyBtn.textContent = '← Modifier';
+      modifyBtn.style.cssText = `
+        flex: 1; padding: 10px; border-radius: 10px;
+        background: transparent; border: 1px solid var(--border);
+        font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+      `;
+      modifyBtn.onclick = () => {
+        card.remove();
+        inputRow.style.display = 'flex';
+        statusDiv.style.display = '';
+        statusDiv.textContent = '';
+        analyzeBtn.disabled = false;
+        analyzeBtn.style.opacity = '1';
+        analyzeBtn.textContent = 'Analyze';
+      };
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Confirmer & Swapper →';
+      confirmBtn.style.cssText = `
+        flex: 2; padding: 10px; border-radius: 10px;
+        background: var(--accent); border: none;
+        font-size: 13px; font-weight: 700; color: #000; cursor: pointer;
+        transition: opacity 0.15s;
+      `;
+      confirmBtn.onmouseenter = () => { confirmBtn.style.opacity = '0.85'; };
+      confirmBtn.onmouseleave = () => { confirmBtn.style.opacity = '1'; };
+      confirmBtn.onclick = () => {
+        if (st) setFromTokenSymbol(st.symbol);
+        if (bt) setToTokenSymbol(bt.symbol);
+        if (st && sellAmountHuman > 0) {
+          const fromInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+          if (fromInput) {
+            fromInput.value = fmtAmount(sellAmountHuman);
+            setTimeout(() => fromInput.dispatchEvent(new Event('input', { bubbles: true })), 100);
+          }
+        }
+        setInputMode('manual');
+      };
+
+      btnRow.append(modifyBtn, confirmBtn);
+      card.appendChild(btnRow);
+      panel.appendChild(card);
     };
 
     // P2 — Progressive step feedback helper
@@ -3712,8 +3961,25 @@ export function LandioSwapController() {
           setTimeout(() => warnEl.remove(), 8000);
         }
 
-        // Auto-switch to Manual after successful parse so the user sees the pre-filled form
-        setTimeout(() => setInputMode('manual'), 1800);
+        // Feature #7 — Show structured preview card instead of auto-switching silently
+        const sellAmountHuman = (sellTokenInfo && req.sellAmount && req.sellAmount !== '0')
+          ? Number(BigInt(req.sellAmount)) / 10 ** sellTokenInfo.decimals
+          : 0;
+
+        showPreview({
+          sellTokenInfo,
+          buyTokenInfo,
+          sellAmountHuman,
+          slippageBps: req.slippageBps,
+          mode: req.mode,
+          confidence,
+          explanation: result.explanation,
+        });
+
+        // Re-enable analyze button (in case user clicks Modifier)
+        analyzeBtn.disabled = false;
+        analyzeBtn.style.opacity = '1';
+        analyzeBtn.textContent = 'Analyze';
 
       } catch (err: unknown) {
         clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
@@ -3757,7 +4023,7 @@ export function LandioSwapController() {
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
     };
-  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics]);
+  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics, balances, isConnected, getPrice]);
 
   // Add StatCard grid (Network/Slippage/Platform Fee)
   useEffect(() => {
