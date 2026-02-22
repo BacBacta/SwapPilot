@@ -39,21 +39,19 @@ const walletConnectProjectId = walletConnectEnabled
   : "walletconnect-disabled-no-project-id";
 
 // Only include essential wallets for faster modal loading
+const walletGroups = [
+  {
+    groupName: "Popular",
+    wallets: [injectedWallet, trustWallet, coinbaseWallet],
+  },
+  // Only add "Other" group when WalletConnect is configured (empty group crashes RainbowKit)
+  ...(walletConnectEnabled
+    ? [{ groupName: "Other", wallets: [walletConnectWallet] }]
+    : []),
+];
+
 const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Popular",
-      wallets: [injectedWallet, trustWallet, coinbaseWallet],
-    },
-    {
-      groupName: "Other",
-      wallets: [
-        ...(walletConnectEnabled ? [walletConnectWallet] : []),
-        // Do not include injectedWallet twice. When multi-injected discovery is enabled,
-        // MetaMask can surface as `io.metamask` and duplicate entries trigger React key warnings.
-      ],
-    },
-  ],
+  walletGroups,
   {
     appName: "SwapPilot",
     projectId: walletConnectProjectId,

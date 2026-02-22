@@ -26,7 +26,8 @@ import {
   formatQuoteUsd,
 } from "@/lib/use-swap-quotes";
 import { useTokenPrices, usdToToken, tokenToUsd } from "@/lib/use-token-prices";
-import { postSwapLog, type SwapLogPayload } from "@/lib/api";
+import { postSwapLog, parseIntent, type SwapLogPayload, type ParseIntentResult } from "@/lib/api";
+import { IntentInput } from "@/components/swap/intent-input";
 import { useTokenBalances } from "@/lib/use-token-balances";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useSettings } from "@/components/providers/settings-provider";
@@ -169,6 +170,9 @@ export function SwapInterface() {
     updateSettings({ mode: m === "RAW" ? "DEGEN" : "NORMAL" });
   };
   
+  // Input mode: standard form vs natural language intent
+  const [inputMode, setInputMode] = useState<"standard" | "intent">("standard");
+
   // State
   const [fromToken, setFromToken] = useState("BNB");
   const [toToken, setToToken] = useState("ETH");
@@ -445,6 +449,26 @@ export function SwapInterface() {
     : sellabilityReasons.some((r) => r.includes("preflight"))
       ? "Simulation signals elevated risk, so sellability is uncertain. We’ve paused execution to protect you."
       : "Sellability is uncertain. We’ve paused execution to protect you.";
+
+  // Intent handler: pre-fills the swap form from NLP-parsed result
+  const handleIntentResult = useCallback((result: ParseIntentResult) => {
+    const req = result.parsedRequest;
+    // Set tokens by address — resolveToken() handles address lookup
+    setFromToken(req.sellToken);
+    setToToken(req.buyToken);
+    // Set sell amount: store raw wei + compute display value (BSC tokens use 18 decimals)
+    setFromAmountRawWei(req.sellAmount);
+    const displayAmount = (Number(BigInt(req.sellAmount)) / 1e18).toString();
+    setFromAmount(displayAmount);
+    // Apply mode from intent
+    const modeMap: Record<string, "SAFE" | "NORMAL" | "DEGEN"> = {
+      SAFE: "SAFE", NORMAL: "NORMAL", DEGEN: "DEGEN",
+    };
+    updateSettings({ mode: modeMap[req.mode] ?? "NORMAL" });
+    // Switch back to standard view so user sees the pre-filled form
+    setInputMode("standard");
+    reset();
+  }, [updateSettings, reset]);
 
   // Handlers
   const handleSwapDirection = useCallback(() => {
@@ -962,6 +986,37 @@ export function SwapInterface() {
           <div className="grid gap-5 lg:grid-cols-2">
             {/* Left: Swap form */}
             <div className="space-y-1">
+              {/* Input mode toggle: Standard / Natural language */}
+              <div className="mb-3 flex gap-1 rounded-2xl bg-sp-surface2 p-1">
+                <button
+                  onClick={() => setInputMode("standard")}
+                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold transition-colors ${
+                    inputMode === "standard"
+                      ? "bg-sp-surface text-sp-text shadow"
+                      : "text-sp-muted hover:text-sp-text"
+                  }`}
+                >
+                  Standard
+                </button>
+                <button
+                  onClick={() => setInputMode("intent")}
+                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold transition-colors ${
+                    inputMode === "intent"
+                      ? "bg-sp-surface text-sp-text shadow"
+                      : "text-sp-muted hover:text-sp-text"
+                  }`}
+                >
+                  ✨ Langage naturel
+                </button>
+              </div>
+
+              {/* Intent input (natural language mode) */}
+              {inputMode === "intent" && (
+                <div className="mb-3">
+                  <IntentInput onResult={handleIntentResult} disabled={false} />
+                </div>
+              )}
+
               <TokenInput
                 label="From"
                 token={fromTokenInfo?.symbol ?? fromToken}

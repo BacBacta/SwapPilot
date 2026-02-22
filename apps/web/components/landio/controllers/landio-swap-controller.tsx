@@ -5,7 +5,7 @@ import { useAccount, useGasPrice } from "wagmi";
 import { type Address, erc20Abi } from "viem";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { bsc } from "viem/chains";
-import { getReceipt, postQuotes } from "@/lib/api";
+import { getReceipt, postQuotes, parseIntent } from "@/lib/api";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useTokenRegistry } from "@/components/providers/token-registry-provider";
 import { useTokenBalances } from "@/lib/use-token-balances";
@@ -615,6 +615,7 @@ export function LandioSwapController() {
   const [compareProviderIds, setCompareProviderIds] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [scoringMode, setScoringMode] = useState<"BEQ" | "RAW">("BEQ");
+  const [inputMode, setInputMode] = useState<"manual" | "ai-intent">("manual");
   const [refreshCountdown, setRefreshCountdown] = useState(12);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -3341,6 +3342,196 @@ export function LandioSwapController() {
       tabsContainer.remove();
     };
   }, [scoringMode, updateSettings]);
+
+  // Add Input Mode Toggle (Manual / AI Intent)
+  useEffect(() => {
+    const firstTokenBox = document.querySelector('.token-input-box');
+    if (!firstTokenBox) return;
+
+    // Remove existing elements if any
+    document.querySelector('.input-mode-toggle')?.remove();
+    document.querySelector('.intent-panel')?.remove();
+
+    // --- Toggle pill ---
+    const toggleContainer = document.createElement("div");
+    toggleContainer.className = "input-mode-toggle";
+    toggleContainer.style.cssText = `
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-card-inner);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    `;
+
+    const modes: Array<{ key: "manual" | "ai-intent"; label: string; description: string }> = [
+      { key: "manual",    label: "Manual",    description: "Enter swap details manually" },
+      { key: "ai-intent", label: "✦ AI Intent", description: "Describe your swap in natural language" },
+    ];
+
+    modes.forEach((mode) => {
+      const btn = document.createElement("button");
+      const isActive = inputMode === mode.key;
+      btn.className = `mode-tab${isActive ? ' active' : ''}`;
+      btn.title = mode.description;
+      btn.textContent = mode.label;
+      btn.style.cssText = `
+        flex: 1;
+        padding: 10px 16px;
+        background: ${isActive ? 'var(--bg-card)' : 'transparent'};
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: ${isActive ? 'var(--accent)' : 'var(--text-muted)'};
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: ${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'};
+      `;
+      btn.onclick = () => setInputMode(mode.key);
+      toggleContainer.appendChild(btn);
+    });
+
+    firstTokenBox.insertAdjacentElement('beforebegin', toggleContainer);
+
+    // --- AI Intent panel (only in ai-intent mode) ---
+    if (inputMode !== "ai-intent") {
+      return () => {
+        document.querySelector('.input-mode-toggle')?.remove();
+        document.querySelector('.intent-panel')?.remove();
+      };
+    }
+
+    const panel = document.createElement("div");
+    panel.className = "intent-panel";
+    panel.style.cssText = `
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    `;
+
+    const inputRow = document.createElement("div");
+    inputRow.style.cssText = "display: flex; gap: 8px; align-items: flex-end;";
+
+    const textarea = document.createElement("textarea");
+    textarea.placeholder = 'e.g. "Swap 0.5 BNB to USDT with 1% slippage"';
+    textarea.rows = 2;
+    textarea.style.cssText = `
+      flex: 1;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-card-inner);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--text-primary);
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    `;
+    textarea.addEventListener('focus', () => {
+      textarea.style.borderColor = 'var(--accent)';
+    });
+    textarea.addEventListener('blur', () => {
+      textarea.style.borderColor = 'var(--border)';
+    });
+
+    const analyzeBtn = document.createElement("button");
+    analyzeBtn.textContent = "Analyze";
+    analyzeBtn.style.cssText = `
+      flex-shrink: 0;
+      border-radius: 12px;
+      background: var(--accent);
+      border: none;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    `;
+
+    const statusDiv = document.createElement("div");
+    statusDiv.className = "intent-status";
+    statusDiv.style.cssText = "font-size: 12px; color: var(--text-muted); padding: 0 2px; min-height: 16px;";
+
+    const handleAnalyze = async () => {
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.style.opacity = "0.6";
+      analyzeBtn.textContent = "…";
+      statusDiv.style.color = "var(--text-muted)";
+      statusDiv.textContent = "Analyzing your request…";
+
+      try {
+        const result = await parseIntent(text);
+        const req = result.parsedRequest;
+
+        // Resolve token symbols from BASE_TOKENS by address
+        const sellTokenInfo = BASE_TOKENS.find(
+          (t) => t.address.toLowerCase() === req.sellToken.toLowerCase()
+        );
+        const buyTokenInfo = BASE_TOKENS.find(
+          (t) => t.address.toLowerCase() === req.buyToken.toLowerCase()
+        );
+
+        if (sellTokenInfo) setFromTokenSymbol(sellTokenInfo.symbol);
+        if (buyTokenInfo)  setToTokenSymbol(buyTokenInfo.symbol);
+
+        // Pre-fill the sell amount via DOM (triggers quote fetch)
+        if (sellTokenInfo && req.sellAmount && req.sellAmount !== "0") {
+          const humanAmount = Number(BigInt(req.sellAmount)) / 10 ** sellTokenInfo.decimals;
+          const fromInput = document.getElementById('fromAmount') as HTMLInputElement | null;
+          if (fromInput) {
+            fromInput.value = humanAmount.toFixed(humanAmount >= 1 ? 4 : 6);
+            setTimeout(() => {
+              fromInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 100);
+          }
+        }
+
+        const confidence = result.confidence;
+        const badge = confidence >= 0.8 ? '🟢' : confidence >= 0.5 ? '🟡' : '🔴';
+        statusDiv.style.color = 'var(--ok, #00ff88)';
+        statusDiv.textContent = `${badge} ${Math.round(confidence * 100)}% confidence — ${result.explanation}`;
+
+        // Auto-switch to Manual after successful parse so the user sees the pre-filled form
+        setTimeout(() => setInputMode('manual'), 1800);
+
+      } catch (err: unknown) {
+        const e = err as { status?: number; message?: string };
+        analyzeBtn.disabled = false;
+        analyzeBtn.style.opacity = "1";
+        analyzeBtn.textContent = "Analyze";
+        if (e?.status === 501) {
+          statusDiv.style.color = 'var(--error, #ff6b6b)';
+          statusDiv.textContent = 'AI Intent is temporarily unavailable on this server.';
+        } else {
+          statusDiv.style.color = 'var(--error, #ff6b6b)';
+          statusDiv.textContent = e?.message ?? 'Analysis failed. Please try again.';
+        }
+      }
+    };
+
+    analyzeBtn.onclick = handleAnalyze;
+    textarea.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleAnalyze();
+      }
+    });
+
+    inputRow.append(textarea, analyzeBtn);
+    panel.append(inputRow, statusDiv);
+    firstTokenBox.insertAdjacentElement('beforebegin', panel);
+
+    return () => {
+      document.querySelector('.input-mode-toggle')?.remove();
+      document.querySelector('.intent-panel')?.remove();
+    };
+  }, [inputMode, setFromTokenSymbol, setToTokenSymbol]);
 
   // Add StatCard grid (Network/Slippage/Platform Fee)
   useEffect(() => {

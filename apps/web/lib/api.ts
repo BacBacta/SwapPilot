@@ -363,6 +363,44 @@ export async function getHealth(params: {
 }
 
 // ============================================================================
+// Intent Solver API (ADR-007 M2)
+// ============================================================================
+export type ParseIntentResult = {
+  parsedRequest: {
+    chainId: number;
+    sellToken: string;
+    buyToken: string;
+    sellAmount: string;
+    slippageBps: number;
+    mode: 'SAFE' | 'NORMAL' | 'DEGEN';
+  };
+  confidence: number;
+  explanation: string;
+  clarifications?: string[];
+};
+
+export async function parseIntent(
+  text: string,
+  timeoutMs = 5_000,
+): Promise<ParseIntentResult> {
+  const { res, json } = await fetchJsonWithTimeout(`${getApiBaseUrl()}/v1/intent/parse`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+    timeoutMs,
+  });
+
+  if (!res.ok) {
+    const message =
+      typeof json === 'object' && json && 'message' in json && typeof (json as any).message === 'string'
+        ? (json as any).message
+        : `HTTP ${res.status}`;
+    throw { kind: 'http', message, status: res.status } satisfies ApiError;
+  }
+
+  return json as ParseIntentResult;
+}
+
+// ============================================================================
 // API Base URL (exported for external use)
 // ============================================================================
 export { getApiBaseUrl };
