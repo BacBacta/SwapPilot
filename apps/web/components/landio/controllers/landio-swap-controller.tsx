@@ -16,6 +16,7 @@ import { useDynamicSlippage } from "@/lib/hooks/use-dynamic-slippage";
 import { escapeHtml, setSanitizedHtml } from "@/lib/sanitize";
 import { usePilotTier, useFeeCalculation, getTierDisplay, formatFee } from "@/lib/hooks/use-fees";
 import { useToast } from "@/components/ui/toast";
+import { useAnalytics } from "@/components/providers/posthog-provider";
 import { TOKEN_ICONS } from "@/components/ui/token-image";
 import { BASE_TOKENS, type TokenInfo, isAddress } from "@/lib/tokens";
 import type { QuoteResponse, RankedQuote, DecisionReceipt, QuoteMode } from "@swappilot/shared";
@@ -698,6 +699,7 @@ export function LandioSwapController() {
   // SECTION 7: TOAST NOTIFICATIONS
   // ═══════════════════════════════════════════════════════════════════════════
   const toast = useToast();
+  const analytics = useAnalytics();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 8: TOKEN REGISTRY & RESOLUTION (useMemo)
@@ -3455,18 +3457,158 @@ export function LandioSwapController() {
     statusDiv.className = "intent-status";
     statusDiv.style.cssText = "font-size: 12px; color: var(--text-muted); padding: 0 2px; min-height: 16px;";
 
-    const handleAnalyze = async () => {
-      const text = textarea.value.trim();
+    // Clarification panel — shown when API returns clarifications (multi-turn)
+    const clarificationPanel = document.createElement("div");
+    clarificationPanel.className = "intent-clarification-panel";
+    clarificationPanel.style.cssText = `
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+      padding: 12px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--accent, #f0b90b);
+      border-radius: 12px;
+    `;
+
+    // Helper: render clarification form from a list of questions
+    const renderClarifications = (questions: string[], originalText: string) => {
+      clarificationPanel.innerHTML = '';
+      clarificationPanel.style.display = 'flex';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--accent, #f0b90b); margin-bottom: 4px;';
+      header.textContent = '✦ Clarification needed';
+      clarificationPanel.appendChild(header);
+
+      const inputs: HTMLInputElement[] = [];
+      questions.forEach((q) => {
+        const label = document.createElement('label');
+        label.style.cssText = 'font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;';
+        label.textContent = q;
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = 'Your answer…';
+        inp.style.cssText = `
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          background: var(--bg-card);
+          padding: 8px 10px;
+          font-size: 13px;
+          color: var(--text-primary);
+          outline: none;
+          font-family: inherit;
+        `;
+        inp.addEventListener('focus', () => { inp.style.borderColor = 'var(--accent)'; });
+        inp.addEventListener('blur',  () => { inp.style.borderColor = 'var(--border)'; });
+        label.appendChild(inp);
+        clarificationPanel.appendChild(label);
+        inputs.push(inp);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Confirm →';
+      confirmBtn.style.cssText = `
+        align-self: flex-end;
+        border-radius: 8px;
+        background: var(--accent);
+        border: none;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #000;
+        cursor: pointer;
+      `;
+
+      const submitClarification = () => {
+        const answers = inputs.map((i) => i.value.trim()).filter(Boolean);
+        if (!answers.length) return;
+        // Append answers to the original text for better context
+        const enrichedText = `${originalText} — ${answers.join('; ')}`;
+        textarea.value = enrichedText;
+        clarificationPanel.style.display = 'none';
+        clarificationPanel.innerHTML = '';
+        // Re-run analysis with enriched intent
+        void handleAnalyze(enrichedText);
+      };
+
+      confirmBtn.onclick = submitClarification;
+      inputs[inputs.length - 1]?.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') { e.preventDefault(); submitClarification(); }
+      });
+
+      clarificationPanel.appendChild(confirmBtn);
+    };
+
+    // P2 — Progressive step feedback helper
+    const PARSE_STEPS = [
+      { id: 'parse',    label: 'Reading your intent'       },
+      { id: 'tokens',   label: 'Identifying tokens'        },
+      { id: 'amount',   label: 'Validating amount'         },
+      { id: 'mode',     label: 'Inferring mode & slippage' },
+    ] as const;
+    type StepId = typeof PARSE_STEPS[number]['id'];
+
+    let stepsContainer: HTMLElement | null = null;
+
+    const showSteps = () => {
+      stepsContainer?.remove();
+      stepsContainer = document.createElement('div');
+      stepsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 4px; margin-top: 4px;';
+      PARSE_STEPS.forEach((s) => {
+        const row = document.createElement('div');
+        row.id = `intent-step-${s.id}`;
+        row.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted);';
+        const icon = document.createElement('span');
+        icon.className = 'step-icon';
+        icon.textContent = '⟳';
+        const lbl = document.createElement('span');
+        lbl.textContent = s.label;
+        row.append(icon, lbl);
+        stepsContainer!.appendChild(row);
+      });
+      panel.insertBefore(stepsContainer, statusDiv);
+    };
+
+    const setStepDone = (id: StepId) => {
+      const row = document.getElementById(`intent-step-${id}`);
+      if (!row) return;
+      const icon = row.querySelector('.step-icon') as HTMLElement | null;
+      if (icon) { icon.textContent = '✓'; icon.style.color = 'var(--ok, #00ff88)'; }
+      row.style.color = 'var(--text-primary)';
+    };
+
+    const removeSteps = () => { stepsContainer?.remove(); stepsContainer = null; };
+
+    // Core analysis function — accepts optional overrideText for multi-turn re-runs
+    const handleAnalyze = async (overrideText?: string) => {
+      const text = overrideText ?? textarea.value.trim();
       if (!text) return;
+
+      console.debug('[intent] analyzing:', text.substring(0, 80));
+      analytics.trackFeatureUsed('intent_parse_attempt', { text_length: text.length });
 
       analyzeBtn.disabled = true;
       analyzeBtn.style.opacity = "0.6";
       analyzeBtn.textContent = "…";
       statusDiv.style.color = "var(--text-muted)";
-      statusDiv.textContent = "Analyzing your request…";
+      statusDiv.textContent = '';
+      clarificationPanel.style.display = 'none';
+
+      // Show progressive steps while API call is in flight
+      showSteps();
+      const stepTimer1 = setTimeout(() => setStepDone('parse'),   400);
+      const stepTimer2 = setTimeout(() => setStepDone('tokens'),  900);
+      const stepTimer3 = setTimeout(() => setStepDone('amount'), 1400);
+
+      const loadingToastId = toast.loading("Analyzing intent…", text.substring(0, 60));
 
       try {
         const result = await parseIntent(text);
+        setStepDone('mode');
+        clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
+        setTimeout(removeSteps, 800);
         const req = result.parsedRequest;
 
         // Resolve token symbols from BASE_TOKENS by address.
@@ -3482,6 +3624,15 @@ export function LandioSwapController() {
         const buyTokenInfo = BASE_TOKENS.find(
           (t) => t.address.toLowerCase() === normAddr(req.buyToken)
         );
+
+        // P5 — Security: warn if tokens are not in verified list
+        const unknownTokenWarnings: string[] = [];
+        if (req.sellToken && !sellTokenInfo) {
+          unknownTokenWarnings.push(`Sell token (${req.sellToken.substring(0, 10)}…) not in verified list`);
+        }
+        if (req.buyToken && !buyTokenInfo) {
+          unknownTokenWarnings.push(`Buy token (${req.buyToken.substring(0, 10)}…) not in verified list`);
+        }
 
         if (sellTokenInfo) setFromTokenSymbol(sellTokenInfo.symbol);
         if (buyTokenInfo)  setToTokenSymbol(buyTokenInfo.symbol);
@@ -3499,45 +3650,114 @@ export function LandioSwapController() {
         }
 
         const confidence = result.confidence;
+        const clarifications = result.clarifications ?? [];
         const badge = confidence >= 0.8 ? '🟢' : confidence >= 0.5 ? '🟡' : '🔴';
-        statusDiv.style.color = 'var(--ok, #00ff88)';
-        statusDiv.textContent = `${badge} ${Math.round(confidence * 100)}% confidence — ${result.explanation}`;
+
+        console.info('[intent] result:', {
+          confidence,
+          mode: req.mode,
+          sellToken: req.sellToken,
+          buyToken: req.buyToken,
+          sellAmount: req.sellAmount,
+          clarifications,
+        });
+
+        analytics.trackFeatureUsed('intent_parse_success', {
+          confidence,
+          mode: req.mode,
+          had_clarifications: clarifications.length > 0,
+          sell_token_known: !!sellTokenInfo,
+          buy_token_known: !!buyTokenInfo,
+        });
+
+        // P0 — Multi-turn: show clarifications if confidence is low or API requested them
+        if (clarifications.length > 0 && confidence < 0.85) {
+          clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
+          removeSteps();
+          toast.updateToast(loadingToastId, {
+            type: 'warning',
+            title: 'Clarification needed',
+            message: clarifications[0],
+          });
+          statusDiv.style.color = 'var(--warning, #f0b90b)';
+          statusDiv.textContent = `${badge} ${Math.round(confidence * 100)}% — ${result.explanation}`;
+          renderClarifications(clarifications, text);
+          analyzeBtn.disabled = false;
+          analyzeBtn.style.opacity = "1";
+          analyzeBtn.textContent = "Analyze";
+          analytics.trackFeatureUsed('intent_parse_clarification_shown', { count: clarifications.length });
+          return; // Don't switch to manual; wait for user to answer
+        }
+
+        // P1 — Toast success
+        const successMsg = unknownTokenWarnings.length > 0
+          ? `${Math.round(confidence * 100)}% confidence — ⚠ unknown token detected`
+          : `${Math.round(confidence * 100)}% confidence — ${result.explanation}`;
+
+        toast.updateToast(loadingToastId, {
+          type: unknownTokenWarnings.length > 0 ? 'warning' : 'success',
+          title: unknownTokenWarnings.length > 0 ? 'Intent parsed with warning' : 'Intent parsed',
+          message: successMsg,
+        });
+
+        statusDiv.style.color = unknownTokenWarnings.length > 0 ? 'var(--warning, #f0b90b)' : 'var(--ok, #00ff88)';
+        statusDiv.textContent = `${badge} ${successMsg}`;
+
+        // P5 — Show security warning below status if unknown tokens
+        if (unknownTokenWarnings.length > 0) {
+          const warnEl = document.createElement('div');
+          warnEl.style.cssText = 'font-size: 11px; color: var(--warning, #f0b90b); padding: 4px 2px;';
+          warnEl.textContent = `⚠ ${unknownTokenWarnings.join(' · ')} — verify before swapping`;
+          panel.appendChild(warnEl);
+          setTimeout(() => warnEl.remove(), 8000);
+        }
 
         // Auto-switch to Manual after successful parse so the user sees the pre-filled form
         setTimeout(() => setInputMode('manual'), 1800);
 
       } catch (err: unknown) {
+        clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
+        removeSteps();
+
         const e = err as { status?: number; message?: string };
+        const errMsg = e?.status === 501
+          ? 'AI Intent is temporarily unavailable on this server.'
+          : (e?.message ?? 'Analysis failed. Please try again.');
+
+        console.error('[intent] failed:', { status: e?.status, message: e?.message });
+        analytics.trackFeatureUsed('intent_parse_error', { status: e?.status ?? 0, message: e?.message });
+
+        toast.updateToast(loadingToastId, {
+          type: 'error',
+          title: 'Intent analysis failed',
+          message: errMsg,
+        });
+
         analyzeBtn.disabled = false;
         analyzeBtn.style.opacity = "1";
         analyzeBtn.textContent = "Analyze";
-        if (e?.status === 501) {
-          statusDiv.style.color = 'var(--error, #ff6b6b)';
-          statusDiv.textContent = 'AI Intent is temporarily unavailable on this server.';
-        } else {
-          statusDiv.style.color = 'var(--error, #ff6b6b)';
-          statusDiv.textContent = e?.message ?? 'Analysis failed. Please try again.';
-        }
+        statusDiv.style.color = 'var(--error, #ff6b6b)';
+        statusDiv.textContent = errMsg;
       }
     };
 
-    analyzeBtn.onclick = handleAnalyze;
+    analyzeBtn.onclick = () => void handleAnalyze();
     textarea.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleAnalyze();
+        void handleAnalyze();
       }
     });
 
     inputRow.append(textarea, analyzeBtn);
-    panel.append(inputRow, statusDiv);
+    panel.append(inputRow, statusDiv, clarificationPanel);
     firstTokenBox.insertAdjacentElement('beforebegin', panel);
 
     return () => {
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
     };
-  }, [inputMode, setFromTokenSymbol, setToTokenSymbol]);
+  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics]);
 
   // Add StatCard grid (Network/Slippage/Platform Fee)
   useEffect(() => {

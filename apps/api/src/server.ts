@@ -68,7 +68,7 @@ import { resolveErc20Metadata } from './tokens/erc20Metadata';
 import { ProviderHealthTracker } from './obs/providerHealth';
 
 // Observability
-import { initSentry, captureException, Sentry } from './obs/sentry';
+import { initSentry, captureException, addBreadcrumb, Sentry } from './obs/sentry';
 import { initLogger, logError, type AppLogger } from './obs/logger';
 
 export type CreateServerOptions = {
@@ -1761,6 +1761,9 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
   api.post(
     '/v1/intent/parse',
     {
+      config: {
+        rateLimit: { max: config.intent.rateLimitMax, timeWindow: 60_000 },
+      },
       schema: {
         body: IntentParseRequestSchema,
         response: {
@@ -1781,12 +1784,27 @@ export function createServer(options: CreateServerOptions = {}): FastifyInstance
         : null;
 
       try {
+        addBreadcrumb('intent', 'parse_started', {
+          provider: config.intent.llmProvider,
+          model: config.intent.llmModel,
+          text_length: request.body.text.length,
+        });
+
         const result = await parseIntent(request.body.text, config.intent, mcp);
 
-        if (result.clarifications && result.clarifications.length > 0 && result.confidence < 0.5) {
+        addBreadcrumb('intent', 'parse_completed', {
+          confidence: result.confidence,
+          had_clarifications: (result.clarifications?.length ?? 0) > 0,
+        });
+
+        // Return 422 only when confidence is very low AND no clarifications to guide the user.
+        // If clarifications are present, always return 200 so the frontend can display them
+        // interactively (multi-turn refinement).
+        const hasClarifications = result.clarifications && result.clarifications.length > 0;
+        if (!hasClarifications && result.confidence < 0.3) {
           return reply.code(422).send({
             message: 'intent_needs_clarification',
-            details: result.clarifications.join(' | '),
+            details: 'Unable to parse intent — confidence too low. Please rephrase your request.',
           });
         }
 

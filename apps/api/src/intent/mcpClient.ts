@@ -45,9 +45,19 @@ async function callMCPTool(
   }
 }
 
+// In-memory LRU cache for token info lookups — avoids hitting MCP server on repeated symbols
+const TOKEN_INFO_CACHE = new Map<string, { info: TokenInfo; ts: number }>();
+const TOKEN_INFO_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
+
 export function createMCPClient(serverUrl: string, timeoutMs = 2000): MCPClient {
   return {
     async getTokenInfo(symbol, chainId) {
+      const cacheKey = `${symbol.toUpperCase()}:${chainId}`;
+      const cached = TOKEN_INFO_CACHE.get(cacheKey);
+      if (cached && Date.now() - cached.ts < TOKEN_INFO_CACHE_TTL_MS) {
+        return cached.info;
+      }
+
       const result = (await callMCPTool(
         serverUrl,
         'get_erc20_token_info',
@@ -56,7 +66,9 @@ export function createMCPClient(serverUrl: string, timeoutMs = 2000): MCPClient 
       )) as MCPToolResult | null;
       if (!result?.content?.[0]?.text) return null;
       try {
-        return JSON.parse(result.content[0].text) as TokenInfo;
+        const info = JSON.parse(result.content[0].text) as TokenInfo;
+        TOKEN_INFO_CACHE.set(cacheKey, { info, ts: Date.now() });
+        return info;
       } catch {
         return null;
       }
