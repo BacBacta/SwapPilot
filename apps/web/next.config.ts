@@ -119,7 +119,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://vercel.live https://*.sentry.io https://*.posthog.com https://*.i.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.sentry.io https://*.posthog.com https://*.i.posthog.com",
               "style-src 'self' 'unsafe-inline'",
               // Token images may be proxied via our API; allow a minimal set of third-party hosts.
               "img-src 'self' data: blob: https://swappilot-api.fly.dev https://assets-cdn.trustwallet.com https://tokens.coingecko.com https://assets.coingecko.com https://*.walletconnect.com",
