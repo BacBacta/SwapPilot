@@ -52,7 +52,15 @@ Rules:
   BTCB: 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c
   CAKE: 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82
   ETH:  0x2170Ed0880ac9A755fd29B2688956BD959F933F8
-- sellAmount is in base units (e.g. 1 BNB = "1000000000000000000").
+  BUSD: 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
+- CRITICAL — Token decimals on BSC: ALL tokens above use 18 decimals.
+  BSC USDT and USDC have 18 decimals, NOT 6 like on Ethereum. Do not confuse them.
+  Conversion table: 1 unit = "1000000000000000000" for EVERY token listed above.
+  Examples: 1 USDT = "1000000000000000000", 0.5 BNB = "500000000000000000", 100 USDC = "100000000000000000000"
+- sellAmount must be an integer string (no decimals, no scientific notation).
+- If the amount is not specified, set sellAmount to "0" and add a clarification asking for the amount.
+- For buy-side intents ("buy X tokenB with tokenA"): do NOT estimate or guess the sellAmount.
+  Set sellAmount to "0" and add a clarification: "How much [sellToken symbol] do you want to spend?"
 - If a token symbol is unknown, add a clarification asking for the contract address; set confidence < 0.5.
 - If mode is not specified, use "NORMAL".
 - "SAFE" maps to: "keep me safe", "no risk", "conservative".
@@ -239,11 +247,18 @@ export async function parseIntent(
     if (buyResolved.clarification) clarifications.push(buyResolved.clarification);
 
     // 3. Build candidate QuoteRequest
+    // Sanitise sellAmount: LLM may return decimals/null/non-integer → clamp to "0"
+    const rawAmount = raw.sellAmount ?? '0';
+    const safeSellAmount = /^[0-9]+$/.test(rawAmount) ? rawAmount : '0';
+    if (safeSellAmount === '0' && !clarifications.some((c) => c.toLowerCase().includes('amount'))) {
+      clarifications.push('Please specify the amount you want to swap.');
+    }
+
     const candidate = {
       chainId,
       sellToken: sellResolved.address,
       buyToken: buyResolved.address,
-      sellAmount: raw.sellAmount ?? '0',
+      sellAmount: safeSellAmount,
       slippageBps: raw.slippageBps ?? 100,
       mode: raw.mode ?? 'NORMAL',
     };

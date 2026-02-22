@@ -3469,12 +3469,18 @@ export function LandioSwapController() {
         const result = await parseIntent(text);
         const req = result.parsedRequest;
 
-        // Resolve token symbols from BASE_TOKENS by address
+        // Resolve token symbols from BASE_TOKENS by address.
+        // Normalize WBNB address → native BNB address so the selector picks "BNB".
+        const WBNB_ADDR = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+        const NATIVE_BNB_ADDR = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        const normAddr = (a: string) =>
+          a.toLowerCase() === WBNB_ADDR ? NATIVE_BNB_ADDR : a.toLowerCase();
+
         const sellTokenInfo = BASE_TOKENS.find(
-          (t) => t.address.toLowerCase() === req.sellToken.toLowerCase()
+          (t) => t.address.toLowerCase() === normAddr(req.sellToken)
         );
         const buyTokenInfo = BASE_TOKENS.find(
-          (t) => t.address.toLowerCase() === req.buyToken.toLowerCase()
+          (t) => t.address.toLowerCase() === normAddr(req.buyToken)
         );
 
         if (sellTokenInfo) setFromTokenSymbol(sellTokenInfo.symbol);
