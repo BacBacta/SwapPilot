@@ -3374,8 +3374,12 @@ export function LandioSwapController() {
 
   // Add Input Mode Toggle (Manual / AI Intent)
   useEffect(() => {
+    console.log('[intent-effect] MOUNT/RE-RUN — inputMode:', inputMode);
     const firstTokenBox = document.querySelector('.token-input-box');
-    if (!firstTokenBox) return;
+    if (!firstTokenBox) {
+      console.warn('[intent-effect] firstTokenBox NOT FOUND — aborting');
+      return;
+    }
 
     // Remove existing elements if any
     document.querySelector('.input-mode-toggle')?.remove();
@@ -3445,14 +3449,17 @@ export function LandioSwapController() {
       }
     });
 
+    const panelId = `intent-panel-${Date.now()}`;
     const panel = document.createElement("div");
     panel.className = "intent-panel";
+    panel.dataset.pid = panelId;
     panel.style.cssText = `
       margin-bottom: 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
     `;
+    console.log('[intent-effect] New panel created — pid:', panelId);
 
     // ── Wallet-aware suggestions (Feature #1) ─────────────────────────────────
     if (isConnectedRef.current) {
@@ -3699,6 +3706,12 @@ export function LandioSwapController() {
       confidence: number;
       explanation: string;
     }) => {
+      const isAttached = document.body.contains(panel);
+      console.log('[intent showPreview] called — panel pid:', panel.dataset.pid, '| isAttached:', isAttached, '| panel.isConnected:', panel.isConnected);
+      if (!isAttached) {
+        console.error('[intent showPreview] PANEL IS DETACHED — card will be invisible. DOM panel:', document.querySelector('.intent-panel'));
+      }
+
       // Remove any existing preview card before creating a new one (prevents stacking)
       panel.querySelector('.intent-preview-card')?.remove();
 
@@ -3867,6 +3880,7 @@ export function LandioSwapController() {
       btnRow.append(modifyBtn, confirmBtn);
       card.appendChild(btnRow);
       panel.appendChild(card);
+      console.log('[intent showPreview] card appended — panel children:', panel.children.length, '| card.isConnected:', card.isConnected, '| card visible:', card.offsetParent !== null);
     };
 
     // P2 — Progressive step feedback helper
@@ -3914,7 +3928,7 @@ export function LandioSwapController() {
       const text = overrideText ?? textarea.value.trim();
       if (!text) return;
 
-      console.debug('[intent] analyzing:', text.substring(0, 80));
+      console.log('[intent handleAnalyze] START — panel pid:', panel.dataset.pid, '| panel.isConnected:', panel.isConnected);
       analytics.trackFeatureUsed('intent_parse_attempt', { text_length: text.length });
 
       analyzeBtn.disabled = true;
@@ -4035,6 +4049,7 @@ export function LandioSwapController() {
           ? Number(BigInt(req.sellAmount)) / 10 ** sellTokenInfo.decimals
           : 0;
 
+        console.log('[intent handleAnalyze] BEFORE showPreview — panel pid:', panel.dataset.pid, '| panel.isConnected:', panel.isConnected, '| document has panel:', !!document.querySelector(`.intent-panel[data-pid="${panel.dataset.pid}"]`));
         showPreview({
           sellTokenInfo,
           buyTokenInfo,
@@ -4086,8 +4101,10 @@ export function LandioSwapController() {
     inputRow.append(textarea, analyzeBtn);
     panel.append(inputRow, statusDiv, clarificationPanel);
     firstTokenBox.insertAdjacentElement('beforebegin', panel);
+    console.log('[intent-effect] Panel inserted into DOM — pid:', panelId, '| isConnected:', panel.isConnected);
 
     return () => {
+      console.log('[intent-effect] CLEANUP — removing panel pid:', panelId, '| inputMode at cleanup:', inputMode);
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
       // Restore swap form elements when leaving ai-intent mode
