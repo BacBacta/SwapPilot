@@ -738,11 +738,16 @@ export function LandioSwapController() {
   // SECTION 10: BALANCES HOOK
   // ═══════════════════════════════════════════════════════════════════════════
   const balanceTokens = useMemo(() => {
+    // Use the full registry (PancakeSwap verified list ~200 tokens) so AI Intent can surface
+    // every asset the user actually holds. Tokens NOT in the registry (airdropped spam, etc.)
+    // are naturally excluded — no explicit spam flag needed.
+    const base = allTokens.length > 0 ? allTokens : BASE_TOKENS;
+    const baseSet = new Set(base.map((t) => t.address.toLowerCase()));
     const extra: TokenInfo[] = [];
-    if (fromTokenInfo && !BASE_TOKENS.find((t) => t.address.toLowerCase() === fromTokenInfo.address.toLowerCase())) extra.push(fromTokenInfo);
-    if (toTokenInfo   && !BASE_TOKENS.find((t) => t.address.toLowerCase() === toTokenInfo.address.toLowerCase()))   extra.push(toTokenInfo);
-    return [...BASE_TOKENS, ...extra];
-  }, [fromTokenInfo, toTokenInfo]);
+    if (fromTokenInfo && !baseSet.has(fromTokenInfo.address.toLowerCase())) extra.push(fromTokenInfo);
+    if (toTokenInfo   && !baseSet.has(toTokenInfo.address.toLowerCase()))   extra.push(toTokenInfo);
+    return [...base, ...extra];
+  }, [allTokens, fromTokenInfo, toTokenInfo]);
 
   const { balances, getBalanceFormatted, getBalance, isLoading: isLoadingBalances, error: balanceError, refetch: refetchBalances } = useTokenBalances(balanceTokens);
 
@@ -751,6 +756,8 @@ export function LandioSwapController() {
   // panel DOM on every balance poll (every 30s) or price refresh (every 60s).
   const balancesRef = useRef(balances);
   balancesRef.current = balances;
+  const allTokensRef = useRef(allTokens);
+  allTokensRef.current = allTokens;
   const getPriceRef = useRef(getPrice);
   getPriceRef.current = getPrice;
   const isConnectedRef = useRef(isConnected);
@@ -3490,7 +3497,10 @@ export function LandioSwapController() {
     if (isConnectedRef.current) {
       const WBNB_ADDR_S = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
       const NATIVE_BNB_S = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
-      const tokensWithBal = BASE_TOKENS.filter((t) => {
+      // Use the full registry list (not just BASE_TOKENS) to surface every token the user holds.
+      // Spam tokens (not in the PancakeSwap verified list) are excluded because balances are only
+      // fetched for registry tokens — no explicit spam flag required.
+      const tokensWithBal = allTokensRef.current.filter((t) => {
         const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
         return parseFloat(balancesRef.current[addr]?.balanceFormatted ?? '0') > 0.0001;
       });
@@ -3549,7 +3559,7 @@ export function LandioSwapController() {
           const bal = balancesRef.current[addr]?.balanceFormatted ?? '0';
           const isStable = ['USDT', 'USDC', 'BUSD', 'DAI'].includes(t.symbol);
           const targetSymbol = isStable ? 'BNB' : 'USDT';
-          const targetToken = BASE_TOKENS.find((x) => x.symbol === targetSymbol);
+          const targetToken = allTokensRef.current.find((x) => x.symbol === targetSymbol) ?? BASE_TOKENS.find((x) => x.symbol === targetSymbol);
           if (!targetToken) return;
 
           // "Swap tout" suggestion
