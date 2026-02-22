@@ -629,6 +629,12 @@ export function LandioSwapController() {
   const errorToastShownRef = useRef<string | null>(null); // Track error to prevent duplicate error toasts
   const manualApprovalDoneRef = useRef(false); // Track if manual approval was done in-swap to prevent button loop
   const pendingIntentAutoExecuteRef = useRef(false); // Set true by AI Intent "Confirm & Swap" → auto-clicks swapBtn once quotes load
+  // Intent panel live-element refs — always point to the currently mounted DOM nodes
+  // so that async closures (handleAnalyze / showPreview) never reference a detached panel.
+  const intentPanelRef       = useRef<HTMLElement | null>(null);
+  const intentInputRowRef    = useRef<HTMLElement | null>(null);
+  const intentStatusDivRef   = useRef<HTMLElement | null>(null);
+  const intentAnalyzeBtnRef  = useRef<HTMLButtonElement | null>(null);
   // Ref to store current values for debounced callback (avoids stale closures)
   const currentParamsRef = useRef<{
     fromTokenInfo: TokenInfo | null;
@@ -3459,6 +3465,7 @@ export function LandioSwapController() {
       flex-direction: column;
       gap: 8px;
     `;
+    intentPanelRef.current = panel;
     console.log('[intent-effect] New panel created — pid:', panelId);
 
     // ── Wallet-aware suggestions (Feature #1) ─────────────────────────────────
@@ -3569,6 +3576,7 @@ export function LandioSwapController() {
     }
 
     const inputRow = document.createElement("div");
+    intentInputRowRef.current = inputRow;
     inputRow.style.cssText = "display: flex; gap: 8px; align-items: flex-end;";
 
     const textarea = document.createElement("textarea");
@@ -3594,6 +3602,7 @@ export function LandioSwapController() {
     });
 
     const analyzeBtn = document.createElement("button");
+    intentAnalyzeBtnRef.current = analyzeBtn;
     analyzeBtn.textContent = "Analyze";
     analyzeBtn.style.cssText = `
       flex-shrink: 0;
@@ -3609,6 +3618,7 @@ export function LandioSwapController() {
     `;
 
     const statusDiv = document.createElement("div");
+    intentStatusDivRef.current = statusDiv;
     statusDiv.className = "intent-status";
     statusDiv.style.cssText = "font-size: 12px; color: var(--text-muted); padding: 0 2px; min-height: 16px;";
 
@@ -3706,17 +3716,23 @@ export function LandioSwapController() {
       confidence: number;
       explanation: string;
     }) => {
-      const isAttached = document.body.contains(panel);
-      console.log('[intent showPreview] called — panel pid:', panel.dataset.pid, '| isAttached:', isAttached, '| panel.isConnected:', panel.isConnected);
-      if (!isAttached) {
-        console.error('[intent showPreview] PANEL IS DETACHED — card will be invisible. DOM panel:', document.querySelector('.intent-panel'));
+      // Always use the ref so a stale closure never appends to a detached panel
+      const livePanel    = intentPanelRef.current;
+      const liveInputRow = intentInputRowRef.current;
+      const liveStatus   = intentStatusDivRef.current;
+
+      console.log('[intent showPreview] called — livePanel pid:', livePanel?.dataset.pid ?? 'null', '| isConnected:', livePanel?.isConnected);
+
+      if (!livePanel || !document.body.contains(livePanel)) {
+        console.error('[intent showPreview] livePanel is null or detached — aborting. DOM panel:', document.querySelector('.intent-panel'));
+        return;
       }
 
       // Remove any existing preview card before creating a new one (prevents stacking)
-      panel.querySelector('.intent-preview-card')?.remove();
+      livePanel.querySelector('.intent-preview-card')?.remove();
 
-      inputRow.style.display = 'none';
-      statusDiv.style.display = 'none';
+      if (liveInputRow) liveInputRow.style.display = 'none';
+      if (liveStatus)   liveStatus.style.display   = 'none';
 
       const { sellTokenInfo: st, buyTokenInfo: bt, sellAmountHuman, parsedRequest: req, confidence, explanation } = data;
       const slippageBps = req.slippageBps;
@@ -3844,12 +3860,12 @@ export function LandioSwapController() {
       modifyBtn.onmouseleave = () => { modifyBtn.style.borderColor = 'var(--border)'; modifyBtn.style.color = 'var(--text-muted)'; };
       modifyBtn.onclick = () => {
         card.remove();
-        inputRow.style.display = 'flex';
-        statusDiv.style.display = '';
-        statusDiv.textContent = '';
-        analyzeBtn.disabled = false;
-        analyzeBtn.style.opacity = '1';
-        analyzeBtn.textContent = 'Analyze';
+        const r_inputRow   = intentInputRowRef.current;
+        const r_statusDiv  = intentStatusDivRef.current;
+        const r_analyzeBtn = intentAnalyzeBtnRef.current;
+        if (r_inputRow)  { r_inputRow.style.display = 'flex'; }
+        if (r_statusDiv) { r_statusDiv.style.display = ''; r_statusDiv.textContent = ''; }
+        if (r_analyzeBtn){ r_analyzeBtn.disabled = false; r_analyzeBtn.style.opacity = '1'; r_analyzeBtn.textContent = 'Analyze'; }
       };
 
       const confirmBtn = document.createElement('button');
@@ -3879,8 +3895,8 @@ export function LandioSwapController() {
 
       btnRow.append(modifyBtn, confirmBtn);
       card.appendChild(btnRow);
-      panel.appendChild(card);
-      console.log('[intent showPreview] card appended — panel children:', panel.children.length, '| card.isConnected:', card.isConnected, '| card visible:', card.offsetParent !== null);
+      livePanel.appendChild(card);
+      console.log('[intent showPreview] card appended — panel children:', livePanel.children.length, '| card.isConnected:', card.isConnected, '| card visible:', card.offsetParent !== null);
     };
 
     // P2 — Progressive step feedback helper
@@ -3928,14 +3944,13 @@ export function LandioSwapController() {
       const text = overrideText ?? textarea.value.trim();
       if (!text) return;
 
-      console.log('[intent handleAnalyze] START — panel pid:', panel.dataset.pid, '| panel.isConnected:', panel.isConnected);
+      console.log('[intent handleAnalyze] START — panel pid:', intentPanelRef.current?.dataset.pid ?? 'null', '| isConnected:', intentPanelRef.current?.isConnected);
       analytics.trackFeatureUsed('intent_parse_attempt', { text_length: text.length });
 
-      analyzeBtn.disabled = true;
-      analyzeBtn.style.opacity = "0.6";
-      analyzeBtn.textContent = "…";
-      statusDiv.style.color = "var(--text-muted)";
-      statusDiv.textContent = '';
+      const ha_analyzeBtn = intentAnalyzeBtnRef.current;
+      const ha_statusDiv  = intentStatusDivRef.current;
+      if (ha_analyzeBtn) { ha_analyzeBtn.disabled = true; ha_analyzeBtn.style.opacity = "0.6"; ha_analyzeBtn.textContent = "…"; }
+      if (ha_statusDiv)  { ha_statusDiv.style.color = "var(--text-muted)"; ha_statusDiv.textContent = ''; }
       clarificationPanel.style.display = 'none';
 
       // Show progressive steps while API call is in flight
@@ -4012,11 +4027,11 @@ export function LandioSwapController() {
             message: clarifications[0],
           });
           statusDiv.style.color = 'var(--warning, #f0b90b)';
-          statusDiv.textContent = `${badge} ${Math.round(confidence * 100)}% — ${result.explanation}`;
+          intentStatusDivRef.current?.replaceChildren(); // clear
+          if (intentStatusDivRef.current) intentStatusDivRef.current.textContent = `${badge} ${Math.round(confidence * 100)}% — ${result.explanation}`;
           renderClarifications(clarifications, text);
-          analyzeBtn.disabled = false;
-          analyzeBtn.style.opacity = "1";
-          analyzeBtn.textContent = "Analyze";
+          const cl_btn = intentAnalyzeBtnRef.current;
+          if (cl_btn) { cl_btn.disabled = false; cl_btn.style.opacity = "1"; cl_btn.textContent = "Analyze"; }
           analytics.trackFeatureUsed('intent_parse_clarification_shown', { count: clarifications.length });
           return; // Don't switch to manual; wait for user to answer
         }
@@ -4032,16 +4047,22 @@ export function LandioSwapController() {
           message: successMsg,
         });
 
-        statusDiv.style.color = unknownTokenWarnings.length > 0 ? 'var(--warning, #f0b90b)' : 'var(--ok, #00ff88)';
-        statusDiv.textContent = `${badge} ${successMsg}`;
+        const lp_status = intentStatusDivRef.current;
+        if (lp_status) {
+          lp_status.style.color = unknownTokenWarnings.length > 0 ? 'var(--warning, #f0b90b)' : 'var(--ok, #00ff88)';
+          lp_status.textContent = `${badge} ${successMsg}`;
+        }
 
         // P5 — Show security warning below status if unknown tokens
         if (unknownTokenWarnings.length > 0) {
-          const warnEl = document.createElement('div');
-          warnEl.style.cssText = 'font-size: 11px; color: var(--warning, #f0b90b); padding: 4px 2px;';
-          warnEl.textContent = `⚠ ${unknownTokenWarnings.join(' · ')} — verify before swapping`;
-          panel.appendChild(warnEl);
-          setTimeout(() => warnEl.remove(), 8000);
+          const lp_panel = intentPanelRef.current;
+          if (lp_panel) {
+            const warnEl = document.createElement('div');
+            warnEl.style.cssText = 'font-size: 11px; color: var(--warning, #f0b90b); padding: 4px 2px;';
+            warnEl.textContent = `⚠ ${unknownTokenWarnings.join(' · ')} — verify before swapping`;
+            lp_panel.appendChild(warnEl);
+            setTimeout(() => warnEl.remove(), 8000);
+          }
         }
 
         // Feature #7 — Show structured preview card instead of auto-switching silently
@@ -4049,7 +4070,7 @@ export function LandioSwapController() {
           ? Number(BigInt(req.sellAmount)) / 10 ** sellTokenInfo.decimals
           : 0;
 
-        console.log('[intent handleAnalyze] BEFORE showPreview — panel pid:', panel.dataset.pid, '| panel.isConnected:', panel.isConnected, '| document has panel:', !!document.querySelector(`.intent-panel[data-pid="${panel.dataset.pid}"]`));
+        console.log('[intent handleAnalyze] BEFORE showPreview — livePanel pid:', intentPanelRef.current?.dataset.pid ?? 'null', '| isConnected:', intentPanelRef.current?.isConnected);
         showPreview({
           sellTokenInfo,
           buyTokenInfo,
@@ -4059,10 +4080,9 @@ export function LandioSwapController() {
           explanation: result.explanation,
         });
 
-        // Re-enable analyze button (in case user clicks Modifier)
-        analyzeBtn.disabled = false;
-        analyzeBtn.style.opacity = '1';
-        analyzeBtn.textContent = 'Analyze';
+        // Re-enable analyze button (in case user clicks Edit)
+        const done_btn = intentAnalyzeBtnRef.current;
+        if (done_btn) { done_btn.disabled = false; done_btn.style.opacity = '1'; done_btn.textContent = 'Analyze'; }
 
       } catch (err: unknown) {
         clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
@@ -4082,11 +4102,10 @@ export function LandioSwapController() {
           message: errMsg,
         });
 
-        analyzeBtn.disabled = false;
-        analyzeBtn.style.opacity = "1";
-        analyzeBtn.textContent = "Analyze";
-        statusDiv.style.color = 'var(--error, #ff6b6b)';
-        statusDiv.textContent = errMsg;
+        const err_btn    = intentAnalyzeBtnRef.current;
+        const err_status = intentStatusDivRef.current;
+        if (err_btn)    { err_btn.disabled = false; err_btn.style.opacity = "1"; err_btn.textContent = "Analyze"; }
+        if (err_status) { err_status.style.color = 'var(--error, #ff6b6b)'; err_status.textContent = errMsg; }
       }
     };
 
@@ -4107,6 +4126,11 @@ export function LandioSwapController() {
       console.log('[intent-effect] CLEANUP — removing panel pid:', panelId, '| inputMode at cleanup:', inputMode);
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
+      // Clear live-element refs so stale closures cannot reference detached nodes
+      if (intentPanelRef.current === panel)      intentPanelRef.current      = null;
+      if (intentInputRowRef.current === inputRow) intentInputRowRef.current   = null;
+      if (intentStatusDivRef.current === statusDiv) intentStatusDivRef.current = null;
+      if (intentAnalyzeBtnRef.current === analyzeBtn) intentAnalyzeBtnRef.current = null;
       // Restore swap form elements when leaving ai-intent mode
       document.querySelectorAll<HTMLElement>('[data-hidden-by-intent="1"]').forEach(el => {
         el.style.display = '';
