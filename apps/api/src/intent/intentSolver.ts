@@ -112,10 +112,13 @@ async function callClaude(
     return null;
   }
 
+  // Strip markdown code fences that Claude sometimes wraps around JSON
+  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
   try {
-    return JSON.parse(raw) as LLMResponse;
+    return JSON.parse(stripped) as LLMResponse;
   } catch (parseErr) {
-    console.error('[Intent] Failed to parse Claude response:', raw.substring(0, 200), parseErr);
+    console.error('[Intent] Failed to parse Claude response:', stripped.substring(0, 200), parseErr);
     return null;
   }
 }
@@ -252,7 +255,7 @@ export async function parseIntent(
       parsedRequest: parsed,
       confidence: raw.confidence ?? 0.8,
       explanation: raw.explanation ?? 'Intent parsed successfully.',
-      clarifications: clarifications.length > 0 ? clarifications : undefined,
+      ...(clarifications.length > 0 && { clarifications }),
     };
   } finally {
     clearTimeout(timer);
