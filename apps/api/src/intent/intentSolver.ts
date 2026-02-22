@@ -76,7 +76,10 @@ async function callClaude(
   config: IntentConfig,
   signal: AbortSignal,
 ): Promise<LLMResponse | null> {
-  if (!config.anthropicApiKey) return null;
+  if (!config.anthropicApiKey) {
+    console.error('[Intent] ANTHROPIC_API_KEY is missing');
+    return null;
+  }
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -94,17 +97,25 @@ async function callClaude(
     signal,
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[Intent] Claude API error: ${res.status} ${res.statusText}`, errorText);
+    return null;
+  }
 
   const data = (await res.json()) as {
     content?: Array<{ type: string; text?: string }>;
   };
   const raw = data.content?.[0]?.text?.trim();
-  if (!raw) return null;
+  if (!raw) {
+    console.warn('[Intent] Claude API returned empty response');
+    return null;
+  }
 
   try {
     return JSON.parse(raw) as LLMResponse;
-  } catch {
+  } catch (parseErr) {
+    console.error('[Intent] Failed to parse Claude response:', raw.substring(0, 200), parseErr);
     return null;
   }
 }
@@ -114,7 +125,10 @@ async function callOpenAI(
   config: IntentConfig,
   signal: AbortSignal,
 ): Promise<LLMResponse | null> {
-  if (!config.openaiApiKey) return null;
+  if (!config.openaiApiKey) {
+    console.error('[Intent] OPENAI_API_KEY is missing');
+    return null;
+  }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -134,17 +148,25 @@ async function callOpenAI(
     signal,
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[Intent] OpenAI API error: ${res.status} ${res.statusText}`, errorText);
+    return null;
+  }
 
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
   };
   const raw = data.choices?.[0]?.message?.content?.trim();
-  if (!raw) return null;
+  if (!raw) {
+    console.warn('[Intent] OpenAI API returned empty response');
+    return null;
+  }
 
   try {
     return JSON.parse(raw) as LLMResponse;
-  } catch {
+  } catch (parseErr) {
+    console.error('[Intent] Failed to parse OpenAI response:', raw.substring(0, 200), parseErr);
     return null;
   }
 }
