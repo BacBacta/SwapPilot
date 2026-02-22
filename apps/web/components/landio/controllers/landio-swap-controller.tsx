@@ -707,6 +707,13 @@ export function LandioSwapController() {
   // ═══════════════════════════════════════════════════════════════════════════
   const toast = useToast();
   const analytics = useAnalytics();
+  // Stable refs so the intent-panel useEffect never re-runs due to object identity changes.
+  // useAnalytics() returns a plain object literal on every render (unstable ref).
+  // useToast() context re-creates on every toast state change.
+  const toastRef     = useRef(toast);
+  const analyticsRef = useRef(analytics);
+  useEffect(() => { toastRef.current     = toast;     }, [toast]);
+  useEffect(() => { analyticsRef.current = analytics; }, [analytics]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 8: TOKEN REGISTRY & RESOLUTION (useMemo)
@@ -3945,7 +3952,7 @@ export function LandioSwapController() {
       if (!text) return;
 
       console.log('[intent handleAnalyze] START — panel pid:', intentPanelRef.current?.dataset.pid ?? 'null', '| isConnected:', intentPanelRef.current?.isConnected);
-      analytics.trackFeatureUsed('intent_parse_attempt', { text_length: text.length });
+      analyticsRef.current.trackFeatureUsed('intent_parse_attempt', { text_length: text.length });
 
       const ha_analyzeBtn = intentAnalyzeBtnRef.current;
       const ha_statusDiv  = intentStatusDivRef.current;
@@ -3959,7 +3966,7 @@ export function LandioSwapController() {
       const stepTimer2 = setTimeout(() => setStepDone('tokens'),  900);
       const stepTimer3 = setTimeout(() => setStepDone('amount'), 1400);
 
-      const loadingToastId = toast.loading("Analyzing intent…", text.substring(0, 60));
+      const loadingToastId = toastRef.current.loading("Analyzing intent…", text.substring(0, 60));
 
       try {
         const result = await parseIntent(text);
@@ -4009,7 +4016,7 @@ export function LandioSwapController() {
           clarifications,
         });
 
-        analytics.trackFeatureUsed('intent_parse_success', {
+        analyticsRef.current.trackFeatureUsed('intent_parse_success', {
           confidence,
           mode: req.mode,
           had_clarifications: clarifications.length > 0,
@@ -4021,18 +4028,17 @@ export function LandioSwapController() {
         if (clarifications.length > 0 && confidence < 0.85) {
           clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
           removeSteps();
-          toast.updateToast(loadingToastId, {
+          toastRef.current.updateToast(loadingToastId, {
             type: 'warning',
             title: 'Clarification needed',
             message: clarifications[0],
           });
-          statusDiv.style.color = 'var(--warning, #f0b90b)';
           intentStatusDivRef.current?.replaceChildren(); // clear
-          if (intentStatusDivRef.current) intentStatusDivRef.current.textContent = `${badge} ${Math.round(confidence * 100)}% — ${result.explanation}`;
+          if (intentStatusDivRef.current) { intentStatusDivRef.current.style.color = 'var(--warning, #f0b90b)'; intentStatusDivRef.current.textContent = `${badge} ${Math.round(confidence * 100)}% — ${result.explanation}`; }
           renderClarifications(clarifications, text);
           const cl_btn = intentAnalyzeBtnRef.current;
           if (cl_btn) { cl_btn.disabled = false; cl_btn.style.opacity = "1"; cl_btn.textContent = "Analyze"; }
-          analytics.trackFeatureUsed('intent_parse_clarification_shown', { count: clarifications.length });
+          analyticsRef.current.trackFeatureUsed('intent_parse_clarification_shown', { count: clarifications.length });
           return; // Don't switch to manual; wait for user to answer
         }
 
@@ -4041,7 +4047,7 @@ export function LandioSwapController() {
           ? `${Math.round(confidence * 100)}% confidence — ⚠ unknown token detected`
           : `${Math.round(confidence * 100)}% confidence — ${result.explanation}`;
 
-        toast.updateToast(loadingToastId, {
+        toastRef.current.updateToast(loadingToastId, {
           type: unknownTokenWarnings.length > 0 ? 'warning' : 'success',
           title: unknownTokenWarnings.length > 0 ? 'Intent parsed with warning' : 'Intent parsed',
           message: successMsg,
@@ -4094,9 +4100,9 @@ export function LandioSwapController() {
           : (e?.message ?? 'Analysis failed. Please try again.');
 
         console.error('[intent] failed:', { status: e?.status, message: e?.message });
-        analytics.trackFeatureUsed('intent_parse_error', { status: e?.status ?? 0, message: e?.message });
+        analyticsRef.current.trackFeatureUsed('intent_parse_error', { status: e?.status ?? 0, message: e?.message });
 
-        toast.updateToast(loadingToastId, {
+        toastRef.current.updateToast(loadingToastId, {
           type: 'error',
           title: 'Intent analysis failed',
           message: errMsg,
@@ -4137,7 +4143,8 @@ export function LandioSwapController() {
         delete el.dataset.hiddenByIntent;
       });
     };
-  }, [inputMode, setFromTokenSymbol, setToTokenSymbol, toast, analytics]);
+  // deps: only stable values — toast/analytics accessed via refs to prevent infinite re-run loop
+  }, [inputMode, setFromTokenSymbol, setToTokenSymbol]);
 
   // Add StatCard grid (Network/Slippage/Platform Fee)
   useEffect(() => {
