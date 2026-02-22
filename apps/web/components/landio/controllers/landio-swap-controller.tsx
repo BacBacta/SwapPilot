@@ -1028,10 +1028,21 @@ export function LandioSwapController() {
       // Auto-execute if triggered from AI Intent "Confirm & Swap"
       if (pendingIntentAutoExecuteRef.current && best) {
         pendingIntentAutoExecuteRef.current = false;
-        setTimeout(() => {
+        // Retry every 100ms until swapBtn is enabled (React needs a render cycle to update it)
+        let autoExecAttempts = 0;
+        const tryAutoExec = () => {
           const swapBtn = document.getElementById('swapBtn') as HTMLButtonElement | null;
-          if (swapBtn && !swapBtn.disabled) swapBtn.click();
-        }, 250);
+          if (swapBtn && !swapBtn.disabled) {
+            console.log('[intent] auto-executing swap after', autoExecAttempts * 100, 'ms');
+            swapBtn.click();
+          } else if (autoExecAttempts < 30) { // retry up to 3 seconds
+            autoExecAttempts++;
+            setTimeout(tryAutoExec, 100);
+          } else {
+            console.warn('[intent] auto-execute gave up — swapBtn still disabled after 3s');
+          }
+        };
+        setTimeout(tryAutoExec, 300); // initial delay for first render
       }
 
       // ── Handle case where no quotes are available (e.g., SAFE mode filters all) ──
@@ -3724,22 +3735,23 @@ export function LandioSwapController() {
       explanation: string;
     }) => {
       // Always use the ref so a stale closure never appends to a detached panel
-      const livePanel    = intentPanelRef.current;
-      const liveInputRow = intentInputRowRef.current;
-      const liveStatus   = intentStatusDivRef.current;
-
-      console.log('[intent showPreview] called — livePanel pid:', livePanel?.dataset.pid ?? 'null', '| isConnected:', livePanel?.isConnected);
+      const livePanel = intentPanelRef.current;
 
       if (!livePanel || !document.body.contains(livePanel)) {
-        console.error('[intent showPreview] livePanel is null or detached — aborting. DOM panel:', document.querySelector('.intent-panel'));
+        console.error('[intent showPreview] livePanel is null or detached — aborting.');
         return;
       }
 
-      // Remove any existing preview card before creating a new one (prevents stacking)
-      livePanel.querySelector('.intent-preview-card')?.remove();
+      // Target: inject preview card into the RIGHT column (.swap-side-column)
+      // The panel stays fully visible on the left with the textarea + status.
+      const sideCol = document.querySelector<HTMLElement>('.swap-side-column');
+      if (!sideCol) {
+        console.error('[intent showPreview] .swap-side-column not found — aborting.');
+        return;
+      }
 
-      if (liveInputRow) liveInputRow.style.display = 'none';
-      if (liveStatus)   liveStatus.style.display   = 'none';
+      // Remove any stale preview card (prevents stacking)
+      sideCol.querySelector('.intent-preview-card')?.remove();
 
       const { sellTokenInfo: st, buyTokenInfo: bt, sellAmountHuman, parsedRequest: req, confidence, explanation } = data;
       const slippageBps = req.slippageBps;
@@ -3758,9 +3770,10 @@ export function LandioSwapController() {
       card.className = 'intent-preview-card';
       card.style.cssText = `
         display: flex; flex-direction: column; gap: 12px;
-        padding: 16px; background: var(--bg-card-inner);
+        padding: 16px; background: var(--bg-card);
         border: 1.5px solid var(--ok, #00e676); border-radius: 16px;
         box-shadow: 0 0 0 4px rgba(0,230,118,0.06);
+        width: 100%; box-sizing: border-box;
       `;
 
       // ── Header ──────────────────────────────────────────────────────────────
@@ -3866,13 +3879,8 @@ export function LandioSwapController() {
       modifyBtn.onmouseenter = () => { modifyBtn.style.borderColor = 'var(--border-light)'; modifyBtn.style.color = 'var(--text-primary)'; };
       modifyBtn.onmouseleave = () => { modifyBtn.style.borderColor = 'var(--border)'; modifyBtn.style.color = 'var(--text-muted)'; };
       modifyBtn.onclick = () => {
+        // Card is in the right column — remove it; panel stays visible
         card.remove();
-        const r_inputRow   = intentInputRowRef.current;
-        const r_statusDiv  = intentStatusDivRef.current;
-        const r_analyzeBtn = intentAnalyzeBtnRef.current;
-        if (r_inputRow)  { r_inputRow.style.display = 'flex'; }
-        if (r_statusDiv) { r_statusDiv.style.display = ''; r_statusDiv.textContent = ''; }
-        if (r_analyzeBtn){ r_analyzeBtn.disabled = false; r_analyzeBtn.style.opacity = '1'; r_analyzeBtn.textContent = 'Analyze'; }
       };
 
       const confirmBtn = document.createElement('button');
@@ -3902,8 +3910,8 @@ export function LandioSwapController() {
 
       btnRow.append(modifyBtn, confirmBtn);
       card.appendChild(btnRow);
-      livePanel.appendChild(card);
-      console.log('[intent showPreview] card appended — panel children:', livePanel.children.length, '| card.isConnected:', card.isConnected, '| card visible:', card.offsetParent !== null);
+      sideCol.appendChild(card);
+      console.log('[intent showPreview] card appended to .swap-side-column | card.isConnected:', card.isConnected);
     };
 
     // P2 — Progressive step feedback helper
@@ -4132,6 +4140,8 @@ export function LandioSwapController() {
       console.log('[intent-effect] CLEANUP — removing panel pid:', panelId, '| inputMode at cleanup:', inputMode);
       document.querySelector('.input-mode-toggle')?.remove();
       document.querySelector('.intent-panel')?.remove();
+      // Also remove preview card from the right column if still there
+      document.querySelector('.swap-side-column .intent-preview-card')?.remove();
       // Clear live-element refs so stale closures cannot reference detached nodes
       if (intentPanelRef.current === panel)      intentPanelRef.current      = null;
       if (intentInputRowRef.current === inputRow) intentInputRowRef.current   = null;
