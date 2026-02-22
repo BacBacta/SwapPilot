@@ -732,6 +732,22 @@ export function LandioSwapController() {
 
   const { balances, getBalanceFormatted, getBalance, isLoading: isLoadingBalances, error: balanceError, refetch: refetchBalances } = useTokenBalances(balanceTokens);
 
+  // ── Stable refs for values used inside the AI Intent useEffect ────────────
+  // Avoids adding these to the dep array, which would destroy + recreate the
+  // panel DOM on every balance poll (every 30s) or price refresh (every 60s).
+  const balancesRef = useRef(balances);
+  balancesRef.current = balances;
+  const getPriceRef = useRef(getPrice);
+  getPriceRef.current = getPrice;
+  const isConnectedRef = useRef(isConnected);
+  isConnectedRef.current = isConnected;
+  const scoringModeRef = useRef(scoringMode);
+  scoringModeRef.current = scoringMode;
+  const updateSettingsRef = useRef(updateSettings);
+  updateSettingsRef.current = updateSettings;
+  const setScoringModeRef = useRef(setScoringMode);
+  setScoringModeRef.current = setScoringMode;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 11: SWAP EXECUTION HOOK
   // ═══════════════════════════════════════════════════════════════════════════
@@ -3415,12 +3431,12 @@ export function LandioSwapController() {
     `;
 
     // ── Wallet-aware suggestions (Feature #1) ─────────────────────────────────
-    if (isConnected) {
+    if (isConnectedRef.current) {
       const WBNB_ADDR_S = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
       const NATIVE_BNB_S = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
       const tokensWithBal = BASE_TOKENS.filter((t) => {
         const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
-        return parseFloat(balances[addr]?.balanceFormatted ?? '0') > 0.0001;
+        return parseFloat(balancesRef.current[addr]?.balanceFormatted ?? '0') > 0.0001;
       });
 
       if (tokensWithBal.length > 0) {
@@ -3436,8 +3452,8 @@ export function LandioSwapController() {
 
         tokensWithBal.forEach((t) => {
           const addr = t.address.toLowerCase() === WBNB_ADDR_S ? NATIVE_BNB_S : t.address;
-          const bal = balances[addr]?.balanceFormatted ?? '0.0000';
-          const price = getPrice(t.address);
+          const bal = balancesRef.current[addr]?.balanceFormatted ?? '0.0000';
+          const price = getPriceRef.current(t.address);
           const usd = price ? `$${(parseFloat(bal) * price).toFixed(2)}` : '';
 
           const chip = document.createElement('div');
@@ -3650,25 +3666,33 @@ export function LandioSwapController() {
     };
 
     // ── Preview card (Feature #7) ─────────────────────────────────────────────
-    // Shown after a successful parse instead of auto-switching to manual.
-    // The user sees a structured summary and can Confirm or go back to edit.
+    const QUOTE_MODES = [
+      { key: 'SAFE',   label: '🛡️ Safe',     desc: 'Lower risk, may have slightly less optimal rates' },
+      { key: 'NORMAL', label: '⚖️ Balanced', desc: 'Balanced between safety and rate optimization' },
+      { key: 'DEGEN',  label: '⚡ Turbo',    desc: 'Maximum rate optimization, higher risk tolerance' },
+    ] as const;
+    const SCORING_MODES = [
+      { key: 'BEQ', label: 'BEQ', desc: 'Best Execution Quality score (recommended)' },
+      { key: 'RAW', label: 'Raw', desc: 'Raw quote comparison without scoring' },
+    ] as const;
+
     const showPreview = (data: {
       sellTokenInfo: typeof BASE_TOKENS[number] | undefined;
       buyTokenInfo:  typeof BASE_TOKENS[number] | undefined;
       sellAmountHuman: number;
-      slippageBps: number;
-      mode: string;
+      parsedRequest: { chainId: number; sellToken: string; buyToken: string; sellAmount: string; slippageBps: number; mode: string };
       confidence: number;
       explanation: string;
     }) => {
       inputRow.style.display = 'none';
-      statusDiv.style.display  = 'none';
+      statusDiv.style.display = 'none';
 
-      const { sellTokenInfo: st, buyTokenInfo: bt, sellAmountHuman, slippageBps, mode, confidence, explanation } = data;
+      const { sellTokenInfo: st, buyTokenInfo: bt, sellAmountHuman, parsedRequest: req, confidence, explanation } = data;
+      const slippageBps = req.slippageBps;
 
       // Estimate buy amount from prices
-      const sellPrice = st ? getPrice(st.address) : null;
-      const buyPrice  = bt ? getPrice(bt.address)  : null;
+      const sellPrice = st ? getPriceRef.current(st.address) : null;
+      const buyPrice  = bt ? getPriceRef.current(bt.address)  : null;
       const estimatedBuyAmount = (sellPrice && buyPrice && buyPrice > 0)
         ? (sellAmountHuman * sellPrice) / buyPrice
         : null;
@@ -3695,7 +3719,7 @@ export function LandioSwapController() {
 
       // Sell row
       if (st) {
-        const sellUsd = sellPrice ? `(${`$${(sellAmountHuman * sellPrice).toFixed(2)}`})` : '';
+        const sellUsd = sellPrice ? `($${(sellAmountHuman * sellPrice).toFixed(2)})` : '';
         const sellRow = document.createElement('div');
         sellRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 13px;';
         sellRow.innerHTML = `
@@ -3720,23 +3744,137 @@ export function LandioSwapController() {
       }
 
       // Separator
-      const divider = document.createElement('div');
-      divider.style.cssText = 'height: 1px; background: var(--border);';
-      card.appendChild(divider);
+      const sep1 = document.createElement('div'); sep1.style.cssText = 'height:1px;background:var(--border)'; card.appendChild(sep1);
 
-      // Meta row (mode + slippage)
-      const metaRow = document.createElement('div');
-      metaRow.style.cssText = 'display: flex; gap: 12px; font-size: 11px; color: var(--text-muted);';
-      metaRow.innerHTML = `
-        <span>Mode <strong style="color:var(--text-primary)">${mode}</strong></span>
-        <span>Slippage <strong style="color:var(--text-primary)">${(slippageBps / 100).toFixed(1)}%</strong></span>
+      // ── Quote mode selector (Safe / Balanced / Turbo) ──────────────────────
+      const qmLabel = document.createElement('div');
+      qmLabel.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
+      qmLabel.textContent = 'Mode';
+      card.appendChild(qmLabel);
+
+      let activeQMode = req.mode as 'SAFE' | 'NORMAL' | 'DEGEN';
+      const qmRow = document.createElement('div');
+      qmRow.style.cssText = 'display: flex; gap: 6px;';
+      const qmBtns: HTMLButtonElement[] = [];
+
+      const renderQmBtns = () => {
+        qmBtns.forEach((b, i) => {
+          const isActive = QUOTE_MODES[i]!.key === activeQMode;
+          b.style.background = isActive ? 'var(--accent-dim, rgba(240,185,11,0.15))' : 'var(--bg-card)';
+          b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+          b.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
+        });
+      };
+
+      QUOTE_MODES.forEach((m) => {
+        const b = document.createElement('button');
+        b.textContent = m.label;
+        b.title = m.desc;
+        b.style.cssText = `flex:1;padding:7px 6px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;`;
+        b.onclick = () => {
+          activeQMode = m.key;
+          renderQmBtns();
+          updateSettingsRef.current({ mode: m.key });
+        };
+        qmBtns.push(b);
+        qmRow.appendChild(b);
+      });
+      renderQmBtns();
+      card.appendChild(qmRow);
+
+      // ── Scoring mode selector (BEQ / RAW) ──────────────────────────────────
+      const smLabel = document.createElement('div');
+      smLabel.style.cssText = 'font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;';
+      smLabel.textContent = 'Scoring';
+      card.appendChild(smLabel);
+
+      let activeScoring = scoringModeRef.current as 'BEQ' | 'RAW';
+      const smRow = document.createElement('div');
+      smRow.style.cssText = 'display: flex; gap: 6px;';
+      const smBtns: HTMLButtonElement[] = [];
+
+      const renderSmBtns = () => {
+        smBtns.forEach((b, i) => {
+          const isActive = SCORING_MODES[i]!.key === activeScoring;
+          b.style.background = isActive ? 'var(--accent-dim, rgba(240,185,11,0.15))' : 'var(--bg-card)';
+          b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+          b.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
+        });
+      };
+
+      SCORING_MODES.forEach((m) => {
+        const b = document.createElement('button');
+        b.textContent = m.label;
+        b.title = m.desc;
+        b.style.cssText = `flex:1;padding:7px 6px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;`;
+        b.onclick = () => {
+          activeScoring = m.key;
+          renderSmBtns();
+          setScoringModeRef.current(m.key);
+        };
+        smBtns.push(b);
+        smRow.appendChild(b);
+      });
+      renderSmBtns();
+      card.appendChild(smRow);
+
+      // Separator
+      const sep2 = document.createElement('div'); sep2.style.cssText = 'height:1px;background:var(--border)'; card.appendChild(sep2);
+
+      // ── Route + Gas (fetched in background) ────────────────────────────────
+      const routeRow = document.createElement('div');
+      routeRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
+      routeRow.innerHTML = `
+        <span>Route</span>
+        <span class="preview-route">⟳ Fetching…</span>
       `;
-      card.appendChild(metaRow);
+      card.appendChild(routeRow);
 
-      // Explanation (small)
+      const gasRow = document.createElement('div');
+      gasRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
+      gasRow.innerHTML = `
+        <span>Est. gas</span>
+        <span class="preview-gas">⟳ Fetching…</span>
+      `;
+      card.appendChild(gasRow);
+
+      // Fetch a real quote in background for route + gas
+      if (req.sellAmount !== '0' && st && bt) {
+        postQuotes({ request: req as Parameters<typeof postQuotes>[0]['request'], timeoutMs: 8_000 })
+          .then((qr) => {
+            const best = qr.rankedQuotes?.[0];
+            if (!best) return;
+            const routeEl = card.querySelector('.preview-route');
+            const gasEl = card.querySelector('.preview-gas');
+            if (routeEl) routeEl.textContent = best.providerId ?? '—';
+            if (gasEl) {
+              const gasUsd = best.normalized?.estimatedGasUsd;
+              gasEl.textContent = gasUsd ? `~$${parseFloat(gasUsd).toFixed(3)}` : '—';
+            }
+          })
+          .catch(() => {
+            const routeEl = card.querySelector('.preview-route');
+            if (routeEl) routeEl.textContent = 'Available after confirm';
+            const gasEl = card.querySelector('.preview-gas');
+            if (gasEl) gasEl.textContent = '—';
+          });
+      } else {
+        const routeEl = card.querySelector('.preview-route');
+        if (routeEl) routeEl.textContent = 'Available after confirm';
+        const gasEl = card.querySelector('.preview-gas');
+        if (gasEl) gasEl.textContent = '—';
+      }
+
+      // Slippage row
+      const slippageRow = document.createElement('div');
+      slippageRow.style.cssText = 'display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);';
+      slippageRow.innerHTML = `<span>Slippage</span><span>${(slippageBps / 100).toFixed(1)}%</span>`;
+      card.appendChild(slippageRow);
+
+      // Explanation
       if (explanation) {
         const expEl = document.createElement('div');
-        expEl.style.cssText = 'font-size: 11px; color: var(--text-muted); font-style: italic;';
+        expEl.style.cssText = 'font-size: 11px; color: var(--text-muted); font-style: italic; padding-top: 2px;';
         expEl.textContent = explanation;
         card.appendChild(expEl);
       }
@@ -3747,11 +3885,7 @@ export function LandioSwapController() {
 
       const modifyBtn = document.createElement('button');
       modifyBtn.textContent = '← Edit';
-      modifyBtn.style.cssText = `
-        flex: 1; padding: 10px; border-radius: 10px;
-        background: transparent; border: 1px solid var(--border);
-        font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer;
-      `;
+      modifyBtn.style.cssText = `flex:1;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;`;
       modifyBtn.onclick = () => {
         card.remove();
         inputRow.style.display = 'flex';
@@ -3764,12 +3898,7 @@ export function LandioSwapController() {
 
       const confirmBtn = document.createElement('button');
       confirmBtn.textContent = 'Confirm & Swap →';
-      confirmBtn.style.cssText = `
-        flex: 2; padding: 10px; border-radius: 10px;
-        background: var(--accent); border: none;
-        font-size: 13px; font-weight: 700; color: #000; cursor: pointer;
-        transition: opacity 0.15s;
-      `;
+      confirmBtn.style.cssText = `flex:2;padding:10px;border-radius:10px;background:var(--accent);border:none;font-size:13px;font-weight:700;color:#000;cursor:pointer;transition:opacity 0.15s;`;
       confirmBtn.onmouseenter = () => { confirmBtn.style.opacity = '0.85'; };
       confirmBtn.onmouseleave = () => { confirmBtn.style.opacity = '1'; };
       confirmBtn.onclick = () => {
@@ -3960,8 +4089,7 @@ export function LandioSwapController() {
           sellTokenInfo,
           buyTokenInfo,
           sellAmountHuman,
-          slippageBps: req.slippageBps,
-          mode: req.mode,
+          parsedRequest: req,
           confidence,
           explanation: result.explanation,
         });
