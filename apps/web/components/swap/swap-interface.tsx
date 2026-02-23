@@ -999,14 +999,14 @@ export function SwapInterface() {
                   Standard
                 </button>
                 <button
-                  onClick={() => setInputMode("intent")}
-                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold transition-colors ${
-                    inputMode === "intent"
-                      ? "bg-sp-surface text-sp-text shadow"
-                      : "text-sp-muted hover:text-sp-text"
-                  }`}
+                  disabled
+                  className="relative flex-1 cursor-not-allowed rounded-xl py-1.5 text-xs font-semibold text-sp-muted/50"
+                  title="Coming soon"
                 >
-                  ✨ Langage naturel
+                  ✨ AI Intent
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-sp-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sp-accent">
+                    Soon
+                  </span>
                 </button>
               </div>
 
