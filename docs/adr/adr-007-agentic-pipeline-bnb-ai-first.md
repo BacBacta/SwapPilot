@@ -108,7 +108,16 @@ passWithNoTests: false,
 ║  ENTRÉE                                                          ║
 ║  UI classique ────────────────────────┐                         ║
 ║                                       ▼                         ║
-║  Smart Swap (texte) → MCP SSE → Intent Solver → QuoteRequest    ║
+║  Smart Swap (texte)                                             ║
+║    → [Phase C] Session Redis (historique multi-turn)            ║
+║    → [Phase A] Agent tool-use loop (Claude native, max 6 iter.) ║
+║        ├─ resolve_token   → MCP get_erc20_token_info            ║
+║        ├─ check_balance   → MCP get_erc20_balance               ║
+║        ├─ get_token_market_data → DexScreener (prix, Δ24h...)   ║
+║        ├─ get_swap_history → SwapLogStore.list({ wallet })      ║
+║        └─ confirm_intent / produce_plan → QuoteRequest          ║
+║    → [Phase D] Planning gate : /v1/intent/plan → planToken      ║
+║              → /v1/intent/confirm-plan → pipeline BEQ           ║
 ║    @bnb-chain/mcp + LLM               Zod strict()              ║
 ╚══════════════════════════════════════════════════════════════════╝
                          │
@@ -129,7 +138,10 @@ passWithNoTests: false,
 ║     └─ remplace 4 placeholders: mev/churn/liquidity/slippage    ║
 ║     └─ complète estimatedGasUsd pour PancakeSwap                ║
 ║  ⑥ RiskSignals enrichis (source: ml|heuristic|mixed)            ║
-║  ⑦ Agent trust factor (off-chain v1) ← NOUVEAU                  ║
+║  ⑦ Agent trust factor (Phase E — feedback loop complet)          ║
+║     ProviderTrustStore → agentTrustFactor per-provider          ║
+║     Cold-start : 1.0 si totalSwaps < 100                        ║
+║     Recomputed depuis SwapLogStore (Redis TTL 5 min)            ║
 ║  ⑧ BEQ v2 étendu                                                ║
 ║     QualityMult = reliability × sellability × agentTrustFactor  ║
 ║     RiskMult    = risk × preflight × mlConfidenceFactor         ║
@@ -569,9 +581,79 @@ POST /v1/intent/quote
 
 ---
 
-## 6. Agent Trust (M3)
+## 5bis. Intent Solver v2 — Architecture Agentique
 
-### V1 — entièrement off-chain
+### Phase A — Native Claude Tool Use (fondation)
+
+Remplacement de `callClaude()` (JSON extraction via system prompt) par une vraie boucle tool-use. `intentSolver.ts` reste **inchangé** comme fallback.
+
+**Nouveau fichier :** `apps/api/src/intent/agenticSolver.ts`
+
+```typescript
+export async function parseIntentAgentic(
+  turns: ConversationTurn[],   // historique complet ou [{ role:'user', content: text }]
+  config: IntentConfig,
+  mcp: MCPClient | null,
+  swapLogStore: SwapLogStore,
+  walletAddress?: string,
+): Promise<ParseIntentResult>
+```
+
+La boucle POST `/v1/messages` avec le paramètre `tools` de l'API Anthropic. Max 6 itérations. `INTENT_AGENTIC_ENABLED=false` → fallback sur `intentSolver.ts` (bit-for-bit identique).
+
+**Invariant préservé :** l'agent produit uniquement un `QuoteRequest` valide. Il ne choisit pas la route, ne construit pas la tx, n'exécute rien.
+
+**Gate :** `INTENT_AGENTIC_ENABLED=false` (défaut).
+
+### Phase B — Outils marché enrichis
+
+**Nouveau fichier :** `apps/api/src/intent/marketTools.ts`
+
+| Outil LLM | Implémentation | Données retournées |
+|-----------|---------------|-------------------|
+| `resolve_token` | `mcp.getTokenInfo(symbol, chainId)` | address, decimals |
+| `check_balance` | `mcp.getTokenBalance(wallet, token, chainId)` | balance BigInt |
+| `get_token_market_data` | DexScreener `/token-pairs/v1/bsc/{addr}` | priceUsd, priceChange24h, volumeUsd24h, liquidityUsd |
+| `get_swap_history` | `swapLogStore.list({ wallet, from: 30j })` | 10 swaps récents formatés |
+| `confirm_intent` | capture locale | QuoteRequest final |
+
+`get_token_market_data` est une lecture légère indépendante de `assessDexScreenerSellability()` — pas de scoring sellability. Échec réseau → retourne `null` (agent continue sans données marché).
+
+### Phase C — Session multi-turn
+
+**Nouveau fichier :** `apps/api/src/intent/sessionStore.ts`
+
+Pattern identique à `redisQuoteCache.ts` :
+- `RedisSessionStore` — clé `intent:session:{uuid}`, TTL configurable (défaut 30 min)
+- `MemorySessionStore` — fallback si Redis absent
+- `sessionId` optionnel dans le request `/v1/intent/parse` → toujours retourné en réponse
+- Réponse backward-compatible : `sessionId` est un champ additionnel ignoré par anciens clients
+
+**Gate :** `INTENT_SESSION_TTL_SECONDS=1800` (défaut).
+
+### Phase D — Planning Gate + Confirmation explicite
+
+**Nouveaux endpoints :**
+
+```
+POST /v1/intent/plan          → { plan, planToken, parsedRequest, sessionId }
+POST /v1/intent/confirm-plan  → QuoteResponse (pipeline BEQ standard, inchangé)
+```
+
+6ème outil LLM : `produce_plan` — identique à `confirm_intent` + champ `plan: string` (texte lisible présenté à l'utilisateur avant exécution).
+
+**Nouveau fichier :** `apps/api/src/intent/planTokenStore.ts`
+- Clé Redis `intent:plan:{uuid}`, TTL 120s, one-use (DELETE atomique avant réponse)
+- Fallback `MemoryPlanTokenStore` si Redis absent
+- 410 si planToken expiré ou déjà consommé
+
+**Gate :** `INTENT_PLAN_MODE_ENABLED=false` (défaut) — endpoints retournent 501 si désactivé.
+
+---
+
+## 6. Agent Trust (M3) — Feedback loop complet (Phase E)
+
+### 6.1 Formule (inchangée)
 
 ```typescript
 function computeTrustScore(stats: ProviderStats): number {
@@ -580,9 +662,70 @@ function computeTrustScore(stats: ProviderStats): number {
   const bonus = 1 + (stats.avgSavingsBps ?? 0) / 10_000;
   return Math.min(base * bonus, 1.0);
 }
+// avgSavingsBps = moyenne((actualBuyAmount - expectedBuyAmount) / expectedBuyAmount × 10_000)
+// Positif = meilleure exécution que prévu. Négatif = slippage effectif subi.
 ```
 
 **Pas de nouveau contrat en v1.**
+
+### 6.2 Nouveaux fichiers
+
+**`apps/api/src/trust/providerTrustComputer.ts`**
+
+```typescript
+export async function computeProviderTrust(
+  providerId: string,
+  swapLogStore: SwapLogStore,
+  coldStartGuard = 100,
+): Promise<ProviderTrustScore>
+```
+
+Lit `swapLogStore.list()`, filtre par `providerId`, applique la formule.
+
+**`apps/api/src/trust/providerTrustStore.ts`**
+
+Pattern identique à `redisQuoteCache.ts` :
+- `RedisProviderTrustStore` — clé `trust:provider:{providerId}`, TTL configurable (défaut 5 min)
+- `MemoryProviderTrustStore` — fallback
+- Sur cache miss → `computeProviderTrust()` → stocke → retourne
+
+### 6.3 Fix `packages/scoring/src/beq-v2.ts` — 1 seule ligne
+
+Le champ `agentTrustFactor?: number` existe déjà dans `BeqV2Input` (ligne 72) mais est ignoré :
+
+```typescript
+// Ligne 502 — AVANT (hardcodé, jamais utilisé)
+const agentTrustFactor = 1.0;
+
+// APRÈS (lit l'input, défaut 1.0 = pas de pénalité si absent)
+const agentTrustFactor = input.agentTrustFactor ?? 1.0;
+```
+
+### 6.4 Injection dans `apps/api/src/quoteBuilder.ts`
+
+Avant le call `rankQuotes()` (lignes 779–787), charger les trust scores par provider :
+
+```typescript
+const trustScores = await Promise.all(
+  resolvedQuotes.map(q =>
+    providerTrustStore.get(q.providerId).catch(() => ({ trustFactor: 1.0 }))
+  )
+);
+const quotesWithTrust = resolvedQuotes.map((q, i) => ({
+  ...q,
+  agentTrustFactor: trustScores[i]?.trustFactor ?? 1.0,
+}));
+const ranked = rankQuotes({ ..., quotes: quotesWithTrust });
+```
+
+Fallback systématique : échec du store → `trustFactor: 1.0` → comportement actuel bit-for-bit.
+
+### 6.5 Endpoint monitoring
+
+```
+GET /v1/analytics/trust-scores   (admin token requis)
+→ { providers: ProviderTrustScore[] }
+```
 
 ### V2 (hors scope v1)
 Contrat `AgentRegistry.sol` sur BSC avec `totalSwaps`, `successRate`, `avgSavingsBps`, `lastUpdated`, `metadataURI`.
@@ -591,16 +734,21 @@ Contrat `AgentRegistry.sol` sur BSC avec `totalSwaps`, `successRate`, `avgSaving
 
 ## 7. Roadmap — milestones ordonnés
 
-| # | Milestone | Prérequis | Risque cold-start |
-|---|-----------|-----------|-------------------|
-| M0 | Bugs critiques | — | — |
-| M4 | HashDit | M0 | Aucun |
-| FL | Feedback loop | M4 | — |
-| M1 | ML Engine | FL (≥1000 swaps) | Fallback heuristique |
-| M2 | Intent + MCP | M1 | — |
-| M3 | Trust off-chain | FL + volume | Guard `< 100 swaps → 1.0` |
-| M5 | Gasless / opBNB | M1 | Testnet d'abord |
-| GF | Greenfield | M0 | Async uniquement |
+| # | Milestone | Prérequis | Gate | Risque cold-start |
+|---|-----------|-----------|------|-------------------|
+| M0 | Bugs critiques | — | — | — |
+| M4 | HashDit | M0 | `HASHDIT_ENABLED=true` | Aucun |
+| FL | Feedback loop data | M4 | ≥1000 swaps avec `actualSlippage` | — |
+| M1 | ML Engine | FL | `ML_ENABLED=true`, P95<25ms | Fallback heuristique |
+| **A** | **Native tool calling** | **M1** | **`INTENT_AGENTIC_ENABLED=true`** | — |
+| **B** | **Market tools enrichis** | **A** | **Inclus dans Phase A** | — |
+| **C** | **Session multi-turn** | **A** | **`INTENT_SESSION_TTL_SECONDS=1800`** | — |
+| **D** | **Planning gate** | **C** | **`INTENT_PLAN_MODE_ENABLED=true`** | — |
+| **E** | **Provider trust feedback** | **FL** | **`PROVIDER_TRUST_ENABLED=true`** | Guard `<100 swaps → 1.0` |
+| M2 | Intent + MCP (full) | A,B,C,D | `INTENT_ENABLED=true` | — |
+| M3 | Trust off-chain (full) | E | Guard `< 100 swaps → 1.0` | Guard absolu |
+| M5 | Gasless / opBNB | M1 | Testnet d'abord | — |
+| GF | Greenfield | M0 | Async uniquement | — |
 
 ### Critères d'acceptation par milestone
 
@@ -613,6 +761,17 @@ Token `riskLevel=5` → disqualifié en SAFE. Cache Redis actif (TTL 10min).
 
 **M1 :** `ML_ENABLED=false` → comportement actuel bit-for-bit.
 P95 inférence < 25ms. Taux fallback < 20%. Corrélation slippage +5% vs heuristique.
+
+**Phase A :** `INTENT_AGENTIC_ENABLED=false` → comportement actuel bit-for-bit (intentSolver.ts).
+Logs montrent la boucle tool-use avec les appels d'outils.
+
+**Phase B :** `get_token_market_data` retourne prix/Δ24h dans `explanation`. `get_swap_history` opérationnel si `walletAddress` fourni.
+
+**Phase C :** 2 requêtes avec même `sessionId` — la 2ème reflète le contexte de la 1ère sans répéter les tokens.
+
+**Phase D :** `POST /v1/intent/plan` retourne `plan` + `planToken`. `POST /v1/intent/confirm-plan` retourne `QuoteResponse`. Attendre >2 min → 410 Plan expiré.
+
+**Phase E :** ≥200 SwapLogs avec `expectedBuyAmount` et `status` variés → `GET /v1/analytics/trust-scores` montre des scores < 1.0 pour providers peu fiables → BEQ les pénalise dans le ranking.
 
 **M2 :** Ambiguïté → clarification. Quotes identiques à saisie manuelle équivalente.
 
@@ -630,6 +789,11 @@ P95 inférence < 25ms. Taux fallback < 20%. Corrélation slippage +5% vs heurist
 | M4 | `hashditClient.ts`, `hashditClient.test.ts` | `schemas.ts`, `engine.ts`, `quoteBuilder.ts`, `server.ts`, `receipt-drawer.tsx`, `settings-*.tsx` |
 | FL | — | `server.ts` (SwapLogSchema), `use-execute-swap.ts` |
 | M1 | `packages/ml/` (6 fichiers + tests) | `schemas.ts`, `engine.ts`, `normalize.ts`, `beq-v2.ts`, `quoteBuilder.ts`, `receipt-drawer.tsx` |
+| **A** | **`intent/agenticSolver.ts`** | **`env.ts`, `server.ts`, `api.ts` (web)** |
+| **B** | **`intent/marketTools.ts`** | **`agenticSolver.ts` (tools array)** |
+| **C** | **`intent/sessionStore.ts`** | **`env.ts`, `server.ts`, `api.ts` (web), `intent-input.tsx`** |
+| **D** | **`intent/planTokenStore.ts`** | **`env.ts`, `server.ts`, `api.ts` (web), `intent-input.tsx`** |
+| **E** | **`trust/providerTrustComputer.ts`, `trust/providerTrustStore.ts`** | **`beq-v2.ts` (1 ligne l.502), `quoteBuilder.ts`, `env.ts`, `server.ts`** |
 | M2 | `apps/api/src/intent/` (3 fichiers), Smart Swap UI | `schemas.ts`, `server.ts`, `settings-provider.tsx` |
 | M3 | `agentTrustService.ts` | `schemas.ts`, `beq-v2.ts` |
 | M5 | `SwapExecutor.sol`, `apps/api/src/relayer/` | `server.ts` (BuildTxSchema), `settings-drawer.tsx` |
@@ -674,10 +838,25 @@ ml_fallback_total              counter (labels: reason)
 ml_confidence_p50              gauge
 ml_confidence_p95              gauge
 
-# Intent
+# Intent (base)
 intent_parse_duration_ms       histogram
 intent_parse_errors_total      counter (labels: kind)
 intent_clarifications_total    counter
+
+# Agent tool-use (Phase A)
+intent_tool_calls_total        counter (labels: tool_name)
+intent_tool_loop_iterations    histogram
+intent_agentic_duration_ms     histogram
+
+# Sessions (Phase C)
+intent_session_hits_total      counter
+intent_session_misses_total    counter
+
+# Provider trust (Phase E)
+trust_score_per_provider       gauge (labels: provider_id)
+trust_computation_duration_ms  histogram
+trust_cache_hits_total         counter
+trust_cache_misses_total       counter
 
 # Greenfield
 greenfield_upload_duration_ms  histogram
@@ -719,6 +898,16 @@ INTENT_LLM_MODEL=claude-haiku-4-5-20251001
 ANTHROPIC_API_KEY=xxx
 MCP_BNB_SERVER_URL=http://localhost:3001/sse
 INTENT_TIMEOUT_MS=3000
+
+# Intent agentique (Phases A-D)
+INTENT_AGENTIC_ENABLED=false       # Phase A : active la boucle tool-use Claude native
+INTENT_SESSION_TTL_SECONDS=1800    # Phase C : durée de vie session (30 min)
+INTENT_PLAN_MODE_ENABLED=false     # Phase D : gate de confirmation avant quotes
+
+# Provider Trust (Phase E)
+PROVIDER_TRUST_ENABLED=false       # Active le feedback loop BEQ
+PROVIDER_TRUST_CACHE_TTL_MS=300000 # TTL Redis trust scores (5 min)
+PROVIDER_TRUST_COLD_START_GUARD=100 # Min swaps avant pénalité trust
 
 # Gasless / opBNB (chain 204)
 RELAYER_ENABLED=false
