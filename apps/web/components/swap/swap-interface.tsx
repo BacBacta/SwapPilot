@@ -171,7 +171,8 @@ export function SwapInterface() {
   };
   
   // Input mode: standard form vs natural language intent
-  const [inputMode, setInputMode] = useState<"standard" | "intent">("standard");
+  // "intent" mode is gated — UI tab is disabled until Phase A-D ships
+  const [inputMode] = useState<"standard">("standard");
 
   // State
   const [fromToken, setFromToken] = useState("BNB");
@@ -465,8 +466,6 @@ export function SwapInterface() {
       SAFE: "SAFE", NORMAL: "NORMAL", DEGEN: "DEGEN",
     };
     updateSettings({ mode: modeMap[req.mode] ?? "NORMAL" });
-    // Switch back to standard view so user sees the pre-filled form
-    setInputMode("standard");
     reset();
   }, [updateSettings, reset]);
 
@@ -989,12 +988,7 @@ export function SwapInterface() {
               {/* Input mode toggle: Standard / Natural language */}
               <div className="mb-3 flex gap-1 rounded-2xl bg-sp-surface2 p-1">
                 <button
-                  onClick={() => setInputMode("standard")}
-                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold transition-colors ${
-                    inputMode === "standard"
-                      ? "bg-sp-surface text-sp-text shadow"
-                      : "text-sp-muted hover:text-sp-text"
-                  }`}
+                  className="flex-1 rounded-xl bg-sp-surface py-1.5 text-xs font-semibold text-sp-text shadow transition-colors"
                 >
                   Standard
                 </button>
@@ -1009,13 +1003,6 @@ export function SwapInterface() {
                   </span>
                 </button>
               </div>
-
-              {/* Intent input (natural language mode) */}
-              {inputMode === "intent" && (
-                <div className="mb-3">
-                  <IntentInput onResult={handleIntentResult} disabled={false} />
-                </div>
-              )}
 
               <TokenInput
                 label="From"
